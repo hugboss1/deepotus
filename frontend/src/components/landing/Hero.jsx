@@ -173,11 +173,15 @@ export default function Hero() {
 
               <div className="relative aspect-[4/5] w-full">
                 <img
-                  src="https://images.unsplash.com/photo-1701958212633-17fa6aa37a4d?crop=entropy&cs=srgb&fm=jpg&ixlib=rb-4.1.0&q=85"
+                  src="/deepotus_hero.jpg"
                   alt="AI Prophet Deep State Candidate"
                   className="absolute inset-0 w-full h-full object-cover poster-img"
                   loading="eager"
                   draggable={false}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://images.unsplash.com/photo-1701958212633-17fa6aa37a4d?crop=entropy&cs=srgb&fm=jpg&ixlib=rb-4.1.0&q=85";
+                  }}
                 />
                 <div
                   aria-hidden

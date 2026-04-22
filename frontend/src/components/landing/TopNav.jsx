@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "./LanguageToggle";
+import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "@/i18n/I18nProvider";
 
 const NAV_ITEMS = [
@@ -61,6 +62,7 @@ export default function TopNav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LanguageToggle />
           <Button
             asChild

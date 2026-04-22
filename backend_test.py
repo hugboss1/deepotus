@@ -16,12 +16,15 @@ class DeepotusAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.session_id = None
+        self.admin_token = None
 
     def run_test(self, name: str, method: str, endpoint: str, expected_status: int, 
-                 data: Dict[Any, Any] = None, params: Dict[str, str] = None) -> tuple:
+                 data: Dict[Any, Any] = None, params: Dict[str, str] = None, headers: Dict[str, str] = None) -> tuple:
         """Run a single API test"""
         url = f"{self.base_url}/{endpoint}"
-        headers = {'Content-Type': 'application/json'}
+        default_headers = {'Content-Type': 'application/json'}
+        if headers:
+            default_headers.update(headers)
 
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
@@ -29,9 +32,9 @@ class DeepotusAPITester:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers, params=params, timeout=30)
+                response = requests.get(url, headers=default_headers, params=params, timeout=30)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=30)
+                response = requests.post(url, json=data, headers=default_headers, timeout=30)
             else:
                 raise ValueError(f"Unsupported method: {method}")
 
@@ -261,6 +264,103 @@ class DeepotusAPITester:
                 return False
         return success
 
+    def test_admin_login_correct_password(self):
+        """Test admin login with correct password"""
+        success, response = self.run_test(
+            "Admin login (correct password)",
+            "POST",
+            "api/admin/login",
+            200,
+            data={"password": "deepotus2026"}
+        )
+        if success and response:
+            self.admin_token = response.get('token')
+            print(f"   Token received: {self.admin_token[:20]}...")
+            print(f"   Expires at: {response.get('expires_at')}")
+            required_keys = ['token', 'expires_at']
+            missing_keys = [key for key in required_keys if key not in response]
+            if missing_keys:
+                print(f"   ⚠️  Missing keys: {missing_keys}")
+                return False
+        return success
+
+    def test_admin_login_wrong_password(self):
+        """Test admin login with wrong password"""
+        success, response = self.run_test(
+            "Admin login (wrong password)",
+            "POST",
+            "api/admin/login",
+            401,
+            data={"password": "wrongpassword"}
+        )
+        return success
+
+    def test_admin_whitelist_with_token(self):
+        """Test admin whitelist endpoint with valid token"""
+        if not self.admin_token:
+            print("❌ No admin token available, skipping test")
+            return False
+            
+        success, response = self.run_test(
+            "Admin whitelist (with token)",
+            "GET",
+            "api/admin/whitelist",
+            200,
+            headers={"X-Admin-Token": self.admin_token}
+        )
+        if success and response:
+            print(f"   Total whitelist items: {response.get('total')}")
+            print(f"   Items returned: {len(response.get('items', []))}")
+            required_keys = ['items', 'total']
+            missing_keys = [key for key in required_keys if key not in response]
+            if missing_keys:
+                print(f"   ⚠️  Missing keys: {missing_keys}")
+                return False
+        return success
+
+    def test_admin_whitelist_without_token(self):
+        """Test admin whitelist endpoint without token"""
+        success, response = self.run_test(
+            "Admin whitelist (without token)",
+            "GET",
+            "api/admin/whitelist",
+            401
+        )
+        return success
+
+    def test_admin_chat_logs_with_token(self):
+        """Test admin chat logs endpoint with valid token"""
+        if not self.admin_token:
+            print("❌ No admin token available, skipping test")
+            return False
+            
+        success, response = self.run_test(
+            "Admin chat logs (with token)",
+            "GET",
+            "api/admin/chat-logs",
+            200,
+            headers={"X-Admin-Token": self.admin_token}
+        )
+        if success and response:
+            print(f"   Total chat logs: {response.get('total')}")
+            print(f"   Items returned: {len(response.get('items', []))}")
+            required_keys = ['items', 'total']
+            missing_keys = [key for key in required_keys if key not in response]
+            if missing_keys:
+                print(f"   ⚠️  Missing keys: {missing_keys}")
+                return False
+        return success
+
+    def test_admin_chat_logs_without_token(self):
+        """Test admin chat logs endpoint without token"""
+        success, response = self.run_test(
+            "Admin chat logs (without token)",
+            "GET",
+            "api/admin/chat-logs",
+            401
+        )
+        return success
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("=" * 60)
@@ -278,6 +378,13 @@ class DeepotusAPITester:
             self.test_whitelist_duplicate_email,
             self.test_whitelist_invalid_email,
             self.test_stats,
+            # Admin endpoints
+            self.test_admin_login_correct_password,
+            self.test_admin_login_wrong_password,
+            self.test_admin_whitelist_with_token,
+            self.test_admin_whitelist_without_token,
+            self.test_admin_chat_logs_with_token,
+            self.test_admin_chat_logs_without_token,
         ]
         
         for test in tests:

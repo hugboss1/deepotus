@@ -1,5 +1,6 @@
 import React from "react";
 import { LanguageToggle } from "./LanguageToggle";
+import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export default function Footer() {
@@ -20,6 +21,7 @@ export default function Footer() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <LanguageToggle />
           </div>
         </div>

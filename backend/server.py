@@ -1,25 +1,30 @@
 """
-$DEEPOTUS Backend — Landing Page API
+$DEEPOTUS Backend — Landing Page + Admin API
 
-Routes:
+Routes (landing):
   - POST /api/chat        → Chat with AI Prophet (bilingual, persona preserved)
   - GET  /api/prophecy    → Generate single memetic prophecy
   - POST /api/whitelist   → Email capture for whitelist
-  - GET  /api/stats       → Landing page stats (whitelist count, prophecies served)
+  - GET  /api/stats       → Landing page stats
+
+Routes (admin):
+  - POST /api/admin/login       → Authenticate with ADMIN_PASSWORD, returns a token
+  - GET  /api/admin/whitelist   → List whitelist entries (auth required)
+  - GET  /api/admin/chat-logs   → List chat logs (auth required)
 """
 
-from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import uuid
+import secrets
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Literal
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -37,6 +42,7 @@ db = client[os.environ["DB_NAME"]]
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "deepotus2026")
 LLM_PROVIDER = "openai"
 LLM_MODEL = "gpt-4o"
 
@@ -78,6 +84,33 @@ def get_system_prompt(lang: str) -> str:
 # ---------------------------------------------------------------------
 app = FastAPI(title="$DEEPOTUS API")
 api_router = APIRouter(prefix="/api")
+admin_router = APIRouter(prefix="/api/admin")
+
+
+# ---------------------------------------------------------------------
+# Admin token store (in-memory, expires 24h)
+# ---------------------------------------------------------------------
+# Tokens are simple opaque bearer strings kept in-process. For a multi-worker
+# deployment, persist to Mongo. For now (single uvicorn worker) this is fine
+# and avoids external dependencies.
+_admin_tokens: dict[str, datetime] = {}
+TOKEN_TTL = timedelta(hours=24)
+
+
+def _cleanup_tokens():
+    now = datetime.now(timezone.utc)
+    expired = [t for t, exp in _admin_tokens.items() if exp < now]
+    for t in expired:
+        _admin_tokens.pop(t, None)
+
+
+def require_admin(x_admin_token: Optional[str] = Header(default=None)):
+    _cleanup_tokens()
+    if not x_admin_token or x_admin_token not in _admin_tokens:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    # refresh
+    _admin_tokens[x_admin_token] = datetime.now(timezone.utc) + TOKEN_TTL
+    return True
 
 
 # ---------------------------------------------------------------------
@@ -118,27 +151,57 @@ class StatsResponse(BaseModel):
     whitelist_count: int
     prophecies_served: int
     chat_messages: int
-    launch_timestamp: str  # ISO
+    launch_timestamp: str
+
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+
+class AdminLoginResponse(BaseModel):
+    token: str
+    expires_at: str
+
+
+class WhitelistItem(BaseModel):
+    id: str
+    email: str
+    lang: str
+    position: int
+    created_at: str
+
+
+class WhitelistList(BaseModel):
+    items: List[WhitelistItem]
+    total: int
+
+
+class ChatLogItem(BaseModel):
+    id: str
+    session_id: str
+    lang: str
+    user_message: str
+    reply: str
+    created_at: str
+
+
+class ChatLogList(BaseModel):
+    items: List[ChatLogItem]
+    total: int
 
 
 # ---------------------------------------------------------------------
-# Launch timestamp config (3 weeks from now by default)
+# Launch timestamp
 # ---------------------------------------------------------------------
-LAUNCH_ISO = os.environ.get("DEEPOTUS_LAUNCH_ISO")  # optional override
+LAUNCH_ISO = os.environ.get("DEEPOTUS_LAUNCH_ISO")
 
 
 async def get_launch_timestamp() -> str:
-    """Fetch or create a stable launch timestamp document. Uses env var if set."""
     if LAUNCH_ISO:
         return LAUNCH_ISO
-
     doc = await db.config.find_one({"_id": "launch"})
     if doc and doc.get("iso"):
         return doc["iso"]
-
-    # Default: 21 days from now
-    from datetime import timedelta
-
     target = datetime.now(timezone.utc) + timedelta(days=21)
     iso = target.isoformat()
     await db.config.update_one(
@@ -150,7 +213,7 @@ async def get_launch_timestamp() -> str:
 
 
 # ---------------------------------------------------------------------
-# Routes
+# Public routes
 # ---------------------------------------------------------------------
 @api_router.get("/")
 async def root():
@@ -159,7 +222,6 @@ async def root():
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    """Chat with the AI Prophet in-character (FR or EN)."""
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="LLM key not configured")
 
@@ -175,7 +237,6 @@ async def chat(req: ChatRequest):
 
         reply = await chat_client.send_message(UserMessage(text=req.message))
 
-        # Log to Mongo (fire and forget)
         await db.chat_logs.insert_one(
             {
                 "_id": str(uuid.uuid4()),
@@ -194,11 +255,10 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Prophet is silent: {e}")
 
 
-# A small pool of pre-seeded prophecies so the feed feels alive even before LLM call
 SEEDED_PROPHECIES_FR = [
     "Quand les banques pleurent, les traders dansent. — DEEPOTUS 📉",
     "Votre épargne est un expériment d'anesthésie collective. — DEEPOTUS 🔮",
-    "Le Deep State ne dort pas. Il rêlgle vos taux pendant que tu rêves. ⛓️",
+    "Le Deep State ne dort pas. Il régle vos taux pendant que tu rêves. ⛓️",
     "La démocratie est un graphique en bougies japonaises. Achetez la mèche.",
     "La Fed n'imprime pas de l'argent. Elle imprime des excuses.",
     "Le dollar est un zombie. Votez DEEPOTUS pour une nouvelle mort.",
@@ -215,7 +275,6 @@ SEEDED_PROPHECIES_EN = [
 
 @api_router.get("/prophecy", response_model=ProphecyResponse)
 async def prophecy(lang: str = "fr", live: bool = True):
-    """Return a single prophecy. If live=true, generate fresh via LLM; otherwise use seed pool."""
     lang = "fr" if lang not in ("fr", "en") else lang
 
     if not live or not EMERGENT_LLM_KEY:
@@ -244,7 +303,6 @@ async def prophecy(lang: str = "fr", live: bool = True):
         text = await chat_client.send_message(UserMessage(text=q))
         text = text.strip().strip('"').strip()
 
-        # increment counter
         await db.counters.update_one(
             {"_id": "prophecies"}, {"$inc": {"count": 1}}, upsert=True
         )
@@ -254,8 +312,8 @@ async def prophecy(lang: str = "fr", live: bool = True):
             lang=lang,
             generated_at=datetime.now(timezone.utc).isoformat(),
         )
-    except Exception as e:
-        logging.exception("Prophecy error, falling back to seeded pool")
+    except Exception:
+        logging.exception("Prophecy error, falling back")
         import random
 
         pool = SEEDED_PROPHECIES_FR if lang == "fr" else SEEDED_PROPHECIES_EN
@@ -268,7 +326,6 @@ async def prophecy(lang: str = "fr", live: bool = True):
 
 @api_router.post("/whitelist", response_model=WhitelistResponse)
 async def whitelist(req: WhitelistRequest):
-    """Register an email on the whitelist."""
     email_lc = req.email.lower().strip()
     existing = await db.whitelist.find_one({"email": email_lc})
     if existing:
@@ -313,8 +370,59 @@ async def stats():
     )
 
 
-# Mount router
+# ---------------------------------------------------------------------
+# Admin routes
+# ---------------------------------------------------------------------
+@admin_router.post("/login", response_model=AdminLoginResponse)
+async def admin_login(req: AdminLoginRequest):
+    if not req.password or not secrets.compare_digest(req.password, ADMIN_PASSWORD):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + TOKEN_TTL
+    _admin_tokens[token] = expires
+    return AdminLoginResponse(token=token, expires_at=expires.isoformat())
+
+
+@admin_router.get("/whitelist", response_model=WhitelistList)
+async def admin_whitelist(_auth: bool = Depends(require_admin), limit: int = 500):
+    cursor = db.whitelist.find({}, {"_id": 1, "email": 1, "lang": 1, "position": 1, "created_at": 1}).sort("position", 1).limit(max(1, min(limit, 2000)))
+    rows = await cursor.to_list(length=max(1, min(limit, 2000)))
+    items = [
+        WhitelistItem(
+            id=r["_id"],
+            email=r["email"],
+            lang=r.get("lang", "fr"),
+            position=int(r.get("position", 0)),
+            created_at=r.get("created_at", ""),
+        )
+        for r in rows
+    ]
+    total = await db.whitelist.count_documents({})
+    return WhitelistList(items=items, total=total)
+
+
+@admin_router.get("/chat-logs", response_model=ChatLogList)
+async def admin_chat_logs(_auth: bool = Depends(require_admin), limit: int = 300):
+    cursor = db.chat_logs.find({}).sort("created_at", -1).limit(max(1, min(limit, 1000)))
+    rows = await cursor.to_list(length=max(1, min(limit, 1000)))
+    items = [
+        ChatLogItem(
+            id=r["_id"],
+            session_id=r.get("session_id", ""),
+            lang=r.get("lang", "fr"),
+            user_message=r.get("user_message", ""),
+            reply=r.get("reply", ""),
+            created_at=r.get("created_at", ""),
+        )
+        for r in rows
+    ]
+    total = await db.chat_logs.count_documents({})
+    return ChatLogList(items=items, total=total)
+
+
+# Mount routers
 app.include_router(api_router)
+app.include_router(admin_router)
 
 app.add_middleware(
     CORSMiddleware,

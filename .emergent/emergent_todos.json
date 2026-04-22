@@ -1,38 +1,34 @@
 [
   {
-    "content": "Phase 1: Get Emergent LLM integration playbook",
+    "content": "Get Gemini Nano Banana image generation playbook",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Write & run POC script for AI Prophet persona (FR + EN)",
+    "content": "Generate custom deepfake AI Prophet image via Nano Banana",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Get design guidelines from design_agent",
+    "content": "Replace hero portrait with generated image",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Implement backend (chat, prophecy, whitelist, stats routes)",
+    "content": "Add dark mode toggle (ThemeProvider + toggle in TopNav)",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Implement frontend with all 13 sections, bilingual, stunning design",
+    "content": "Build admin backend routes (/api/admin/whitelist, /api/admin/chat-logs) with password auth",
     "status": "completed"
   },
   {
-    "content": "Phase 2: All 14 user stories covered in development",
+    "content": "Build admin frontend page (/admin with password gate + data tables)",
     "status": "completed"
   },
   {
-    "content": "Phase 3: End-to-end testing via testing_agent_v3",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3: Fix all bugs found by testing agent (only minor testid naming — feature works)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3: Final delivery with finish summary",
+    "content": "End-to-end testing of new features",
     "status": "in_progress"
+  },
+  {
+    "content": "Final delivery summary",
+    "status": "pending"
   }
 ]

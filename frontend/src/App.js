@@ -3,7 +3,9 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/i18n/I18nProvider";
+import { ThemeProvider } from "@/theme/ThemeProvider";
 import Landing from "@/pages/Landing";
+import Admin from "@/pages/Admin";
 
 function App() {
   useEffect(() => {
@@ -11,24 +13,27 @@ function App() {
   }, []);
 
   return (
-    <I18nProvider>
-      <div className="App min-h-screen bg-background text-foreground font-body">
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="*" element={<Landing />} />
-          </Routes>
-        </BrowserRouter>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            classNames: {
-              toast: "font-mono text-xs",
-            },
-          }}
-        />
-      </div>
-    </I18nProvider>
+    <ThemeProvider>
+      <I18nProvider>
+        <div className="App min-h-screen bg-background text-foreground font-body">
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="*" element={<Landing />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              classNames: {
+                toast: "font-mono text-xs",
+              },
+            }}
+          />
+        </div>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
 
