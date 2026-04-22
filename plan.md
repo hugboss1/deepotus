@@ -141,13 +141,12 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Testing: **✅ 100% / 100%** (both iterations)
 - **Delivery ✅**
 
-## Phase 5 — Security, Charts, Moderation & Image Variants (completed ✅)
-- ✅ **3 Prophet image variants** (serious / meme / glitch) generated via Gemini Nano Banana, auto-cycling every 5s in hero with crossfade + manual dots + hover-pause + reduced-motion respect
-- ✅ **JWT admin auth** (HS256, PyJWT, 24h TTL) — `Authorization: Bearer` header, legacy `X-Admin-Token` still supported
-- ✅ **Rate limiting** on `/api/admin/login` (5 attempts / 10 min per IP, sliding window, respects `X-Forwarded-For` / `X-Real-IP`)
-- ✅ **Evolution charts** in admin (recharts AreaChart, cumulative Whitelist + Chat, 7/30/90 day range switch)
-- ✅ **Delete + Blacklist** per whitelist row with shadcn AlertDialog confirmation. Blacklisted emails return 403 on re-registration.
+## Phase 6 — Blacklist UI, Emails, Pagination & Public Dashboard (completed ✅)
+- ✅ **Resend email integration** — Async non-blocking welcome email on whitelist registration, bilingual FR/EN HTML template with hero image (candidate + crowd), cynical Prophet quote, on-chain rules checklist, MiCA disclaimer, unsubscribe link. Graceful failure handling: `email_sent` boolean + `email_error` field per whitelist entry. Uses `onboarding@resend.dev` sender by default (no domain needed).
+- ✅ **Admin Blacklist UI** — New 3rd tab in admin with: manual add form (email + optional reason), roster table, Unblock per-row with confirmation dialog, CSV export. 4th stat card "Blacklist" added to bento. Backend: full CRUD at `/api/admin/blacklist` (GET/POST/DELETE).
+- ✅ **Pagination** — Backend endpoints now accept `limit` + `skip` (defaults 50, max 500). Admin frontend paginates whitelist + chat-logs at 25 per page with Prev/Next + page counter + "Rows X–Y / total" indicator. Also added `email_sent` column (✓ sent / ○ pending) in the whitelist table.
+- ✅ **Public stats dashboard `/stats`** — Public read-only page (no auth) with 4 stat cards + 7/30/90d evolution chart + trust strip (multisig rules, zero PII, satire disclaimer). Backed by `/api/public/stats?days=N` (clamped 1-90, NO PII, aggregates only). Linked from landing footer.
 
-## Phase 5 Testing
-- Backend: **100% (23/23)**
-- Frontend: **100%** (all 5 features + regression)
+## Phase 6 Testing
+- Backend: **100% (28/28)**
+- Frontend: **95%** (all features working, only cosmetic Recharts resize console warnings)
