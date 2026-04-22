@@ -141,13 +141,13 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Testing: **✅ 100% / 100%** (both iterations)
 - **Delivery ✅**
 
-## Phase 7 — Domain proposals, Webhooks, Enriched stats, CSV import, JWT rotation (completed ✅)
-- ✅ **Domain proposals** — 10 domaines listés avec prix + recommandation `deepotus.xyz`. Guide complet `/app/SETUP_DOMAIN_WEBHOOK.md` avec instructions DNS par registrar (Cloudflare / Namecheap / Porkbun / GoDaddy).
-- ✅ **Webhook Resend** — `POST /api/webhooks/resend` avec vérification signature svix (secret depuis `.env`, accepté sans secret pour fallback). Events gérés: sent, delivered, delivery_delayed, bounced, complained, opened, clicked. Persistance dans collection `email_events` + mise à jour `email_status` sur la whitelist entry.
-- ✅ **Stats publiques enrichies** — `/api/public/stats` retourne maintenant `lang_distribution` {whitelist:{fr,en}, chat:{fr,en}} + `top_sessions` (5 sessions les plus actives avec `anon_id` via sha256 tronqué, **non-réversible**). Frontend `/stats` affiche barres FR/EN duotone + liste top sessions.
-- ✅ **Bulk CSV import blacklist** — `POST /api/admin/blacklist/import` parse CSV (header auto-skip) ou liste, max 5000 lignes, retourne `{imported, skipped_invalid, skipped_existing, total_rows}`. Frontend: file picker + textarea + result card.
-- ✅ **JWT rotation + sessions DB** — Sessions persistées dans `admin_sessions` collection avec `jti`, `ip`, `user_agent`, `revoked`, `last_seen_at`. Endpoints: GET /sessions, DELETE /sessions/{jti}, POST /sessions/revoke-others, POST /rotate-secret. Rotation: génère nouvelle secret, bascule l'ancienne en "previous" avec 2h de grace, révoque toutes les sessions. Frontend: onglet "Sessions" avec table + actions + confirmations.
+## Phase 8 — 2FA, Heatmap, Full Export, Email Events Drill-down, Cooldown Blacklist (completed ✅)
+- ✅ **2FA TOTP** — pyotp + qrcode. Optional enable/disable depuis le dashboard admin. Setup flow complet : scan QR → 10 backup codes → verify 6-digit → enabled. Login protégé : password + TOTP code obligatoire quand activé. Backup codes supportés (consommés une seule fois). UI modal dédiée.
+- ✅ **Activity heat-map** sur `/stats` — 7 jours (Lun/Mon..Dim/Sun) × 24 heures UTC, calculé sur les 30 derniers jours, intensité color-scaled teal, légende "Moins/Less → Plus/More", tooltip par cellule.
+- ✅ **Full whitelist export** — Bouton "Export ALL (N)" qui télécharge la totalité de la whitelist en CSV via `/api/admin/whitelist/export` (media_type + Content-Disposition attachment).
+- ✅ **Page `/admin/emails`** — Drill-down des événements webhook Resend avec filtre chips par type (`email.sent`, `email.delivered`, `email.bounced`, etc. colorés), filtre recipient, table paginée, lien back-to-cabinet.
+- ✅ **Cooldown blacklist** — Champ `cooldown_days` optionnel sur l'ajout manuel et l'import CSV. `cooldown_until` stocké sur le doc blacklist. Auto-unblock lazy sur `POST /api/whitelist` si cooldown expiré. Table admin affiche "unlocks DATE" en amber ou badge "PERMANENT".
 
-## Phase 7 Testing
-- Backend: **100% (15/15)** — webhooks, public enrichis, CSV import, sessions, rotation
-- Frontend: **100%** — tous les onglets et composants fonctionnels, aucune régression
+## Phase 8 Testing
+- Backend: **100% (17/17)** — tous les flux 2FA, heatmap, export, events, cooldown validés
+- Frontend: **95%** — toutes les features fonctionnelles, seul un warning Recharts cosmétique au resize
