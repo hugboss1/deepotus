@@ -18,6 +18,7 @@ import {
   LogOut,
   Download,
   ShieldAlert,
+  ShieldCheck,
   RefreshCcw,
   Trash2,
   Ban,
@@ -32,6 +33,8 @@ import {
   MonitorSmartphone,
   RotateCw,
   Mail,
+  Clock,
+  ExternalLink,
 } from "lucide-react";
 import {
   AreaChart,
@@ -43,8 +46,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import ThemeToggle from "@/components/landing/ThemeToggle";
 import ConfirmDialog from "@/components/landing/ConfirmDialog";
+import TwoFASetupDialog from "@/components/admin/TwoFASetupDialog";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -185,9 +190,17 @@ export default function Admin() {
 
   const [blEmail, setBlEmail] = useState("");
   const [blReason, setBlReason] = useState("");
+  const [blCooldown, setBlCooldown] = useState("");
   const [csvText, setCsvText] = useState("");
+  const [csvCooldown, setCsvCooldown] = useState("");
   const [importResult, setImportResult] = useState(null);
   const fileInputRef = useRef(null);
+
+  // 2FA state
+  const [totpCode, setTotpCode] = useState("");
+  const [twofaRequired, setTwofaRequired] = useState(false);
+  const [twofaStatus, setTwofaStatus] = useState(null);
+  const [twofaDialogOpen, setTwofaDialogOpen] = useState(false);
 
   const [confirmState, setConfirmState] = useState({
     open: false,
@@ -209,18 +222,27 @@ export default function Admin() {
     setLoading(true);
     setRateLimitError(null);
     try {
-      const res = await axios.post(`${API}/admin/login`, {
-        password: pwd.trim(),
-      });
+      const body = { password: pwd.trim() };
+      if (totpCode.trim()) body.totp_code = totpCode.trim();
+      const res = await axios.post(`${API}/admin/login`, body);
       localStorage.setItem(TOKEN_KEY, res.data.token);
       setToken(res.data.token);
       setPwd("");
+      setTotpCode("");
+      setTwofaRequired(false);
       toast.success("Access granted. Welcome to the cabinet.");
     } catch (err) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.detail || "Access denied.";
-      if (status === 429) setRateLimitError(detail);
-      toast.error(detail);
+      const twofaHeader = err?.response?.headers?.["x-2fa-required"];
+      if (status === 401 && (detail === "2FA required" || twofaHeader === "true")) {
+        setTwofaRequired(true);
+        toast.message("2FA required — enter your 6-digit code.");
+      } else {
+        if (status === 429) setRateLimitError(detail);
+        if (status === 401 && detail === "Invalid 2FA code") setTwofaRequired(true);
+        toast.error(detail);
+      }
     } finally {
       setLoading(false);
     }
@@ -289,6 +311,53 @@ export default function Admin() {
     }
   };
 
+  const load2FA = async () => {
+    try {
+      const r = await axios.get(`${API}/admin/2fa/status`, { headers: authHeaders });
+      setTwofaStatus(r.data);
+    } catch (err) {
+      handleAuthError(err);
+    }
+  };
+
+  const disable2FA = async () => {
+    const code = window.prompt(
+      "Enter your current 6-digit TOTP code (or a backup code) to disable 2FA:",
+    );
+    if (!code || !code.trim()) return;
+    try {
+      await axios.post(
+        `${API}/admin/2fa/disable`,
+        { password: window.prompt("Confirm password:") || "", code: code.trim() },
+        { headers: authHeaders },
+      );
+      toast.success("2FA disabled.");
+      await load2FA();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to disable 2FA.");
+    }
+  };
+
+  const downloadFullWhitelist = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/whitelist/export`, {
+        headers: authHeaders,
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "deepotus_whitelist_full.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Full whitelist exported.");
+    } catch (err) {
+      handleAuthError(err);
+    }
+  };
+
   const loadAll = async (nextDays = days) => {
     if (!token) return;
     setLoading(true);
@@ -299,7 +368,13 @@ export default function Admin() {
       ]);
       setStats(st.data);
       setEvolution(ev.data.series || []);
-      await Promise.all([loadWhitelist(0), loadChatLogs(0), loadBlacklist(), loadSessions()]);
+      await Promise.all([
+        loadWhitelist(0),
+        loadChatLogs(0),
+        loadBlacklist(),
+        loadSessions(),
+        load2FA(),
+      ]);
     } finally {
       setLoading(false);
     }
@@ -395,15 +470,25 @@ export default function Admin() {
       toast.error("Invalid email.");
       return;
     }
+    const cd = parseInt(blCooldown, 10);
     try {
       await axios.post(
         `${API}/admin/blacklist`,
-        { email: v, reason: blReason.trim() || null },
+        {
+          email: v,
+          reason: blReason.trim() || null,
+          cooldown_days: cd > 0 ? cd : null,
+        },
         { headers: authHeaders },
       );
-      toast.success(`Blacklisted ${v}.`);
+      toast.success(
+        cd > 0
+          ? `Blacklisted ${v} for ${cd} day(s).`
+          : `Blacklisted ${v} permanently.`,
+      );
       setBlEmail("");
       setBlReason("");
+      setBlCooldown("");
       await Promise.all([loadBlacklist(), loadWhitelist(whitelist.skip)]);
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to blacklist.");
@@ -426,11 +511,16 @@ export default function Admin() {
       toast.error("Paste CSV or pick a file first.");
       return;
     }
+    const cd = parseInt(csvCooldown, 10);
     try {
       setLoading(true);
       const res = await axios.post(
         `${API}/admin/blacklist/import`,
-        { csv_text: csvText, reason: "bulk import" },
+        {
+          csv_text: csvText,
+          reason: "bulk import",
+          cooldown_days: cd > 0 ? cd : null,
+        },
         { headers: authHeaders },
       );
       setImportResult(res.data);
@@ -438,6 +528,7 @@ export default function Admin() {
         `Imported ${res.data.imported}/${res.data.total_rows}. Skipped invalid: ${res.data.skipped_invalid}. Existing: ${res.data.skipped_existing}.`,
       );
       setCsvText("");
+      setCsvCooldown("");
       await loadBlacklist();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Import failed.");
@@ -497,6 +588,30 @@ export default function Admin() {
               {rateLimitError}
             </div>
           )}
+          {twofaRequired && (
+            <div
+              data-testid="admin-2fa-code-wrapper"
+              className="mt-4 animate-in fade-in-0 slide-in-from-top-2 duration-200"
+            >
+              <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                2FA code
+              </label>
+              <Input
+                data-testid="admin-2fa-code-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="000000"
+                className="mt-1 font-mono tabular text-lg text-center"
+                autoFocus
+              />
+              <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                Enter the 6-digit code from your authenticator app.
+              </div>
+            </div>
+          )}
           <Button
             type="submit"
             disabled={loading || !pwd.trim()}
@@ -542,6 +657,17 @@ export default function Admin() {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="rounded-[var(--btn-radius)]"
+              data-testid="admin-emails-link"
+            >
+              <Link to="/admin/emails">
+                <Mail size={14} className="mr-1" /> Email events
+              </Link>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -641,9 +767,14 @@ export default function Admin() {
               <div className="font-display font-semibold">
                 Cabinet roster · <span className="tabular font-mono text-foreground/70">{whitelist.total}</span>
               </div>
-              <Button variant="outline" size="sm" disabled={!whitelist.items.length} onClick={() => exportCsv(whitelist.items, "deepotus_whitelist_page.csv")} className="rounded-[var(--btn-radius)]" data-testid="admin-export-whitelist">
-                <Download size={14} className="mr-1" /> Export page CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={!whitelist.items.length} onClick={() => exportCsv(whitelist.items, "deepotus_whitelist_page.csv")} className="rounded-[var(--btn-radius)]" data-testid="admin-export-whitelist">
+                  <Download size={14} className="mr-1" /> Export page
+                </Button>
+                <Button variant="default" size="sm" disabled={whitelist.total === 0} onClick={downloadFullWhitelist} className="rounded-[var(--btn-radius)]" data-testid="admin-export-whitelist-full">
+                  <Download size={14} className="mr-1" /> Export ALL ({whitelist.total})
+                </Button>
+              </div>
             </div>
             <div className="rounded-xl border border-border overflow-hidden bg-card">
               <Table data-testid="admin-whitelist-table">
@@ -739,8 +870,25 @@ export default function Admin() {
                     <Input type="email" required value={blEmail} onChange={(e) => setBlEmail(e.target.value)} placeholder="spam@example.com" className="mt-1 font-mono" data-testid="admin-blacklist-add-email" />
                   </div>
                   <div className="mt-3">
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Reason (optional)</label>
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Reason (optional)
+                    </label>
                     <Input type="text" value={blReason} onChange={(e) => setBlReason(e.target.value)} placeholder="bot, abuse, DoS…" className="mt-1 font-mono" data-testid="admin-blacklist-add-reason" />
+                  </div>
+                  <div className="mt-3">
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Cooldown days (optional — auto-unblock after)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={blCooldown}
+                      onChange={(e) => setBlCooldown(e.target.value)}
+                      placeholder="0 = permanent"
+                      className="mt-1 font-mono tabular"
+                      data-testid="admin-blacklist-add-cooldown"
+                    />
                   </div>
                   <Button type="submit" className="mt-4 w-full rounded-[var(--btn-radius)]" data-testid="admin-blacklist-add-submit">
                     <Plus size={14} className="mr-1" /> Blacklist this email
@@ -781,6 +929,21 @@ export default function Admin() {
                     className="mt-2 font-mono text-xs min-h-[120px]"
                     data-testid="admin-blacklist-csv-text"
                   />
+                  <div className="mt-3">
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Cooldown days (applies to all imported — optional)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={csvCooldown}
+                      onChange={(e) => setCsvCooldown(e.target.value)}
+                      placeholder="0 = permanent"
+                      className="mt-1 font-mono tabular"
+                      data-testid="admin-blacklist-csv-cooldown"
+                    />
+                  </div>
                   <Button
                     type="button"
                     onClick={submitImport}
@@ -817,28 +980,48 @@ export default function Admin() {
                       <TableRow>
                         <TableHead>Email</TableHead>
                         <TableHead>Reason</TableHead>
-                        <TableHead>Blacklisted at</TableHead>
+                        <TableHead className="w-[180px]">Cooldown</TableHead>
+                        <TableHead>Blacklisted</TableHead>
                         <TableHead className="w-[130px] text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {blacklist.items.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8 font-mono text-xs">No blacklisted emails.</TableCell>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8 font-mono text-xs">No blacklisted emails.</TableCell>
                         </TableRow>
                       )}
-                      {blacklist.items.map((r) => (
-                        <TableRow key={r.id} data-testid={`admin-blacklist-row-${r.id}`}>
-                          <TableCell className="font-mono text-sm break-all">{r.email}</TableCell>
-                          <TableCell className="font-mono text-xs text-foreground/70">{r.reason || "—"}</TableCell>
-                          <TableCell className="tabular font-mono text-xs text-foreground/70">{r.blacklisted_at ? new Date(r.blacklisted_at).toLocaleString() : "—"}</TableCell>
-                          <TableCell className="text-right">
-                            <Button size="sm" variant="outline" onClick={() => askUnblock(r)} className="h-8 rounded-md font-mono text-xs" data-testid={`admin-unblock-${r.id}`}>
-                              <Undo2 size={14} className="mr-1" /> Unblock
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {blacklist.items.map((r) => {
+                        const now = Date.now();
+                        const cd = r.cooldown_until ? new Date(r.cooldown_until).getTime() : null;
+                        const isTemp = !!cd && cd > now;
+                        const isExpired = !!cd && cd <= now;
+                        return (
+                          <TableRow key={r.id} data-testid={`admin-blacklist-row-${r.id}`}>
+                            <TableCell className="font-mono text-sm break-all">{r.email}</TableCell>
+                            <TableCell className="font-mono text-xs text-foreground/70">{r.reason || "—"}</TableCell>
+                            <TableCell className="tabular font-mono text-xs text-foreground/70">
+                              {isTemp ? (
+                                <span className="inline-flex items-center gap-1 text-[--amber]">
+                                  <Clock size={12} /> unlocks {new Date(cd).toLocaleDateString()}
+                                </span>
+                              ) : isExpired ? (
+                                <span className="inline-flex items-center gap-1 text-[--terminal-green-dim]">
+                                  auto-unblock on next registration
+                                </span>
+                              ) : (
+                                <Badge variant="outline" className="font-mono text-[10px] uppercase">permanent</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="tabular font-mono text-xs text-foreground/70">{r.blacklisted_at ? new Date(r.blacklisted_at).toLocaleDateString() : "—"}</TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="outline" onClick={() => askUnblock(r)} className="h-8 rounded-md font-mono text-xs" data-testid={`admin-unblock-${r.id}`}>
+                                <Undo2 size={14} className="mr-1" /> Unblock
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -848,6 +1031,64 @@ export default function Admin() {
 
           {/* Sessions */}
           <TabsContent value="sessions" className="mt-4">
+            {/* 2FA status card */}
+            <div
+              className="rounded-xl border border-border bg-card p-5 mb-5"
+              data-testid="admin-2fa-card"
+            >
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground flex items-center gap-2">
+                    <ShieldCheck size={12} /> TWO-FACTOR AUTHENTICATION
+                  </div>
+                  <div className="mt-1 font-display font-semibold flex items-center gap-2">
+                    {twofaStatus?.enabled ? (
+                      <>
+                        <span>Enabled</span>
+                        <Badge className="bg-[--terminal-green-dim] hover:bg-[--terminal-green-dim] text-white font-mono text-[10px] uppercase">active</Badge>
+                      </>
+                    ) : twofaStatus?.setup_pending ? (
+                      <>
+                        <span>Setup pending</span>
+                        <Badge variant="outline" className="font-mono text-[10px] uppercase text-[--amber] border-[--amber]">pending</Badge>
+                      </>
+                    ) : (
+                      <>
+                        <span>Disabled</span>
+                        <Badge variant="outline" className="font-mono text-[10px] uppercase">off</Badge>
+                      </>
+                    )}
+                  </div>
+                  {twofaStatus?.enabled && (
+                    <div className="mt-1 font-mono text-[11px] text-muted-foreground">
+                      Backup codes remaining: <span className="tabular text-foreground/80">{twofaStatus.backup_codes_remaining ?? 0}</span>
+                      {twofaStatus.enabled_at && <span> · enabled {new Date(twofaStatus.enabled_at).toLocaleDateString()}</span>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {twofaStatus?.enabled ? (
+                    <Button
+                      variant="outline"
+                      onClick={disable2FA}
+                      className="rounded-[var(--btn-radius)] text-[--campaign-red] border-[--campaign-red]"
+                      data-testid="admin-2fa-disable-button"
+                    >
+                      Disable 2FA
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setTwofaDialogOpen(true)}
+                      className="rounded-[var(--btn-radius)]"
+                      data-testid="admin-2fa-enable-button"
+                    >
+                      <ShieldCheck size={14} className="mr-1" /> Enable 2FA
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
               <div className="font-display font-semibold flex items-center gap-2">
                 <KeyRound size={16} /> Active admin sessions · <span className="tabular font-mono text-foreground/70">{sessions.total}</span>
@@ -971,6 +1212,15 @@ export default function Admin() {
         destructive={confirmState.mode !== "unblock"}
         onConfirm={doConfirmed}
         testIdPrefix="admin-confirm"
+      />
+
+      <TwoFASetupDialog
+        open={twofaDialogOpen}
+        onOpenChange={setTwofaDialogOpen}
+        token={token}
+        onCompleted={() => {
+          load2FA();
+        }}
       />
     </div>
   );

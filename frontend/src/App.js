@@ -6,6 +6,7 @@ import { I18nProvider } from "@/i18n/I18nProvider";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import Landing from "@/pages/Landing";
 import Admin from "@/pages/Admin";
+import AdminEmails from "@/pages/AdminEmails";
 import PublicStats from "@/pages/PublicStats";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/emails" element={<AdminEmails />} />
               <Route path="/stats" element={<PublicStats />} />
               <Route path="*" element={<Landing />} />
             </Routes>

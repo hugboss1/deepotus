@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Radio, ShieldCheck, Users, MessageSquare, Sparkles, ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import ActivityHeatmap from "@/components/landing/ActivityHeatmap";
 import { LanguageToggle } from "@/components/landing/LanguageToggle";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -352,8 +353,28 @@ export default function PublicStats() {
           </div>
         </div>
 
+        {/* Activity heatmap */}
+        <div
+          className="mt-6 rounded-xl border border-border bg-card p-4 md:p-6"
+          data-testid="public-stats-heatmap-card"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+                {lang === "fr" ? "ACTIVITÉ" : "ACTIVITY"}
+              </div>
+              <div className="font-display font-semibold text-lg">
+                {lang === "fr"
+                  ? "Heat-map des transmissions · jour × heure"
+                  : "Transmissions heat-map · day × hour"}
+              </div>
+            </div>
+          </div>
+          <ActivityHeatmap data={data?.activity_heatmap || []} lang={lang} />
+        </div>
+
         {/* Lang distribution + Top sessions */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Language distribution */}
           <div
             className="lg:col-span-6 rounded-xl border border-border bg-card p-5"

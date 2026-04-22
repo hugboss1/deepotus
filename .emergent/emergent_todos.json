@@ -1,50 +1,54 @@
 [
   {
-    "content": "Install svix library for Resend webhook signature verification",
+    "content": "Install pyotp + qrcode libraries",
     "status": "completed"
   },
   {
-    "content": "Backend: POST /api/webhooks/resend (svix signature verify + event handlers)",
+    "content": "Backend: 2FA TOTP system (enable/disable/verify, backup codes, integrated in login)",
     "status": "completed"
   },
   {
-    "content": "Backend: enriched /api/public/stats (lang distribution + top sessions anonymized)",
+    "content": "Backend: activity heatmap (7x24 matrix) in public stats",
     "status": "completed"
   },
   {
-    "content": "Backend: POST /api/admin/blacklist/import (CSV text parser, batch insert)",
+    "content": "Backend: full whitelist CSV export endpoint",
     "status": "completed"
   },
   {
-    "content": "Backend: JWT rotation system (sessions in DB + revoke + rotate-secret endpoints)",
+    "content": "Backend: /api/admin/email-events with filters + pagination",
     "status": "completed"
   },
   {
-    "content": "Frontend: enrich PublicStats page with FR/EN distribution + top sessions",
+    "content": "Backend: auto-unblacklist cooldown (cooldown_until field + lazy check + scheduled cleanup)",
     "status": "completed"
   },
   {
-    "content": "Frontend: bulk CSV import UI in admin blacklist tab",
+    "content": "Frontend: 2FA setup flow in admin (QR code, verify, backup codes, disable)",
     "status": "completed"
   },
   {
-    "content": "Frontend: admin sessions tab (list, revoke, rotate secret)",
+    "content": "Frontend: heatmap component on /stats",
     "status": "completed"
   },
   {
-    "content": "Frontend: admin email delivery status column (sent/delivered/bounced)",
+    "content": "Frontend: full whitelist export button",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: /admin/emails page with filters + table + drill-down",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: cooldown input in blacklist add + column display",
     "status": "completed"
   },
   {
     "content": "End-to-end testing",
-    "status": "completed"
-  },
-  {
-    "content": "Prepare DNS instructions + Resend webhook setup docs",
-    "status": "completed"
+    "status": "in_progress"
   },
   {
     "content": "Final delivery summary",
-    "status": "in_progress"
+    "status": "pending"
   }
 ]

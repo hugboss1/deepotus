@@ -58,6 +58,10 @@ from collections import defaultdict, deque
 
 import jwt
 import resend
+import pyotp
+import qrcode
+from io import BytesIO
+import base64 as b64mod
 from svix.webhooks import Webhook, WebhookVerificationError
 
 from email_templates import render_welcome_email, email_subject
@@ -383,12 +387,37 @@ class StatsResponse(BaseModel):
 
 class AdminLoginRequest(BaseModel):
     password: str
+    totp_code: Optional[str] = None
+    backup_code: Optional[str] = None
 
 
 class AdminLoginResponse(BaseModel):
     token: str
     expires_at: str
     jti: str
+
+
+class TwoFASetupResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+    qr_png_base64: str
+    backup_codes: List[str]
+
+
+class TwoFAStatusResponse(BaseModel):
+    enabled: bool
+    setup_pending: bool
+    backup_codes_remaining: int
+    enabled_at: Optional[str] = None
+
+
+class TwoFAVerifyRequest(BaseModel):
+    code: str
+
+
+class TwoFADisableRequest(BaseModel):
+    password: str
+    code: str
 
 
 class WhitelistItem(BaseModel):
@@ -449,6 +478,7 @@ class BlacklistItem(BaseModel):
     blacklisted_at: str
     source_entry_id: Optional[str] = None
     reason: Optional[str] = None
+    cooldown_until: Optional[str] = None
 
 
 class BlacklistList(BaseModel):
@@ -459,12 +489,14 @@ class BlacklistList(BaseModel):
 class BlacklistAddRequest(BaseModel):
     email: EmailStr
     reason: Optional[str] = None
+    cooldown_days: Optional[int] = None  # if set, auto-unblock after N days
 
 
 class BlacklistImportRequest(BaseModel):
     csv_text: Optional[str] = None
     emails: Optional[List[str]] = None
     reason: Optional[str] = "bulk import"
+    cooldown_days: Optional[int] = None
 
 
 class BlacklistImportResponse(BaseModel):
@@ -498,6 +530,24 @@ class PublicStatsResponse(BaseModel):
     series: List[EvolutionPoint]
     lang_distribution: Dict[str, LangDistribution]  # {whitelist:{fr,en}, chat:{fr,en}}
     top_sessions: List[TopSessionItem]
+    activity_heatmap: List[List[int]]  # 7 rows (Mon..Sun) x 24 cols (hours UTC)
+
+
+class EmailEventItem(BaseModel):
+    id: str
+    type: str
+    email_id: Optional[str] = None
+    recipient: Optional[str] = None
+    received_at: str
+    summary: Optional[str] = None
+
+
+class PaginatedEmailEvents(BaseModel):
+    items: List[EmailEventItem]
+    total: int
+    limit: int
+    skip: int
+    type_counts: Dict[str, int]
 
 
 class AdminSessionItem(BaseModel):
@@ -719,7 +769,21 @@ async def whitelist(req: WhitelistRequest, background_tasks: BackgroundTasks):
 
     is_blacklisted = await db.blacklist.find_one({"email": email_lc})
     if is_blacklisted:
-        raise HTTPException(status_code=403, detail="This email is blacklisted.")
+        # Cooldown support: auto-unblock if expired
+        cd = is_blacklisted.get("cooldown_until")
+        if cd:
+            try:
+                cd_dt = datetime.fromisoformat(cd.replace("Z", "+00:00"))
+                if cd_dt <= datetime.now(timezone.utc):
+                    await db.blacklist.delete_one({"_id": is_blacklisted["_id"]})
+                    is_blacklisted = None
+                    logging.info(
+                        f"Auto-unblacklisted {email_lc} (cooldown expired at {cd})"
+                    )
+            except Exception:
+                logging.exception("Failed to parse cooldown_until")
+        if is_blacklisted:
+            raise HTTPException(status_code=403, detail="This email is blacklisted.")
 
     existing = await db.whitelist.find_one({"email": email_lc})
     if existing:
@@ -892,6 +956,35 @@ async def _lang_distribution() -> Dict[str, LangDistribution]:
     return {"whitelist": _to(wl), "chat": _to(ch)}
 
 
+async def _activity_heatmap(days: int = 30) -> List[List[int]]:
+    """7 rows (Mon=0 .. Sun=6) x 24 cols (hour UTC). Count of chat messages."""
+    today_utc = datetime.now(timezone.utc).date()
+    start_utc = today_utc - timedelta(days=days - 1)
+    start_iso = datetime.combine(
+        start_utc, datetime.min.time(), tzinfo=timezone.utc
+    ).isoformat()
+
+    grid = [[0 for _ in range(24)] for _ in range(7)]
+    rows = await db.chat_logs.find(
+        {"created_at": {"$gte": start_iso}}, {"created_at": 1, "_id": 0}
+    ).to_list(length=200000)
+
+    for r in rows:
+        try:
+            dt = datetime.fromisoformat(
+                r.get("created_at", "").replace("Z", "+00:00")
+            )
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            dt_utc = dt.astimezone(timezone.utc)
+            dow = dt_utc.weekday()  # Mon=0..Sun=6
+            hour = dt_utc.hour
+            grid[dow][hour] += 1
+        except Exception:
+            continue
+    return grid
+
+
 # ---------------------------------------------------------------------
 # Public enriched stats
 # ---------------------------------------------------------------------
@@ -907,6 +1000,7 @@ async def public_stats(days: int = 30):
     series = await _compute_evolution(days)
     lang_dist = await _lang_distribution()
     tops = await _top_sessions(5)
+    heatmap = await _activity_heatmap(30)
 
     return PublicStatsResponse(
         whitelist_count=wl,
@@ -918,6 +1012,7 @@ async def public_stats(days: int = 30):
         series=series,
         lang_distribution=lang_dist,
         top_sessions=tops,
+        activity_heatmap=heatmap,
     )
 
 
@@ -1011,6 +1106,65 @@ async def resend_webhook(request: Request):
 
 
 # ---------------------------------------------------------------------
+# 2FA (TOTP) helpers
+# ---------------------------------------------------------------------
+TWOFA_ISSUER = "DEEPOTUS Cabinet"
+
+
+async def _get_twofa_config() -> dict:
+    doc = await db.config.find_one({"_id": "admin_2fa"})
+    return doc or {}
+
+
+def _hash_backup_code(code: str) -> str:
+    return hashlib.sha256(code.strip().encode("utf-8")).hexdigest()
+
+
+def _generate_backup_codes(n: int = 10) -> List[str]:
+    out: List[str] = []
+    for _ in range(n):
+        raw = secrets.token_hex(5)  # 10 chars
+        # Format as XXXXX-XXXXX for readability
+        out.append(f"{raw[:5]}-{raw[5:]}".upper())
+    return out
+
+
+def _qr_png_b64(uri: str) -> str:
+    img = qrcode.make(uri)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return b64mod.b64encode(buf.getvalue()).decode("ascii")
+
+
+async def _verify_totp_or_backup(
+    twofa_cfg: dict, code: Optional[str], backup_code: Optional[str]
+) -> bool:
+    """Return True if the provided code or backup_code matches."""
+    secret = twofa_cfg.get("secret")
+    if not secret:
+        return False
+    if code:
+        try:
+            totp = pyotp.TOTP(secret)
+            if totp.verify(code.strip(), valid_window=1):
+                return True
+        except Exception:
+            pass
+    if backup_code:
+        bch = _hash_backup_code(backup_code)
+        codes = set(twofa_cfg.get("backup_codes_hashes", []))
+        if bch in codes:
+            # Consume it
+            codes.remove(bch)
+            await db.config.update_one(
+                {"_id": "admin_2fa"},
+                {"$set": {"backup_codes_hashes": list(codes)}},
+            )
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------
 # Admin routes
 # ---------------------------------------------------------------------
 @admin_router.post("/login", response_model=AdminLoginResponse)
@@ -1018,6 +1172,20 @@ async def admin_login(req: AdminLoginRequest, request: Request):
     _rate_limit_check(request)
     if not req.password or not secrets.compare_digest(req.password, ADMIN_PASSWORD):
         raise HTTPException(status_code=401, detail="Invalid password")
+
+    # 2FA enforcement
+    twofa = await _get_twofa_config()
+    if twofa.get("enabled"):
+        if not req.totp_code and not req.backup_code:
+            raise HTTPException(
+                status_code=401,
+                detail="2FA required",
+                headers={"X-2FA-Required": "true"},
+            )
+        ok = await _verify_totp_or_backup(twofa, req.totp_code, req.backup_code)
+        if not ok:
+            raise HTTPException(status_code=401, detail="Invalid 2FA code")
+
     _rate_limit_reset(request)
     token, jti, exp = await issue_admin_jwt(request)
     return AdminLoginResponse(token=token, expires_at=exp.isoformat(), jti=jti)
@@ -1064,22 +1232,24 @@ async def admin_whitelist_delete(entry_id: str, _p: dict = Depends(require_admin
 
 
 @admin_router.post("/whitelist/{entry_id}/blacklist", response_model=SimpleOk)
-async def admin_whitelist_blacklist(entry_id: str, _p: dict = Depends(require_admin)):
+async def admin_whitelist_blacklist(entry_id: str, _p: dict = Depends(require_admin), cooldown_days: Optional[int] = None):
     entry = await db.whitelist.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404, detail="Entry not found")
     email_lc = entry["email"].lower().strip()
+    setter = {
+        "_id": entry_id,
+        "email": email_lc,
+        "blacklisted_at": datetime.now(timezone.utc).isoformat(),
+        "source_entry_id": entry_id,
+        "reason": "blacklisted from admin whitelist",
+    }
+    if cooldown_days and cooldown_days > 0:
+        cd = datetime.now(timezone.utc) + timedelta(days=int(cooldown_days))
+        setter["cooldown_until"] = cd.isoformat()
     await db.blacklist.update_one(
         {"email": email_lc},
-        {
-            "$set": {
-                "_id": entry_id,
-                "email": email_lc,
-                "blacklisted_at": datetime.now(timezone.utc).isoformat(),
-                "source_entry_id": entry_id,
-                "reason": "blacklisted from admin whitelist",
-            }
-        },
+        {"$set": setter},
         upsert=True,
     )
     await db.whitelist.delete_one({"_id": entry_id})
@@ -1135,6 +1305,7 @@ async def admin_blacklist_list(
             blacklisted_at=r.get("blacklisted_at", ""),
             source_entry_id=r.get("source_entry_id"),
             reason=r.get("reason"),
+            cooldown_until=r.get("cooldown_until"),
         )
         for r in rows
     ]
@@ -1149,19 +1320,24 @@ async def admin_blacklist_add(
     email_lc = req.email.lower().strip()
     await db.whitelist.delete_one({"email": email_lc})
     entry_id = f"manual-{uuid.uuid4().hex[:12]}"
+    setter = {
+        "_id": entry_id,
+        "email": email_lc,
+        "blacklisted_at": datetime.now(timezone.utc).isoformat(),
+        "reason": req.reason or "manually added by admin",
+    }
+    if req.cooldown_days and req.cooldown_days > 0:
+        cd = datetime.now(timezone.utc) + timedelta(days=int(req.cooldown_days))
+        setter["cooldown_until"] = cd.isoformat()
     await db.blacklist.update_one(
         {"email": email_lc},
-        {
-            "$set": {
-                "_id": entry_id,
-                "email": email_lc,
-                "blacklisted_at": datetime.now(timezone.utc).isoformat(),
-                "reason": req.reason or "manually added by admin",
-            }
-        },
+        {"$set": setter},
         upsert=True,
     )
-    return SimpleOk(ok=True, message="Blacklisted.")
+    msg = "Blacklisted."
+    if setter.get("cooldown_until"):
+        msg = f"Blacklisted until {setter['cooldown_until']}."
+    return SimpleOk(ok=True, message=msg)
 
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -1226,6 +1402,11 @@ async def admin_blacklist_import(
     skipped_invalid = 0
     skipped_existing = 0
     now_iso = datetime.now(timezone.utc).isoformat()
+    cooldown_iso = None
+    if req.cooldown_days and req.cooldown_days > 0:
+        cooldown_iso = (
+            datetime.now(timezone.utc) + timedelta(days=int(req.cooldown_days))
+        ).isoformat()
 
     for email, reason in candidates:
         if not EMAIL_RE.match(email):
@@ -1236,15 +1417,16 @@ async def admin_blacklist_import(
             skipped_existing += 1
             continue
         entry_id = f"imp-{uuid.uuid4().hex[:12]}"
-        await db.blacklist.insert_one(
-            {
-                "_id": entry_id,
-                "email": email,
-                "blacklisted_at": now_iso,
-                "reason": reason,
-                "source": "bulk_import",
-            }
-        )
+        doc = {
+            "_id": entry_id,
+            "email": email,
+            "blacklisted_at": now_iso,
+            "reason": reason,
+            "source": "bulk_import",
+        }
+        if cooldown_iso:
+            doc["cooldown_until"] = cooldown_iso
+        await db.blacklist.insert_one(doc)
         # Also drop from whitelist if present
         await db.whitelist.delete_one({"email": email})
         imported += 1
@@ -1333,6 +1515,205 @@ async def admin_rotate_secret(payload: dict = Depends(require_admin)):
         rotated_at=info["rotated_at"],
         revoked_sessions=res.modified_count,
         message="Secret rotated. All sessions revoked. Please re-login.",
+    )
+
+
+# ---------------------------------------------------------------------
+# 2FA routes
+# ---------------------------------------------------------------------
+@admin_router.get("/2fa/status", response_model=TwoFAStatusResponse)
+async def admin_2fa_status(_p: dict = Depends(require_admin)):
+    doc = await _get_twofa_config()
+    return TwoFAStatusResponse(
+        enabled=bool(doc.get("enabled", False)),
+        setup_pending=bool(doc.get("setup_pending", False)),
+        backup_codes_remaining=len(doc.get("backup_codes_hashes", []) or []),
+        enabled_at=doc.get("enabled_at"),
+    )
+
+
+@admin_router.post("/2fa/setup", response_model=TwoFASetupResponse)
+async def admin_2fa_setup(_p: dict = Depends(require_admin)):
+    """Start a 2FA setup: generate secret + QR + backup codes.
+    The secret is stored with `setup_pending=true` until the admin verifies a code.
+    """
+    secret = pyotp.random_base32()
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name="admin@deepotus",
+        issuer_name=TWOFA_ISSUER,
+    )
+    qr_b64 = _qr_png_b64(uri)
+    codes_plain = _generate_backup_codes(10)
+    codes_hashed = [_hash_backup_code(c) for c in codes_plain]
+    await db.config.update_one(
+        {"_id": "admin_2fa"},
+        {
+            "$set": {
+                "_id": "admin_2fa",
+                "secret": secret,
+                "setup_pending": True,
+                "enabled": False,
+                "backup_codes_hashes": codes_hashed,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+        upsert=True,
+    )
+    return TwoFASetupResponse(
+        secret=secret,
+        otpauth_uri=uri,
+        qr_png_base64=qr_b64,
+        backup_codes=codes_plain,
+    )
+
+
+@admin_router.post("/2fa/verify", response_model=SimpleOk)
+async def admin_2fa_verify(
+    req: TwoFAVerifyRequest, _p: dict = Depends(require_admin)
+):
+    doc = await _get_twofa_config()
+    if not doc or not doc.get("secret"):
+        raise HTTPException(status_code=400, detail="No 2FA setup in progress.")
+    ok = False
+    try:
+        totp = pyotp.TOTP(doc["secret"])
+        ok = totp.verify(req.code.strip(), valid_window=1)
+    except Exception:
+        ok = False
+    if not ok:
+        raise HTTPException(status_code=401, detail="Invalid code.")
+
+    await db.config.update_one(
+        {"_id": "admin_2fa"},
+        {
+            "$set": {
+                "enabled": True,
+                "setup_pending": False,
+                "enabled_at": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+    )
+    return SimpleOk(ok=True, message="2FA enabled.")
+
+
+@admin_router.post("/2fa/disable", response_model=SimpleOk)
+async def admin_2fa_disable(
+    req: TwoFADisableRequest, _p: dict = Depends(require_admin)
+):
+    if not secrets.compare_digest(req.password, ADMIN_PASSWORD):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    doc = await _get_twofa_config()
+    if not doc or not doc.get("enabled"):
+        return SimpleOk(ok=True, message="2FA already disabled.")
+    # Require a valid TOTP or backup code to disable
+    ok = await _verify_totp_or_backup(doc, req.code, req.code)
+    if not ok:
+        raise HTTPException(status_code=401, detail="Invalid 2FA code")
+    await db.config.update_one(
+        {"_id": "admin_2fa"},
+        {
+            "$set": {
+                "enabled": False,
+                "setup_pending": False,
+                "secret": None,
+                "backup_codes_hashes": [],
+                "disabled_at": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+    )
+    return SimpleOk(ok=True, message="2FA disabled.")
+
+
+# ---------------------------------------------------------------------
+# Full whitelist export
+# ---------------------------------------------------------------------
+from fastapi.responses import PlainTextResponse
+
+
+@admin_router.get("/whitelist/export", response_class=PlainTextResponse)
+async def admin_whitelist_export(_p: dict = Depends(require_admin)):
+    """Return the ENTIRE whitelist as CSV. Adds Content-Disposition for download."""
+    cursor = db.whitelist.find({}).sort("position", 1)
+    rows = await cursor.to_list(length=1000000)
+    buf = io.StringIO()
+    w = csv_module.writer(buf)
+    w.writerow(
+        ["position", "email", "lang", "created_at", "email_sent", "email_status"]
+    )
+    for r in rows:
+        w.writerow(
+            [
+                r.get("position", ""),
+                r.get("email", ""),
+                r.get("lang", "fr"),
+                r.get("created_at", ""),
+                "yes" if r.get("email_sent") else "no",
+                r.get("email_status", ""),
+            ]
+        )
+    return PlainTextResponse(
+        content=buf.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="deepotus_whitelist_full.csv"'
+        },
+    )
+
+
+# ---------------------------------------------------------------------
+# Email events drill-down
+# ---------------------------------------------------------------------
+@admin_router.get("/email-events", response_model=PaginatedEmailEvents)
+async def admin_email_events(
+    _p: dict = Depends(require_admin),
+    type: Optional[str] = None,
+    recipient: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0,
+):
+    limit = max(1, min(limit, 500))
+    skip = max(0, skip)
+    q: Dict[str, object] = {}
+    if type:
+        q["type"] = type
+    if recipient:
+        q["recipient"] = recipient.lower().strip()
+
+    cursor = db.email_events.find(q).sort("received_at", -1).skip(skip).limit(limit)
+    rows = await cursor.to_list(length=limit)
+    items = [
+        EmailEventItem(
+            id=str(r.get("_id", "")),
+            type=r.get("type", "unknown"),
+            email_id=r.get("email_id"),
+            recipient=r.get("recipient"),
+            received_at=r.get("received_at", ""),
+            summary=(r.get("raw") or {}).get("data", {}).get("subject")
+            or r.get("type"),
+        )
+        for r in rows
+    ]
+    total = await db.email_events.count_documents(q)
+
+    # Count per type (for filter chips)
+    type_counts: Dict[str, int] = {}
+    try:
+        pipeline = [
+            {"$group": {"_id": "$type", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+        ]
+        tc = await db.email_events.aggregate(pipeline).to_list(length=50)
+        for r in tc:
+            type_counts[r["_id"] or "unknown"] = int(r.get("count", 0))
+    except Exception:
+        pass
+
+    return PaginatedEmailEvents(
+        items=items,
+        total=total,
+        limit=limit,
+        skip=skip,
+        type_counts=type_counts,
     )
 
 

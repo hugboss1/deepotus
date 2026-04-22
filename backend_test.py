@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-DEEPOTUS Backend API Testing - Phase 7 Features
-Testing 5 new features: webhook, public stats, bulk import, JWT rotation, sessions
+DEEPOTUS Backend API Testing - Phase 8 Features
+Testing 5 new features: 2FA TOTP, activity heatmap, full whitelist export, email events, cooldown blacklist
 """
 
 import requests
@@ -9,7 +9,10 @@ import json
 import time
 import hashlib
 import uuid
-from datetime import datetime
+import pyotp
+import csv
+import io
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 
 # Use public endpoint from .env
@@ -24,6 +27,8 @@ class DeepotusAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.errors = []
+        self.twofa_secret = None
+        self.backup_codes = []
         
     def log_result(self, test_name: str, success: bool, details: str = ""):
         """Log test result"""
@@ -35,7 +40,7 @@ class DeepotusAPITester:
             print(f"❌ {test_name}: FAILED {details}")
             self.errors.append(f"{test_name}: {details}")
     
-    def make_request(self, method: str, endpoint: str, data=None, headers=None, expected_status=200):
+    def make_request(self, method: str, endpoint: str, data=None, headers=None, expected_status=200, response_type="json"):
         """Make HTTP request with error handling"""
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         headers = headers or {}
@@ -49,361 +54,425 @@ class DeepotusAPITester:
                 response = requests.delete(url, headers=headers, timeout=30)
             else:
                 raise ValueError(f"Unsupported method: {method}")
-                
-            return response.status_code == expected_status, response
-        except Exception as e:
-            return False, str(e)
-    
-    def admin_login(self, ip_header: str = None) -> bool:
-        """Login as admin and get JWT token"""
-        headers = {}
-        if ip_header:
-            headers["X-Forwarded-For"] = ip_header
             
-        success, response = self.make_request(
-            "POST", 
-            "/admin/login", 
-            {"password": ADMIN_PASSWORD},
-            headers=headers
-        )
-        
-        if success and hasattr(response, 'json'):
-            try:
-                data = response.json()
-                self.admin_token = data.get("token")
-                self.admin_jti = data.get("jti")
-                return True
-            except:
-                pass
+            if response.status_code == expected_status:
+                if response_type == "json":
+                    return True, response.json() if response.text else {}
+                elif response_type == "text":
+                    return True, response.text
+                else:
+                    return True, response
+            else:
+                return False, {"error": f"Status {response.status_code}: {response.text[:200]}"}
+                
+        except Exception as e:
+            return False, {"error": str(e)}
+    
+    def admin_login(self, totp_code=None, backup_code=None):
+        """Login as admin"""
+        data = {"password": ADMIN_PASSWORD}
+        if totp_code:
+            data["totp_code"] = totp_code
+        if backup_code:
+            data["backup_code"] = backup_code
+            
+        success, response = self.make_request("POST", "admin/login", data)
+        if success and "token" in response:
+            self.admin_token = response["token"]
+            self.admin_jti = response.get("jti")
+            return True
         return False
     
-    def get_auth_headers(self) -> Dict[str, str]:
+    def get_auth_headers(self):
         """Get authorization headers"""
-        if not self.admin_token:
-            return {}
-        return {"Authorization": f"Bearer {self.admin_token}"}
+        return {"Authorization": f"Bearer {self.admin_token}"} if self.admin_token else {}
 
-    def test_resend_webhook(self):
-        """Test 1: Resend webhook endpoint without secret"""
-        print("\n🔍 Testing Resend webhook endpoint...")
-        
-        # Test webhook event payload (simulating Resend webhook)
-        webhook_payload = {
-            "type": "email.delivered",
-            "data": {
-                "email_id": f"test-email-{uuid.uuid4().hex[:8]}",
-                "to": ["test@example.com"],
-                "subject": "Test Email"
-            }
-        }
-        
+    def test_2fa_status_initial(self):
+        """Test 2FA status endpoint - should be disabled initially"""
         success, response = self.make_request(
-            "POST",
-            "/webhooks/resend",
-            webhook_payload
-        )
-        
-        if success and hasattr(response, 'json'):
-            try:
-                result = response.json()
-                if result.get("ok") and "processed" in result:
-                    self.log_result("Webhook Processing", True, f"Event type: {result.get('processed')}")
-                else:
-                    self.log_result("Webhook Processing", False, f"Unexpected response: {result}")
-            except:
-                self.log_result("Webhook Processing", False, "Invalid JSON response")
-        else:
-            self.log_result("Webhook Processing", False, f"Request failed: {response}")
-    
-    def test_public_stats(self):
-        """Test 2: Enhanced public stats with language distribution and top sessions"""
-        print("\n🔍 Testing enhanced public stats...")
-        
-        success, response = self.make_request("GET", "/public/stats?days=30")
-        
-        if success and hasattr(response, 'json'):
-            try:
-                data = response.json()
-                
-                # Check required fields
-                required_fields = [
-                    "whitelist_count", "chat_messages", "prophecies_served", 
-                    "launch_timestamp", "generated_at", "series_days", "series",
-                    "lang_distribution", "top_sessions"
-                ]
-                
-                missing_fields = [f for f in required_fields if f not in data]
-                if missing_fields:
-                    self.log_result("Public Stats Structure", False, f"Missing fields: {missing_fields}")
-                    return
-                
-                # Check language distribution structure
-                lang_dist = data.get("lang_distribution", {})
-                if "whitelist" not in lang_dist or "chat" not in lang_dist:
-                    self.log_result("Language Distribution", False, "Missing whitelist/chat in lang_distribution")
-                else:
-                    # Check FR/EN counts exist
-                    wl = lang_dist["whitelist"]
-                    ch = lang_dist["chat"]
-                    if "fr" in wl and "en" in wl and "fr" in ch and "en" in ch:
-                        self.log_result("Language Distribution", True, f"WL: FR={wl['fr']}, EN={wl['en']} | Chat: FR={ch['fr']}, EN={ch['en']}")
-                    else:
-                        self.log_result("Language Distribution", False, "Missing FR/EN counts")
-                
-                # Check top sessions anonymization
-                top_sessions = data.get("top_sessions", [])
-                privacy_violation = False
-                for session in top_sessions:
-                    anon_id = session.get("anon_id", "")
-                    # Check if anon_id starts with 'anon-' and is properly anonymized
-                    if not anon_id.startswith("anon-"):
-                        privacy_violation = True
-                        break
-                    # Check for any email addresses or raw session IDs (critical security check)
-                    session_str = json.dumps(session)
-                    if "@" in session_str or "chat-" in session_str:
-                        privacy_violation = True
-                        break
-                
-                if privacy_violation:
-                    self.log_result("Top Sessions Privacy", False, "CRITICAL: Raw emails or session IDs detected!")
-                else:
-                    self.log_result("Top Sessions Privacy", True, f"Found {len(top_sessions)} anonymized sessions")
-                
-                self.log_result("Public Stats API", True, f"All required fields present")
-                
-            except Exception as e:
-                self.log_result("Public Stats API", False, f"JSON parsing error: {e}")
-        else:
-            self.log_result("Public Stats API", False, f"Request failed: {response}")
-    
-    def test_bulk_blacklist_import(self):
-        """Test 3: Bulk blacklist CSV import"""
-        print("\n🔍 Testing bulk blacklist CSV import...")
-        
-        if not self.admin_login():
-            self.log_result("Admin Login for Blacklist", False, "Could not login as admin")
-            return
-        
-        # Test CSV import with valid data
-        csv_data = """email,reason
-test1@spam.com,bot
-test2@spam.com,abuse
-invalid-email,invalid
-test1@spam.com,duplicate"""
-        
-        success, response = self.make_request(
-            "POST",
-            "/admin/blacklist/import",
-            {"csv_text": csv_data, "reason": "bulk test"},
-            headers=self.get_auth_headers()
-        )
-        
-        if success and hasattr(response, 'json'):
-            try:
-                result = response.json()
-                expected_fields = ["imported", "skipped_invalid", "skipped_existing", "total_rows", "errors"]
-                
-                if all(field in result for field in expected_fields):
-                    imported = result["imported"]
-                    skipped_invalid = result["skipped_invalid"] 
-                    skipped_existing = result["skipped_existing"]
-                    total_rows = result["total_rows"]
-                    
-                    self.log_result("Bulk Import Structure", True, f"Imported: {imported}, Invalid: {skipped_invalid}, Existing: {skipped_existing}, Total: {total_rows}")
-                    
-                    # Verify logic: should import 2 valid emails, skip 1 invalid, handle 1 duplicate
-                    if total_rows == 4:
-                        self.log_result("Bulk Import Logic", True, "Correct row count processing")
-                    else:
-                        self.log_result("Bulk Import Logic", False, f"Expected 4 rows, got {total_rows}")
-                else:
-                    self.log_result("Bulk Import Structure", False, f"Missing fields in response: {result}")
-                    
-            except Exception as e:
-                self.log_result("Bulk Import", False, f"JSON parsing error: {e}")
-        else:
-            self.log_result("Bulk Import", False, f"Request failed: {response}")
-    
-    def test_jwt_sessions_management(self):
-        """Test 4 & 5: JWT rotation and session management"""
-        print("\n🔍 Testing JWT sessions and rotation...")
-        
-        # Login with different IPs to create multiple sessions
-        session_tokens = []
-        session_jtis = []
-        
-        for i, ip in enumerate(["192.168.1.100", "192.168.1.101", "192.168.1.102"]):
-            if self.admin_login(ip_header=ip):
-                session_tokens.append(self.admin_token)
-                session_jtis.append(self.admin_jti)
-                print(f"  Created session {i+1} from IP {ip}: {self.admin_jti[:8]}...")
-        
-        if len(session_tokens) < 2:
-            self.log_result("Multiple Sessions Creation", False, "Could not create multiple sessions")
-            return
-        
-        self.log_result("Multiple Sessions Creation", True, f"Created {len(session_tokens)} sessions")
-        
-        # Test: Get sessions list
-        success, response = self.make_request(
-            "GET",
-            "/admin/sessions",
-            headers={"Authorization": f"Bearer {session_tokens[0]}"}
-        )
-        
-        if success and hasattr(response, 'json'):
-            try:
-                data = response.json()
-                sessions = data.get("items", [])
-                total = data.get("total", 0)
-                
-                # Check if we can see our sessions
-                current_session_found = False
-                for session in sessions:
-                    if session.get("is_current"):
-                        current_session_found = True
-                        break
-                
-                if current_session_found and total >= len(session_tokens):
-                    self.log_result("Sessions List", True, f"Found {total} sessions, current session marked")
-                else:
-                    self.log_result("Sessions List", False, f"Sessions list incomplete or current not marked")
-                    
-            except Exception as e:
-                self.log_result("Sessions List", False, f"JSON parsing error: {e}")
-        else:
-            self.log_result("Sessions List", False, f"Request failed: {response}")
-        
-        # Test: Revoke a specific session
-        if len(session_jtis) >= 2:
-            target_jti = session_jtis[1]  # Revoke second session
-            success, response = self.make_request(
-                "DELETE",
-                f"/admin/sessions/{target_jti}",
-                headers={"Authorization": f"Bearer {session_tokens[0]}"}
-            )
-            
-            if success:
-                self.log_result("Session Revocation", True, f"Revoked session {target_jti[:8]}...")
-                
-                # Verify revoked session can't be used
-                success, response = self.make_request(
-                    "GET",
-                    "/admin/sessions",
-                    headers={"Authorization": f"Bearer {session_tokens[1]}"},
-                    expected_status=401
-                )
-                
-                if success:  # Should get 401
-                    self.log_result("Revoked Session Blocked", True, "Revoked session correctly rejected")
-                else:
-                    self.log_result("Revoked Session Blocked", False, "Revoked session still works")
-            else:
-                self.log_result("Session Revocation", False, f"Could not revoke session: {response}")
-        
-        # Test: Revoke others
-        success, response = self.make_request(
-            "POST",
-            "/admin/sessions/revoke-others",
-            headers={"Authorization": f"Bearer {session_tokens[0]}"}
-        )
-        
-        if success and hasattr(response, 'json'):
-            try:
-                result = response.json()
-                if result.get("ok"):
-                    self.log_result("Revoke Others", True, result.get("message", ""))
-                else:
-                    self.log_result("Revoke Others", False, f"Unexpected response: {result}")
-            except:
-                self.log_result("Revoke Others", False, "Invalid JSON response")
-        else:
-            self.log_result("Revoke Others", False, f"Request failed: {response}")
-        
-        # Test: JWT secret rotation (this will invalidate current session)
-        success, response = self.make_request(
-            "POST",
-            "/admin/rotate-secret",
-            headers={"Authorization": f"Bearer {session_tokens[0]}"}
-        )
-        
-        if success and hasattr(response, 'json'):
-            try:
-                result = response.json()
-                if result.get("ok") and "rotated_at" in result:
-                    self.log_result("JWT Rotation", True, f"Rotated at {result.get('rotated_at')}")
-                    
-                    # Verify that the token is now invalid (expected behavior)
-                    time.sleep(1)  # Brief pause
-                    success, response = self.make_request(
-                        "GET",
-                        "/admin/sessions",
-                        headers={"Authorization": f"Bearer {session_tokens[0]}"},
-                        expected_status=401
-                    )
-                    
-                    if success:  # Should get 401
-                        self.log_result("Post-Rotation Token Invalid", True, "Token correctly invalidated after rotation")
-                    else:
-                        self.log_result("Post-Rotation Token Invalid", False, "Token still works after rotation")
-                        
-                else:
-                    self.log_result("JWT Rotation", False, f"Unexpected response: {result}")
-            except Exception as e:
-                self.log_result("JWT Rotation", False, f"JSON parsing error: {e}")
-        else:
-            self.log_result("JWT Rotation", False, f"Request failed: {response}")
-    
-    def test_basic_functionality(self):
-        """Test that basic functionality still works"""
-        print("\n🔍 Testing basic functionality...")
-        
-        # Test whitelist endpoint
-        success, response = self.make_request(
-            "POST",
-            "/whitelist",
-            {"email": f"test-{uuid.uuid4().hex[:8]}@example.com", "lang": "en"}
+            "GET", "admin/2fa/status", headers=self.get_auth_headers()
         )
         
         if success:
-            self.log_result("Whitelist Endpoint", True, "Basic whitelist functionality works")
+            required_fields = ['enabled', 'setup_pending', 'backup_codes_remaining']
+            if all(field in response for field in required_fields):
+                self.log_result("2FA Status Initial", True, f"Status: {response}")
+                return True
+            else:
+                self.log_result("2FA Status Initial", False, f"Missing fields: {response}")
         else:
-            self.log_result("Whitelist Endpoint", False, f"Whitelist failed: {response}")
+            self.log_result("2FA Status Initial", False, f"Request failed: {response}")
+        return False
+
+    def test_2fa_setup(self):
+        """Test 2FA setup endpoint"""
+        success, response = self.make_request(
+            "POST", "admin/2fa/setup", headers=self.get_auth_headers()
+        )
         
-        # Test admin whitelist with email_status
-        if self.admin_login():
-            success, response = self.make_request(
-                "GET",
-                "/admin/whitelist?limit=5",
+        if success:
+            required_fields = ['secret', 'otpauth_uri', 'qr_png_base64', 'backup_codes']
+            if all(field in response for field in required_fields):
+                self.twofa_secret = response['secret']
+                self.backup_codes = response['backup_codes']
+                
+                # Validate otpauth_uri format
+                if response['otpauth_uri'].startswith('otpauth://totp/'):
+                    self.log_result("2FA Setup", True, f"Secret: {self.twofa_secret[:8]}..., Codes: {len(self.backup_codes)}")
+                    return True
+                else:
+                    self.log_result("2FA Setup", False, f"Invalid otpauth_uri: {response['otpauth_uri']}")
+            else:
+                self.log_result("2FA Setup", False, f"Missing fields: {response}")
+        else:
+            self.log_result("2FA Setup", False, f"Request failed: {response}")
+        return False
+
+    def test_2fa_verify(self):
+        """Test 2FA verification with TOTP code"""
+        if not self.twofa_secret:
+            self.log_result("2FA Verify", False, "No 2FA secret available")
+            return False
+            
+        # Generate current TOTP code
+        totp = pyotp.TOTP(self.twofa_secret)
+        current_code = totp.now()
+        
+        success, response = self.make_request(
+            "POST", "admin/2fa/verify", 
+            data={"code": current_code}, 
+            headers=self.get_auth_headers()
+        )
+        
+        if success:
+            self.log_result("2FA Verify", True, f"Code: {current_code}")
+            return True
+        else:
+            self.log_result("2FA Verify", False, f"Verification failed: {response}")
+        return False
+
+    def test_2fa_login_flow(self):
+        """Test login flow with 2FA enabled"""
+        # First, try login with password only (should fail with 2FA required)
+        success, response = self.make_request(
+            "POST", "admin/login", 
+            data={"password": ADMIN_PASSWORD}, 
+            expected_status=401
+        )
+        
+        if success:
+            self.log_result("2FA Login Password Only", True, "Correctly rejected")
+        else:
+            self.log_result("2FA Login Password Only", False, "Should have returned 401")
+            return False
+
+        # Now try with password + TOTP code
+        totp = pyotp.TOTP(self.twofa_secret)
+        current_code = totp.now()
+        
+        success, response = self.make_request(
+            "POST", "admin/login", 
+            data={"password": ADMIN_PASSWORD, "totp_code": current_code}
+        )
+        
+        if success and 'token' in response:
+            self.admin_token = response['token']  # Update token
+            self.log_result("2FA Login with TOTP", True, "Login successful")
+            return True
+        else:
+            self.log_result("2FA Login with TOTP", False, f"Login failed: {response}")
+        return False
+
+    def test_2fa_backup_code_login(self):
+        """Test login with backup code"""
+        if not self.backup_codes:
+            self.log_result("2FA Backup Code Login", False, "No backup codes available")
+            return False
+            
+        backup_code = self.backup_codes[0]  # Use first backup code
+        
+        success, response = self.make_request(
+            "POST", "admin/login", 
+            data={"password": ADMIN_PASSWORD, "backup_code": backup_code}
+        )
+        
+        if success and 'token' in response:
+            self.admin_token = response['token']
+            self.log_result("2FA Backup Code Login", True, f"Used code: {backup_code}")
+            return True
+        else:
+            self.log_result("2FA Backup Code Login", False, f"Login failed: {response}")
+        return False
+
+    def test_2fa_disable(self):
+        """Test disabling 2FA"""
+        if not self.twofa_secret:
+            self.log_result("2FA Disable", False, "No 2FA secret available")
+            return False
+            
+        totp = pyotp.TOTP(self.twofa_secret)
+        current_code = totp.now()
+        
+        success, response = self.make_request(
+            "POST", "admin/2fa/disable", 
+            data={"password": ADMIN_PASSWORD, "code": current_code}, 
+            headers=self.get_auth_headers()
+        )
+        
+        if success:
+            self.log_result("2FA Disable", True, "2FA disabled")
+            # Reset 2FA state
+            self.twofa_secret = None
+            self.backup_codes = []
+            return True
+        else:
+            self.log_result("2FA Disable", False, f"Disable failed: {response}")
+        return False
+
+    def test_activity_heatmap(self):
+        """Test activity heatmap in public stats"""
+        success, response = self.make_request("GET", "public/stats")
+        
+        if success:
+            if 'activity_heatmap' in response:
+                heatmap = response['activity_heatmap']
+                if isinstance(heatmap, list) and len(heatmap) == 7:
+                    # Check if each day has 24 hours
+                    valid_structure = all(
+                        isinstance(day, list) and len(day) == 24 
+                        for day in heatmap
+                    )
+                    if valid_structure:
+                        # Check if all values are integers >= 0
+                        valid_values = all(
+                            isinstance(hour_val, int) and hour_val >= 0
+                            for day in heatmap for hour_val in day
+                        )
+                        if valid_values:
+                            self.log_result("Activity Heatmap", True, "7x24 grid with valid integer values")
+                            return True
+                        else:
+                            self.log_result("Activity Heatmap", False, "Contains invalid values")
+                    else:
+                        self.log_result("Activity Heatmap", False, f"Invalid structure: {len(heatmap)} days")
+                else:
+                    self.log_result("Activity Heatmap", False, f"Not a 7-day array: {type(heatmap)}")
+            else:
+                self.log_result("Activity Heatmap", False, "Missing from public stats")
+        else:
+            self.log_result("Activity Heatmap", False, f"Request failed: {response}")
+        return False
+
+    def test_full_whitelist_export(self):
+        """Test full whitelist CSV export"""
+        success, response = self.make_request(
+            "GET", "admin/whitelist/export", 
+            headers=self.get_auth_headers(), 
+            response_type="text"
+        )
+        
+        if success:
+            # Check if response is CSV format
+            try:
+                csv_reader = csv.reader(io.StringIO(response))
+                rows = list(csv_reader)
+                if len(rows) > 0:
+                    headers = rows[0]
+                    expected_headers = ['position', 'email', 'lang', 'created_at', 'email_sent', 'email_status']
+                    if all(header in headers for header in expected_headers):
+                        self.log_result("Full Whitelist Export", True, f"{len(rows)-1} entries exported")
+                        return True
+                    else:
+                        self.log_result("Full Whitelist Export", False, f"Missing headers: {headers}")
+                else:
+                    self.log_result("Full Whitelist Export", False, "Empty CSV response")
+            except Exception as e:
+                self.log_result("Full Whitelist Export", False, f"CSV parse error: {e}")
+        else:
+            self.log_result("Full Whitelist Export", False, f"Request failed: {response}")
+        return False
+
+    def test_email_events_endpoint(self):
+        """Test email events endpoint"""
+        success, response = self.make_request(
+            "GET", "admin/email-events", 
+            headers=self.get_auth_headers()
+        )
+        
+        if success:
+            required_fields = ['items', 'total', 'limit', 'skip', 'type_counts']
+            if all(field in response for field in required_fields):
+                self.log_result("Email Events Basic", True, f"Total: {response['total']}")
+                
+                # Test with type filter
+                success2, response2 = self.make_request(
+                    "GET", "admin/email-events?type=email.delivered", 
+                    headers=self.get_auth_headers()
+                )
+                
+                if success2:
+                    self.log_result("Email Events Type Filter", True, "Filter working")
+                    
+                    # Test with recipient filter
+                    success3, response3 = self.make_request(
+                        "GET", "admin/email-events?recipient=test@example.com", 
+                        headers=self.get_auth_headers()
+                    )
+                    
+                    if success3:
+                        self.log_result("Email Events Recipient Filter", True, "Filter working")
+                        return True
+                    else:
+                        self.log_result("Email Events Recipient Filter", False, f"Filter failed: {response3}")
+                else:
+                    self.log_result("Email Events Type Filter", False, f"Filter failed: {response2}")
+            else:
+                self.log_result("Email Events Basic", False, f"Missing fields: {response}")
+        else:
+            self.log_result("Email Events Basic", False, f"Request failed: {response}")
+        return False
+
+    def test_cooldown_blacklist(self):
+        """Test cooldown functionality in blacklist"""
+        test_email = f"cooldown-test-{int(time.time())}@example.com"
+        
+        # Add email to blacklist with cooldown
+        success, response = self.make_request(
+            "POST", "admin/blacklist", 
+            data={
+                "email": test_email,
+                "reason": "cooldown test",
+                "cooldown_days": 7
+            }, 
+            headers=self.get_auth_headers()
+        )
+        
+        if success:
+            self.log_result("Blacklist with Cooldown", True, f"Email: {test_email}")
+            
+            # Check if cooldown_until field is set
+            success2, response2 = self.make_request(
+                "GET", "admin/blacklist", 
                 headers=self.get_auth_headers()
             )
             
-            if success and hasattr(response, 'json'):
-                try:
-                    data = response.json()
-                    items = data.get("items", [])
-                    if items and "email_status" in items[0]:
-                        self.log_result("Admin Whitelist Email Status", True, "email_status field present")
+            if success2:
+                blacklist_items = response2.get('items', [])
+                cooldown_item = next((item for item in blacklist_items if item['email'] == test_email), None)
+                
+                if cooldown_item and cooldown_item.get('cooldown_until'):
+                    self.log_result("Blacklist Cooldown Field", True, f"Cooldown: {cooldown_item['cooldown_until']}")
+                    
+                    # Test that registration is still blocked
+                    success3, response3 = self.make_request(
+                        "POST", "whitelist", 
+                        data={"email": test_email}, 
+                        expected_status=403
+                    )
+                    
+                    if success3:
+                        self.log_result("Registration Blocked During Cooldown", True, "Correctly blocked")
+                        return True
                     else:
-                        self.log_result("Admin Whitelist Email Status", False, "email_status field missing")
-                except:
-                    self.log_result("Admin Whitelist Email Status", False, "JSON parsing error")
+                        self.log_result("Registration Blocked During Cooldown", False, "Should be blocked")
+                else:
+                    self.log_result("Blacklist Cooldown Field", False, "Cooldown field not set")
             else:
-                self.log_result("Admin Whitelist Email Status", False, f"Request failed: {response}")
-    
+                self.log_result("Blacklist Cooldown Field", False, f"Failed to get blacklist: {response2}")
+        else:
+            self.log_result("Blacklist with Cooldown", False, f"Request failed: {response}")
+        return False
+
+    def test_cooldown_import(self):
+        """Test cooldown in bulk import"""
+        csv_data = "email,reason\ncooldown-bulk1@example.com,bulk test\ncooldown-bulk2@example.com,bulk test"
+        
+        success, response = self.make_request(
+            "POST", "admin/blacklist/import", 
+            data={
+                "csv_text": csv_data,
+                "cooldown_days": 3
+            }, 
+            headers=self.get_auth_headers()
+        )
+        
+        if success:
+            if response.get('imported', 0) > 0:
+                self.log_result("Blacklist Import with Cooldown", True, f"Imported: {response['imported']}")
+                return True
+            else:
+                self.log_result("Blacklist Import with Cooldown", False, f"No emails imported: {response}")
+        else:
+            self.log_result("Blacklist Import with Cooldown", False, f"Request failed: {response}")
+        return False
+
+    def test_whitelist_cooldown_endpoint(self):
+        """Test whitelist to blacklist with cooldown"""
+        # First get a whitelist entry
+        success, response = self.make_request(
+            "GET", "admin/whitelist?limit=1", 
+            headers=self.get_auth_headers()
+        )
+        
+        if success and response.get('items'):
+            entry = response['items'][0]
+            entry_id = entry['id']
+            
+            # Blacklist with cooldown
+            success2, response2 = self.make_request(
+                "POST", f"admin/whitelist/{entry_id}/blacklist?cooldown_days=5", 
+                headers=self.get_auth_headers()
+            )
+            
+            if success2:
+                self.log_result("Whitelist to Blacklist with Cooldown", True, f"Entry: {entry_id}")
+                return True
+            else:
+                self.log_result("Whitelist to Blacklist with Cooldown", False, f"Request failed: {response2}")
+        else:
+            self.log_result("Whitelist to Blacklist with Cooldown", False, "No whitelist entries available")
+        return False
+
     def run_all_tests(self):
-        """Run all tests"""
-        print("🚀 Starting DEEPOTUS Phase 7 Feature Testing...")
+        """Run all Phase 8 feature tests"""
+        print("🚀 Starting DEEPOTUS Phase 8 Feature Testing...")
         print(f"Testing against: {self.base_url}")
         print("=" * 60)
         
-        # Test all new features
-        self.test_resend_webhook()
-        self.test_public_stats()
-        self.test_bulk_blacklist_import()
-        self.test_jwt_sessions_management()
-        self.test_basic_functionality()
+        # Initial admin login
+        if not self.admin_login():
+            print("❌ Failed to login as admin - stopping tests")
+            return False
+        
+        print("✅ Admin login successful")
+        
+        # Test 2FA features
+        print("\n📱 Testing 2FA Features...")
+        self.test_2fa_status_initial()
+        
+        if self.test_2fa_setup():
+            self.test_2fa_verify()
+            self.test_2fa_login_flow()
+            self.test_2fa_backup_code_login()
+            self.test_2fa_disable()  # Clean up - disable 2FA for next test runs
+
+        # Test activity heatmap
+        print("\n🔥 Testing Activity Heatmap...")
+        self.test_activity_heatmap()
+
+        # Test full whitelist export
+        print("\n📊 Testing Full Whitelist Export...")
+        self.test_full_whitelist_export()
+
+        # Test email events
+        print("\n📧 Testing Email Events...")
+        self.test_email_events_endpoint()
+
+        # Test cooldown features
+        print("\n⏰ Testing Cooldown Features...")
+        self.test_cooldown_blacklist()
+        self.test_cooldown_import()
+        self.test_whitelist_cooldown_endpoint()
         
         # Print summary
         print("\n" + "=" * 60)
