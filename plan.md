@@ -133,8 +133,9 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 
 ## Current Status
 - Plan created ✅
-- Integration playbook: pending
-- Design guidelines: pending
-- POC script: pending
-- App build: pending
-- Testing: pending
+- Integration playbook ✅
+- Design guidelines ✅
+- POC script: **✅ PASSED** (FR + EN chat persona + prophecies)
+- Backend build ✅ (`/api/chat`, `/api/prophecy`, `/api/whitelist`, `/api/stats` \u2014 all curl-verified)
+- Frontend build ✅ (13 sections, bilingual, deepfake aesthetic)
+- Testing: **pending** (testing_agent_v3)
