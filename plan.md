@@ -141,12 +141,13 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Testing: **✅ 100% / 100%** (both iterations)
 - **Delivery ✅**
 
-## Phase 6 — Blacklist UI, Emails, Pagination & Public Dashboard (completed ✅)
-- ✅ **Resend email integration** — Async non-blocking welcome email on whitelist registration, bilingual FR/EN HTML template with hero image (candidate + crowd), cynical Prophet quote, on-chain rules checklist, MiCA disclaimer, unsubscribe link. Graceful failure handling: `email_sent` boolean + `email_error` field per whitelist entry. Uses `onboarding@resend.dev` sender by default (no domain needed).
-- ✅ **Admin Blacklist UI** — New 3rd tab in admin with: manual add form (email + optional reason), roster table, Unblock per-row with confirmation dialog, CSV export. 4th stat card "Blacklist" added to bento. Backend: full CRUD at `/api/admin/blacklist` (GET/POST/DELETE).
-- ✅ **Pagination** — Backend endpoints now accept `limit` + `skip` (defaults 50, max 500). Admin frontend paginates whitelist + chat-logs at 25 per page with Prev/Next + page counter + "Rows X–Y / total" indicator. Also added `email_sent` column (✓ sent / ○ pending) in the whitelist table.
-- ✅ **Public stats dashboard `/stats`** — Public read-only page (no auth) with 4 stat cards + 7/30/90d evolution chart + trust strip (multisig rules, zero PII, satire disclaimer). Backed by `/api/public/stats?days=N` (clamped 1-90, NO PII, aggregates only). Linked from landing footer.
+## Phase 7 — Domain proposals, Webhooks, Enriched stats, CSV import, JWT rotation (completed ✅)
+- ✅ **Domain proposals** — 10 domaines listés avec prix + recommandation `deepotus.xyz`. Guide complet `/app/SETUP_DOMAIN_WEBHOOK.md` avec instructions DNS par registrar (Cloudflare / Namecheap / Porkbun / GoDaddy).
+- ✅ **Webhook Resend** — `POST /api/webhooks/resend` avec vérification signature svix (secret depuis `.env`, accepté sans secret pour fallback). Events gérés: sent, delivered, delivery_delayed, bounced, complained, opened, clicked. Persistance dans collection `email_events` + mise à jour `email_status` sur la whitelist entry.
+- ✅ **Stats publiques enrichies** — `/api/public/stats` retourne maintenant `lang_distribution` {whitelist:{fr,en}, chat:{fr,en}} + `top_sessions` (5 sessions les plus actives avec `anon_id` via sha256 tronqué, **non-réversible**). Frontend `/stats` affiche barres FR/EN duotone + liste top sessions.
+- ✅ **Bulk CSV import blacklist** — `POST /api/admin/blacklist/import` parse CSV (header auto-skip) ou liste, max 5000 lignes, retourne `{imported, skipped_invalid, skipped_existing, total_rows}`. Frontend: file picker + textarea + result card.
+- ✅ **JWT rotation + sessions DB** — Sessions persistées dans `admin_sessions` collection avec `jti`, `ip`, `user_agent`, `revoked`, `last_seen_at`. Endpoints: GET /sessions, DELETE /sessions/{jti}, POST /sessions/revoke-others, POST /rotate-secret. Rotation: génère nouvelle secret, bascule l'ancienne en "previous" avec 2h de grace, révoque toutes les sessions. Frontend: onglet "Sessions" avec table + actions + confirmations.
 
-## Phase 6 Testing
-- Backend: **100% (28/28)**
-- Frontend: **95%** (all features working, only cosmetic Recharts resize console warnings)
+## Phase 7 Testing
+- Backend: **100% (15/15)** — webhooks, public enrichis, CSV import, sessions, rotation
+- Frontend: **100%** — tous les onglets et composants fonctionnels, aucune régression
