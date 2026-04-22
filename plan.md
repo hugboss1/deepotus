@@ -141,12 +141,13 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Testing: **✅ 100% / 100%** (both iterations)
 - **Delivery ✅**
 
-## Phase 4 — Follow-up features (completed)
-- ✅ Admin dashboard `/admin` with password auth (ADMIN_PASSWORD in .env, default `deepotus2026`)
-  - Login gate → dashboard with 4 stats, Whitelist table, Chat logs terminal-style, CSV export
-- ✅ Dark mode toggle (ThemeProvider + toggle in TopNav, Footer, Admin)
-  - Persists in `localStorage.deepotus_theme`, respects OS preference on first visit
-- ✅ Custom AI-generated deepfake hero image
-  - Generated via Gemini Nano Banana (`gemini-3.1-flash-image-preview`)
-  - Saved to `/app/frontend/public/deepotus_hero.jpg` (928×1152)
-  - Fallback to Unsplash in place for robustness
+## Phase 5 — Security, Charts, Moderation & Image Variants (completed ✅)
+- ✅ **3 Prophet image variants** (serious / meme / glitch) generated via Gemini Nano Banana, auto-cycling every 5s in hero with crossfade + manual dots + hover-pause + reduced-motion respect
+- ✅ **JWT admin auth** (HS256, PyJWT, 24h TTL) — `Authorization: Bearer` header, legacy `X-Admin-Token` still supported
+- ✅ **Rate limiting** on `/api/admin/login` (5 attempts / 10 min per IP, sliding window, respects `X-Forwarded-For` / `X-Real-IP`)
+- ✅ **Evolution charts** in admin (recharts AreaChart, cumulative Whitelist + Chat, 7/30/90 day range switch)
+- ✅ **Delete + Blacklist** per whitelist row with shadcn AlertDialog confirmation. Blacklisted emails return 403 on re-registration.
+
+## Phase 5 Testing
+- Backend: **100% (23/23)**
+- Frontend: **100%** (all 5 features + regression)
