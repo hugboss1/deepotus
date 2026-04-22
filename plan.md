@@ -136,7 +136,17 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Integration playbook ✅
 - Design guidelines ✅
 - POC script: **✅ PASSED** (FR + EN chat persona + prophecies)
-- Backend build ✅ (`/api/chat`, `/api/prophecy`, `/api/whitelist`, `/api/stats` — all curl-verified, 100% backend tests)
-- Frontend build ✅ (13 sections, bilingual FR/EN, deepfake aesthetic, all interactive features live)
-- Testing ✅ (Backend 11/11 • Frontend 19/20 — only minor testid naming, feature works)
+- Backend build ✅ (landing + admin — 17/17 tests)
+- Frontend build ✅ (13 sections, bilingual, deepfake aesthetic — 22/22 tests)
+- Testing: **✅ 100% / 100%** (both iterations)
 - **Delivery ✅**
+
+## Phase 4 — Follow-up features (completed)
+- ✅ Admin dashboard `/admin` with password auth (ADMIN_PASSWORD in .env, default `deepotus2026`)
+  - Login gate → dashboard with 4 stats, Whitelist table, Chat logs terminal-style, CSV export
+- ✅ Dark mode toggle (ThemeProvider + toggle in TopNav, Footer, Admin)
+  - Persists in `localStorage.deepotus_theme`, respects OS preference on first visit
+- ✅ Custom AI-generated deepfake hero image
+  - Generated via Gemini Nano Banana (`gemini-3.1-flash-image-preview`)
+  - Saved to `/app/frontend/public/deepotus_hero.jpg` (928×1152)
+  - Fallback to Unsplash in place for robustness
