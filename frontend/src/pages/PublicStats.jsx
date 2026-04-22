@@ -62,6 +62,38 @@ function Stat({ icon: Icon, label, value, accent = "#2DD4BF" }) {
   );
 }
 
+function LangBars({ title, fr, en, testid }) {
+  const total = Math.max(1, (fr || 0) + (en || 0));
+  const frPct = Math.round(((fr || 0) / total) * 100);
+  const enPct = 100 - frPct;
+  return (
+    <div className="mt-4" data-testid={testid}>
+      <div className="flex items-baseline justify-between gap-2 mb-1">
+        <span className="font-display font-medium text-sm">{title}</span>
+        <span className="tabular font-mono text-[11px] text-muted-foreground">
+          FR {fr ?? 0} · EN {en ?? 0}
+        </span>
+      </div>
+      <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-border bg-background">
+        <div
+          className="h-full bg-[#2DD4BF] transition-all duration-500"
+          style={{ width: `${frPct}%` }}
+          title={`FR ${frPct}%`}
+        />
+        <div
+          className="h-full bg-[#F59E0B] transition-all duration-500"
+          style={{ width: `${enPct}%` }}
+          title={`EN ${enPct}%`}
+        />
+      </div>
+      <div className="mt-1 flex justify-between tabular font-mono text-[10px] text-muted-foreground">
+        <span>FR {frPct}%</span>
+        <span>EN {enPct}%</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PublicStats() {
   const { t, lang } = useI18n();
   const [data, setData] = useState(null);
@@ -317,6 +349,90 @@ export default function PublicStats() {
                 ? "Transmissions IA (cumulé)"
                 : "AI transmissions (cumulative)"}
             </div>
+          </div>
+        </div>
+
+        {/* Lang distribution + Top sessions */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Language distribution */}
+          <div
+            className="lg:col-span-6 rounded-xl border border-border bg-card p-5"
+            data-testid="public-stats-lang-distribution"
+          >
+            <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+              {lang === "fr" ? "RÉPARTITION LANGUES" : "LANGUAGE DISTRIBUTION"}
+            </div>
+            <div className="font-display font-semibold mt-1">
+              {lang === "fr" ? "Whitelist & transmissions · FR/EN" : "Whitelist & transmissions · FR/EN"}
+            </div>
+
+            <LangBars
+              title={lang === "fr" ? "Whitelist" : "Whitelist"}
+              fr={data?.lang_distribution?.whitelist?.fr ?? 0}
+              en={data?.lang_distribution?.whitelist?.en ?? 0}
+              testid="public-stats-lang-whitelist"
+            />
+            <LangBars
+              title={lang === "fr" ? "Transmissions" : "Transmissions"}
+              fr={data?.lang_distribution?.chat?.fr ?? 0}
+              en={data?.lang_distribution?.chat?.en ?? 0}
+              testid="public-stats-lang-chat"
+            />
+
+            <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+              {lang === "fr"
+                ? "Agrégation anonyme. Aucun email, aucun contenu."
+                : "Anonymous aggregation. No emails, no content."}
+            </p>
+          </div>
+
+          {/* Top sessions */}
+          <div
+            className="lg:col-span-6 rounded-xl border border-border bg-card p-5"
+            data-testid="public-stats-top-sessions"
+          >
+            <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+              {lang === "fr" ? "TOP SESSIONS" : "TOP SESSIONS"}
+            </div>
+            <div className="font-display font-semibold mt-1">
+              {lang === "fr"
+                ? "5 sessions les plus actives · anonymisées"
+                : "Top 5 most active sessions · anonymized"}
+            </div>
+
+            <ul className="mt-4 space-y-2">
+              {(data?.top_sessions || []).map((s, i) => (
+                <li
+                  key={s.anon_id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"
+                  data-testid={`public-stats-top-session-${i}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="tabular font-mono text-sm text-muted-foreground w-6">
+                      #{i + 1}
+                    </span>
+                    <span className="font-mono text-sm break-all">{s.anon_id}</span>
+                    <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                      {s.lang}
+                    </Badge>
+                  </div>
+                  <span className="tabular font-mono text-xs text-foreground/80">
+                    {s.message_count} msg
+                  </span>
+                </li>
+              ))}
+              {(!data?.top_sessions || data.top_sessions.length === 0) && (
+                <li className="text-center text-muted-foreground py-4 font-mono text-xs">
+                  {lang === "fr" ? "Aucune session active." : "No active sessions yet."}
+                </li>
+              )}
+            </ul>
+
+            <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+              {lang === "fr"
+                ? "IDs générés par hachage sha256 du session_id — non réversibles."
+                : "IDs generated via sha256 hash of session_id — non-reversible."}
+            </p>
           </div>
         </div>
 
