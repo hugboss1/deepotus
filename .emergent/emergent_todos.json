@@ -1,34 +1,42 @@
 [
   {
-    "content": "Get Gemini Nano Banana image generation playbook",
+    "content": "Generate 3 Prophet image variants (serious / meme / glitch) via Nano Banana",
     "status": "completed"
   },
   {
-    "content": "Generate custom deepfake AI Prophet image via Nano Banana",
+    "content": "Update Hero.jsx to cycle through 3 variants with crossfade animation",
     "status": "completed"
   },
   {
-    "content": "Replace hero portrait with generated image",
+    "content": "Add JWT secret to .env + refactor admin auth to JWT (PyJWT)",
     "status": "completed"
   },
   {
-    "content": "Add dark mode toggle (ThemeProvider + toggle in TopNav)",
+    "content": "Add rate-limit middleware on /api/admin/login (5 attempts / 10min per IP)",
     "status": "completed"
   },
   {
-    "content": "Build admin backend routes (/api/admin/whitelist, /api/admin/chat-logs) with password auth",
+    "content": "Add DELETE /api/admin/whitelist/{id} + blacklist collection logic",
     "status": "completed"
   },
   {
-    "content": "Build admin frontend page (/admin with password gate + data tables)",
+    "content": "Add GET /api/admin/evolution for time-series data",
     "status": "completed"
   },
   {
-    "content": "End-to-end testing of new features",
+    "content": "Admin.jsx: add recharts area charts (whitelist + chat evolution)",
     "status": "completed"
+  },
+  {
+    "content": "Admin.jsx: add delete/blacklist button per whitelist row with confirmation",
+    "status": "completed"
+  },
+  {
+    "content": "End-to-end testing of all 5 new features",
+    "status": "in_progress"
   },
   {
     "content": "Final delivery summary",
-    "status": "in_progress"
+    "status": "pending"
   }
 ]

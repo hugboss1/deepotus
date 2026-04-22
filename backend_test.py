@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-$DEEPOTUS Backend API Testing
-Tests all 4 main endpoints: /api/chat, /api/prophecy, /api/whitelist, /api/stats
+$DEEPOTUS Backend API Testing - Phase 5 Features
+Tests all endpoints including new Phase 5 features:
+1. Rate-limit on /api/admin/login (5 attempts / 10min per IP, 429 response)
+2. Admin auth switched to JWT (HS256, 24h TTL, Authorization: Bearer header)
+3. Admin evolution chart API showing whitelist + chat growth
+4. Admin can Delete whitelist entries
+5. Admin can Blacklist whitelist entries
 """
 
 import requests
 import sys
 import json
+import time
 from datetime import datetime
 from typing import Dict, Any
 
@@ -361,13 +367,267 @@ class DeepotusAPITester:
         )
         return success
 
+    def test_admin_login_jwt(self):
+        """Test admin login returns JWT token"""
+        print("\n🔐 Testing Admin JWT Login...")
+        
+        success, response_data = self.run_test(
+            "Admin login with correct password",
+            "POST",
+            "api/admin/login",
+            200,
+            data={"password": "deepotus2026"}
+        )
+        
+        if success and response_data:
+            token = response_data.get('token', '')
+            if token.startswith('eyJ'):
+                self.admin_token = token
+                print(f"   ✅ JWT token format valid: {token[:20]}...")
+                return True
+            else:
+                print(f"   ❌ Token doesn't start with 'eyJ': {token[:20]}")
+        
+        return False
+
+    def test_rate_limiting(self):
+        """Test rate limiting on admin login"""
+        print("\n⏱️ Testing Rate Limiting...")
+        
+        # Use unique IP for rate limit testing
+        test_ip = "198.51.100.123"
+        headers = {"X-Forwarded-For": test_ip, "Content-Type": "application/json"}
+        
+        # Make 5 failed attempts
+        for i in range(5):
+            response = requests.post(
+                f"{self.base_url}/api/admin/login",
+                json={"password": "wrongpassword"},
+                headers=headers,
+                timeout=30
+            )
+            print(f"   Attempt {i+1}: Status {response.status_code}")
+        
+        # 6th attempt should be rate limited
+        response = requests.post(
+            f"{self.base_url}/api/admin/login", 
+            json={"password": "wrongpassword"},
+            headers=headers,
+            timeout=30
+        )
+        
+        success = response.status_code == 429
+        if success:
+            print(f"✅ Rate limiting works - Status: {response.status_code}")
+            try:
+                data = response.json()
+                if "Too many login attempts" in data.get('detail', ''):
+                    print("   ✅ Correct error message")
+                else:
+                    print(f"   ⚠️ Unexpected message: {data.get('detail', '')}")
+            except:
+                pass
+        else:
+            print(f"❌ Rate limiting failed - Status: {response.status_code}")
+        
+        return success
+
+    def test_jwt_auth_headers(self):
+        """Test JWT authentication with both Bearer and legacy headers"""
+        if not self.admin_token:
+            print("❌ JWT auth test skipped - No admin token available")
+            return False
+            
+        print("\n🔑 Testing JWT Authentication Headers...")
+        
+        # Test Authorization: Bearer header
+        success1, _ = self.run_test(
+            "Admin whitelist with Bearer token",
+            "GET",
+            "api/admin/whitelist",
+            200,
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        
+        # Test legacy X-Admin-Token header
+        success2, _ = self.run_test(
+            "Admin whitelist with X-Admin-Token",
+            "GET", 
+            "api/admin/whitelist",
+            200,
+            headers={"X-Admin-Token": self.admin_token}
+        )
+        
+        return success1 and success2
+
+    def test_evolution_api(self):
+        """Test admin evolution API"""
+        if not self.admin_token:
+            print("❌ Evolution API test skipped - No admin token available")
+            return False
+            
+        print("\n📈 Testing Evolution API...")
+        
+        auth_headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Test default days (30)
+        success1, response_data = self.run_test(
+            "Evolution API - default 30 days",
+            "GET",
+            "api/admin/evolution",
+            200,
+            headers=auth_headers
+        )
+        
+        if success1 and response_data:
+            required_fields = ['days', 'series']
+            if all(field in response_data for field in required_fields):
+                print("   ✅ Evolution API response structure valid")
+                
+                # Check series structure
+                if response_data['series'] and len(response_data['series']) > 0:
+                    series_item = response_data['series'][0]
+                    series_fields = ['date', 'whitelist', 'chat', 'whitelist_daily', 'chat_daily']
+                    if all(field in series_item for field in series_fields):
+                        print("   ✅ Evolution series structure valid")
+                    else:
+                        print(f"   ❌ Missing fields in series: {series_item}")
+                else:
+                    print("   ✅ Empty series (expected for new install)")
+            else:
+                print(f"   ❌ Missing fields in response: {response_data}")
+        
+        # Test custom days parameter
+        success2, _ = self.run_test(
+            "Evolution API - 7 days",
+            "GET",
+            "api/admin/evolution",
+            200,
+            params={"days": "7"},
+            headers=auth_headers
+        )
+        
+        # Test days parameter clamping
+        success3, _ = self.run_test(
+            "Evolution API - 90 days",
+            "GET", 
+            "api/admin/evolution",
+            200,
+            params={"days": "90"},
+            headers=auth_headers
+        )
+        
+        return success1 and success2 and success3
+
+    def test_whitelist_operations(self):
+        """Test whitelist delete and blacklist operations"""
+        if not self.admin_token:
+            print("❌ Whitelist operations test skipped - No admin token available")
+            return False
+            
+        print("\n📝 Testing Whitelist Operations...")
+        
+        auth_headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # First, create a test whitelist entry
+        test_email = f"test-{int(time.time())}@example.com"
+        create_response = requests.post(
+            f"{self.base_url}/api/whitelist",
+            json={"email": test_email, "lang": "en"},
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        if create_response.status_code != 200:
+            print(f"❌ Failed to create test whitelist entry - Status: {create_response.status_code}")
+            return False
+        
+        entry_data = create_response.json()
+        entry_id = entry_data['id']
+        print(f"   ✅ Created test entry {entry_id}")
+        
+        # Test delete operation
+        delete_response = requests.delete(
+            f"{self.base_url}/api/admin/whitelist/{entry_id}",
+            headers=auth_headers,
+            timeout=30
+        )
+        
+        success1 = delete_response.status_code == 200
+        if success1:
+            print(f"   ✅ Delete operation successful")
+            
+            # Verify entry was deleted (should return 404)
+            verify_response = requests.delete(
+                f"{self.base_url}/api/admin/whitelist/{entry_id}",
+                headers=auth_headers,
+                timeout=30
+            )
+            if verify_response.status_code == 404:
+                print(f"   ✅ Entry properly deleted (404 on re-delete)")
+        else:
+            print(f"   ❌ Delete operation failed - Status: {delete_response.status_code}")
+        
+        # Create another test entry for blacklist test
+        test_email2 = f"blacklist-test-{int(time.time())}@example.com"
+        create_response2 = requests.post(
+            f"{self.base_url}/api/whitelist",
+            json={"email": test_email2, "lang": "en"},
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        success2 = False
+        success3 = False
+        
+        if create_response2.status_code == 200:
+            entry_data2 = create_response2.json()
+            entry_id2 = entry_data2['id']
+            
+            # Test blacklist operation
+            blacklist_response = requests.post(
+                f"{self.base_url}/api/admin/whitelist/{entry_id2}/blacklist",
+                json={},
+                headers=auth_headers,
+                timeout=30
+            )
+            
+            success2 = blacklist_response.status_code == 200
+            if success2:
+                print(f"   ✅ Blacklist operation successful")
+                
+                # Test that blacklisted email cannot re-register
+                reregister_response = requests.post(
+                    f"{self.base_url}/api/whitelist",
+                    json={"email": test_email2, "lang": "en"},
+                    headers={"Content-Type": "application/json"},
+                    timeout=30
+                )
+                
+                success3 = reregister_response.status_code == 403
+                if success3:
+                    print(f"   ✅ Blacklisted email re-registration blocked")
+                    try:
+                        data = reregister_response.json()
+                        if "blacklisted" in data.get('detail', '').lower():
+                            print("   ✅ Correct blacklist error message")
+                    except:
+                        pass
+                else:
+                    print(f"   ❌ Blacklisted email re-registration not blocked - Status: {reregister_response.status_code}")
+            else:
+                print(f"   ❌ Blacklist operation failed - Status: {blacklist_response.status_code}")
+        
+        return success1 and success2 and success3
+
     def run_all_tests(self):
-        """Run all backend API tests"""
+        """Run all backend API tests - Phase 5 Features"""
         print("=" * 60)
-        print("🚀 DEEPOTUS Backend API Testing")
+        print("🚀 DEEPOTUS Backend API Testing - Phase 5 Features")
         print("=" * 60)
         
         tests = [
+            # Original public endpoints
             self.test_root_endpoint,
             self.test_chat_fr,
             self.test_chat_en,
@@ -378,7 +638,15 @@ class DeepotusAPITester:
             self.test_whitelist_duplicate_email,
             self.test_whitelist_invalid_email,
             self.test_stats,
-            # Admin endpoints
+            
+            # Phase 5 new features - JWT and rate limiting
+            self.test_admin_login_jwt,
+            self.test_rate_limiting,
+            self.test_jwt_auth_headers,
+            self.test_evolution_api,
+            self.test_whitelist_operations,
+            
+            # Original admin endpoints (updated to use JWT)
             self.test_admin_login_correct_password,
             self.test_admin_login_wrong_password,
             self.test_admin_whitelist_with_token,

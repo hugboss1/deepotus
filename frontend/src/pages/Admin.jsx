@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogOut, Download, ShieldAlert, RefreshCcw } from "lucide-react";
+import {
+  LogOut,
+  Download,
+  ShieldAlert,
+  RefreshCcw,
+  Trash2,
+  Ban,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { toast } from "sonner";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import ConfirmDialog from "@/components/landing/ConfirmDialog";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const TOKEN_KEY = "deepotus_admin_token";
+
+function formatDateShort(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-md border border-border bg-card px-3 py-2 shadow-[var(--shadow-elev-1)] font-mono text-xs">
+      <div className="text-foreground font-semibold">{label}</div>
+      {payload.map((p) => (
+        <div key={p.dataKey} className="tabular text-foreground/80">
+          <span className="inline-block w-2 h-2 rounded-full mr-2 align-middle" style={{ background: p.color }} />
+          {p.name}: {p.value}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Admin() {
   const [token, setToken] = useState(() =>
@@ -30,6 +71,14 @@ export default function Admin() {
   const [whitelist, setWhitelist] = useState([]);
   const [chatLogs, setChatLogs] = useState([]);
   const [stats, setStats] = useState(null);
+  const [evolution, setEvolution] = useState([]);
+  const [days, setDays] = useState(30);
+  const [rateLimitError, setRateLimitError] = useState(null);
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    mode: "delete",
+    entry: null,
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +89,7 @@ export default function Admin() {
     e.preventDefault();
     if (!pwd.trim()) return;
     setLoading(true);
+    setRateLimitError(null);
     try {
       const res = await axios.post(`${API}/admin/login`, {
         password: pwd.trim(),
@@ -50,7 +100,14 @@ export default function Admin() {
       setPwd("");
       toast.success("Access granted. Welcome to the cabinet.");
     } catch (err) {
-      toast.error("Access denied.");
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail || "Access denied.";
+      if (status === 429) {
+        setRateLimitError(detail);
+        toast.error(detail);
+      } else {
+        toast.error(detail);
+      }
     } finally {
       setLoading(false);
     }
@@ -62,22 +119,27 @@ export default function Admin() {
     setWhitelist([]);
     setChatLogs([]);
     setStats(null);
+    setEvolution([]);
   };
 
-  const authHeaders = token ? { "X-Admin-Token": token } : {};
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const loadAll = async () => {
+  const loadAll = async (nextDays = days) => {
     if (!token) return;
     setLoading(true);
     try {
-      const [wl, cl, st] = await Promise.all([
+      const [wl, cl, st, ev] = await Promise.all([
         axios.get(`${API}/admin/whitelist`, { headers: authHeaders }),
         axios.get(`${API}/admin/chat-logs`, { headers: authHeaders }),
         axios.get(`${API}/stats`),
+        axios.get(`${API}/admin/evolution?days=${nextDays}`, {
+          headers: authHeaders,
+        }),
       ]);
       setWhitelist(wl.data.items || []);
       setChatLogs(cl.data.items || []);
       setStats(st.data);
+      setEvolution(ev.data.series || []);
     } catch (err) {
       if (err?.response?.status === 401) {
         logout();
@@ -91,9 +153,14 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    if (token) loadAll();
+    if (token) loadAll(days);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const changeDays = (d) => {
+    setDays(d);
+    loadAll(d);
+  };
 
   const exportCsv = (rows, filename) => {
     if (!rows?.length) return;
@@ -117,6 +184,48 @@ export default function Admin() {
     a.remove();
     URL.revokeObjectURL(url);
   };
+
+  const askDelete = (entry) =>
+    setConfirmState({ open: true, mode: "delete", entry });
+  const askBlacklist = (entry) =>
+    setConfirmState({ open: true, mode: "blacklist", entry });
+
+  const doConfirmed = async () => {
+    const { mode, entry } = confirmState;
+    if (!entry) return;
+    try {
+      if (mode === "delete") {
+        await axios.delete(`${API}/admin/whitelist/${entry.id}`, {
+          headers: authHeaders,
+        });
+        toast.success(`Deleted ${entry.email}.`);
+      } else if (mode === "blacklist") {
+        await axios.post(
+          `${API}/admin/whitelist/${entry.id}/blacklist`,
+          {},
+          { headers: authHeaders },
+        );
+        toast.success(`Blacklisted ${entry.email}.`);
+      }
+      setConfirmState({ open: false, mode, entry: null });
+      await loadAll(days);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Operation failed.");
+    }
+  };
+
+  const chartData = useMemo(
+    () =>
+      evolution.map((p) => ({
+        date: formatDateShort(p.date),
+        rawDate: p.date,
+        whitelist: p.whitelist,
+        chat: p.chat,
+        whitelist_daily: p.whitelist_daily,
+        chat_daily: p.chat_daily,
+      })),
+    [evolution],
+  );
 
   // ===== Login screen =====
   if (!token) {
@@ -153,6 +262,14 @@ export default function Admin() {
               autoFocus
             />
           </div>
+          {rateLimitError && (
+            <div
+              data-testid="admin-rate-limit-message"
+              className="mt-3 rounded-md border border-[--campaign-red] bg-[--campaign-red]/10 px-3 py-2 font-mono text-xs text-[--campaign-red]"
+            >
+              {rateLimitError}
+            </div>
+          )}
           <Button
             type="submit"
             disabled={loading || !pwd.trim()}
@@ -180,7 +297,6 @@ export default function Admin() {
   // ===== Dashboard =====
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Top bar */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -205,7 +321,7 @@ export default function Admin() {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadAll}
+              onClick={() => loadAll(days)}
               disabled={loading}
               className="rounded-[var(--btn-radius)]"
               data-testid="admin-refresh-button"
@@ -259,6 +375,109 @@ export default function Admin() {
           />
         </div>
 
+        {/* Evolution charts */}
+        <div className="mt-8 rounded-xl border border-border bg-card p-4 md:p-5" data-testid="admin-evolution">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+                Evolution
+              </div>
+              <div className="font-display font-semibold">
+                Whitelist & Transmissions · cumulative
+              </div>
+            </div>
+            <div className="inline-flex items-center gap-1 rounded-[var(--btn-radius)] border border-border bg-background p-0.5">
+              {[7, 30, 90].map((d) => {
+                const active = d === days;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => changeDays(d)}
+                    className={`px-3 py-1 rounded-[8px] font-mono text-[11px] uppercase tracking-widest transition-colors ${
+                      active
+                        ? "bg-foreground text-background"
+                        : "text-foreground/70 hover:text-foreground"
+                    }`}
+                    data-testid={`admin-evolution-range-${d}`}
+                  >
+                    {d}d
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="h-[260px] w-full" data-testid="admin-chart-whitelist">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 8, right: 12, left: -18, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="gWhitelist" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2DD4BF" stopOpacity={0.6} />
+                    <stop offset="100%" stopColor="#2DD4BF" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="gChat" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.55} />
+                    <stop offset="100%" stopColor="#F59E0B" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="date"
+                  tick={{
+                    fontFamily: "IBM Plex Mono",
+                    fontSize: 11,
+                    fill: "hsl(var(--muted-foreground))",
+                  }}
+                  tickLine={false}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
+                />
+                <YAxis
+                  tick={{
+                    fontFamily: "IBM Plex Mono",
+                    fontSize: 11,
+                    fill: "hsl(var(--muted-foreground))",
+                  }}
+                  tickLine={false}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
+                  allowDecimals={false}
+                />
+                <RTooltip content={<ChartTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="whitelist"
+                  name="Whitelist"
+                  stroke="#2DD4BF"
+                  strokeWidth={2}
+                  fill="url(#gWhitelist)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="chat"
+                  name="Chat messages"
+                  stroke="#F59E0B"
+                  strokeWidth={2}
+                  fill="url(#gChat)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-mono">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#2DD4BF]" />
+              Whitelist (cumulative)
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+              Chat transmissions (cumulative)
+            </div>
+          </div>
+        </div>
+
         {/* Tabs */}
         <Tabs defaultValue="whitelist" className="mt-8">
           <TabsList>
@@ -297,13 +516,16 @@ export default function Admin() {
                     <TableHead>Email</TableHead>
                     <TableHead className="w-[80px]">Lang</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead className="w-[180px] text-right">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {whitelist.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className="text-center text-muted-foreground py-8 font-mono text-xs"
                       >
                         No transmissions yet.
@@ -311,20 +533,49 @@ export default function Admin() {
                     </TableRow>
                   )}
                   {whitelist.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} data-testid={`admin-whitelist-row-${r.id}`}>
                       <TableCell className="tabular font-mono">
                         {r.position}
                       </TableCell>
-                      <TableCell className="font-mono text-sm">
+                      <TableCell className="font-mono text-sm break-all">
                         {r.email}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                        <Badge
+                          variant="outline"
+                          className="font-mono text-[10px] uppercase"
+                        >
                           {r.lang}
                         </Badge>
                       </TableCell>
                       <TableCell className="tabular font-mono text-xs text-foreground/70">
                         {new Date(r.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => askDelete(r)}
+                            className="h-8 rounded-md font-mono text-xs"
+                            data-testid={`admin-delete-${r.id}`}
+                            title="Delete"
+                          >
+                            <Trash2 size={14} className="mr-1" />
+                            Delete
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => askBlacklist(r)}
+                            className="h-8 rounded-md font-mono text-xs text-[--campaign-red] border-[--campaign-red] hover:bg-[--campaign-red] hover:text-white"
+                            data-testid={`admin-blacklist-${r.id}`}
+                            title="Blacklist"
+                          >
+                            <Ban size={14} className="mr-1" />
+                            Blacklist
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -371,7 +622,7 @@ export default function Admin() {
                       >
                         {m.lang}
                       </Badge>
-                      <span className="font-mono text-xs text-foreground/70">
+                      <span className="font-mono text-xs text-foreground/70 break-all">
                         session: {m.session_id}
                       </span>
                     </div>
@@ -379,11 +630,11 @@ export default function Admin() {
                       {new Date(m.created_at).toLocaleString()}
                     </span>
                   </div>
-                  <div className="font-mono text-sm">
-                    <span className="text-[--amber]">user :~$</span>{" "}
+                  <div className="font-mono text-sm break-words">
+                    <span className="text-[--amber]">user :~$</span>{" "}
                     <span className="text-foreground">{m.user_message}</span>
                   </div>
-                  <div className="font-mono text-sm mt-1">
+                  <div className="font-mono text-sm mt-1 break-words">
                     <span className="text-[--terminal-green-dim]">
                       DEEPOTUS:~&gt;
                     </span>{" "}
@@ -395,6 +646,30 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onOpenChange={(v) =>
+          !v && setConfirmState({ ...confirmState, open: false })
+        }
+        title={
+          confirmState.mode === "blacklist"
+            ? "Blacklist this email?"
+            : "Delete this entry?"
+        }
+        description={
+          confirmState.mode === "blacklist"
+            ? `The email ${confirmState.entry?.email || ""} will be removed from the whitelist and added to the blacklist. It cannot register again until you remove it from the blacklist manually.`
+            : `The entry ${confirmState.entry?.email || ""} will be removed from the whitelist. It can still re-register later.`
+        }
+        confirmLabel={
+          confirmState.mode === "blacklist" ? "Blacklist" : "Delete"
+        }
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={doConfirmed}
+        testIdPrefix="admin-confirm"
+      />
     </div>
   );
 }
