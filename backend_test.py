@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-$DEEPOTUS Backend API Testing - Phase 5 Features
-Tests all endpoints including new Phase 5 features:
-1. Rate-limit on /api/admin/login (5 attempts / 10min per IP, 429 response)
-2. Admin auth switched to JWT (HS256, 24h TTL, Authorization: Bearer header)
-3. Admin evolution chart API showing whitelist + chat growth
-4. Admin can Delete whitelist entries
-5. Admin can Blacklist whitelist entries
+$DEEPOTUS Backend API Testing - Phase 6 Features
+Tests all endpoints including new Phase 6 features:
+1. Admin UI for blacklist (view/unblock/manual add)
+2. Welcome email via Resend API on whitelist registration (bilingual FR/EN template with hero image)
+3. Pagination on admin whitelist + chat-logs tables (25 per page)
+4. Public read-only stats dashboard at /stats with counters + evolution chart and NO PII
 """
 
 import requests
@@ -19,15 +18,18 @@ from typing import Dict, Any
 class DeepotusAPITester:
     def __init__(self, base_url="https://prophet-ai-memecoin.preview.emergentagent.com"):
         self.base_url = base_url
+        self.api_url = f"{base_url}/api"
         self.tests_run = 0
         self.tests_passed = 0
         self.session_id = None
         self.admin_token = None
+        self.test_email_verified = "olistruss639@gmail.com"  # Verified Resend email
+        self.test_email_unverified = f"test_{int(time.time())}@example.com"  # Should fail email but succeed registration
 
     def run_test(self, name: str, method: str, endpoint: str, expected_status: int, 
                  data: Dict[Any, Any] = None, params: Dict[str, str] = None, headers: Dict[str, str] = None) -> tuple:
         """Run a single API test"""
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/api/{endpoint}"
         default_headers = {'Content-Type': 'application/json'}
         if headers:
             default_headers.update(headers)
@@ -72,7 +74,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Root API endpoint",
             "GET",
-            "api/",
+            "",
             200
         )
         return success
@@ -82,7 +84,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Chat in French",
             "POST",
-            "api/chat",
+            "chat",
             200,
             data={
                 "message": "Que pense le Deep State de la Fed ?",
@@ -109,7 +111,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Chat in English",
             "POST",
-            "api/chat",
+            "chat",
             200,
             data={
                 "message": "What does the Deep State think of the Fed?",
@@ -129,7 +131,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Prophecy (seeded, FR)",
             "GET",
-            "api/prophecy",
+            "prophecy",
             200,
             params={"lang": "fr", "live": "false"}
         )
@@ -147,7 +149,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Prophecy (seeded, EN)",
             "GET",
-            "api/prophecy",
+            "prophecy",
             200,
             params={"lang": "en", "live": "false"}
         )
@@ -160,7 +162,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Prophecy (live LLM, FR)",
             "GET",
-            "api/prophecy",
+            "prophecy",
             200,
             params={"lang": "fr", "live": "true"}
         )
@@ -174,7 +176,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Whitelist (valid email)",
             "POST",
-            "api/whitelist",
+            "whitelist",
             200,
             data={
                 "email": test_email,
@@ -199,7 +201,7 @@ class DeepotusAPITester:
         success1, response1 = self.run_test(
             "Whitelist (first submission)",
             "POST",
-            "api/whitelist",
+            "whitelist",
             200,
             data={"email": test_email, "lang": "en"}
         )
@@ -211,7 +213,7 @@ class DeepotusAPITester:
         success2, response2 = self.run_test(
             "Whitelist (duplicate - idempotent)",
             "POST",
-            "api/whitelist",
+            "whitelist",
             200,
             data={"email": test_email, "lang": "en"}
         )
@@ -232,7 +234,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Whitelist (invalid email)",
             "POST",
-            "api/whitelist",
+            "whitelist",
             422,  # Expecting validation error
             data={
                 "email": "not-an-email",
@@ -246,7 +248,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Stats endpoint",
             "GET",
-            "api/stats",
+            "stats",
             200
         )
         if success and response:
@@ -275,7 +277,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Admin login (correct password)",
             "POST",
-            "api/admin/login",
+            "admin/login",
             200,
             data={"password": "deepotus2026"}
         )
@@ -295,7 +297,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Admin login (wrong password)",
             "POST",
-            "api/admin/login",
+            "admin/login",
             401,
             data={"password": "wrongpassword"}
         )
@@ -310,7 +312,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Admin whitelist (with token)",
             "GET",
-            "api/admin/whitelist",
+            "admin/whitelist",
             200,
             headers={"X-Admin-Token": self.admin_token}
         )
@@ -329,7 +331,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Admin whitelist (without token)",
             "GET",
-            "api/admin/whitelist",
+            "admin/whitelist",
             401
         )
         return success
@@ -343,7 +345,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Admin chat logs (with token)",
             "GET",
-            "api/admin/chat-logs",
+            "admin/chat-logs",
             200,
             headers={"X-Admin-Token": self.admin_token}
         )
@@ -362,7 +364,7 @@ class DeepotusAPITester:
         success, response = self.run_test(
             "Admin chat logs (without token)",
             "GET",
-            "api/admin/chat-logs",
+            "admin/chat-logs",
             401
         )
         return success
@@ -374,7 +376,7 @@ class DeepotusAPITester:
         success, response_data = self.run_test(
             "Admin login with correct password",
             "POST",
-            "api/admin/login",
+            "admin/login",
             200,
             data={"password": "deepotus2026"}
         )
@@ -444,7 +446,7 @@ class DeepotusAPITester:
         success1, _ = self.run_test(
             "Admin whitelist with Bearer token",
             "GET",
-            "api/admin/whitelist",
+            "admin/whitelist",
             200,
             headers={"Authorization": f"Bearer {self.admin_token}"}
         )
@@ -453,7 +455,7 @@ class DeepotusAPITester:
         success2, _ = self.run_test(
             "Admin whitelist with X-Admin-Token",
             "GET", 
-            "api/admin/whitelist",
+            "admin/whitelist",
             200,
             headers={"X-Admin-Token": self.admin_token}
         )
@@ -474,7 +476,7 @@ class DeepotusAPITester:
         success1, response_data = self.run_test(
             "Evolution API - default 30 days",
             "GET",
-            "api/admin/evolution",
+            "admin/evolution",
             200,
             headers=auth_headers
         )
@@ -501,7 +503,7 @@ class DeepotusAPITester:
         success2, _ = self.run_test(
             "Evolution API - 7 days",
             "GET",
-            "api/admin/evolution",
+            "admin/evolution",
             200,
             params={"days": "7"},
             headers=auth_headers
@@ -511,7 +513,7 @@ class DeepotusAPITester:
         success3, _ = self.run_test(
             "Evolution API - 90 days",
             "GET", 
-            "api/admin/evolution",
+            "admin/evolution",
             200,
             params={"days": "90"},
             headers=auth_headers
@@ -620,10 +622,394 @@ class DeepotusAPITester:
         
         return success1 and success2 and success3
 
+    def test_public_stats_api(self):
+        """Test public stats API - Phase 6 feature"""
+        print("\n🔍 Testing Public Stats API (Phase 6)...")
+        
+        # Test default public stats
+        success1, data1 = self.run_test(
+            "Public Stats (default)",
+            "GET",
+            "public/stats",
+            200
+        )
+        
+        if success1:
+            # Verify required fields
+            required_fields = ['whitelist_count', 'chat_messages', 'prophecies_served', 
+                             'launch_timestamp', 'generated_at', 'series_days', 'series']
+            missing_fields = [f for f in required_fields if f not in data1]
+            if missing_fields:
+                print(f"   ❌ Missing required fields: {missing_fields}")
+                success1 = False
+            else:
+                print(f"   ✅ All required fields present")
+            
+            # Verify no PII leakage
+            data_str = str(data1).lower()
+            if '@' in data_str or 'email' in data_str:
+                print(f"   ❌ Potential PII leak detected in public stats")
+                success1 = False
+            else:
+                print(f"   ✅ No PII detected in public stats")
+        
+        # Test with different days parameter (should be clamped 1-90)
+        success2, data2 = self.run_test(
+            "Public Stats (days=7)",
+            "GET",
+            "public/stats?days=7",
+            200
+        )
+        
+        success3, data3 = self.run_test(
+            "Public Stats (days=100, should clamp to 90)",
+            "GET",
+            "public/stats?days=100",
+            200
+        )
+        
+        if success3 and data3.get('series_days') != 90:
+            print(f"   ❌ Days not properly clamped: expected 90, got {data3.get('series_days')}")
+            success3 = False
+        elif success3:
+            print(f"   ✅ Days properly clamped to 90")
+        
+        return success1 and success2 and success3
+
+    def test_admin_pagination_apis(self):
+        """Test admin pagination APIs - Phase 6 feature"""
+        print("\n🔍 Testing Admin Pagination APIs (Phase 6)...")
+        
+        if not self.admin_token:
+            print("   ❌ No admin token available")
+            return False
+        
+        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test whitelist pagination
+        success1, data1 = self.run_test(
+            "Admin Whitelist Pagination (default)",
+            "GET",
+            "admin/whitelist",
+            200,
+            headers=auth_headers
+        )
+        
+        if success1:
+            required_fields = ['items', 'total', 'limit', 'skip']
+            missing_fields = [f for f in required_fields if f not in data1]
+            if missing_fields:
+                print(f"   ❌ Missing pagination fields in whitelist: {missing_fields}")
+                success1 = False
+            else:
+                print(f"   ✅ Whitelist pagination structure valid")
+        
+        # Test with specific pagination parameters
+        success2, data2 = self.run_test(
+            "Admin Whitelist Pagination (limit=5, skip=0)",
+            "GET",
+            "admin/whitelist?limit=5&skip=0",
+            200,
+            headers=auth_headers
+        )
+        
+        if success2:
+            if data2.get('limit') != 5 or data2.get('skip') != 0:
+                print(f"   ❌ Pagination parameters not respected: limit={data2.get('limit')}, skip={data2.get('skip')}")
+                success2 = False
+            else:
+                print(f"   ✅ Whitelist pagination parameters respected")
+        
+        # Test chat-logs pagination
+        success3, data3 = self.run_test(
+            "Admin Chat-logs Pagination",
+            "GET",
+            "admin/chat-logs?limit=5&skip=0",
+            200,
+            headers=auth_headers
+        )
+        
+        if success3:
+            required_fields = ['items', 'total', 'limit', 'skip']
+            missing_fields = [f for f in required_fields if f not in data3]
+            if missing_fields:
+                print(f"   ❌ Missing pagination fields in chat-logs: {missing_fields}")
+                success3 = False
+            else:
+                print(f"   ✅ Chat-logs pagination structure valid")
+        
+        return success1 and success2 and success3
+
+    def test_blacklist_crud_apis(self):
+        """Test blacklist CRUD operations - Phase 6 feature"""
+        print("\n🔍 Testing Blacklist CRUD APIs (Phase 6)...")
+        
+        if not self.admin_token:
+            print("   ❌ No admin token available")
+            return False
+        
+        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        test_email = f"blacklist_test_{int(time.time())}@example.com"
+        
+        # Test GET blacklist
+        success1, data1 = self.run_test(
+            "Admin Blacklist List",
+            "GET",
+            "admin/blacklist",
+            200,
+            headers=auth_headers
+        )
+        
+        if success1:
+            required_fields = ['items', 'total']
+            missing_fields = [f for f in required_fields if f not in data1]
+            if missing_fields:
+                print(f"   ❌ Missing fields in blacklist response: {missing_fields}")
+                success1 = False
+            else:
+                print(f"   ✅ Blacklist list structure valid")
+        
+        # Test POST blacklist (add email)
+        success2, response2 = self.run_test(
+            "Admin Blacklist Add",
+            "POST",
+            "admin/blacklist",
+            200,
+            data={"email": test_email, "reason": "test blacklist"},
+            headers=auth_headers
+        )
+        
+        if success2:
+            print(f"   ✅ Email {test_email} added to blacklist")
+        
+        # Verify email was blacklisted
+        success3, data3 = self.run_test(
+            "Admin Blacklist List (after add)",
+            "GET",
+            "admin/blacklist",
+            200,
+            headers=auth_headers
+        )
+        
+        entry_id = None
+        if success3:
+            blacklisted_emails = [item.get('email') for item in data3.get('items', [])]
+            if test_email not in blacklisted_emails:
+                print(f"   ❌ Email {test_email} not found in blacklist after adding")
+                success3 = False
+            else:
+                print(f"   ✅ Email {test_email} found in blacklist")
+                # Find the entry ID for deletion
+                blacklist_entry = next((item for item in data3.get('items', []) if item.get('email') == test_email), None)
+                if blacklist_entry:
+                    entry_id = blacklist_entry.get('id')
+        
+        # Test DELETE blacklist (unblock)
+        success4 = False
+        if entry_id:
+            success4, response4 = self.run_test(
+                "Admin Blacklist Remove",
+                "DELETE",
+                f"admin/blacklist/{entry_id}",
+                200,
+                headers=auth_headers
+            )
+            
+            if success4:
+                print(f"   ✅ Email {test_email} removed from blacklist")
+        
+        # Test invalid email format
+        success5, response5 = self.run_test(
+            "Admin Blacklist Add (invalid email)",
+            "POST",
+            "admin/blacklist",
+            422,  # Should return validation error
+            data={"email": "invalid-email", "reason": "test"},
+            headers=auth_headers
+        )
+        
+        if success5:
+            print(f"   ✅ Invalid email format properly rejected")
+        
+        return success1 and success2 and success3 and success4 and success5
+
+    def test_email_functionality(self):
+        """Test welcome email functionality - Phase 6 feature"""
+        print("\n🔍 Testing Email Functionality (Phase 6)...")
+        
+        # Test with verified email (should succeed)
+        success1, response1 = self.run_test(
+            "Whitelist Registration (verified email)",
+            "POST",
+            "whitelist",
+            200,
+            data={"email": self.test_email_verified, "lang": "en"}
+        )
+        
+        if success1:
+            entry_id = response1.get('id')
+            if not entry_id:
+                print(f"   ❌ No entry ID returned for whitelist registration")
+                success1 = False
+            else:
+                print(f"   ✅ Whitelist registration successful for verified email")
+                
+                # Wait for background email task
+                print("   ⏳ Waiting 5 seconds for email processing...")
+                time.sleep(5)
+                
+                # Check email status via admin API
+                if self.admin_token:
+                    auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
+                    success_check, data_check = self.run_test(
+                        "Check Email Status (verified)",
+                        "GET",
+                        "admin/whitelist",
+                        200,
+                        headers=auth_headers
+                    )
+                    
+                    if success_check:
+                        # Find our entry
+                        our_entry = None
+                        for item in data_check.get('items', []):
+                            if item.get('email') == self.test_email_verified:
+                                our_entry = item
+                                break
+                        
+                        if our_entry:
+                            email_sent = our_entry.get('email_sent', False)
+                            print(f"   📧 Email sent status for {self.test_email_verified}: {email_sent}")
+                            if email_sent:
+                                print(f"   ✅ Email successfully sent to verified address")
+                            else:
+                                print(f"   ⚠️  Email not sent yet (may still be processing)")
+        
+        # Test with unverified email (registration should succeed, email should fail gracefully)
+        success2, response2 = self.run_test(
+            "Whitelist Registration (unverified email)",
+            "POST",
+            "whitelist",
+            200,
+            data={"email": self.test_email_unverified, "lang": "en"}
+        )
+        
+        if success2:
+            print(f"   ✅ Registration succeeded for unverified email (as expected)")
+            
+            # Wait and check email status
+            time.sleep(3)
+            
+            if self.admin_token:
+                auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
+                success_check2, data_check2 = self.run_test(
+                    "Check Email Status (unverified)",
+                    "GET",
+                    "admin/whitelist",
+                    200,
+                    headers=auth_headers
+                )
+                
+                if success_check2:
+                    # Find our entry
+                    our_entry = None
+                    for item in data_check2.get('items', []):
+                        if item.get('email') == self.test_email_unverified:
+                            our_entry = item
+                            break
+                    
+                    if our_entry:
+                        email_sent = our_entry.get('email_sent', False)
+                        print(f"   📧 Email sent status for {self.test_email_unverified}: {email_sent}")
+                        if not email_sent:
+                            print(f"   ✅ Email correctly failed for unverified address (expected)")
+                        else:
+                            print(f"   ⚠️  Email unexpectedly succeeded for unverified address")
+        
+        return success1 and success2
+
+    def test_regression_after_unblock(self):
+        """Test that after unblock, email can register again - Phase 6 regression test"""
+        print("\n🔍 Testing Regression: After unblock, email can register again...")
+        
+        if not self.admin_token:
+            print("   ❌ No admin token available")
+            return False
+        
+        auth_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        test_email = f"regression_test_{int(time.time())}@example.com"
+        
+        # 1. Add email to blacklist
+        success1, _ = self.run_test(
+            "Add email to blacklist",
+            "POST",
+            "admin/blacklist",
+            200,
+            data={"email": test_email, "reason": "regression test"},
+            headers=auth_headers
+        )
+        
+        if not success1:
+            return False
+        
+        # 2. Try to register (should fail)
+        success2, _ = self.run_test(
+            "Try to register blacklisted email",
+            "POST",
+            "whitelist",
+            403,  # Should be forbidden
+            data={"email": test_email, "lang": "en"}
+        )
+        
+        if success2:
+            print(f"   ✅ Blacklisted email registration correctly blocked")
+        
+        # 3. Find and unblock the email
+        success3, data3 = self.run_test(
+            "Get blacklist to find entry",
+            "GET",
+            "admin/blacklist",
+            200,
+            headers=auth_headers
+        )
+        
+        entry_id = None
+        if success3:
+            blacklist_entry = next((item for item in data3.get('items', []) if item.get('email') == test_email), None)
+            if blacklist_entry:
+                entry_id = blacklist_entry.get('id')
+        
+        success4 = False
+        if entry_id:
+            success4, _ = self.run_test(
+                "Unblock email",
+                "DELETE",
+                f"admin/blacklist/{entry_id}",
+                200,
+                headers=auth_headers
+            )
+            
+            if success4:
+                print(f"   ✅ Email unblocked successfully")
+        
+        # 4. Try to register again (should succeed)
+        success5, _ = self.run_test(
+            "Try to register after unblock",
+            "POST",
+            "whitelist",
+            200,  # Should succeed now
+            data={"email": test_email, "lang": "en"}
+        )
+        
+        if success5:
+            print(f"   ✅ Email can register again after unblock (regression test passed)")
+        
+        return success1 and success2 and success3 and success4 and success5
+
     def run_all_tests(self):
-        """Run all backend API tests - Phase 5 Features"""
+        """Run all backend API tests - Phase 6 Features"""
         print("=" * 60)
-        print("🚀 DEEPOTUS Backend API Testing - Phase 5 Features")
+        print("🚀 DEEPOTUS Backend API Testing - Phase 6 Features")
         print("=" * 60)
         
         tests = [
@@ -639,7 +1025,14 @@ class DeepotusAPITester:
             self.test_whitelist_invalid_email,
             self.test_stats,
             
-            # Phase 5 new features - JWT and rate limiting
+            # Phase 6 new features
+            self.test_public_stats_api,
+            self.test_admin_pagination_apis,
+            self.test_blacklist_crud_apis,
+            self.test_email_functionality,
+            self.test_regression_after_unblock,
+            
+            # Phase 5 features - JWT and rate limiting
             self.test_admin_login_jwt,
             self.test_rate_limiting,
             self.test_jwt_auth_headers,

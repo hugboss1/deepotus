@@ -1,42 +1,50 @@
 [
   {
-    "content": "Generate 3 Prophet image variants (serious / meme / glitch) via Nano Banana",
+    "content": "Generate email hero image (candidate with crowd behind) via Nano Banana",
     "status": "completed"
   },
   {
-    "content": "Update Hero.jsx to cycle through 3 variants with crossfade animation",
+    "content": "Get Resend integration playbook",
     "status": "completed"
   },
   {
-    "content": "Add JWT secret to .env + refactor admin auth to JWT (PyJWT)",
+    "content": "Add RESEND_API_KEY to .env + install resend library",
     "status": "completed"
   },
   {
-    "content": "Add rate-limit middleware on /api/admin/login (5 attempts / 10min per IP)",
+    "content": "Backend: implement bilingual email template + async send on whitelist register",
     "status": "completed"
   },
   {
-    "content": "Add DELETE /api/admin/whitelist/{id} + blacklist collection logic",
+    "content": "Backend: add /api/admin/blacklist CRUD (GET list, POST add, DELETE unblock)",
     "status": "completed"
   },
   {
-    "content": "Add GET /api/admin/evolution for time-series data",
+    "content": "Backend: add pagination (skip/offset) to /api/admin/whitelist & chat-logs",
     "status": "completed"
   },
   {
-    "content": "Admin.jsx: add recharts area charts (whitelist + chat evolution)",
+    "content": "Backend: add /api/public/stats endpoint (no PII, safe summary + timeseries)",
     "status": "completed"
   },
   {
-    "content": "Admin.jsx: add delete/blacklist button per whitelist row with confirmation",
+    "content": "Frontend: Admin blacklist tab with View/Unblock/Add",
     "status": "completed"
   },
   {
-    "content": "End-to-end testing of all 5 new features",
+    "content": "Frontend: Admin tables pagination controls",
     "status": "completed"
+  },
+  {
+    "content": "Frontend: /stats public page (read-only, no PII)",
+    "status": "completed"
+  },
+  {
+    "content": "End-to-end testing",
+    "status": "in_progress"
   },
   {
     "content": "Final delivery summary",
-    "status": "in_progress"
+    "status": "pending"
   }
 ]

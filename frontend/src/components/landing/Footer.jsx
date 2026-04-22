@@ -40,8 +40,17 @@ export default function Footer() {
 
         <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-3 text-zinc-500 text-xs font-mono">
           <div>{t("footer.copyright")}</div>
-          <div className="uppercase tracking-widest">
-            /deep-state-potus · simulation
+          <div className="flex items-center gap-4">
+            <a
+              href="/stats"
+              className="uppercase tracking-widest hover:text-zinc-200 transition-colors"
+              data-testid="footer-public-stats-link"
+            >
+              → public stats
+            </a>
+            <span className="uppercase tracking-widest">
+              /deep-state-potus · simulation
+            </span>
           </div>
         </div>
       </div>
