@@ -19,6 +19,7 @@ import {
   Play,
   ExternalLink,
 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const TOKEN_KEY = "deepotus_admin_token";
@@ -66,7 +67,7 @@ export default function AdminVault() {
         return;
       }
       toast.error("Failed to load vault state");
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export default function AdminVault() {
       toast.success(`+${tokens} · digits_locked=${data.digits_locked}/${data.num_digits}`);
     } catch (e) {
       toast.error("Crack failed");
-      console.error(e);
+      logger.error(e);
     }
   }
 
@@ -210,7 +211,7 @@ export default function AdminVault() {
       toast.success(`DEX mode → ${mode}`);
     } catch (e) {
       toast.error("DEX config failed");
-      console.error(e);
+      logger.error(e);
     }
   }
 
@@ -233,7 +234,7 @@ export default function AdminVault() {
       await load();
     } catch (e) {
       toast.error("Poll failed");
-      console.error(e);
+      logger.error(e);
     } finally {
       setDexPollBusy(false);
     }

@@ -25,7 +25,7 @@ import re
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import pyotp
 import resend
@@ -307,6 +307,69 @@ async def admin_blacklist_add(
     return SimpleOk(ok=True, message=msg)
 
 
+def _parse_csv_candidates(
+    csv_text: str, default_reason: Optional[str]
+) -> Tuple[List[Tuple[str, str]], List[str]]:
+    """Parse the first column of a CSV as an email list (+ optional 2nd-column reason)."""
+    out: List[Tuple[str, str]] = []
+    errors: List[str] = []
+    try:
+        reader = csv_module.reader(io.StringIO(csv_text))
+        for row in reader:
+            if not row:
+                continue
+            email = (row[0] or "").strip().lower()
+            # skip header row or empty cell
+            if not email or email == "email":
+                continue
+            reason = ""
+            if len(row) > 1:
+                reason = (row[1] or "").strip()
+            out.append((email, reason or default_reason or "bulk import"))
+    except Exception as e:
+        errors.append(f"CSV parse error: {e}")
+    return out, errors
+
+
+def _normalize_email_list(
+    emails: List[str], default_reason: Optional[str]
+) -> List[Tuple[str, str]]:
+    out: List[Tuple[str, str]] = []
+    for email in emails:
+        e = (email or "").strip().lower()
+        if not e:
+            continue
+        out.append((e, default_reason or "bulk import"))
+    return out
+
+
+def _compute_cooldown_iso(cooldown_days: Optional[int]) -> Optional[str]:
+    if cooldown_days and cooldown_days > 0:
+        return (
+            datetime.now(timezone.utc) + timedelta(days=int(cooldown_days))
+        ).isoformat()
+    return None
+
+
+async def _insert_blacklist_entry(
+    email: str, reason: str, now_iso: str, cooldown_iso: Optional[str]
+) -> str:
+    """Insert one blacklist row + drop any matching whitelist entry. Returns entry_id."""
+    entry_id = f"imp-{uuid.uuid4().hex[:12]}"
+    doc: Dict[str, object] = {
+        "_id": entry_id,
+        "email": email,
+        "blacklisted_at": now_iso,
+        "reason": reason,
+        "source": "bulk_import",
+    }
+    if cooldown_iso:
+        doc["cooldown_until"] = cooldown_iso
+    await db.blacklist.insert_one(doc)
+    await db.whitelist.delete_one({"email": email})
+    return entry_id
+
+
 @router.post("/blacklist/import", response_model=BlacklistImportResponse)
 async def admin_blacklist_import(
     req: BlacklistImportRequest, _p: dict = Depends(require_admin)
@@ -319,32 +382,16 @@ async def admin_blacklist_import(
 
     Up to 5000 emails per call.
     """
-    candidates: List[tuple[str, str]] = []  # (email, reason)
+    candidates: List[Tuple[str, str]] = []
     errors: List[str] = []
 
     if req.csv_text and req.csv_text.strip():
-        try:
-            reader = csv_module.reader(io.StringIO(req.csv_text))
-            for row in reader:
-                if not row:
-                    continue
-                email = (row[0] or "").strip().lower()
-                if not email or email.lower() == "email":
-                    # skip header or blank
-                    continue
-                reason = ""
-                if len(row) > 1:
-                    reason = (row[1] or "").strip()
-                candidates.append((email, reason or req.reason or "bulk import"))
-        except Exception as e:
-            errors.append(f"CSV parse error: {e}")
+        parsed, parse_errors = _parse_csv_candidates(req.csv_text, req.reason)
+        candidates.extend(parsed)
+        errors.extend(parse_errors)
 
     if req.emails:
-        for email in req.emails:
-            e = (email or "").strip().lower()
-            if not e:
-                continue
-            candidates.append((e, req.reason or "bulk import"))
+        candidates.extend(_normalize_email_list(req.emails, req.reason))
 
     total_rows = len(candidates)
     if total_rows == 0:
@@ -366,33 +413,16 @@ async def admin_blacklist_import(
     skipped_invalid = 0
     skipped_existing = 0
     now_iso = datetime.now(timezone.utc).isoformat()
-    cooldown_iso = None
-    if req.cooldown_days and req.cooldown_days > 0:
-        cooldown_iso = (
-            datetime.now(timezone.utc) + timedelta(days=int(req.cooldown_days))
-        ).isoformat()
+    cooldown_iso = _compute_cooldown_iso(req.cooldown_days)
 
     for email, reason in candidates:
         if not EMAIL_RE.match(email):
             skipped_invalid += 1
             continue
-        exists = await db.blacklist.find_one({"email": email})
-        if exists:
+        if await db.blacklist.find_one({"email": email}):
             skipped_existing += 1
             continue
-        entry_id = f"imp-{uuid.uuid4().hex[:12]}"
-        doc = {
-            "_id": entry_id,
-            "email": email,
-            "blacklisted_at": now_iso,
-            "reason": reason,
-            "source": "bulk_import",
-        }
-        if cooldown_iso:
-            doc["cooldown_until"] = cooldown_iso
-        await db.blacklist.insert_one(doc)
-        # Also drop from whitelist if present
-        await db.whitelist.delete_one({"email": email})
+        await _insert_blacklist_entry(email, reason, now_iso, cooldown_iso)
         imported += 1
 
     return BlacklistImportResponse(

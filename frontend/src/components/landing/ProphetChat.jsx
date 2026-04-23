@@ -35,7 +35,8 @@ export default function ProphetChat() {
     const text = (textOverride ?? input).trim();
     if (!text || sending) return;
     setInput("");
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    const userMsgId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setMessages((m) => [...m, { id: userMsgId, role: "user", content: text }]);
     setSending(true);
     try {
       const res = await axios.post(`${API}/chat`, {
@@ -46,13 +47,18 @@ export default function ProphetChat() {
       if (!sessionId) setSessionId(res.data.session_id);
       setMessages((m) => [
         ...m,
-        { role: "prophet", content: res.data.reply },
+        {
+          id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: "prophet",
+          content: res.data.reply,
+        },
       ]);
     } catch (e) {
       toast.error(t("chat.errorToast"));
       setMessages((m) => [
         ...m,
         {
+          id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           role: "prophet",
           content:
             lang === "fr"
@@ -104,7 +110,7 @@ export default function ProphetChat() {
               </div>
               <ul className="space-y-2 text-sm text-foreground/80">
                 {(t("chat.rules") || []).map((r, i) => (
-                  <li key={i} className="flex gap-2">
+                  <li key={`rule-${i}-${(r || "").slice(0, 12)}`} className="flex gap-2">
                     <span className="text-[--terminal-green-dim] font-mono">
                       &gt;
                     </span>
@@ -122,7 +128,7 @@ export default function ProphetChat() {
               <div className="flex flex-wrap gap-2">
                 {examples.map((q, i) => (
                   <button
-                    key={i}
+                    key={`example-${i}-${(q || "").slice(0, 12)}`}
                     onClick={() => send(q)}
                     className="px-3 py-1.5 rounded-full text-xs border border-border bg-background hover:bg-secondary transition-colors text-foreground/80"
                     data-testid={`chat-example-${i}`}
@@ -168,7 +174,7 @@ export default function ProphetChat() {
                 <AnimatePresence initial={false}>
                   {messages.map((m, i) => (
                     <motion.div
-                      key={i}
+                      key={m.id || `msg-${i}`}
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}

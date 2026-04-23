@@ -18,6 +18,7 @@ import ThemeToggle from "@/components/landing/ThemeToggle";
 import ActivityHeatmap from "@/components/landing/ActivityHeatmap";
 import { LanguageToggle } from "@/components/landing/LanguageToggle";
 import { useI18n } from "@/i18n/I18nProvider";
+import { logger } from "@/lib/logger";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -111,7 +112,7 @@ export default function PublicStats() {
       const res = await axios.get(`${API}/public/stats?days=${nextDays}`);
       setData(res.data);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }

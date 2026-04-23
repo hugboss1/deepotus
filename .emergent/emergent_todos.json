@@ -1,58 +1,34 @@
 [
   {
-    "content": "Lire et analyser l'intégralité de server.py",
+    "content": "Phase 1a: Migrer vault.py random.randint(0,9) vers secrets pour la combinaison cible",
     "status": "completed"
   },
   {
-    "content": "Créer la structure modulaire (core/, routers/)",
+    "content": "Phase 1b: Migrer access_card.py random.choices vers secrets.choice pour accreditation_number + display_name",
     "status": "completed"
   },
   {
-    "content": "Extraire config + DB + logger vers core/config.py",
+    "content": "Phase 2a: Retirer/wrapper console.* en production (PublicStats.jsx + autres)",
     "status": "completed"
   },
   {
-    "content": "Extraire security (JWT, rate-limit, require_admin, 2FA) vers core/security.py",
+    "content": "Phase 2b: Corriger array index as key dans ProphetChat / Roadmap / Operation / VaultSection",
     "status": "completed"
   },
   {
-    "content": "Extraire tous les modèles Pydantic vers core/models.py",
+    "content": "Phase 3a: Refactor dex_poll_once (split en fetch/extract/apply)",
     "status": "completed"
   },
   {
-    "content": "Extraire send_welcome_email vers core/email_service.py",
+    "content": "Phase 3b: Refactor admin_blacklist_import (split validation/parsing/insertion)",
     "status": "completed"
   },
   {
-    "content": "Créer routers/public.py (/, chat, prophecy, whitelist, stats, public/stats)",
+    "content": "Phase 3c: Refactor CombinationDial (extract hooks et handlers)",
     "status": "completed"
   },
   {
-    "content": "Créer routers/admin.py (login, whitelist, logs, evolution, blacklist, sessions, 2fa, export, email-events)",
-    "status": "completed"
-  },
-  {
-    "content": "Créer routers/webhooks.py (/webhooks/resend)",
-    "status": "completed"
-  },
-  {
-    "content": "Créer routers/vault.py (endpoints /vault/*)",
-    "status": "completed"
-  },
-  {
-    "content": "Créer routers/access_card.py (endpoints /access-card/*)",
-    "status": "completed"
-  },
-  {
-    "content": "Créer routers/operation.py (/operation/reveal)",
-    "status": "completed"
-  },
-  {
-    "content": "Réécrire server.py minimal (app factory + startup/shutdown + include_router)",
-    "status": "completed"
-  },
-  {
-    "content": "Lancer testing agent backend complet (régression globale)",
-    "status": "completed"
+    "content": "Tester régression backend + sanity frontend (lint + screenshot)",
+    "status": "in_progress"
   }
 ]

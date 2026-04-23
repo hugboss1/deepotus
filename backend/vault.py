@@ -31,8 +31,19 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import secrets
 import uuid
 from datetime import datetime, timezone
+
+
+def _secure_digit() -> int:
+    """Cryptographically-secure single decimal digit (0-9).
+
+    Used for generating the hidden TARGET combination of the vault. Must be
+    unpredictable \u2014 an attacker able to guess the RNG seed could otherwise
+    pre-compute the secret combination.
+    """
+    return secrets.randbelow(10)
 from typing import List, Optional, Tuple, Dict, Any
 
 from pydantic import BaseModel, Field
@@ -190,7 +201,7 @@ async def initialize_vault(db) -> Dict[str, Any]:
             await db.vault_state.update_one({"_id": VAULT_DOC_ID}, {"$set": patch})
             doc.update(patch)
         return doc
-    target = [random.randint(0, 9) for _ in range(DEFAULT_NUM_DIGITS)]
+    target = [_secure_digit() for _ in range(DEFAULT_NUM_DIGITS)]
     doc = {
         "_id": VAULT_DOC_ID,
         "code_name": "PROTOCOL ΔΣ",
@@ -500,7 +511,7 @@ async def update_config(db, cfg: VaultConfigUpdate) -> VaultAdminStateResponse:
 
     if cfg.reset:
         doc["target_combination"] = [
-            random.randint(0, 9) for _ in range(int(doc.get("num_digits", DEFAULT_NUM_DIGITS)))
+            _secure_digit() for _ in range(int(doc.get("num_digits", DEFAULT_NUM_DIGITS)))
         ]
         doc["digits_locked"] = 0
         doc["tokens_sold"] = 0

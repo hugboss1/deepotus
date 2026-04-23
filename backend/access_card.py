@@ -22,7 +22,7 @@ import os
 import re
 import uuid
 import base64
-import random
+import secrets
 import string
 import logging
 from datetime import datetime, timezone, timedelta
@@ -124,18 +124,22 @@ def _slugify_email(email: str) -> str:
 def _derive_display_name(email: str) -> str:
     """Generate a codename from the email if the user did not provide one."""
     agent = _slugify_email(email)
-    suffix = "".join(random.choices(string.digits, k=3))
+    suffix = "".join(secrets.choice(string.digits) for _ in range(3))
     return f"AGENT {agent}-{suffix}"
 
 
 def generate_accreditation_number() -> str:
-    """Generate a unique accreditation number of the form ΔΣ-02-XXXX-XXXX-XX."""
-    # Only letters/digits for compatibility with manual entry + QR scanners
+    """Generate a cryptographically-random accreditation number.
+
+    The accreditation number IS the Level-2 Bearer token (used by the
+    /classified-vault gate). It MUST be unpredictable, hence `secrets`.
+    Format: DS-02-XXXX-XXXX-XX (uppercase alphanumerics).
+    """
     pool = string.ascii_uppercase + string.digits
     blocks = [
-        "".join(random.choices(pool, k=4)),
-        "".join(random.choices(pool, k=4)),
-        "".join(random.choices(pool, k=2)),
+        "".join(secrets.choice(pool) for _ in range(4)),
+        "".join(secrets.choice(pool) for _ in range(4)),
+        "".join(secrets.choice(pool) for _ in range(2)),
     ]
     return f"DS-02-{blocks[0]}-{blocks[1]}-{blocks[2]}"
 

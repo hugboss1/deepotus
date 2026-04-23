@@ -33,7 +33,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
 import httpx
 
@@ -55,6 +55,9 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ---------------------------------------------------------------------
+# Low-level fetch + normalization
+# ---------------------------------------------------------------------
 async def _fetch_token_stats(address: str) -> Optional[Dict[str, Any]]:
     """Call DexScreener /tokens/{address} and return the BEST pair (highest liquidity)."""
     try:
@@ -116,105 +119,131 @@ def _agent_code_for(pair_symbol: str, agent_index: int = 0) -> str:
     return f"DEX-{tag}-{agent_index:04d}"
 
 
-async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
-    """One polling iteration. Returns a diagnostic dict."""
-    doc = await db.vault_state.find_one({"_id": VAULT_DOC_ID}) or {}
-    mode = (doc.get("dex_mode") or "off").lower()
-
-    if mode == "off":
-        return {"mode": "off", "skipped": True}
-
+# ---------------------------------------------------------------------
+# Mode-specific helpers (split from dex_poll_once for readability)
+# ---------------------------------------------------------------------
+def _resolve_token_address(
+    doc: Dict[str, Any], mode: str
+) -> Tuple[Optional[str], Optional[str]]:
+    """Return (address, error). `address` is None when polling should be skipped."""
     if mode == "demo":
-        address = doc.get("dex_demo_token_address") or DEMO_TOKEN_ADDRESS
-    else:  # custom
-        address = (doc.get("dex_token_address") or "").strip()
-        if not address:
-            return {"mode": mode, "skipped": True, "error": "no token_address"}
+        return doc.get("dex_demo_token_address") or DEMO_TOKEN_ADDRESS, None
+    address = (doc.get("dex_token_address") or "").strip()
+    if not address:
+        return None, "no token_address"
+    return address, None
 
-    stats_pair = await _fetch_token_stats(address)
-    if not stats_pair:
-        await db.vault_state.update_one(
-            {"_id": VAULT_DOC_ID},
-            {
-                "$set": {
-                    "dex_last_poll_at": _now_iso(),
-                    "dex_error": "no pairs or HTTP error",
-                }
-            },
-        )
-        return {"mode": mode, "skipped": True, "error": "no pairs"}
 
-    s = _extract_stats(stats_pair)
-    pair_symbol = f"{s['base_symbol']}/{s['quote_symbol']}"
-    label = f"{s['base_symbol']} \u00b7 {s['dex_id'] or 'dex'}"
+def _compute_deltas(
+    doc: Dict[str, Any], s: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Compare the newly-fetched stats to the last-known snapshot on the doc.
 
-    last_h24_buys = int(doc.get("dex_last_h24_buys") or 0)
-    last_h24_sells = int(doc.get("dex_last_h24_sells") or 0)
+    The DexScreener h24 window is rolling, so counts can occasionally decrease.
+    We clamp negative deltas to zero to avoid spurious 'activity'.
+    """
+    last_buys = int(doc.get("dex_last_h24_buys") or 0)
+    last_sells = int(doc.get("dex_last_h24_sells") or 0)
     last_vol = float(doc.get("dex_last_h24_volume_usd") or 0)
-    carry = float(doc.get("dex_carry_tokens") or 0)
     first_seen = not bool(doc.get("dex_last_poll_at"))
+    return {
+        "delta_buys": max(0, s["buys_h24"] - last_buys),
+        "delta_sells": max(0, s["sells_h24"] - last_sells),
+        "delta_vol_usd": max(0.0, s["volume_h24"] - last_vol),
+        "carry": float(doc.get("dex_carry_tokens") or 0),
+        "first_seen": first_seen,
+    }
 
-    # Delta buys since last poll (h24 is a rolling window; tiny drops can happen,
-    # so we clamp to 0 when the window rolled over).
-    delta_buys = max(0, s["buys_h24"] - last_h24_buys)
-    delta_sells = max(0, s["sells_h24"] - last_h24_sells)
-    delta_vol_usd = max(0.0, s["volume_h24"] - last_vol)
 
-    # On the very first poll we cannot measure a delta — just record baselines.
-    ticks_applied = 0
-    new_carry = carry
+async def _apply_demo_ticks(
+    db,
+    vault_mod,
+    doc: Dict[str, Any],
+    s: Dict[str, Any],
+    pair_symbol: str,
+    delta_buys: int,
+) -> int:
+    """Emit up to DEMO_MAX_TICKS_PER_POLL symbolic purchase events.
 
-    if first_seen or (delta_buys == 0 and delta_vol_usd == 0):
-        pass
-    elif mode == "demo":
-        # Symbolic: emit "purchase" events scaled to make the demo feel alive without
-        # instantly cracking the vault at production scale (100M per dial).
-        # We apply up to DEMO_MAX_TICKS_PER_POLL events, each of `demo_tick_tokens`.
-        tokens_per_digit = int(doc.get("tokens_per_digit") or 1000)
-        tokens_per_micro = int(doc.get("tokens_per_micro") or 10_000)
-        # Aim for a single buy event to produce roughly ~3-10 micro-rotations visibly
-        demo_tick_tokens = max(tokens_per_micro * 3, min(tokens_per_digit // 50, 2_000_000))
-        potential_ticks = min(DEMO_MAX_TICKS_PER_POLL, delta_buys // DEMO_BUYS_PER_TICK)
-        for i in range(potential_ticks):
-            await vault_mod.apply_crack(
-                db,
-                tokens=int(demo_tick_tokens),
-                kind="purchase",
-                agent_code=_agent_code_for(pair_symbol, agent_index=i + 1),
-                note=f"dex demo: {s['base_symbol']} (+{delta_buys} buys h24 delta)",
-            )
-            ticks_applied += 1
+    Each event is sized so that the demo feels alive without instantly cracking
+    the vault at production scale (100M per dial).
+    """
+    tokens_per_digit = int(doc.get("tokens_per_digit") or 1000)
+    tokens_per_micro = int(doc.get("tokens_per_micro") or 10_000)
+    # Aim for a single buy event to produce roughly ~3-10 micro-rotations visibly
+    demo_tick_tokens = max(
+        tokens_per_micro * 3, min(tokens_per_digit // 50, 2_000_000)
+    )
+    potential_ticks = min(
+        DEMO_MAX_TICKS_PER_POLL, delta_buys // DEMO_BUYS_PER_TICK
+    )
+
+    applied = 0
+    for i in range(potential_ticks):
+        await vault_mod.apply_crack(
+            db,
+            tokens=int(demo_tick_tokens),
+            kind="purchase",
+            agent_code=_agent_code_for(pair_symbol, agent_index=i + 1),
+            note=f"dex demo: {s['base_symbol']} (+{delta_buys} buys h24 delta)",
+        )
+        applied += 1
+    return applied
+
+
+async def _apply_custom_ticks(
+    db,
+    vault_mod,
+    carry: float,
+    s: Dict[str, Any],
+    delta_buys: int,
+    delta_sells: int,
+    delta_vol_usd: float,
+    pair_symbol: str,
+) -> Tuple[int, float]:
+    """Apply the REAL estimated token volume to the vault for `custom` mode.
+
+    Returns (ticks_applied, new_carry). The fractional portion of the estimated
+    token count is stored in `carry` so we never lose sub-token activity.
+    """
+    total_txns = delta_buys + delta_sells
+    buy_ratio = (delta_buys / total_txns) if total_txns > 0 else 0.5
+    delta_buy_volume_usd = delta_vol_usd * buy_ratio
+    if s["price_usd"] > 0:
+        delta_tokens = delta_buy_volume_usd / s["price_usd"]
     else:
-        # custom: apply the REAL estimated token volume (no artificial batching)
-        # so both digits_locked and micro_ticks_total advance naturally.
-        total_txns = delta_buys + delta_sells
-        buy_ratio = (delta_buys / total_txns) if total_txns > 0 else 0.5
-        delta_buy_volume_usd = delta_vol_usd * buy_ratio
-        if s["price_usd"] > 0:
-            delta_tokens = delta_buy_volume_usd / s["price_usd"]
-        else:
-            delta_tokens = 0.0
+        delta_tokens = 0.0
 
-        # Tiny carry to accumulate fractional leftovers across polls, but push each
-        # poll's integer portion as ONE single event with the real token count.
-        new_carry = carry + delta_tokens
-        tokens_to_apply = int(new_carry)
-        new_carry = new_carry - tokens_to_apply
+    new_carry = carry + delta_tokens
+    tokens_to_apply = int(new_carry)
+    new_carry = new_carry - tokens_to_apply
 
-        if tokens_to_apply > 0:
-            await vault_mod.apply_crack(
-                db,
-                tokens=tokens_to_apply,
-                kind="purchase",
-                agent_code=_agent_code_for(pair_symbol, agent_index=1),
-                note=(
-                    f"dex custom: {s['base_symbol']} "
-                    f"+{int(delta_tokens):,} tokens (Δbuys={delta_buys})"
-                ),
-            )
-            ticks_applied += 1
+    if tokens_to_apply <= 0:
+        return 0, new_carry
 
-    # Persist updated baselines
+    await vault_mod.apply_crack(
+        db,
+        tokens=tokens_to_apply,
+        kind="purchase",
+        agent_code=_agent_code_for(pair_symbol, agent_index=1),
+        note=(
+            f"dex custom: {s['base_symbol']} "
+            f"+{int(delta_tokens):,} tokens (Δbuys={delta_buys})"
+        ),
+    )
+    return 1, new_carry
+
+
+async def _persist_baselines(
+    db,
+    s: Dict[str, Any],
+    pair_symbol: str,
+    label: str,
+    new_carry: float,
+    *,
+    error: Optional[str] = None,
+) -> None:
+    """Write the observed stats back to vault_state so the next poll can diff."""
     await db.vault_state.update_one(
         {"_id": VAULT_DOC_ID},
         {
@@ -227,10 +256,73 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
                 "dex_carry_tokens": new_carry,
                 "dex_pair_symbol": pair_symbol,
                 "dex_label": label,
-                "dex_error": None,
+                "dex_error": error,
             }
         },
     )
+
+
+async def _persist_fetch_error(db, error: str) -> None:
+    await db.vault_state.update_one(
+        {"_id": VAULT_DOC_ID},
+        {"$set": {"dex_last_poll_at": _now_iso(), "dex_error": error}},
+    )
+
+
+# ---------------------------------------------------------------------
+# Orchestrator (cyclomatic complexity slimmed down from 24 → ~7)
+# ---------------------------------------------------------------------
+async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
+    """One polling iteration. Returns a diagnostic dict."""
+    doc = await db.vault_state.find_one({"_id": VAULT_DOC_ID}) or {}
+    mode = (doc.get("dex_mode") or "off").lower()
+
+    if mode == "off":
+        return {"mode": "off", "skipped": True}
+
+    address, err = _resolve_token_address(doc, mode)
+    if err or not address:
+        return {"mode": mode, "skipped": True, "error": err or "no address"}
+
+    stats_pair = await _fetch_token_stats(address)
+    if not stats_pair:
+        await _persist_fetch_error(db, "no pairs or HTTP error")
+        return {"mode": mode, "skipped": True, "error": "no pairs"}
+
+    s = _extract_stats(stats_pair)
+    pair_symbol = f"{s['base_symbol']}/{s['quote_symbol']}"
+    label = f"{s['base_symbol']} · {s['dex_id'] or 'dex'}"
+
+    deltas = _compute_deltas(doc, s)
+    delta_buys = deltas["delta_buys"]
+    delta_sells = deltas["delta_sells"]
+    delta_vol_usd = deltas["delta_vol_usd"]
+    carry = deltas["carry"]
+    first_seen = deltas["first_seen"]
+
+    ticks_applied = 0
+    new_carry = carry
+
+    # Only apply crack events when we have a real delta to measure against.
+    quiet = first_seen or (delta_buys == 0 and delta_vol_usd == 0)
+    if not quiet:
+        if mode == "demo":
+            ticks_applied = await _apply_demo_ticks(
+                db, vault_mod, doc, s, pair_symbol, delta_buys
+            )
+        else:  # custom
+            ticks_applied, new_carry = await _apply_custom_ticks(
+                db,
+                vault_mod,
+                carry,
+                s,
+                delta_buys,
+                delta_sells,
+                delta_vol_usd,
+                pair_symbol,
+            )
+
+    await _persist_baselines(db, s, pair_symbol, label, new_carry)
 
     return {
         "mode": mode,

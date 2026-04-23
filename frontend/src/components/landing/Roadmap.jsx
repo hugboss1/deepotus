@@ -34,7 +34,7 @@ export default function Roadmap() {
               const Icon = ICONS[i] || Rocket;
               return (
                 <motion.div
-                  key={i}
+                  key={`phase-${p.tag || i}-${(p.title || "").slice(0, 16)}`}
                   initial={{ opacity: 0, y: 14 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-60px" }}
@@ -54,7 +54,7 @@ export default function Roadmap() {
                     </div>
                     <ul className="mt-3 space-y-2 text-sm text-foreground/80">
                       {(p.bullets || []).map((b, j) => (
-                        <li key={j} className="flex gap-2">
+                        <li key={`${p.tag || i}-bullet-${j}-${(b || "").slice(0, 12)}`} className="flex gap-2">
                           <span className="text-accent font-mono mt-0.5">›</span>
                           <span className="leading-snug">{b}</span>
                         </li>

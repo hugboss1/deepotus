@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
+import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -43,7 +44,7 @@ export default function Operation() {
         setReveal(r1);
         setVault(r2);
       } catch (e) {
-        console.error("[operation] load error", e);
+        logger.error("[operation] load error", e);
       } finally {
         if (alive) setLoading(false);
       }
@@ -228,7 +229,7 @@ export default function Operation() {
                   <div className="mt-4 space-y-4 max-w-3xl text-foreground/85 leading-relaxed">
                     {lore.map((line, i) => (
                       <motion.p
-                        key={i}
+                        key={`lore-${lang}-${i}-${(line || "").slice(0, 16)}`}
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.4, delay: 0.2 + i * 0.08 }}

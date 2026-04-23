@@ -16,26 +16,92 @@ import { Lock, Unlock } from "lucide-react";
  *      chassis → fills its parent (used inside the vault-image overlay). In chassis
  *                mode, sizing is driven 100% by the parent; no min/max.
  */
-export default function CombinationDial({
-  value = 0,
-  locked = false,
-  stage = "LOCKED",
-  index = 0,
-  size = "default",
-  showLabel = true,
-  isActive = false,            // true = first unlocked dial (receives micro-ticks)
-  microTickVersion = 0,        // increments when a new micro-purchase is detected
-}) {
-  const [display, setDisplay] = useState(value);
-  const [microFlash, setMicroFlash] = useState(false);
-  const controls = useAnimation();
-  const rafRef = useRef(null);
-  const lastMicroRef = useRef(microTickVersion);
 
+// ---------------------------------------------------------------------
+// Pure style helpers (pulled out of the component to flatten complexity)
+// ---------------------------------------------------------------------
+const LOCKED_STYLE = {
+  ring: "ring-[#18C964]/60",
+  glow: "shadow-[0_0_18px_rgba(24,201,100,0.35)]",
+  text: "text-[#18C964]",
+};
+
+const DECLASSIFIED_STYLE = {
+  ring: "ring-[#18C964]/80",
+  glow: "shadow-[0_0_24px_rgba(24,201,100,0.45)]",
+  text: "text-[#18C964]",
+};
+
+const MICRO_FLASH_STYLE = {
+  ring: "ring-[#F59E0B]",
+  glow: "shadow-[0_0_26px_rgba(245,158,11,0.7)]",
+  text: "text-[#F59E0B]",
+};
+
+const ACTIVE_STYLE = {
+  ring: "ring-[#F59E0B]/60",
+  glow: "shadow-[0_0_14px_rgba(245,158,11,0.3)]",
+  text: "text-[#F59E0B]",
+};
+
+const UNLOCKING_STYLE = {
+  ring: "ring-[#F59E0B]/70",
+  glow: "shadow-[0_0_18px_rgba(245,158,11,0.35)]",
+  text: "text-[#F59E0B]",
+};
+
+const CRACKING_STYLE = {
+  ring: "ring-[#F59E0B]/50",
+  glow: "shadow-[0_0_12px_rgba(245,158,11,0.25)]",
+  text: "text-[#F59E0B]",
+};
+
+const LOCKED_FALLBACK_STYLE = {
+  ring: "ring-red-500/50",
+  glow: "shadow-[0_0_14px_rgba(239,68,68,0.25)]",
+  text: "text-red-400",
+};
+
+function computeStageStyle({ locked, stage, microFlash, isActive }) {
+  if (locked) return LOCKED_STYLE;
+  if (stage === "DECLASSIFIED") return DECLASSIFIED_STYLE;
+  if (microFlash) return MICRO_FLASH_STYLE;
+  if (isActive) return ACTIVE_STYLE;
+  if (stage === "UNLOCKING") return UNLOCKING_STYLE;
+  if (stage === "CRACKING") return CRACKING_STYLE;
+  return LOCKED_FALLBACK_STYLE;
+}
+
+function computeDimensions(size) {
+  if (size === "chassis") {
+    return {
+      dims: "w-full h-full",
+      fontSize: "text-[clamp(11px,2.8vw,42px)]",
+      bgTint: "bg-black/80 backdrop-blur-[1px]",
+    };
+  }
+  if (size === "sm") {
+    return {
+      dims: "w-10 h-14",
+      fontSize: "text-2xl",
+      bgTint: "bg-background",
+    };
+  }
+  return {
+    dims: "w-14 h-20 md:w-16 md:h-24",
+    fontSize: "text-3xl md:text-4xl",
+    bgTint: "bg-background",
+  };
+}
+
+// ---------------------------------------------------------------------
+// Custom hooks — encapsulate side-effects so the JSX stays declarative
+// ---------------------------------------------------------------------
+function useShuffleLoop({ locked, value, index, controls, setDisplay }) {
   useEffect(() => {
     if (locked) {
       setDisplay(value);
-      return;
+      return undefined;
     }
     let cancelled = false;
     const tick = () => {
@@ -55,13 +121,21 @@ export default function CombinationDial({
       cancelled = true;
       clearInterval(id);
     };
-  }, [locked, value, controls, index]);
+  }, [locked, value, controls, index, setDisplay]);
+}
 
-  // Deterministic spin triggered when a micro-tick arrives on the ACTIVE dial.
-  // Visual: advance display by +1 + amber flash pulse. Feels purposeful.
+function useMicroTickFlash({
+  microTickVersion,
+  isActive,
+  locked,
+  controls,
+  setDisplay,
+  setMicroFlash,
+}) {
+  const lastMicroRef = useRef(microTickVersion);
   useEffect(() => {
-    if (locked || !isActive) return;
-    if (microTickVersion === lastMicroRef.current) return;
+    if (locked || !isActive) return undefined;
+    if (microTickVersion === lastMicroRef.current) return undefined;
     lastMicroRef.current = microTickVersion;
     setDisplay((d) => (d + 1) % 10);
     setMicroFlash(true);
@@ -72,94 +146,46 @@ export default function CombinationDial({
     });
     const t = setTimeout(() => setMicroFlash(false), 360);
     return () => clearTimeout(t);
-  }, [microTickVersion, isActive, locked, controls]);
+  }, [microTickVersion, isActive, locked, controls, setDisplay, setMicroFlash]);
+}
 
-  useEffect(() => {
-    const r = rafRef;
-    return () => {
-      if (r.current) cancelAnimationFrame(r.current);
-    };
-  }, []);
+// ---------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------
+export default function CombinationDial({
+  value = 0,
+  locked = false,
+  stage = "LOCKED",
+  index = 0,
+  size = "default",
+  showLabel = true,
+  isActive = false, // true = first unlocked dial (receives micro-ticks)
+  microTickVersion = 0, // increments when a new micro-purchase is detected
+}) {
+  const [display, setDisplay] = useState(value);
+  const [microFlash, setMicroFlash] = useState(false);
+  const controls = useAnimation();
 
-  const stageStyles = (() => {
-    if (locked) {
-      return {
-        ring: "ring-[#18C964]/60",
-        glow: "shadow-[0_0_18px_rgba(24,201,100,0.35)]",
-        text: "text-[#18C964]",
-      };
-    }
-    if (stage === "DECLASSIFIED") {
-      return {
-        ring: "ring-[#18C964]/80",
-        glow: "shadow-[0_0_24px_rgba(24,201,100,0.45)]",
-        text: "text-[#18C964]",
-      };
-    }
-    if (microFlash) {
-      // Short bright amber burst on micro-tick
-      return {
-        ring: "ring-[#F59E0B]",
-        glow: "shadow-[0_0_26px_rgba(245,158,11,0.7)]",
-        text: "text-[#F59E0B]",
-      };
-    }
-    if (isActive && !locked) {
-      // The "next-up" dial is slightly emphasized
-      return {
-        ring: "ring-[#F59E0B]/60",
-        glow: "shadow-[0_0_14px_rgba(245,158,11,0.3)]",
-        text: "text-[#F59E0B]",
-      };
-    }
-    if (stage === "UNLOCKING") {
-      return {
-        ring: "ring-[#F59E0B]/70",
-        glow: "shadow-[0_0_18px_rgba(245,158,11,0.35)]",
-        text: "text-[#F59E0B]",
-      };
-    }
-    if (stage === "CRACKING") {
-      return {
-        ring: "ring-[#F59E0B]/50",
-        glow: "shadow-[0_0_12px_rgba(245,158,11,0.25)]",
-        text: "text-[#F59E0B]",
-      };
-    }
-    return {
-      ring: "ring-red-500/50",
-      glow: "shadow-[0_0_14px_rgba(239,68,68,0.25)]",
-      text: "text-red-400",
-    };
-  })();
+  useShuffleLoop({ locked, value, index, controls, setDisplay });
+  useMicroTickFlash({
+    microTickVersion,
+    isActive,
+    locked,
+    controls,
+    setDisplay,
+    setMicroFlash,
+  });
 
-  // Sizing presets
-  const dims =
+  const stageStyles = computeStageStyle({ locked, stage, microFlash, isActive });
+  const { dims, fontSize, bgTint } = computeDimensions(size);
+
+  const containerClass =
     size === "chassis"
-      ? "w-full h-full"
-      : size === "sm"
-      ? "w-10 h-14"
-      : "w-14 h-20 md:w-16 md:h-24";
-  const fontSize =
-    size === "chassis"
-      ? "text-[clamp(11px,2.8vw,42px)]"
-      : size === "sm"
-      ? "text-2xl"
-      : "text-3xl md:text-4xl";
-  const bgTint =
-    size === "chassis"
-      ? "bg-black/80 backdrop-blur-[1px]"
-      : "bg-background";
+      ? "flex flex-col items-center justify-center w-full h-full"
+      : "flex flex-col items-center gap-2";
 
   return (
-    <div
-      className={
-        size === "chassis"
-          ? "flex flex-col items-center justify-center w-full h-full"
-          : "flex flex-col items-center gap-2"
-      }
-      data-testid={`vault-dial-${index}`}
-    >
+    <div className={containerClass} data-testid={`vault-dial-${index}`}>
       <div
         className={`relative ${dims} rounded-md ${bgTint} border border-border/50 ring-2 ${stageStyles.ring} ${stageStyles.glow} overflow-hidden flex items-center justify-center transition-shadow duration-300`}
       >
@@ -184,7 +210,9 @@ export default function CombinationDial({
       </div>
       {showLabel && size !== "chassis" && (
         <span
-          className={`font-mono text-[9px] uppercase tracking-[0.2em] ${locked ? "text-[#18C964]" : "text-muted-foreground"}`}
+          className={`font-mono text-[9px] uppercase tracking-[0.2em] ${
+            locked ? "text-[#18C964]" : "text-muted-foreground"
+          }`}
         >
           {locked ? "LOCKED" : "◌"}
         </span>

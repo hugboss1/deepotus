@@ -1,0 +1,60 @@
+{
+  "summary": "Completed comprehensive backend testing for PROTOCOL ΔΣ post-hardening regression sweep. Verified security improvements, refactored endpoints, and regression testing with 40/43 tests passing.",
+  "backend_issues": {
+    "minor_issues": [
+      {
+        "endpoint": "/api/webhooks/resend",
+        "issue": "Returns 401 for unsigned webhook requests",
+        "impact": "Expected security behavior - webhooks require proper signature validation",
+        "fix_priority": "NONE",
+        "note": "This is correct security behavior, not a bug"
+      }
+    ],
+    "test_environment_notes": [
+      {
+        "component": "DexScreener integration",
+        "status": "mode=off as expected in test environment",
+        "note": "Endpoint correctly returns minimal response when polling is disabled"
+      }
+    ]
+  },
+  "frontend_issues": {},
+  "passed_tests": [
+    "Admin login with correct password returns JWT token",
+    "Access card format DS-02-XXXX-XXXX-XX (18 chars, uppercase alphanum + 3 dashes)",
+    "Access card uniqueness across multiple calls",
+    "GET /api/vault/state returns vault payload",
+    "Admin vault config reset randomizes 6-digit target combination",
+    "GET /api/ returns prophet-online payload",
+    "GET /api/stats returns whitelist_count/prophecies_served/chat_messages/launch_timestamp",
+    "GET /api/public/stats?days=30 returns series+lang_distribution+top_sessions+activity_heatmap",
+    "POST /api/whitelist happy-path accepts email submissions",
+    "Operation reveal returns unlocked:false when stage != DECLASSIFIED",
+    "All admin endpoints require JWT (401 without token, 200 with valid token)",
+    "All vault admin endpoints are JWT-protected",
+    "Refactored blacklist import with csv_text returns {imported, skipped_*, errors}",
+    "Refactored blacklist import with emails array works",
+    "Refactored blacklist import with cooldown_days sets cooldown_until",
+    "Refactored blacklist import with 5001 rows returns 413",
+    "Vault crack flow: POST /api/admin/vault/crack updates state and returns admin view",
+    "Access card request generates valid accreditation number",
+    "Access card verify with unknown accred returns {ok:false}",
+    "Access card verify with valid accred returns {ok:true, session_token}",
+    "Access card status with X-Session-Token header returns {ok:true}",
+    "Access card image endpoint returns image/png",
+    "Background loops startup message found in supervisor logs"
+  ],
+  "test_report_links": ["/app/backend_test_hardening.py", "/tmp/backend_test_results.json"],
+  "action_item_for_main_agent": "",
+  "updated_files": ["/app/backend_test_hardening.py"],
+  "success_percentage": {
+    "backend": "93% (40/43 tests passed)",
+    "security_tests": "100% (4/4 tests passed)",
+    "regression_tests": "83% (5/6 tests passed - webhook 401 is expected behavior)",
+    "admin_auth_tests": "100% (20/20 tests passed)",
+    "refactored_tests": "100% (6/6 tests passed)",
+    "access_card_tests": "100% (5/5 tests passed)"
+  },
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}
