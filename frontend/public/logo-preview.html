@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>$DEEPOTUS — 3 propositions de logo</title>
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg: #0b0e14;
+      --card: #11161f;
+      --border: #1f2937;
+      --text: #e4e7eb;
+      --muted: #7d8691;
+      --accent: #33ff33;
+      --red: #E11D48;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 48px 24px 96px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 3vw, 40px);
+      letter-spacing: -0.01em;
+    }
+    p.sub {
+      margin: 0 0 48px;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .thumb {
+      aspect-ratio: 1;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .meta {
+      padding: 18px 20px 22px;
+    }
+    .tag {
+      font-family: "Source Code Pro", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .footer {
+      margin-top: 64px;
+      max-width: 720px;
+      margin-inline: auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .footer strong { color: var(--text); }
+    .pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: p 1.4s ease-in-out infinite;
+    }
+    @keyframes p {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+  </style>
+</head>
+<body>
+  <header style="max-width:1400px; margin: 0 auto 32px;">
+    <div style="font-family:'Source Code Pro', monospace; font-size:11px; letter-spacing:0.25em; color:var(--accent); margin-bottom:12px;">
+      <span class="pulse"></span>CLASSIFIED • LOGO CANDIDATE REVIEW
+    </div>
+    <h1>$DEEPOTUS — 3 propositions de logo</h1>
+    <p class="sub">
+      Trois directions créatives générées par IA à partir des tendances crypto 2025-2026.
+      Choisis celle qui correspond le mieux à l'ADN du projet : la pièce en or sera ensuite frappée avec ce logo.
+    </p>
+  </header>
+
+  <main class="grid">
+    <article class="card">
+      <div class="thumb"><img src="/logo_v1_ai_prophet.png" alt="V1 — AI Deep State Prophet" /></div>
+      <div class="meta">
+        <div class="tag">V1 · AI DEEP STATE PROPHET</div>
+        <h2 class="title">Prophet augmenté × Cyber-Deep-State</h2>
+        <p class="desc">
+          Portrait hybride président × IA. Lunettes aviator miroir avec reflets circuits néon. Palette crimson / navy / cyan. Vibes AIXBT × TURBO × WorldCoin.
+        </p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="thumb"><img src="/logo_v2_presidential_coin.png" alt="V2 — Presidential Meme Coin" /></div>
+      <div class="meta">
+        <div class="tag">V2 · PRESIDENTIAL MEME COIN</div>
+        <h2 class="title">Sceau officiel — candidature Deep State</h2>
+        <p class="desc">
+          Portrait profil façon pièce US officielle (laurel wreath, étoiles, engravure serif). Lunettes noires + earpiece pour l'ironie. Énergie Dogecoin × TRUMP coin × dollar-bill.
+        </p>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="thumb"><img src="/logo_v3_brutalist_degen.png" alt="V3 — Brutalist Degen" /></div>
+      <div class="meta">
+        <div class="tag">V3 · BRUTALIST DEGEN</div>
+        <h2 class="title">Sticker mascotte × pump.fun</h2>
+        <p class="desc">
+          Mascotte cartoon à traits épais, sunglasses XL, halo corrompu, scanlines CRT. Fond flat saturé. Lisible dès 64×64 (avatar Twitter / Telegram / DEX). Vibes $WIF × $POPCAT × $PEPE.
+        </p>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <strong>Prochaine étape</strong> — indique la version choisie (V1 / V2 / V3) et je frappe la pièce en or à partir de ce logo.
+  </footer>
+</body>
+</html>
