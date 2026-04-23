@@ -15,6 +15,9 @@ import {
   Zap,
   Settings,
   AlertTriangle,
+  Radio,
+  Play,
+  ExternalLink,
 } from "lucide-react";
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -27,6 +30,9 @@ export default function AdminVault() {
   const [loading, setLoading] = useState(true);
   const [crackTokens, setCrackTokens] = useState("1000");
   const [tokensPerDigit, setTokensPerDigit] = useState("");
+  const [dexCustomAddr, setDexCustomAddr] = useState("");
+  const [dexPollBusy, setDexPollBusy] = useState(false);
+  const [dexLastPoll, setDexLastPoll] = useState(null);
 
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -46,6 +52,7 @@ export default function AdminVault() {
       const { data } = await axios.get(`${API}/api/admin/vault/state`, { headers });
       setState(data);
       if (tokensPerDigit === "") setTokensPerDigit(String(data.tokens_per_digit));
+      if (dexCustomAddr === "" && data.dex_token_address) setDexCustomAddr(data.dex_token_address);
     } catch (e) {
       if (e?.response?.status === 401) {
         localStorage.removeItem(TOKEN_KEY);
@@ -124,6 +131,48 @@ export default function AdminVault() {
       toast.success("Vault reset. New classified combination generated.");
     } catch (e) {
       toast.error("Reset failed");
+    }
+  }
+
+  async function setDexMode(mode) {
+    try {
+      const payload = { mode };
+      if (mode === "custom") payload.token_address = dexCustomAddr.trim();
+      const { data } = await axios.post(
+        `${API}/api/admin/vault/dex-config`,
+        payload,
+        { headers }
+      );
+      setState(data);
+      toast.success(`DEX mode → ${mode}`);
+    } catch (e) {
+      toast.error("DEX config failed");
+      console.error(e);
+    }
+  }
+
+  async function forcePoll() {
+    setDexPollBusy(true);
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/vault/dex-poll`,
+        {},
+        { headers }
+      );
+      setDexLastPoll(data);
+      if (data.skipped) {
+        toast.info(`Skipped: ${data.error || "no changes"}`);
+      } else {
+        toast.success(
+          `Polled ${data.pair} · +${data.delta_buys || 0} buys · ${data.ticks_applied} tick(s)`
+        );
+      }
+      await load();
+    } catch (e) {
+      toast.error("Poll failed");
+      console.error(e);
+    } finally {
+      setDexPollBusy(false);
     }
   }
 
@@ -280,6 +329,143 @@ export default function AdminVault() {
               </Button>
             </div>
           </div>
+        </section>
+
+        {/* DEX Integration (DexScreener) */}
+        <section className="mt-8 rounded-xl border border-border bg-card p-5" data-testid="admin-vault-dex-section">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <div className="flex items-center gap-2 font-display font-semibold">
+              <Radio size={16} className={state?.dex_mode !== "off" ? "text-[#2DD4BF] animate-pulse" : "text-muted-foreground"} />
+              DEX Live Feed · DexScreener
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={`font-mono text-[10px] uppercase ${state?.dex_mode === "off" ? "" : "border-[#2DD4BF]/50 text-[#2DD4BF]"}`}
+                data-testid="admin-dex-mode-badge"
+              >
+                {state?.dex_mode || "off"}
+              </Badge>
+              {state?.dex_label && (
+                <Badge variant="outline" className="font-mono text-[10px]">
+                  {state.dex_label}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground mb-4">
+            Polls DexScreener every 30s to detect real buy activity on Solana. Custom mode: 1 tick per{" "}
+            <strong>{state?.tokens_per_digit?.toLocaleString()}</strong> tokens bought. Demo mode uses BONK with symbolic ticks.
+          </p>
+
+          {/* Mode selector */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {["off", "demo", "custom"].map((m) => (
+              <Button
+                key={m}
+                variant={state?.dex_mode === m ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDexMode(m)}
+                disabled={m === "custom" && !dexCustomAddr.trim()}
+                className="rounded-[var(--btn-radius)]"
+                data-testid={`admin-dex-mode-${m}`}
+              >
+                {m.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+
+          {/* Custom token address */}
+          <div className="mb-4">
+            <Label className="text-xs">$DEEPOTUS token mint address (Solana)</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                value={dexCustomAddr}
+                onChange={(e) => setDexCustomAddr(e.target.value.trim())}
+                placeholder="e.g. 4k3D...mhAZ"
+                className="font-mono"
+                data-testid="admin-dex-custom-input"
+              />
+              <Button
+                variant="outline"
+                onClick={() => setDexMode("custom")}
+                disabled={!dexCustomAddr.trim()}
+                className="rounded-[var(--btn-radius)]"
+                data-testid="admin-dex-custom-save"
+              >
+                Save & activate
+              </Button>
+            </div>
+          </div>
+
+          {/* Status panel */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs">
+            <div className="rounded-md border border-border bg-background p-3">
+              <div className="text-muted-foreground text-[10px] uppercase">price</div>
+              <div className="text-foreground mt-0.5">${state?.dex_last_price_usd?.toFixed(8) || "—"}</div>
+            </div>
+            <div className="rounded-md border border-border bg-background p-3">
+              <div className="text-muted-foreground text-[10px] uppercase">buys h24</div>
+              <div className="text-foreground mt-0.5">{state?.dex_last_h24_buys?.toLocaleString() || "—"}</div>
+            </div>
+            <div className="rounded-md border border-border bg-background p-3">
+              <div className="text-muted-foreground text-[10px] uppercase">volume h24</div>
+              <div className="text-foreground mt-0.5">${state?.dex_last_h24_volume_usd?.toLocaleString() || "—"}</div>
+            </div>
+            <div className="rounded-md border border-border bg-background p-3">
+              <div className="text-muted-foreground text-[10px] uppercase">carry</div>
+              <div className="text-foreground mt-0.5">{Math.round(state?.dex_carry_tokens || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+          {state?.dex_error && (
+            <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/5 p-2 font-mono text-[11px] text-red-400">
+              last error: {state.dex_error}
+            </div>
+          )}
+
+          {/* Action row */}
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={forcePoll}
+              size="sm"
+              disabled={dexPollBusy || state?.dex_mode === "off"}
+              className="rounded-[var(--btn-radius)]"
+              data-testid="admin-dex-force-poll"
+            >
+              <Play size={14} className="mr-1" /> {dexPollBusy ? "Polling…" : "Force poll now"}
+            </Button>
+            <a
+              href={
+                state?.dex_mode === "demo"
+                  ? `https://dexscreener.com/solana/${state?.dex_demo_token_address || ""}`
+                  : state?.dex_token_address
+                  ? `https://dexscreener.com/solana/${state.dex_token_address}`
+                  : "https://dexscreener.com/solana"
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="admin-dex-external-link"
+            >
+              View on DexScreener <ExternalLink size={12} />
+            </a>
+            {state?.dex_last_poll_at && (
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                last poll: {new Date(state.dex_last_poll_at).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+
+          {dexLastPoll && !dexLastPoll.skipped && (
+            <div className="mt-3 rounded-md border border-border bg-background p-3 font-mono text-[11px] text-foreground/80">
+              <div className="text-muted-foreground text-[10px] uppercase mb-1">last force-poll result</div>
+              <div>
+                {dexLastPoll.pair} · Δbuys={dexLastPoll.delta_buys} · Δvol=${(dexLastPoll.delta_vol_usd || 0).toFixed(2)} · ticks={dexLastPoll.ticks_applied}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Recent events */}

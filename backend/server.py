@@ -1877,6 +1877,21 @@ async def vault_config_admin(
     return await vault_mod.update_config(db, req)
 
 
+@admin_router.post("/vault/dex-config", response_model=vault_mod.VaultAdminStateResponse)
+async def vault_dex_config_admin(
+    req: vault_mod.VaultDexConfigUpdate, _p: dict = Depends(require_admin)
+):
+    return await vault_mod.update_dex_config(db, req)
+
+
+@admin_router.post("/vault/dex-poll", response_model=dict)
+async def vault_dex_poll_now_admin(_p: dict = Depends(require_admin)):
+    """Force a single DexScreener poll immediately (for testing/debugging)."""
+    import dexscreener as dex_mod  # noqa: E402
+    result = await dex_mod.dex_poll_once(db, vault_mod)
+    return result
+
+
 # ---------------------------------------------------------------------
 # OPERATION REVEAL — the twist. Only returns lore when vault is DECLASSIFIED.
 # ---------------------------------------------------------------------
@@ -1999,7 +2014,12 @@ async def on_startup():
     try:
         await vault_mod.initialize_vault(db)
         asyncio.create_task(vault_mod.hourly_tick_loop(db))
-        logging.info("[startup] PROTOCOL ΔΣ vault ready + hourly tick loop launched")
+        # DexScreener live-feed poll loop
+        import dexscreener as dex_mod  # noqa: E402
+        asyncio.create_task(dex_mod.dex_loop(db, vault_mod))
+        logging.info(
+            "[startup] PROTOCOL ΔΣ vault ready + hourly tick + DexScreener loops launched"
+        )
     except Exception:
         logging.exception("[startup] failed to initialize vault")
 

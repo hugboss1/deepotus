@@ -1,6 +1,38 @@
 [
   {
-    "content": "Backend comprehensive testing via testing agent",
+    "content": "Check existing image-gen helper pattern in codebase (for Gemini Nano Banana)",
     "status": "completed"
+  },
+  {
+    "content": "Generate AI vault frame image (black military + cyan/ambre LED) via Gemini",
+    "status": "completed"
+  },
+  {
+    "content": "Integrate vault frame image into VaultSection as layered background with overlaid dials",
+    "status": "completed"
+  },
+  {
+    "content": "Backend: add dexscreener.py module + hybrid mode (off/demo/custom)",
+    "status": "in_progress"
+  },
+  {
+    "content": "Backend: extend vault_state schema with DEX fields + admin endpoints",
+    "status": "pending"
+  },
+  {
+    "content": "Backend: launch DexScreener poll loop as async task (30s interval)",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: add DEX config section in /admin/vault page",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: badge live status on the public vault (demo token / custom / off)",
+    "status": "pending"
+  },
+  {
+    "content": "Test end-to-end: image rendering + DEX polling + tick generation",
+    "status": "pending"
   }
 ]

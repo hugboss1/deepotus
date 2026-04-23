@@ -118,11 +118,24 @@ class VaultStateResponse(BaseModel):
     last_event_at: Optional[str] = None
     updated_at: str
     recent_events: List[VaultEvent] = Field(default_factory=list)
+    # DEX public status (non-sensitive; just advertises live-feed source)
+    dex_mode: str = "off"           # off | demo | custom
+    dex_label: Optional[str] = None # e.g. "BONK · raydium"
+    dex_pair_symbol: Optional[str] = None
 
 
 class VaultAdminStateResponse(VaultStateResponse):
-    # Admin-only extension that reveals the classified combination
+    # Admin-only extension that reveals the classified combination + DEX details
     target_combination: List[int]
+    dex_token_address: Optional[str] = None
+    dex_demo_token_address: Optional[str] = None
+    dex_last_poll_at: Optional[str] = None
+    dex_last_h24_buys: Optional[int] = None
+    dex_last_h24_sells: Optional[int] = None
+    dex_last_h24_volume_usd: Optional[float] = None
+    dex_last_price_usd: Optional[float] = None
+    dex_carry_tokens: Optional[float] = None
+    dex_error: Optional[str] = None
 
 
 class VaultCrackRequest(BaseModel):
@@ -249,6 +262,9 @@ async def get_public_state(db) -> VaultStateResponse:
         last_event_at=doc.get("last_event_at"),
         updated_at=doc.get("updated_at", _now_iso()),
         recent_events=[_ev_to_pydantic(ev) for ev in events],
+        dex_mode=(doc.get("dex_mode") or "off"),
+        dex_label=doc.get("dex_label"),
+        dex_pair_symbol=doc.get("dex_pair_symbol"),
     )
 
 
@@ -259,7 +275,59 @@ async def get_admin_state(db) -> VaultAdminStateResponse:
     return VaultAdminStateResponse(
         **base.model_dump(),
         target_combination=target,
+        dex_token_address=(doc or {}).get("dex_token_address"),
+        dex_demo_token_address=(doc or {}).get("dex_demo_token_address"),
+        dex_last_poll_at=(doc or {}).get("dex_last_poll_at"),
+        dex_last_h24_buys=(doc or {}).get("dex_last_h24_buys"),
+        dex_last_h24_sells=(doc or {}).get("dex_last_h24_sells"),
+        dex_last_h24_volume_usd=(doc or {}).get("dex_last_h24_volume_usd"),
+        dex_last_price_usd=(doc or {}).get("dex_last_price_usd"),
+        dex_carry_tokens=(doc or {}).get("dex_carry_tokens"),
+        dex_error=(doc or {}).get("dex_error"),
     )
+
+
+class VaultDexConfigUpdate(BaseModel):
+    mode: str  # "off" | "demo" | "custom"
+    token_address: Optional[str] = None  # Solana mint address for custom mode
+
+
+async def update_dex_config(db, cfg: VaultDexConfigUpdate) -> VaultAdminStateResponse:
+    mode = (cfg.mode or "off").lower().strip()
+    if mode not in ("off", "demo", "custom"):
+        mode = "off"
+
+    doc = await initialize_vault(db)
+    updates: Dict[str, Any] = {"dex_mode": mode}
+
+    if mode == "custom":
+        addr = (cfg.token_address or "").strip()
+        if addr:
+            updates["dex_token_address"] = addr
+    elif mode == "demo":
+        # Ensure demo default exists
+        from dexscreener import DEMO_TOKEN_ADDRESS  # lazy import to avoid circular
+        if not doc.get("dex_demo_token_address"):
+            updates["dex_demo_token_address"] = DEMO_TOKEN_ADDRESS
+
+    # When switching mode, reset baselines so the next poll doesn't apply stale deltas
+    updates.update(
+        {
+            "dex_last_h24_buys": 0,
+            "dex_last_h24_sells": 0,
+            "dex_last_h24_volume_usd": 0.0,
+            "dex_last_price_usd": 0.0,
+            "dex_carry_tokens": 0.0,
+            "dex_last_poll_at": None,
+            "dex_error": None,
+        }
+    )
+
+    await db.vault_state.update_one(
+        {"_id": VAULT_DOC_ID},
+        {"$set": updates},
+    )
+    return await get_admin_state(db)
 
 
 # ---------------------------------------------------------------------

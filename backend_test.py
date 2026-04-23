@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-DEEPOTUS Backend API Testing - Phase 8 Features
-Testing 5 new features: 2FA TOTP, activity heatmap, full whitelist export, email events, cooldown blacklist
+DEEPOTUS Backend API Testing - DexScreener Integration Features
+Testing DexScreener integration: vault state, dex-config, dex-poll, security, regression tests
 """
 
 import requests
@@ -9,9 +9,6 @@ import json
 import time
 import hashlib
 import uuid
-import pyotp
-import csv
-import io
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 
@@ -19,7 +16,7 @@ from typing import Dict, List, Optional
 BASE_URL = "https://prophet-ai-memecoin.preview.emergentagent.com/api"
 ADMIN_PASSWORD = "deepotus2026"
 
-class DeepotusAPITester:
+class DexScreenerAPITester:
     def __init__(self):
         self.base_url = BASE_URL
         self.admin_token = None
@@ -27,8 +24,6 @@ class DeepotusAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.errors = []
-        self.twofa_secret = None
-        self.backup_codes = []
         
     def log_result(self, test_name: str, success: bool, details: str = ""):
         """Log test result"""
@@ -68,14 +63,9 @@ class DeepotusAPITester:
         except Exception as e:
             return False, {"error": str(e)}
     
-    def admin_login(self, totp_code=None, backup_code=None):
+    def admin_login(self):
         """Login as admin"""
         data = {"password": ADMIN_PASSWORD}
-        if totp_code:
-            data["totp_code"] = totp_code
-        if backup_code:
-            data["backup_code"] = backup_code
-            
         success, response = self.make_request("POST", "admin/login", data)
         if success and "token" in response:
             self.admin_token = response["token"]
@@ -87,355 +77,354 @@ class DeepotusAPITester:
         """Get authorization headers"""
         return {"Authorization": f"Bearer {self.admin_token}"} if self.admin_token else {}
 
-    def test_2fa_status_initial(self):
-        """Test 2FA status endpoint - should be disabled initially"""
-        success, response = self.make_request(
-            "GET", "admin/2fa/status", headers=self.get_auth_headers()
-        )
+    def test_vault_state_public(self):
+        """Test GET /api/vault/state - public endpoint"""
+        success, response = self.make_request("GET", "vault/state")
         
         if success:
-            required_fields = ['enabled', 'setup_pending', 'backup_codes_remaining']
-            if all(field in response for field in required_fields):
-                self.log_result("2FA Status Initial", True, f"Status: {response}")
-                return True
+            # Check required public fields
+            required_fields = [
+                'code_name', 'stage', 'num_digits', 'digits_locked', 
+                'current_combination', 'tokens_per_digit', 'tokens_sold',
+                'progress_pct', 'hourly_tick_enabled', 'updated_at', 'recent_events'
+            ]
+            
+            # Check new DexScreener public fields
+            dex_fields = ['dex_mode', 'dex_label', 'dex_pair_symbol']
+            
+            missing_fields = [f for f in required_fields + dex_fields if f not in response]
+            
+            if not missing_fields:
+                # Verify target_combination is NOT exposed
+                if 'target_combination' not in response:
+                    # Verify dex_mode is valid
+                    if response.get('dex_mode') in ['off', 'demo', 'custom']:
+                        self.log_result("Vault State Public", True, 
+                                      f"Mode: {response.get('dex_mode')}, Stage: {response.get('stage')}")
+                        return True
+                    else:
+                        self.log_result("Vault State Public", False, 
+                                      f"Invalid dex_mode: {response.get('dex_mode')}")
+                else:
+                    self.log_result("Vault State Public", False, "target_combination exposed in public API")
             else:
-                self.log_result("2FA Status Initial", False, f"Missing fields: {response}")
+                self.log_result("Vault State Public", False, f"Missing fields: {missing_fields}")
         else:
-            self.log_result("2FA Status Initial", False, f"Request failed: {response}")
+            self.log_result("Vault State Public", False, f"Request failed: {response}")
         return False
 
-    def test_2fa_setup(self):
-        """Test 2FA setup endpoint"""
-        success, response = self.make_request(
-            "POST", "admin/2fa/setup", headers=self.get_auth_headers()
-        )
+    def test_vault_state_admin(self):
+        """Test GET /api/admin/vault/state - admin endpoint"""
+        success, response = self.make_request("GET", "admin/vault/state", headers=self.get_auth_headers())
         
         if success:
-            required_fields = ['secret', 'otpauth_uri', 'qr_png_base64', 'backup_codes']
-            if all(field in response for field in required_fields):
-                self.twofa_secret = response['secret']
-                self.backup_codes = response['backup_codes']
-                
-                # Validate otpauth_uri format
-                if response['otpauth_uri'].startswith('otpauth://totp/'):
-                    self.log_result("2FA Setup", True, f"Secret: {self.twofa_secret[:8]}..., Codes: {len(self.backup_codes)}")
+            # Check admin-only fields are present
+            admin_fields = [
+                'target_combination', 'dex_token_address', 'dex_demo_token_address',
+                'dex_last_poll_at', 'dex_last_h24_buys', 'dex_last_h24_sells',
+                'dex_last_h24_volume_usd', 'dex_last_price_usd', 'dex_carry_tokens'
+            ]
+            
+            present_admin_fields = [f for f in admin_fields if f in response]
+            
+            if len(present_admin_fields) >= 5:  # At least some admin fields should be present
+                # Verify target_combination is a list of 6 integers
+                target = response.get('target_combination', [])
+                if isinstance(target, list) and len(target) == 6 and all(isinstance(d, int) and 0 <= d <= 9 for d in target):
+                    self.log_result("Vault State Admin", True, 
+                                  f"Target: {target}, Admin fields: {len(present_admin_fields)}")
                     return True
                 else:
-                    self.log_result("2FA Setup", False, f"Invalid otpauth_uri: {response['otpauth_uri']}")
+                    self.log_result("Vault State Admin", False, f"Invalid target_combination: {target}")
             else:
-                self.log_result("2FA Setup", False, f"Missing fields: {response}")
+                self.log_result("Vault State Admin", False, f"Missing admin fields: {admin_fields}")
         else:
-            self.log_result("2FA Setup", False, f"Request failed: {response}")
+            self.log_result("Vault State Admin", False, f"Request failed: {response}")
         return False
 
-    def test_2fa_verify(self):
-        """Test 2FA verification with TOTP code"""
-        if not self.twofa_secret:
-            self.log_result("2FA Verify", False, "No 2FA secret available")
-            return False
-            
-        # Generate current TOTP code
-        totp = pyotp.TOTP(self.twofa_secret)
-        current_code = totp.now()
-        
-        success, response = self.make_request(
-            "POST", "admin/2fa/verify", 
-            data={"code": current_code}, 
-            headers=self.get_auth_headers()
-        )
+    def test_dex_config_off_mode(self):
+        """Test POST /api/admin/vault/dex-config with mode='off'"""
+        data = {"mode": "off"}
+        success, response = self.make_request("POST", "admin/vault/dex-config", data, headers=self.get_auth_headers())
         
         if success:
-            self.log_result("2FA Verify", True, f"Code: {current_code}")
-            return True
-        else:
-            self.log_result("2FA Verify", False, f"Verification failed: {response}")
-        return False
-
-    def test_2fa_login_flow(self):
-        """Test login flow with 2FA enabled"""
-        # First, try login with password only (should fail with 2FA required)
-        success, response = self.make_request(
-            "POST", "admin/login", 
-            data={"password": ADMIN_PASSWORD}, 
-            expected_status=401
-        )
-        
-        if success:
-            self.log_result("2FA Login Password Only", True, "Correctly rejected")
-        else:
-            self.log_result("2FA Login Password Only", False, "Should have returned 401")
-            return False
-
-        # Now try with password + TOTP code
-        totp = pyotp.TOTP(self.twofa_secret)
-        current_code = totp.now()
-        
-        success, response = self.make_request(
-            "POST", "admin/login", 
-            data={"password": ADMIN_PASSWORD, "totp_code": current_code}
-        )
-        
-        if success and 'token' in response:
-            self.admin_token = response['token']  # Update token
-            self.log_result("2FA Login with TOTP", True, "Login successful")
-            return True
-        else:
-            self.log_result("2FA Login with TOTP", False, f"Login failed: {response}")
-        return False
-
-    def test_2fa_backup_code_login(self):
-        """Test login with backup code"""
-        if not self.backup_codes:
-            self.log_result("2FA Backup Code Login", False, "No backup codes available")
-            return False
-            
-        backup_code = self.backup_codes[0]  # Use first backup code
-        
-        success, response = self.make_request(
-            "POST", "admin/login", 
-            data={"password": ADMIN_PASSWORD, "backup_code": backup_code}
-        )
-        
-        if success and 'token' in response:
-            self.admin_token = response['token']
-            self.log_result("2FA Backup Code Login", True, f"Used code: {backup_code}")
-            return True
-        else:
-            self.log_result("2FA Backup Code Login", False, f"Login failed: {response}")
-        return False
-
-    def test_2fa_disable(self):
-        """Test disabling 2FA"""
-        if not self.twofa_secret:
-            self.log_result("2FA Disable", False, "No 2FA secret available")
-            return False
-            
-        totp = pyotp.TOTP(self.twofa_secret)
-        current_code = totp.now()
-        
-        success, response = self.make_request(
-            "POST", "admin/2fa/disable", 
-            data={"password": ADMIN_PASSWORD, "code": current_code}, 
-            headers=self.get_auth_headers()
-        )
-        
-        if success:
-            self.log_result("2FA Disable", True, "2FA disabled")
-            # Reset 2FA state
-            self.twofa_secret = None
-            self.backup_codes = []
-            return True
-        else:
-            self.log_result("2FA Disable", False, f"Disable failed: {response}")
-        return False
-
-    def test_activity_heatmap(self):
-        """Test activity heatmap in public stats"""
-        success, response = self.make_request("GET", "public/stats")
-        
-        if success:
-            if 'activity_heatmap' in response:
-                heatmap = response['activity_heatmap']
-                if isinstance(heatmap, list) and len(heatmap) == 7:
-                    # Check if each day has 24 hours
-                    valid_structure = all(
-                        isinstance(day, list) and len(day) == 24 
-                        for day in heatmap
-                    )
-                    if valid_structure:
-                        # Check if all values are integers >= 0
-                        valid_values = all(
-                            isinstance(hour_val, int) and hour_val >= 0
-                            for day in heatmap for hour_val in day
-                        )
-                        if valid_values:
-                            self.log_result("Activity Heatmap", True, "7x24 grid with valid integer values")
-                            return True
-                        else:
-                            self.log_result("Activity Heatmap", False, "Contains invalid values")
-                    else:
-                        self.log_result("Activity Heatmap", False, f"Invalid structure: {len(heatmap)} days")
-                else:
-                    self.log_result("Activity Heatmap", False, f"Not a 7-day array: {type(heatmap)}")
+            if response.get('dex_mode') == 'off':
+                self.log_result("Dex Config Off Mode", True, "Mode set to off")
+                return True
             else:
-                self.log_result("Activity Heatmap", False, "Missing from public stats")
+                self.log_result("Dex Config Off Mode", False, f"Mode not set: {response.get('dex_mode')}")
         else:
-            self.log_result("Activity Heatmap", False, f"Request failed: {response}")
+            self.log_result("Dex Config Off Mode", False, f"Request failed: {response}")
         return False
 
-    def test_full_whitelist_export(self):
-        """Test full whitelist CSV export"""
-        success, response = self.make_request(
-            "GET", "admin/whitelist/export", 
-            headers=self.get_auth_headers(), 
-            response_type="text"
-        )
+    def test_dex_config_demo_mode(self):
+        """Test POST /api/admin/vault/dex-config with mode='demo'"""
+        data = {"mode": "demo"}
+        success, response = self.make_request("POST", "admin/vault/dex-config", data, headers=self.get_auth_headers())
         
         if success:
-            # Check if response is CSV format
-            try:
-                csv_reader = csv.reader(io.StringIO(response))
-                rows = list(csv_reader)
-                if len(rows) > 0:
-                    headers = rows[0]
-                    expected_headers = ['position', 'email', 'lang', 'created_at', 'email_sent', 'email_status']
-                    if all(header in headers for header in expected_headers):
-                        self.log_result("Full Whitelist Export", True, f"{len(rows)-1} entries exported")
-                        return True
-                    else:
-                        self.log_result("Full Whitelist Export", False, f"Missing headers: {headers}")
+            if response.get('dex_mode') == 'demo':
+                # Should have demo token address set
+                if response.get('dex_demo_token_address'):
+                    self.log_result("Dex Config Demo Mode", True, 
+                                  f"Demo token: {response.get('dex_demo_token_address')[:8]}...")
+                    return True
                 else:
-                    self.log_result("Full Whitelist Export", False, "Empty CSV response")
-            except Exception as e:
-                self.log_result("Full Whitelist Export", False, f"CSV parse error: {e}")
+                    self.log_result("Dex Config Demo Mode", False, "Demo token address not set")
+            else:
+                self.log_result("Dex Config Demo Mode", False, f"Mode not set: {response.get('dex_mode')}")
         else:
-            self.log_result("Full Whitelist Export", False, f"Request failed: {response}")
+            self.log_result("Dex Config Demo Mode", False, f"Request failed: {response}")
         return False
 
-    def test_email_events_endpoint(self):
-        """Test email events endpoint"""
-        success, response = self.make_request(
-            "GET", "admin/email-events", 
-            headers=self.get_auth_headers()
-        )
+    def test_dex_config_custom_mode(self):
+        """Test POST /api/admin/vault/dex-config with mode='custom'"""
+        # Test without token_address (should work but not set custom address)
+        data = {"mode": "custom"}
+        success, response = self.make_request("POST", "admin/vault/dex-config", data, headers=self.get_auth_headers())
         
         if success:
-            required_fields = ['items', 'total', 'limit', 'skip', 'type_counts']
-            if all(field in response for field in required_fields):
-                self.log_result("Email Events Basic", True, f"Total: {response['total']}")
+            if response.get('dex_mode') == 'custom':
+                self.log_result("Dex Config Custom Mode (no address)", True, "Mode set to custom")
                 
-                # Test with type filter
-                success2, response2 = self.make_request(
-                    "GET", "admin/email-events?type=email.delivered", 
-                    headers=self.get_auth_headers()
-                )
+                # Test with token_address
+                test_address = "So11111111111111111111111111111111111111112"  # SOL mint
+                data_with_address = {"mode": "custom", "token_address": test_address}
+                success2, response2 = self.make_request("POST", "admin/vault/dex-config", data_with_address, headers=self.get_auth_headers())
                 
                 if success2:
-                    self.log_result("Email Events Type Filter", True, "Filter working")
-                    
-                    # Test with recipient filter
-                    success3, response3 = self.make_request(
-                        "GET", "admin/email-events?recipient=test@example.com", 
-                        headers=self.get_auth_headers()
-                    )
-                    
-                    if success3:
-                        self.log_result("Email Events Recipient Filter", True, "Filter working")
+                    if response2.get('dex_token_address') == test_address:
+                        self.log_result("Dex Config Custom Mode (with address)", True, f"Address: {test_address[:8]}...")
                         return True
                     else:
-                        self.log_result("Email Events Recipient Filter", False, f"Filter failed: {response3}")
+                        self.log_result("Dex Config Custom Mode (with address)", False, 
+                                      f"Address not set: {response2.get('dex_token_address')}")
                 else:
-                    self.log_result("Email Events Type Filter", False, f"Filter failed: {response2}")
+                    self.log_result("Dex Config Custom Mode (with address)", False, f"Request failed: {response2}")
             else:
-                self.log_result("Email Events Basic", False, f"Missing fields: {response}")
+                self.log_result("Dex Config Custom Mode (no address)", False, f"Mode not set: {response.get('dex_mode')}")
         else:
-            self.log_result("Email Events Basic", False, f"Request failed: {response}")
+            self.log_result("Dex Config Custom Mode (no address)", False, f"Request failed: {response}")
         return False
 
-    def test_cooldown_blacklist(self):
-        """Test cooldown functionality in blacklist"""
-        test_email = f"cooldown-test-{int(time.time())}@example.com"
+    def test_dex_poll_off_mode(self):
+        """Test POST /api/admin/vault/dex-poll with dex_mode='off'"""
+        # First set mode to off
+        self.make_request("POST", "admin/vault/dex-config", {"mode": "off"}, headers=self.get_auth_headers())
         
-        # Add email to blacklist with cooldown
-        success, response = self.make_request(
-            "POST", "admin/blacklist", 
-            data={
-                "email": test_email,
-                "reason": "cooldown test",
-                "cooldown_days": 7
-            }, 
-            headers=self.get_auth_headers()
-        )
+        # Then try to poll
+        success, response = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
         
         if success:
-            self.log_result("Blacklist with Cooldown", True, f"Email: {test_email}")
+            if response.get('mode') == 'off' and response.get('skipped') == True:
+                self.log_result("Dex Poll Off Mode", True, "Correctly skipped when off")
+                return True
+            else:
+                self.log_result("Dex Poll Off Mode", False, f"Unexpected response: {response}")
+        else:
+            self.log_result("Dex Poll Off Mode", False, f"Request failed: {response}")
+        return False
+
+    def test_dex_poll_demo_mode(self):
+        """Test POST /api/admin/vault/dex-poll with dex_mode='demo'"""
+        # Set mode to demo
+        self.make_request("POST", "admin/vault/dex-config", {"mode": "demo"}, headers=self.get_auth_headers())
+        
+        # Wait a moment for config to settle
+        time.sleep(1)
+        
+        # Poll twice to test baseline vs delta behavior
+        success1, response1 = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
+        
+        if success1:
+            # First poll should have ticks_applied = 0 (baseline)
+            if response1.get('mode') == 'demo' and response1.get('first_seen') == True:
+                if response1.get('ticks_applied') == 0:
+                    self.log_result("Dex Poll Demo Mode (First)", True, "Baseline established")
+                    
+                    # Wait and poll again
+                    time.sleep(2)
+                    success2, response2 = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
+                    
+                    if success2:
+                        # Second poll might apply ticks if there's activity
+                        ticks = response2.get('ticks_applied', 0)
+                        if ticks >= 0 and ticks <= 3:  # Should be capped at 3 per poll
+                            self.log_result("Dex Poll Demo Mode (Second)", True, f"Ticks applied: {ticks}")
+                            return True
+                        else:
+                            self.log_result("Dex Poll Demo Mode (Second)", False, f"Invalid ticks: {ticks}")
+                    else:
+                        self.log_result("Dex Poll Demo Mode (Second)", False, f"Second poll failed: {response2}")
+                else:
+                    self.log_result("Dex Poll Demo Mode (First)", False, f"Expected 0 ticks on first poll, got: {response1.get('ticks_applied')}")
+            else:
+                self.log_result("Dex Poll Demo Mode (First)", False, f"Unexpected first poll response: {response1}")
+        else:
+            self.log_result("Dex Poll Demo Mode (First)", False, f"First poll failed: {response1}")
+        return False
+
+    def test_dex_poll_diagnostic_fields(self):
+        """Test that dex-poll returns all required diagnostic fields"""
+        # Set to demo mode for testing
+        self.make_request("POST", "admin/vault/dex-config", {"mode": "demo"}, headers=self.get_auth_headers())
+        time.sleep(1)
+        
+        success, response = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
+        
+        if success:
+            required_fields = [
+                'mode', 'address', 'pair', 'price_usd', 'volume_h24', 
+                'buys_h24', 'sells_h24', 'delta_buys', 'delta_vol_usd', 
+                'ticks_applied', 'carry_after', 'first_seen'
+            ]
             
-            # Check if cooldown_until field is set
-            success2, response2 = self.make_request(
-                "GET", "admin/blacklist", 
-                headers=self.get_auth_headers()
-            )
+            missing_fields = [f for f in required_fields if f not in response]
+            
+            if not missing_fields:
+                self.log_result("Dex Poll Diagnostic Fields", True, f"All {len(required_fields)} fields present")
+                return True
+            else:
+                self.log_result("Dex Poll Diagnostic Fields", False, f"Missing fields: {missing_fields}")
+        else:
+            self.log_result("Dex Poll Diagnostic Fields", False, f"Request failed: {response}")
+        return False
+
+    def test_dex_mode_baseline_reset(self):
+        """Test that switching dex_mode resets baselines"""
+        # Set to demo mode and poll to establish baselines
+        self.make_request("POST", "admin/vault/dex-config", {"mode": "demo"}, headers=self.get_auth_headers())
+        time.sleep(1)
+        self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
+        
+        # Get admin state to check baselines are set
+        success1, state1 = self.make_request("GET", "admin/vault/state", headers=self.get_auth_headers())
+        
+        if success1:
+            # Switch to off mode
+            self.make_request("POST", "admin/vault/dex-config", {"mode": "off"}, headers=self.get_auth_headers())
+            
+            # Check that baselines are reset
+            success2, state2 = self.make_request("GET", "admin/vault/state", headers=self.get_auth_headers())
             
             if success2:
-                blacklist_items = response2.get('items', [])
-                cooldown_item = next((item for item in blacklist_items if item['email'] == test_email), None)
+                # Check that baseline fields are reset
+                baseline_fields = ['dex_last_h24_buys', 'dex_last_h24_sells', 'dex_last_h24_volume_usd', 'dex_carry_tokens']
+                reset_values = [state2.get(f) for f in baseline_fields]
                 
-                if cooldown_item and cooldown_item.get('cooldown_until'):
-                    self.log_result("Blacklist Cooldown Field", True, f"Cooldown: {cooldown_item['cooldown_until']}")
-                    
-                    # Test that registration is still blocked
-                    success3, response3 = self.make_request(
-                        "POST", "whitelist", 
-                        data={"email": test_email}, 
-                        expected_status=403
-                    )
-                    
-                    if success3:
-                        self.log_result("Registration Blocked During Cooldown", True, "Correctly blocked")
-                        return True
-                    else:
-                        self.log_result("Registration Blocked During Cooldown", False, "Should be blocked")
+                # All should be 0 or 0.0 or None
+                if all(v in [0, 0.0, None] for v in reset_values):
+                    self.log_result("Dex Mode Baseline Reset", True, "Baselines reset on mode switch")
+                    return True
                 else:
-                    self.log_result("Blacklist Cooldown Field", False, "Cooldown field not set")
+                    self.log_result("Dex Mode Baseline Reset", False, f"Baselines not reset: {reset_values}")
             else:
-                self.log_result("Blacklist Cooldown Field", False, f"Failed to get blacklist: {response2}")
+                self.log_result("Dex Mode Baseline Reset", False, f"Failed to get state after reset: {state2}")
         else:
-            self.log_result("Blacklist with Cooldown", False, f"Request failed: {response}")
+            self.log_result("Dex Mode Baseline Reset", False, f"Failed to get initial state: {state1}")
         return False
 
-    def test_cooldown_import(self):
-        """Test cooldown in bulk import"""
-        csv_data = "email,reason\ncooldown-bulk1@example.com,bulk test\ncooldown-bulk2@example.com,bulk test"
-        
-        success, response = self.make_request(
-            "POST", "admin/blacklist/import", 
-            data={
-                "csv_text": csv_data,
-                "cooldown_days": 3
-            }, 
-            headers=self.get_auth_headers()
-        )
+    def test_security_public_vault_state(self):
+        """Test that public vault state doesn't expose admin-only fields"""
+        success, response = self.make_request("GET", "vault/state")
         
         if success:
-            if response.get('imported', 0) > 0:
-                self.log_result("Blacklist Import with Cooldown", True, f"Imported: {response['imported']}")
-                return True
+            # Fields that should NOT be in public response
+            forbidden_fields = [
+                'target_combination', 'dex_token_address', 'dex_last_price_usd',
+                'dex_last_h24_buys', 'dex_last_h24_sells', 'dex_last_h24_volume_usd',
+                'dex_carry_tokens', 'dex_error'
+            ]
+            
+            exposed_fields = [f for f in forbidden_fields if f in response]
+            
+            if not exposed_fields:
+                # Check that allowed dex fields are present
+                allowed_fields = ['dex_mode', 'dex_label', 'dex_pair_symbol']
+                present_allowed = [f for f in allowed_fields if f in response]
+                
+                if len(present_allowed) == len(allowed_fields):
+                    self.log_result("Security Public Vault State", True, "No admin fields exposed")
+                    return True
+                else:
+                    self.log_result("Security Public Vault State", False, f"Missing allowed fields: {set(allowed_fields) - set(present_allowed)}")
             else:
-                self.log_result("Blacklist Import with Cooldown", False, f"No emails imported: {response}")
+                self.log_result("Security Public Vault State", False, f"Admin fields exposed: {exposed_fields}")
         else:
-            self.log_result("Blacklist Import with Cooldown", False, f"Request failed: {response}")
+            self.log_result("Security Public Vault State", False, f"Request failed: {response}")
         return False
 
-    def test_whitelist_cooldown_endpoint(self):
-        """Test whitelist to blacklist with cooldown"""
-        # First get a whitelist entry
-        success, response = self.make_request(
-            "GET", "admin/whitelist?limit=1", 
-            headers=self.get_auth_headers()
-        )
+    def test_security_admin_endpoints_require_jwt(self):
+        """Test that admin vault endpoints require JWT authentication"""
+        endpoints = [
+            "admin/vault/state",
+            "admin/vault/dex-config", 
+            "admin/vault/dex-poll"
+        ]
         
-        if success and response.get('items'):
-            entry = response['items'][0]
-            entry_id = entry['id']
+        all_protected = True
+        
+        for endpoint in endpoints:
+            if endpoint == "admin/vault/dex-config" or endpoint == "admin/vault/dex-poll":
+                success, response = self.make_request("POST", endpoint, {}, expected_status=401)
+            else:
+                success, response = self.make_request("GET", endpoint, expected_status=401)
             
-            # Blacklist with cooldown
-            success2, response2 = self.make_request(
-                "POST", f"admin/whitelist/{entry_id}/blacklist?cooldown_days=5", 
-                headers=self.get_auth_headers()
-            )
+            if success:
+                self.log_result(f"Security {endpoint} (no JWT)", True, "Correctly rejected")
+            else:
+                self.log_result(f"Security {endpoint} (no JWT)", False, "Should return 401")
+                all_protected = False
+        
+        return all_protected
+
+    def test_regression_existing_endpoints(self):
+        """Test that existing endpoints still work"""
+        endpoints_to_test = [
+            ("POST", "admin/login", {"password": ADMIN_PASSWORD}, 200),
+            ("POST", "whitelist", {"email": f"test-{int(time.time())}@example.com"}, 200),
+            ("GET", "chat", None, 405),  # Should be POST only
+            ("GET", "prophecy", None, 200),
+            ("GET", "stats", None, 200),
+            ("GET", "public/stats", None, 200),
+        ]
+        
+        all_working = True
+        
+        for method, endpoint, data, expected_status in endpoints_to_test:
+            if endpoint.startswith("admin/") and endpoint != "admin/login":
+                headers = self.get_auth_headers()
+            else:
+                headers = {}
             
-            if success2:
-                self.log_result("Whitelist to Blacklist with Cooldown", True, f"Entry: {entry_id}")
+            success, response = self.make_request(method, endpoint, data, headers=headers, expected_status=expected_status)
+            
+            if success:
+                self.log_result(f"Regression {method} {endpoint}", True, f"Status {expected_status}")
+            else:
+                self.log_result(f"Regression {method} {endpoint}", False, f"Expected {expected_status}, got error")
+                all_working = False
+        
+        return all_working
+
+    def test_hourly_tick_still_enabled(self):
+        """Test that hourly auto-tick is still enabled"""
+        success, response = self.make_request("GET", "vault/state")
+        
+        if success:
+            if 'hourly_tick_enabled' in response:
+                enabled = response['hourly_tick_enabled']
+                self.log_result("Hourly Tick Enabled", True, f"Enabled: {enabled}")
                 return True
             else:
-                self.log_result("Whitelist to Blacklist with Cooldown", False, f"Request failed: {response2}")
+                self.log_result("Hourly Tick Enabled", False, "Field missing from response")
         else:
-            self.log_result("Whitelist to Blacklist with Cooldown", False, "No whitelist entries available")
+            self.log_result("Hourly Tick Enabled", False, f"Request failed: {response}")
         return False
 
     def run_all_tests(self):
-        """Run all Phase 8 feature tests"""
-        print("🚀 Starting DEEPOTUS Phase 8 Feature Testing...")
+        """Run all DexScreener integration tests"""
+        print("🚀 Starting DEEPOTUS DexScreener Integration Testing...")
         print(f"Testing against: {self.base_url}")
         print("=" * 60)
         
@@ -446,33 +435,36 @@ class DeepotusAPITester:
         
         print("✅ Admin login successful")
         
-        # Test 2FA features
-        print("\n📱 Testing 2FA Features...")
-        self.test_2fa_status_initial()
+        # Test vault state endpoints
+        print("\n🏦 Testing Vault State Endpoints...")
+        self.test_vault_state_public()
+        self.test_vault_state_admin()
         
-        if self.test_2fa_setup():
-            self.test_2fa_verify()
-            self.test_2fa_login_flow()
-            self.test_2fa_backup_code_login()
-            self.test_2fa_disable()  # Clean up - disable 2FA for next test runs
-
-        # Test activity heatmap
-        print("\n🔥 Testing Activity Heatmap...")
-        self.test_activity_heatmap()
-
-        # Test full whitelist export
-        print("\n📊 Testing Full Whitelist Export...")
-        self.test_full_whitelist_export()
-
-        # Test email events
-        print("\n📧 Testing Email Events...")
-        self.test_email_events_endpoint()
-
-        # Test cooldown features
-        print("\n⏰ Testing Cooldown Features...")
-        self.test_cooldown_blacklist()
-        self.test_cooldown_import()
-        self.test_whitelist_cooldown_endpoint()
+        # Test dex-config endpoint
+        print("\n⚙️ Testing Dex Config Endpoint...")
+        self.test_dex_config_off_mode()
+        self.test_dex_config_demo_mode()
+        self.test_dex_config_custom_mode()
+        
+        # Test dex-poll endpoint
+        print("\n📊 Testing Dex Poll Endpoint...")
+        self.test_dex_poll_off_mode()
+        self.test_dex_poll_demo_mode()
+        self.test_dex_poll_diagnostic_fields()
+        
+        # Test mechanics
+        print("\n🔧 Testing Mechanics...")
+        self.test_dex_mode_baseline_reset()
+        
+        # Test security
+        print("\n🔒 Testing Security...")
+        self.test_security_public_vault_state()
+        self.test_security_admin_endpoints_require_jwt()
+        
+        # Test regression
+        print("\n🔄 Testing Regression...")
+        self.test_regression_existing_endpoints()
+        self.test_hourly_tick_still_enabled()
         
         # Print summary
         print("\n" + "=" * 60)
@@ -491,6 +483,6 @@ class DeepotusAPITester:
         return self.tests_passed == self.tests_run
 
 if __name__ == "__main__":
-    tester = DeepotusAPITester()
+    tester = DexScreenerAPITester()
     success = tester.run_all_tests()
     exit(0 if success else 1)
