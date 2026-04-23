@@ -30,6 +30,9 @@ export default function AdminVault() {
   const [loading, setLoading] = useState(true);
   const [crackTokens, setCrackTokens] = useState("1000");
   const [tokensPerDigit, setTokensPerDigit] = useState("");
+  const [tokensPerMicro, setTokensPerMicro] = useState("");
+  const [treasuryGoal, setTreasuryGoal] = useState("");
+  const [eurUsdRate, setEurUsdRate] = useState("");
   const [dexCustomAddr, setDexCustomAddr] = useState("");
   const [dexPollBusy, setDexPollBusy] = useState(false);
   const [dexLastPoll, setDexLastPoll] = useState(null);
@@ -52,6 +55,9 @@ export default function AdminVault() {
       const { data } = await axios.get(`${API}/api/admin/vault/state`, { headers });
       setState(data);
       if (tokensPerDigit === "") setTokensPerDigit(String(data.tokens_per_digit));
+      if (tokensPerMicro === "") setTokensPerMicro(String(data.tokens_per_micro ?? 10000));
+      if (treasuryGoal === "") setTreasuryGoal(String(data.treasury_goal_eur ?? 300000));
+      if (eurUsdRate === "") setEurUsdRate(String(data.eur_usd_rate ?? 1.08));
       if (dexCustomAddr === "" && data.dex_token_address) setDexCustomAddr(data.dex_token_address);
     } catch (e) {
       if (e?.response?.status === 401) {
@@ -113,9 +119,66 @@ export default function AdminVault() {
         { headers }
       );
       setState(data);
-      toast.success(`tokens_per_digit = ${n}`);
+      toast.success(`tokens_per_digit = ${n.toLocaleString()}`);
     } catch (e) {
       toast.error("Update failed");
+    }
+  }
+
+  async function updateTokensPerMicro() {
+    const n = parseInt(tokensPerMicro, 10);
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("Invalid number");
+      return;
+    }
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/vault/config`,
+        { tokens_per_micro: n },
+        { headers }
+      );
+      setState(data);
+      toast.success(`tokens_per_micro = ${n.toLocaleString()}`);
+    } catch (e) {
+      toast.error("Update failed");
+    }
+  }
+
+  async function updateTreasuryCfg() {
+    const g = parseFloat(treasuryGoal);
+    const r = parseFloat(eurUsdRate);
+    if (!Number.isFinite(g) || g <= 0 || !Number.isFinite(r) || r <= 0) {
+      toast.error("Invalid values");
+      return;
+    }
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/vault/config`,
+        { treasury_goal_eur: g, eur_usd_rate: r },
+        { headers }
+      );
+      setState(data);
+      toast.success(`Treasury goal=€${g} · rate=${r}`);
+    } catch (e) {
+      toast.error("Update failed");
+    }
+  }
+
+  async function applyPreset(preset) {
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/vault/config`,
+        { preset },
+        { headers }
+      );
+      setState(data);
+      setTokensPerDigit(String(data.tokens_per_digit));
+      setTokensPerMicro(String(data.tokens_per_micro));
+      setTreasuryGoal(String(data.treasury_goal_eur));
+      setEurUsdRate(String(data.eur_usd_rate));
+      toast.success(`Preset applied: ${preset.toUpperCase()}`);
+    } catch (e) {
+      toast.error("Preset failed");
     }
   }
 
@@ -289,6 +352,35 @@ export default function AdminVault() {
             <div className="flex items-center gap-2 font-display font-semibold mb-3">
               <Settings size={16} /> Config
             </div>
+
+            {/* PRESET BUTTONS */}
+            <div className="mb-4 p-3 rounded-md border border-[#F59E0B]/30 bg-[#F59E0B]/5">
+              <div className="text-xs font-medium text-foreground mb-2">Quick presets</div>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyPreset("production")}
+                  className="rounded-[var(--btn-radius)] border-[#18C964]/40"
+                  data-testid="admin-vault-preset-production"
+                >
+                  Production (100M / 10K)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyPreset("demo")}
+                  className="rounded-[var(--btn-radius)] border-[#F59E0B]/40"
+                  data-testid="admin-vault-preset-demo"
+                >
+                  Demo (1K / 100)
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Production: 600M tokens to fully crack (300K€ at €0.0005) · Demo: fast crack for testing
+              </p>
+            </div>
+
             <div className="flex items-center justify-between py-2">
               <div>
                 <div className="text-sm font-medium">Hourly auto-tick</div>
@@ -300,8 +392,9 @@ export default function AdminVault() {
                 data-testid="admin-vault-hourly-toggle"
               />
             </div>
+
             <div className="mt-3">
-              <Label className="text-xs">Tokens per digit</Label>
+              <Label className="text-xs">Tokens per digit (1 dial lock)</Label>
               <div className="flex gap-2 mt-1">
                 <Input
                   value={tokensPerDigit}
@@ -314,6 +407,58 @@ export default function AdminVault() {
                 </Button>
               </div>
             </div>
+
+            <div className="mt-3">
+              <Label className="text-xs">Tokens per micro-rotation</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={tokensPerMicro}
+                  onChange={(e) => setTokensPerMicro(e.target.value.replace(/[^0-9]/g, ""))}
+                  className="font-mono"
+                  data-testid="admin-vault-tpm-input"
+                />
+                <Button variant="outline" onClick={updateTokensPerMicro} className="rounded-[var(--btn-radius)]" data-testid="admin-vault-tpm-save">
+                  Save
+                </Button>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Every N tokens bought = 1 dial spin animation (no lock)
+              </p>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Treasury goal (€)</Label>
+                <Input
+                  value={treasuryGoal}
+                  onChange={(e) => setTreasuryGoal(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="font-mono mt-1"
+                  data-testid="admin-vault-goal-input"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">EUR/USD rate</Label>
+                <Input
+                  value={eurUsdRate}
+                  onChange={(e) => setEurUsdRate(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="font-mono mt-1"
+                  data-testid="admin-vault-rate-input"
+                />
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={updateTreasuryCfg}
+              className="mt-2 rounded-[var(--btn-radius)]"
+              data-testid="admin-vault-treasury-save"
+            >
+              Save treasury config
+            </Button>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              If treasury EUR value ≥ goal (custom mode only) → force DECLASSIFIED.
+            </p>
+
             <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
                 Reset wipes progress and <strong>re-rolls</strong> the target.

@@ -23,10 +23,14 @@ export default function CombinationDial({
   index = 0,
   size = "default",
   showLabel = true,
+  isActive = false,            // true = first unlocked dial (receives micro-ticks)
+  microTickVersion = 0,        // increments when a new micro-purchase is detected
 }) {
   const [display, setDisplay] = useState(value);
+  const [microFlash, setMicroFlash] = useState(false);
   const controls = useAnimation();
   const rafRef = useRef(null);
+  const lastMicroRef = useRef(microTickVersion);
 
   useEffect(() => {
     if (locked) {
@@ -53,6 +57,23 @@ export default function CombinationDial({
     };
   }, [locked, value, controls, index]);
 
+  // Deterministic spin triggered when a micro-tick arrives on the ACTIVE dial.
+  // Visual: advance display by +1 + amber flash pulse. Feels purposeful.
+  useEffect(() => {
+    if (locked || !isActive) return;
+    if (microTickVersion === lastMicroRef.current) return;
+    lastMicroRef.current = microTickVersion;
+    setDisplay((d) => (d + 1) % 10);
+    setMicroFlash(true);
+    controls.start({
+      y: [-8, 0],
+      scale: [1.04, 1],
+      transition: { duration: 0.28, ease: "easeOut" },
+    });
+    const t = setTimeout(() => setMicroFlash(false), 360);
+    return () => clearTimeout(t);
+  }, [microTickVersion, isActive, locked, controls]);
+
   useEffect(() => {
     const r = rafRef;
     return () => {
@@ -73,6 +94,22 @@ export default function CombinationDial({
         ring: "ring-[#18C964]/80",
         glow: "shadow-[0_0_24px_rgba(24,201,100,0.45)]",
         text: "text-[#18C964]",
+      };
+    }
+    if (microFlash) {
+      // Short bright amber burst on micro-tick
+      return {
+        ring: "ring-[#F59E0B]",
+        glow: "shadow-[0_0_26px_rgba(245,158,11,0.7)]",
+        text: "text-[#F59E0B]",
+      };
+    }
+    if (isActive && !locked) {
+      // The "next-up" dial is slightly emphasized
+      return {
+        ring: "ring-[#F59E0B]/60",
+        glow: "shadow-[0_0_14px_rgba(245,158,11,0.3)]",
+        text: "text-[#F59E0B]",
       };
     }
     if (stage === "UNLOCKING") {

@@ -9,6 +9,8 @@ import {
   LogOut,
   Radio,
   AlertTriangle,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -372,7 +374,9 @@ export default function ClassifiedVault() {
   const combo = vault?.current_combination || [0, 0, 0, 0, 0, 0];
   const dexMode = vault?.dex_mode || "off";
   const dexLabel = vault?.dex_label || null;
+  const microTicksTotal = vault?.micro_ticks_total ?? 0;
   const stageLabel = (t(`vault.stages.${stage}`) || stage).toString();
+  const isDeclassified = stage === "DECLASSIFIED";
 
   return (
     <div className="min-h-screen bg-[#060606] text-white">
@@ -442,7 +446,69 @@ export default function ClassifiedVault() {
             locked={locked}
             stage={stage}
             stageLabel={stageLabel}
+            microTickVersion={microTicksTotal}
           />
+
+          {/* DECLASSIFIED CTA — animated green button like the homepage.
+              On the REAL vault the Agent is already Level 2, so we route
+              directly to the /operation lore (GENCOIN reveal). */}
+          <AnimatePresence>
+            {isDeclassified && (
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mt-6 p-5 rounded-2xl border border-[#18C964]/50 bg-[#18C964]/10 backdrop-blur relative overflow-hidden"
+                data-testid="classified-declassified-cta"
+              >
+                {/* Ambient sparkle pulse */}
+                <motion.div
+                  aria-hidden
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 50% 50%, rgba(24,201,100,0.25), transparent 70%)",
+                  }}
+                  animate={{ opacity: [0.4, 0.9, 0.4] }}
+                  transition={{ duration: 2.2, repeat: Infinity }}
+                />
+                <div className="relative flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles size={16} className="text-[#18C964]" />
+                      <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#18C964]">
+                        {t("classifiedVault.declassified.kicker")}
+                      </span>
+                    </div>
+                    <div className="font-display text-xl md:text-2xl font-semibold text-white">
+                      {t("classifiedVault.declassified.title")}
+                    </div>
+                    <div className="text-sm text-white/75 mt-1 max-w-xl">
+                      {t("classifiedVault.declassified.subtitle")}
+                    </div>
+                  </div>
+                  <motion.div
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1, 1.04, 1] }}
+                    transition={{ duration: 1.8, repeat: Infinity }}
+                  >
+                    <Button
+                      asChild
+                      size="lg"
+                      className="rounded-[var(--btn-radius)] bg-[#18C964] hover:bg-[#18C964]/90 text-black font-semibold shadow-[0_0_30px_rgba(24,201,100,0.45)]"
+                      data-testid="classified-declassified-cta-btn"
+                    >
+                      <a href="/operation">
+                        {t("classifiedVault.declassified.cta")}
+                        <ArrowRight size={16} className="ml-1.5" />
+                      </a>
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
         {/* Metrics + feed row */}
@@ -477,6 +543,38 @@ export default function ClassifiedVault() {
                     </div>
                   </div>
                   <div className="rounded-md border border-white/10 bg-black/40 p-3">
+                    <div className="text-white/40 text-[10px] uppercase">
+                      {t("classifiedVault.microTicks")}
+                    </div>
+                    <div className="text-[#F59E0B] text-lg mt-0.5">
+                      {microTicksTotal.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-white/10 bg-black/40 p-3 col-span-2">
+                    <div className="text-white/40 text-[10px] uppercase">
+                      {t("classifiedVault.treasury")}
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-[#18C964] text-lg">
+                        €{(vault?.treasury_eur_value ?? 0).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}
+                      </span>
+                      <span className="text-white/40 text-[10px] uppercase">
+                        / €??? · {Math.round(vault?.treasury_progress_pct ?? 0)}%
+                      </span>
+                    </div>
+                    {/* Mini progress bar */}
+                    <div className="h-1.5 w-full rounded-full bg-white/10 mt-2 overflow-hidden">
+                      <div
+                        className="h-full bg-[#18C964] transition-all duration-500"
+                        style={{
+                          width: `${Math.min(100, Math.round(vault?.treasury_progress_pct ?? 0))}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-white/10 bg-black/40 p-3 col-span-2">
                     <div className="text-white/40 text-[10px] uppercase">
                       {t("classifiedVault.mode")}
                     </div>

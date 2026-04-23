@@ -1,18 +1,34 @@
 [
   {
-    "content": "Generate AI illustration: door with digicode keypad",
+    "content": "Backend vault.py: new defaults + tokens_per_micro + treasury_eur criterion",
     "status": "completed"
   },
   {
-    "content": "Redesign /classified-vault gate with door background + positioned input",
+    "content": "Backend dexscreener.py: apply real tokens in custom mode (no more batching)",
     "status": "completed"
   },
   {
-    "content": "Use VaultChassis mockup in authed real vault view (same anchoring)",
-    "status": "completed"
+    "content": "Frontend CombinationDial: deterministic micro-tick spin + amber pulse",
+    "status": "in_progress"
   },
   {
-    "content": "Visual QA desktop + mobile on both gate and authed views",
-    "status": "completed"
+    "content": "Frontend VaultChassis + VaultSection: propagate micro_ticks_total version",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend ClassifiedVault: add DECLASSIFIED CTA animated green button + /operation link",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend AdminVault: add micro/treasury/rate inputs + Demo|Production presets",
+    "status": "pending"
+  },
+  {
+    "content": "Backend testing agent: validate new mechanics + treasury criterion",
+    "status": "pending"
+  },
+  {
+    "content": "Visual QA on classified-vault authed DECLASSIFIED state",
+    "status": "pending"
   }
 ]

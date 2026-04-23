@@ -167,20 +167,26 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
     if first_seen or (delta_buys == 0 and delta_vol_usd == 0):
         pass
     elif mode == "demo":
-        # Symbolic: 1 tick per DEMO_BUYS_PER_TICK new buys, capped
+        # Symbolic: emit "purchase" events scaled to make the demo feel alive without
+        # instantly cracking the vault at production scale (100M per dial).
+        # We apply up to DEMO_MAX_TICKS_PER_POLL events, each of `demo_tick_tokens`.
+        tokens_per_digit = int(doc.get("tokens_per_digit") or 1000)
+        tokens_per_micro = int(doc.get("tokens_per_micro") or 10_000)
+        # Aim for a single buy event to produce roughly ~3-10 micro-rotations visibly
+        demo_tick_tokens = max(tokens_per_micro * 3, min(tokens_per_digit // 50, 2_000_000))
         potential_ticks = min(DEMO_MAX_TICKS_PER_POLL, delta_buys // DEMO_BUYS_PER_TICK)
         for i in range(potential_ticks):
             await vault_mod.apply_crack(
                 db,
-                tokens=int(doc.get("tokens_per_digit") or 1000),
+                tokens=int(demo_tick_tokens),
                 kind="purchase",
                 agent_code=_agent_code_for(pair_symbol, agent_index=i + 1),
                 note=f"dex demo: {s['base_symbol']} (+{delta_buys} buys h24 delta)",
             )
             ticks_applied += 1
     else:
-        # custom: 1 tick per tokens_per_digit tokens bought
-        # buy share of volume is approximated using the buy/sell txn ratio.
+        # custom: apply the REAL estimated token volume (no artificial batching)
+        # so both digits_locked and micro_ticks_total advance naturally.
         total_txns = delta_buys + delta_sells
         buy_ratio = (delta_buys / total_txns) if total_txns > 0 else 0.5
         delta_buy_volume_usd = delta_vol_usd * buy_ratio
@@ -189,21 +195,21 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
         else:
             delta_tokens = 0.0
 
+        # Tiny carry to accumulate fractional leftovers across polls, but push each
+        # poll's integer portion as ONE single event with the real token count.
         new_carry = carry + delta_tokens
-        tokens_per_digit = int(doc.get("tokens_per_digit") or 1000)
-        ticks = int(new_carry // tokens_per_digit)
-        new_carry = new_carry - (ticks * tokens_per_digit)
+        tokens_to_apply = int(new_carry)
+        new_carry = new_carry - tokens_to_apply
 
-        # Safety cap: never apply more than 6 ticks in one poll
-        ticks = min(ticks, 6)
-        for i in range(ticks):
+        if tokens_to_apply > 0:
             await vault_mod.apply_crack(
                 db,
-                tokens=tokens_per_digit,
+                tokens=tokens_to_apply,
                 kind="purchase",
-                agent_code=_agent_code_for(pair_symbol, agent_index=i + 1),
+                agent_code=_agent_code_for(pair_symbol, agent_index=1),
                 note=(
-                    f"dex custom: {s['base_symbol']} +{int(delta_tokens):,} tokens est."
+                    f"dex custom: {s['base_symbol']} "
+                    f"+{int(delta_tokens):,} tokens (Δbuys={delta_buys})"
                 ),
             )
             ticks_applied += 1

@@ -188,6 +188,8 @@ export const translations = {
       dials: "cadrans",
       progress: "progression",
       tokens: "tokens poussés",
+      microTicks: "micro-rotations",
+      treasury: "Trésor (€)",
       mode: "source",
       disclaimer:
         "Avertissement : le coffre évolue en fonction de l'activité on-chain réelle du jeton (DexScreener). Aucune promesse de rendement. Ce token est satirique et hautement spéculatif.",
@@ -195,6 +197,13 @@ export const translations = {
       externalTitle: "Vérifier on-chain",
       sessionUntil: "Session jusqu'au",
       logout: "Déconnexion",
+      declassified: {
+        kicker: "PROTOCOL ΔΣ · DÉCLASSIFIÉ",
+        title: "Le coffre est ouvert. La confession est disponible.",
+        subtitle:
+          "Le Prophète panique, la foule se soulève. Accédez à la révélation complète et au lancement GENCOIN.",
+        cta: "Accéder à la révélation",
+      },
     },
 
     // ---- Mission ----
@@ -686,6 +695,8 @@ export const translations = {
       dials: "dials",
       progress: "progress",
       tokens: "tokens moved",
+      microTicks: "micro-rotations",
+      treasury: "Treasury (€)",
       mode: "source",
       disclaimer:
         "Warning: the vault evolves based on real on-chain activity (DexScreener). No yield promised. This token is satirical and highly speculative.",
@@ -693,6 +704,13 @@ export const translations = {
       externalTitle: "Verify on-chain",
       sessionUntil: "Session until",
       logout: "Logout",
+      declassified: {
+        kicker: "PROTOCOL ΔΣ · DECLASSIFIED",
+        title: "The vault is open. The confession is live.",
+        subtitle:
+          "The Prophet panics, the crowd rises. Access the full revelation and the GENCOIN launch.",
+        cta: "Access the revelation",
+      },
     },
 
     mission: {

@@ -66,6 +66,7 @@ export default function VaultSection() {
   const redactedBuckets = Math.min(10, Math.floor((progressPct / 100) * 10));
   const dexMode = state?.dex_mode || "off";
   const dexLabel = state?.dex_label || null;
+  const microTicksTotal = state?.micro_ticks_total ?? 0;
 
   const stageLabel = useMemo(() => {
     return t(`vault.stages.${stage}`) || stage;
@@ -129,6 +130,7 @@ export default function VaultSection() {
             locked={locked}
             stage={stage}
             stageLabel={stageLabel}
+            microTickVersion={microTicksTotal}
           />
         </motion.div>
 

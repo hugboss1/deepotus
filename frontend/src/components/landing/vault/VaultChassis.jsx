@@ -18,6 +18,7 @@ export default function VaultChassis({
   locked = 0,
   stage = "LOCKED",
   stageLabel = "LOCKED",
+  microTickVersion = 0,   // bumps when a new 10K-token purchase is detected
 }) {
   const haloColor =
     stage === "DECLASSIFIED"
@@ -73,6 +74,8 @@ export default function VaultChassis({
               stage={stage}
               size="chassis"
               showLabel={false}
+              isActive={i === locked}
+              microTickVersion={microTickVersion}
             />
           </div>
         ))}
