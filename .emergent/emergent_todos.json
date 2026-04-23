@@ -1,38 +1,6 @@
 [
   {
-    "content": "Generate AI access card template (blank Deep State ID card)",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: access_card.py module (accreditation gen + PIL overlay + sessions)",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: email template for access card + attachment logic",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: 3 endpoints (/api/access-card/{request, verify, status})",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: TerminalPopup component (CRT terminal with typing states)",
-    "status": "in_progress"
-  },
-  {
-    "content": "Frontend: Modify VaultSection CTA to open popup (not /operation)",
-    "status": "pending"
-  },
-  {
-    "content": "Frontend: /classified-vault page with gate + real live vault",
-    "status": "pending"
-  },
-  {
-    "content": "i18n: FR/EN translations for terminal + card + real vault",
-    "status": "pending"
-  },
-  {
     "content": "Final end-to-end QA of the whole funnel",
-    "status": "pending"
+    "status": "completed"
   }
 ]

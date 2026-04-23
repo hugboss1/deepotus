@@ -76,7 +76,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 ## Sections / features to build
 
 1. **Hero** — Deepfake AI Prophet President candidate banner, bilingual toggle, main CTA, countdown, $DEEPOTUS ticker
-2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity (Phases 10–12)
+2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity (Phases 10–13)
 3. **AI Prophet Live Chat** — Emergent LLM, in-character cynical Deep State POTUS candidate, bilingual
 4. **Auto-refreshing Prophecies Feed** — LLM-generated apocalyptic one-liners
 5. **Mission Section** — MiCA framing + transparent structure, reframed to PROTOCOL ΔΣ / classified operation
@@ -90,6 +90,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 13. **Risk Disclaimer Footer** — Full MiCA-compliant language, bilingual
 14. **Language Switcher** — FR ↔ EN toggle
 15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown + (Phase 12) cinematic “Fall of Deep State” illustration
+16. **Classified Vault (Level 02) (`/classified-vault`)** — gated full-page “real vault” with accreditation + session token, displaying live activity feed (Phase 13)
 
 ---
 
@@ -99,7 +100,8 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 - i18n: Simple Context-based FR/EN (no heavy library)
 - Email: Resend + webhooks (Svix verification)
 - Dex / market feed: **DexScreener API** polling (Phase 11)
-- Image generation: Gemini Nano Banana (`gemini-3.1-flash-image-preview`) (Phases 10–12)
+- Image generation: Gemini Nano Banana (`gemini-3.1-flash-image-preview`) (Phases 10–13)
+- Image processing: Pillow (PIL) + qrcode (Phase 13)
 
 ---
 
@@ -150,6 +152,10 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 20. As an **admin**, I can switch live activity feed modes (off/demo/custom), set the Solana mint, and force a poll for debugging
 21. As a **mobile visitor**, I see the vault dials remain anchored inside the vault mockup (no layout drop below the image)
 22. As a **visitor** (post-declassification), I see a cinematic illustration representing the “Fall of the Deep State” with the RIPPLED crowd on the `/operation` reveal page
+23. As a **visitor** (post-declassification), clicking the vault CTA opens a **terminal popup** that sarcastically denies access to the “true vault” unless Level 02 clearance is obtained
+24. As a **visitor**, I can request **Level 02** via email and receive a personalized **Deep State access card** (name + accreditation + QR)
+25. As a **Level 02 visitor**, I can access `/classified-vault` by entering my accreditation number and receive a 24h session token
+26. As a **Level 02 visitor**, I can view the “true vault” full-page UI showing live activity (DexScreener) and the combination progress
 
 ---
 
@@ -340,8 +346,91 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 
 ---
 
+## Phase 13 — Funnel NIVEAU 02 (Terminal + Carte d’accès + Vault réel) — **COMPLETED ✅**
+
+### Objectives
+- ✅ Keep the public vault as-is (PROTOCOL ΔΣ chassis + dials + DexScreener feed).
+- ✅ Replace the declassification CTA behavior:
+  - Instead of navigating directly to `/operation`, clicking the CTA opens a **sarcastic CRT terminal popup**.
+  - The terminal denies “true vault” access for Level 01 and prompts the user to request **Level 02**.
+- ✅ Implement Level 02 upgrade email:
+  - Generate an accreditation code
+  - Send a second email containing a personalized **Deep State access card** (AI template + overlays)
+- ✅ Create a full-page “real vault” page `/classified-vault`:
+  - Gate by accreditation code
+  - Issue a 24h session token
+  - Show the live combination + activity feed as the “true vault”
+- ✅ Ensure deliverability   observability:
+  - Resend delivery tracked via Svix webhooks
+  - Access card email events visible via admin `/admin/emails`
+
+### Implementation
+
+**AI template (Access Card)**
+- ✅ Script: `/app/tests/generate_access_card_template.py`
+- ✅ Output: `/app/backend/assets/access_card_template.png` (~694KB)
+- ✅ Visual spec: matte black covert-agency card, cyan/amber security accents, empty slots for name/accred/dates/QR.
+
+**Backend (Access Card system)**
+- ✅ New module: `/app/backend/access_card.py`
+  - Accreditation format: `DS-02-XXXX-XXXX-XX`
+  - Idempotent per email (same email → same accreditation)
+  - PIL overlay pipeline:
+    - Masks template placeholders (including “EMPTY BANNER” artifacts)
+    - Overlays NAME, ACCREDITATION, issue/expire dates, QR code, microtext
+  - 24h access sessions (`access_sessions`)
+- ✅ New MongoDB collections:
+  - `access_cards` (email → accreditation, display_name, card_path, issued_at, expires_at)
+  - `access_sessions` (session_token, accred, display_name, expires_at)
+- ✅ New API endpoints:
+  - `POST /api/access-card/request` (public; generates card + sends email)
+  - `POST /api/access-card/verify` (public; accred → session token)
+  - `GET /api/access-card/status` (public; validates X-Session-Token)
+  - `GET /api/access-card/image/{accred}` (public; serves PNG)
+- ✅ Email templates:
+  - Added bilingual template in `/app/backend/email_templates.py`:
+    - `render_access_card_email` + `access_card_subject`
+  - Email includes inline CID image attachment (card) + accreditation code + CTA to `/classified-vault?code=...`
+
+**Frontend (Terminal + Real vault page)**
+- ✅ New component: `/app/frontend/src/components/landing/vault/TerminalPopup.jsx`
+  - CRT terminal modal with scanlines + phosphor glow + blinking cursor
+  - 5 phases: denied (typing) → form → sending → success → error
+  - Form collects email + optional agent name
+  - Calls `/api/access-card/request`
+- ✅ VaultSection behavior update:
+  - DECLASSIFIED CTA now opens `TerminalPopup` (instead of `/operation`)
+  - Added two shortcuts always visible:
+    - “Demander un niveau d'accréditation” (opens terminal)
+    - “J’ai déjà un numéro d'accréditation” (link to `/classified-vault`)
+- ✅ New route + page: `/classified-vault` (`/app/frontend/src/pages/ClassifiedVault.jsx`)
+  - Gate UI: accreditation input (auto-prefilled by `?code=`)
+  - Verify via `/api/access-card/verify`
+  - Persist session in `localStorage` (`deepotus_access_session`)
+  - Authed full-page “true vault” view:
+    - Session stripe header (expires + logout)
+    - Large 6 dials + metrics + live feed + external link
+- ✅ Router update: `/app/frontend/src/App.js` now includes `/classified-vault`
+- ✅ i18n additions:
+  - `terminal.*`
+  - `classifiedVault.*`
+  - `vault.requestClearance` + `vault.alreadyHaveCode`
+
+### Testing
+- ✅ Backend testing agent: **41/41 tests passed** (`/app/test_reports/iteration_9.json`)
+  - 19 new access-card tests + 22 regressions
+- ✅ Email test to `olistruss639@gmail.com` validated:
+  - `access_card.sent` + `email.sent` + `email.delivered` visible in admin email events (Svix verified)
+
+### Current Runtime Defaults
+- ✅ Vault reset state: `LOCKED 0/6`
+- ✅ Dex mode: `demo` enabled by default
+- ✅ Terminal + access-card system ready for production demo
+
+---
+
 ## Remaining / Optional Improvements (P1)
-- Refactor `server.py` (now larger) into routers (`routers/admin.py`, `routers/public.py`, `routers/webhooks.py`, `routers/vault.py`)
+- Refactor `server.py` (now larger) into routers (`routers/admin.py`, `routers/public.py`, `routers/webhooks.py`, `routers/vault.py`, `routers/access_card.py`)
 - Recharts resize warning (cosmetic) — optional
 
 ---
@@ -355,5 +444,5 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 
 ## Pending Operations (memorized for later — user requested)
 - **(A) Switch DexScreener mode to real token**: When $DEEPOTUS is deployed, switch `dex_mode` → `custom` and set the real Solana mint address from `/admin/vault`.
-- **(B) Backend refactor**: Break `/app/backend/server.py` (~1900 lines) into dedicated routers/modules (public/admin/webhooks/vault) without changing behavior.
+- **(B) Backend refactor**: Break `/app/backend/server.py` (now >2100 lines) into dedicated routers/modules (public/admin/webhooks/vault/access-card) without changing behavior.
 - **(C) On-chain accuracy upgrade**: Replace the DexScreener h24-delta approximation with a Solana trade indexer (Raydium/Orca via Helius/Solscan or direct RPC parsing) for per-trade accuracy and robust buy volume detection.
