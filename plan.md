@@ -96,19 +96,19 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Chat persona stays in character in **FR + EN** (cynical Deep State POTUS candidate)
 - Prophecy generation is memorable/memetic
 - Language switching preserves persona
-- **Status**: 🟡 PENDING
+- **Status**: ✅ COMPLETED (PASSED)
 
 ### Phase 2 — Full Landing Page Build
 - Backend routes: `/api/chat`, `/api/prophecy`, `/api/whitelist`, `/api/stats`
 - Frontend: Full bilingual landing with all 13 sections above, i18n, animations, deepfake aesthetic
 - MongoDB collections: `whitelist`, `chat_logs`, `prophecies_cache`
-- **Status**: 🟡 PENDING
+- **Status**: ✅ COMPLETED
 
 ### Phase 3 — Testing & Polish
 - End-to-end testing via `testing_agent_v3` covering ALL user stories
 - Bug fixes (all priorities)
 - Final delivery via `finish`
-- **Status**: 🟡 PENDING
+- **Status**: ✅ COMPLETED
 
 ---
 
@@ -128,6 +128,7 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 12. As a **visitor**, I see a clear roadmap with GENCOIN milestones
 13. As a **skeptical reader**, I see honest success probabilities (1.4% / 2–3% / ~1%)
 14. As a **visitor**, I see visible social mockups (X, Telegram, Discord)
+15. As an **admin**, I can securely send transactional emails (welcome + test) and observe lifecycle events (sent/delivered/bounced) captured via signed webhooks
 
 ---
 
@@ -148,6 +149,36 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - ✅ **Page `/admin/emails`** — Drill-down des événements webhook Resend avec filtre chips par type (`email.sent`, `email.delivered`, `email.bounced`, etc. colorés), filtre recipient, table paginée, lien back-to-cabinet.
 - ✅ **Cooldown blacklist** — Champ `cooldown_days` optionnel sur l'ajout manuel et l'import CSV. `cooldown_until` stocké sur le doc blacklist. Auto-unblock lazy sur `POST /api/whitelist` si cooldown expiré. Table admin affiche "unlocks DATE" en amber ou badge "PERMANENT".
 
-## Phase 8 Testing
-- Backend: **100% (17/17)** — tous les flux 2FA, heatmap, export, events, cooldown validés
-- Frontend: **95%** — toutes les features fonctionnelles, seul un warning Recharts cosmétique au resize
+## Phase 9 — Resend Webhook Finale (Svix) + Test Emails (completed ✅)
+Objectif : finaliser la boucle **emails sortants** → **webhooks entrants signés** → **observabilité admin**.
+
+### Implémentation (révisée / finalisée)
+1. ✅ **Injection du secret webhook**
+   - Ajout de `RESEND_WEBHOOK_SECRET=whsec_+I+HgWL6ornO/mxuFljrruzFqJQOmauK` dans `/app/backend/.env`.
+2. ✅ **Redémarrage backend**
+   - `supervisorctl restart backend` pour recharger l’environnement.
+3. ✅ **Option (a) — Flow whitelist classique**
+   - Appel `POST /api/whitelist`.
+   - Note : si l’email existe déjà, l’API ne renvoie pas de nouvel envoi. Pour éviter toute pollution et garantir un nouvel envoi tout en livrant dans la même inbox Gmail, usage du **plus-addressing**.
+   - Test exécuté avec `olistruss639+whitelist@gmail.com` (livré dans la boîte `olistruss639@gmail.com`).
+4. ✅ **Option (b) — Endpoint admin dédié (test propre)**
+   - Création de `POST /api/admin/test-email` (JWT admin requis) pour envoyer un email de test **sans** créer d’entrée whitelist.
+   - Ajout d’un event interne `admin.test.sent` dans `email_events` pour corrélation.
+5. ✅ **Vérification observabilité côté admin**
+   - Vérification via `GET /api/admin/email-events`.
+   - Événements confirmés : `email.sent` + `email.delivered` pour les 2 emails.
+
+### Critères d’acceptation (atteints ✅)
+- ✅ Envoi Resend fonctionne depuis le sender **`wcu@deepotus.xyz`** (adresse inchangée).
+- ✅ Endpoint webhook `/api/webhooks/resend` reçoit et **valide la signature Svix** via `RESEND_WEBHOOK_SECRET`.
+- ✅ Les événements `email.sent` et `email.delivered` sont persistés dans `email_events` et visibles dans l’admin.
+
+## Phase 9 Testing
+- Backend: ✅ Webhook signing + event persistence validés (email.sent / email.delivered)
+- Admin: ✅ endpoint `/api/admin/test-email` opérationnel (JWT requis)
+
+---
+
+## Remaining / Optional Improvements (P1)
+- Refactor `server.py` (actuellement volumineux ~1500+ lignes) en routers dédiés (`routers/admin.py`, `routers/public.py`, `routers/webhooks.py`) pour améliorer maintenabilité.
+- Warning Recharts au resize (cosmétique, non bloquant) : optionnel.

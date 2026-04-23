@@ -1718,6 +1718,97 @@ async def admin_email_events(
 
 
 # ---------------------------------------------------------------------
+# Admin: send a dedicated test email (does NOT touch whitelist)
+# ---------------------------------------------------------------------
+class AdminTestEmailRequest(BaseModel):
+    email: EmailStr
+    lang: Optional[str] = "fr"
+
+
+class AdminTestEmailResponse(BaseModel):
+    ok: bool
+    email_id: Optional[str] = None
+    recipient: str
+    message: str
+
+
+@admin_router.post("/test-email", response_model=AdminTestEmailResponse)
+async def admin_test_email(
+    req: AdminTestEmailRequest, _p: dict = Depends(require_admin)
+):
+    """Send a one-off transactional test email through Resend.
+    Does not create a whitelist entry. Purely for delivery / webhook validation.
+    """
+    if not RESEND_API_KEY:
+        raise HTTPException(status_code=500, detail="RESEND_API_KEY not configured")
+
+    lang = (req.lang or "fr").lower()
+    if lang not in ("fr", "en"):
+        lang = "fr"
+
+    recipient = req.email.lower().strip()
+    # Use a symbolic position -1 so the template still renders but recipient
+    # knows this is a test. We also prefix the subject with [TEST].
+    try:
+        html = render_welcome_email(
+            lang=lang,
+            email=recipient,
+            position=0,
+            base_url=PUBLIC_BASE_URL,
+        )
+        base_subject = email_subject(lang)
+        subject = f"[TEST] {base_subject}"
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [recipient],
+            "subject": subject,
+            "html": html,
+            "tags": [
+                {"name": "category", "value": "admin_test"},
+                {"name": "lang", "value": lang},
+            ],
+        }
+        res = await asyncio.to_thread(resend.Emails.send, params)
+        email_id = None
+        if isinstance(res, dict):
+            email_id = res.get("id")
+        elif hasattr(res, "get"):
+            email_id = res.get("id")
+
+        # Record a minimal trace so admin can correlate later
+        try:
+            await db.email_events.insert_one(
+                {
+                    "_id": str(uuid.uuid4()),
+                    "type": "admin.test.sent",
+                    "email_id": email_id,
+                    "recipient": recipient,
+                    "received_at": datetime.now(timezone.utc).isoformat(),
+                    "raw": {
+                        "source": "admin_test_endpoint",
+                        "lang": lang,
+                        "subject": subject,
+                    },
+                }
+            )
+        except Exception:
+            logging.exception("Failed to persist admin.test.sent trace")
+
+        logging.info(
+            f"[admin/test-email] sent to={recipient} id={email_id} lang={lang}"
+        )
+        return AdminTestEmailResponse(
+            ok=True,
+            email_id=email_id,
+            recipient=recipient,
+            message="Test email dispatched to Resend.",
+        )
+    except Exception as e:
+        logging.exception(f"[admin/test-email] failed for {recipient}: {e}")
+        raise HTTPException(status_code=502, detail=f"Resend error: {str(e)[:300]}")
+
+
+# ---------------------------------------------------------------------
 # Mount routers + middleware
 # ---------------------------------------------------------------------
 app.include_router(api_router)

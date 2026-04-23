@@ -1,54 +1,26 @@
 [
   {
-    "content": "Install pyotp + qrcode libraries",
+    "content": "Add RESEND_WEBHOOK_SECRET to /app/backend/.env",
     "status": "completed"
   },
   {
-    "content": "Backend: 2FA TOTP system (enable/disable/verify, backup codes, integrated in login)",
+    "content": "Restart backend service",
     "status": "completed"
   },
   {
-    "content": "Backend: activity heatmap (7x24 matrix) in public stats",
+    "content": "Verify/create admin test-email endpoint (option b)",
     "status": "completed"
   },
   {
-    "content": "Backend: full whitelist CSV export endpoint",
+    "content": "Trigger option a: /api/whitelist/join with olistruss639+whitelist@gmail.com",
     "status": "completed"
   },
   {
-    "content": "Backend: /api/admin/email-events with filters + pagination",
+    "content": "Trigger option b: admin test email endpoint to olistruss639@gmail.com",
     "status": "completed"
   },
   {
-    "content": "Backend: auto-unblacklist cooldown (cooldown_until field + lazy check + scheduled cleanup)",
+    "content": "Verify webhook events in /api/admin/email-events",
     "status": "completed"
-  },
-  {
-    "content": "Frontend: 2FA setup flow in admin (QR code, verify, backup codes, disable)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: heatmap component on /stats",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: full whitelist export button",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: /admin/emails page with filters + table + drill-down",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: cooldown input in blacklist add + column display",
-    "status": "completed"
-  },
-  {
-    "content": "End-to-end testing",
-    "status": "completed"
-  },
-  {
-    "content": "Final delivery summary",
-    "status": "in_progress"
   }
 ]
