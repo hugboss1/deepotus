@@ -123,6 +123,74 @@ export const translations = {
           "Vous avez fait tourner la dernière molette. La vérité fuit. Le Prophète panique.",
         cta: "Accéder à la révélation",
       },
+      requestClearance: "Demander un niveau d'accréditation",
+      alreadyHaveCode: "J'ai déjà un numéro d'accréditation",
+    },
+
+    // ---- Terminal popup (Level 2 gatekeeper) ----
+    terminal: {
+      deniedLines: [
+        "> VERIFYING CREDENTIALS…",
+        "> clearance_level = 01 (WHITELISTED)",
+        "> target_resource = PROTOCOL_ΔΣ · TRUE_VAULT",
+        "> required_clearance = LEVEL_02",
+        "",
+        "[REFUS D'ACCÈS]",
+        "",
+        "Bien essayé, citoyen. Le coffre-fort que vous pensez avoir ouvert n'était qu'un leurre narratif — le niveau 01 ne vous donne que la version déclassifiée publique.",
+        "",
+        "Le VRAI coffre — celui qui contient le flux d'activité réel de $DEEPOTUS — requiert une accréditation de NIVEAU 02.",
+        "",
+        "Rassurez-vous : le Deep State est bureaucrate. Demandez votre carte. On vous l'enverra.",
+      ],
+      ctaRequest: "Demander l'accréditation niveau 02",
+      ctaRetreat: "Retirer ma demande (retour)",
+      formIntro:
+        "Identifiez-vous. Le Deep State archivera votre dossier et vous délivrera une carte d'accès personnelle avec un numéro d'accréditation unique.",
+      emailLabel: "Email de contact",
+      emailPlaceholder: "votre@email.com",
+      nameLabel: "Nom d'agent (facultatif)",
+      namePlaceholder: "AGENT OMEGA-042",
+      emailInvalid: "Email invalide. Réessayez.",
+      submit: "Transmettre la demande",
+      back: "Retour",
+      successTitle: "TRANSMISSION REÇUE. DOSSIER ARCHIVÉ.",
+      successInbox:
+        "Votre carte d'accès est en route vers __EMAIL__ — délai typique : quelques secondes.",
+      successNext: "Prochaine étape — ouvrir le véritable coffre",
+      openVault: "Ouvrir le véritable coffre",
+      close: "Fermer le terminal",
+      retry: "Réessayer",
+    },
+
+    // ---- Classified vault (full-page real vault) ----
+    classifiedVault: {
+      gateKicker: "Accès restreint · NIVEAU 02",
+      gateTitle: "Le véritable coffre-fort.",
+      gateSubtitle:
+        "Entrez votre numéro d'accréditation niveau 02. Il vous a été transmis par email sur votre carte d'accès Deep State.",
+      gateLabel: "Numéro d'accréditation",
+      gateError: "Accréditation invalide ou expirée.",
+      gateHint:
+        "Pas encore de numéro ? Rendez-vous sur la page d'accueil, ouvrez le terminal depuis la section du coffre et demandez votre accréditation niveau 02.",
+      gateBack: "Retour au site",
+      verify: "Vérifier l'accès",
+      verifying: "Vérification…",
+      authedKicker: "CLEARANCE ACCORDÉE · NIVEAU 02",
+      authedTitle: "Bienvenue dans le véritable coffre $DEEPOTUS.",
+      authedSubtitle:
+        "Ce que vous voyez ici est le flux réel de l'activité on-chain du jeton. Aucune mise en scène. Aucun filtre. La combinaison progresse littéralement au rythme des achats.",
+      liveCombination: "Combinaison en direct",
+      dials: "cadrans",
+      progress: "progression",
+      tokens: "tokens poussés",
+      mode: "source",
+      disclaimer:
+        "Avertissement : le coffre évolue en fonction de l'activité on-chain réelle du jeton (DexScreener). Aucune promesse de rendement. Ce token est satirique et hautement spéculatif.",
+      feedTitle: "Flux d'activité en direct",
+      externalTitle: "Vérifier on-chain",
+      sessionUntil: "Session jusqu'au",
+      logout: "Déconnexion",
     },
 
     // ---- Mission ----
@@ -551,6 +619,72 @@ export const translations = {
         subtitle: "You turned the final dial. The truth leaks. The Prophet panics.",
         cta: "Access the revelation",
       },
+      requestClearance: "Request a clearance level",
+      alreadyHaveCode: "I already have an accreditation number",
+    },
+
+    terminal: {
+      deniedLines: [
+        "> VERIFYING CREDENTIALS…",
+        "> clearance_level = 01 (WHITELISTED)",
+        "> target_resource = PROTOCOL_ΔΣ · TRUE_VAULT",
+        "> required_clearance = LEVEL_02",
+        "",
+        "[ACCESS DENIED]",
+        "",
+        "Nice try, citizen. The vault you thought you cracked was only a narrative decoy — Level 01 only grants you the public declassified version.",
+        "",
+        "The REAL vault — the one holding the actual $DEEPOTUS activity stream — requires LEVEL 02 clearance.",
+        "",
+        "Good news: the Deep State is bureaucratic. Ask for your card. They'll send it.",
+      ],
+      ctaRequest: "Request Level 02 clearance",
+      ctaRetreat: "Withdraw request (go back)",
+      formIntro:
+        "Identify yourself. The Deep State will file your record and deliver a personal access card with a unique accreditation number.",
+      emailLabel: "Contact email",
+      emailPlaceholder: "you@email.com",
+      nameLabel: "Agent name (optional)",
+      namePlaceholder: "AGENT OMEGA-042",
+      emailInvalid: "Invalid email. Try again.",
+      submit: "Transmit request",
+      back: "Back",
+      successTitle: "TRANSMISSION RECEIVED. RECORD ARCHIVED.",
+      successInbox:
+        "Your access card is en route to __EMAIL__ — usual delay: a few seconds.",
+      successNext: "Next step — open the real vault",
+      openVault: "Open the real vault",
+      close: "Close terminal",
+      retry: "Retry",
+    },
+
+    classifiedVault: {
+      gateKicker: "Restricted · LEVEL 02",
+      gateTitle: "The real vault.",
+      gateSubtitle:
+        "Enter your Level 02 accreditation number. It was emailed to you on your Deep State access card.",
+      gateLabel: "Accreditation number",
+      gateError: "Invalid or expired accreditation.",
+      gateHint:
+        "Don't have a number yet? Head back to the home page, open the terminal from the vault section and request your Level 02 accreditation.",
+      gateBack: "Back to site",
+      verify: "Verify access",
+      verifying: "Verifying…",
+      authedKicker: "CLEARANCE GRANTED · LEVEL 02",
+      authedTitle: "Welcome to the real $DEEPOTUS vault.",
+      authedSubtitle:
+        "What you see here is the live on-chain activity stream of the token. No staging. No filter. The combination literally advances with every purchase.",
+      liveCombination: "Live combination",
+      dials: "dials",
+      progress: "progress",
+      tokens: "tokens moved",
+      mode: "source",
+      disclaimer:
+        "Warning: the vault evolves based on real on-chain activity (DexScreener). No yield promised. This token is satirical and highly speculative.",
+      feedTitle: "Live activity feed",
+      externalTitle: "Verify on-chain",
+      sessionUntil: "Session until",
+      logout: "Logout",
     },
 
     mission: {

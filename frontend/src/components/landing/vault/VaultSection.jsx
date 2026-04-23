@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import CombinationDial from "./CombinationDial";
 import VaultActivityFeed from "./VaultActivityFeed";
 import VaultChassis from "./VaultChassis";
+import TerminalPopup from "./TerminalPopup";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const POLL_MS = 10000;
@@ -26,6 +27,7 @@ export default function VaultSection() {
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
   const aliveRef = useRef(true);
 
   const fetchState = async () => {
@@ -217,7 +219,7 @@ export default function VaultSection() {
           >
             <VaultActivityFeed events={state?.recent_events || []} />
 
-            {/* DECLASSIFIED cta */}
+            {/* DECLASSIFIED cta — opens TerminalPopup (access denied → Level 2 flow) */}
             <AnimatePresence>
               {stage === "DECLASSIFIED" && (
                 <motion.div
@@ -237,19 +239,41 @@ export default function VaultSection() {
                       </div>
                     </div>
                     <Button
-                      asChild
                       size="sm"
+                      onClick={() => setTerminalOpen(true)}
                       className="rounded-[var(--btn-radius)] bg-[#18C964] hover:bg-[#18C964]/90 text-black"
                       data-testid="vault-open-operation-cta"
                     >
-                      <a href="/operation">
-                        {t("vault.declassified.cta")} <ArrowRight size={14} className="ml-1" />
-                      </a>
+                      {t("vault.declassified.cta")} <ArrowRight size={14} className="ml-1" />
                     </Button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Always-available shortcut to request Level 2 clearance
+                (visible regardless of vault stage — for users who already know) */}
+            {stage !== "DECLASSIFIED" && (
+              <div className="mt-5 flex items-center gap-3 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTerminalOpen(true)}
+                  className="rounded-[var(--btn-radius)] font-mono text-xs"
+                  data-testid="vault-request-clearance-cta"
+                >
+                  <Lock size={12} className="mr-1.5" />
+                  {t("vault.requestClearance")}
+                </Button>
+                <a
+                  href="/classified-vault"
+                  className="font-mono text-[11px] text-muted-foreground hover:text-foreground transition-colors underline decoration-dashed underline-offset-4"
+                  data-testid="vault-classified-link"
+                >
+                  {t("vault.alreadyHaveCode")} →
+                </a>
+              </div>
+            )}
 
             {error && (
               <div className="mt-4 text-xs text-red-400 font-mono">
@@ -264,6 +288,9 @@ export default function VaultSection() {
           </motion.div>
         </div>
       </div>
+
+      {/* Terminal gatekeeper popup — opens when vault cracks OR user requests clearance */}
+      <TerminalPopup open={terminalOpen} onClose={() => setTerminalOpen(false)} />
     </section>
   );
 }

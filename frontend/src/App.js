@@ -9,6 +9,7 @@ import Admin from "@/pages/Admin";
 import AdminEmails from "@/pages/AdminEmails";
 import AdminVault from "@/pages/AdminVault";
 import Operation from "@/pages/Operation";
+import ClassifiedVault from "@/pages/ClassifiedVault";
 import PublicStats from "@/pages/PublicStats";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/operation" element={<Operation />} />
+              <Route path="/classified-vault" element={<ClassifiedVault />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/emails" element={<AdminEmails />} />
               <Route path="/admin/vault" element={<AdminVault />} />

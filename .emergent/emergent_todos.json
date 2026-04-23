@@ -1,22 +1,38 @@
 [
   {
-    "content": "Fix mobile vault: dials anchored inside the vault image (not below)",
+    "content": "Generate AI access card template (blank Deep State ID card)",
     "status": "completed"
   },
   {
-    "content": "Update plan.md with 3 pending operations for memory",
+    "content": "Backend: access_card.py module (accreditation gen + PIL overlay + sessions)",
     "status": "completed"
   },
   {
-    "content": "Generate AI illustration: Prophet panicking, chased by RIPPLED crowd",
+    "content": "Backend: email template for access card + attachment logic",
     "status": "completed"
   },
   {
-    "content": "Integrate new illustration into /operation reveal page",
+    "content": "Backend: 3 endpoints (/api/access-card/{request, verify, status})",
     "status": "completed"
   },
   {
-    "content": "Final visual QA on desktop + mobile",
-    "status": "completed"
+    "content": "Frontend: TerminalPopup component (CRT terminal with typing states)",
+    "status": "in_progress"
+  },
+  {
+    "content": "Frontend: Modify VaultSection CTA to open popup (not /operation)",
+    "status": "pending"
+  },
+  {
+    "content": "Frontend: /classified-vault page with gate + real live vault",
+    "status": "pending"
+  },
+  {
+    "content": "i18n: FR/EN translations for terminal + card + real vault",
+    "status": "pending"
+  },
+  {
+    "content": "Final end-to-end QA of the whole funnel",
+    "status": "pending"
   }
 ]

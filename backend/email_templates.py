@@ -186,3 +186,175 @@ def render_welcome_email(
 </table>
 </body>
 </html>"""
+
+
+
+# ---------------------------------------------------------------------
+# Level 2 Access Card email (Clearance upgrade)
+# ---------------------------------------------------------------------
+def access_card_subject(lang: str) -> str:
+    if lang == "fr":
+        return "— Votre carte d'accès NIVEAU 02 — PROTOCOL ΔΣ"
+    return "— Your LEVEL 02 access card — PROTOCOL ΔΣ"
+
+
+def render_access_card_email(
+    lang: Literal["fr", "en"],
+    display_name: str,
+    accreditation_number: str,
+    issued_at: str,
+    expires_at: str,
+    base_url: str,
+    card_cid: str = "access-card",
+) -> str:
+    """Render the Level 2 access card HTML email.
+
+    The card image is inlined as a CID attachment (Resend supports attachments
+    with filename + content_id so emails can reference cid:access-card).
+    """
+    site_url = base_url.rstrip("/")
+    classified_url = f"{site_url}/classified-vault?code={accreditation_number}"
+
+    if lang == "fr":
+        badge = "— CLASSIFIED · NIVEAU 02 · PROTOCOL ΔΣ"
+        title = "Vos accréditations sont arrivées."
+        lead = (
+            f"Agent <strong>{display_name}</strong>, votre demande d'élévation de niveau "
+            "a été traitée par le bureau central du Deep State. Votre carte d'accès "
+            "physique ci-dessous vous donne lecture sur le <strong>véritable coffre $DEEPOTUS</strong> "
+            "et son flux d'activité on-chain."
+        )
+        prophet_title = "Un mot du Prophète"
+        prophet_quote = (
+            "« Vous avez insisté. Très bien. Voici de quoi ouvrir la porte. Je vous préviens : "
+            "ce qui est derrière n'est pas un mème. C'est un flux. Et les flux, eux, ne pardonnent jamais. » "
+            "— DEEPOTUS 🕶️"
+        )
+        info_title = "Prochaines étapes"
+        bullets = [
+            "Rendez-vous sur /classified-vault sur le site",
+            f"Entrez votre numéro d'accréditation : <code>{accreditation_number}</code>",
+            "Ou scannez le QR code sur votre carte",
+            "Votre session reste active 24h — renouvelez avec le même code",
+        ]
+        cta_label = "Ouvrir le véritable coffre"
+        footer_line = "— Bureau de coordination du Deep State. Canal sécurisé. Ne partagez pas votre numéro."
+        issued_label = "Émission"
+        expires_label = "Expiration"
+    else:
+        badge = "— CLASSIFIED · LEVEL 02 · PROTOCOL ΔΣ"
+        title = "Your credentials have landed."
+        lead = (
+            f"Agent <strong>{display_name}</strong>, your clearance upgrade request has "
+            "been processed by the Deep State's central office. The physical access card "
+            "below grants you read access to the <strong>real $DEEPOTUS vault</strong> "
+            "and its live on-chain activity feed."
+        )
+        prophet_title = "A word from the Prophet"
+        prophet_quote = (
+            "\"You insisted. Fine. Here is what opens the door. Fair warning: what is behind "
+            "is not a meme. It is a stream. And streams never forgive.\" "
+            "— DEEPOTUS 🕶️"
+        )
+        info_title = "Next steps"
+        bullets = [
+            "Navigate to /classified-vault on the site",
+            f"Enter your accreditation number: <code>{accreditation_number}</code>",
+            "Or scan the QR code on your card",
+            "Session stays active for 24h — re-enter the same code to refresh",
+        ]
+        cta_label = "Open the real vault"
+        footer_line = "— Deep State coordination office. Secured channel. Do not share your number."
+        issued_label = "Issued"
+        expires_label = "Expires"
+
+    bullets_html = "".join(f"<li>{b}</li>" for b in bullets)
+
+    return f"""<!doctype html>
+<html lang="{lang}">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PROTOCOL ΔΣ — LEVEL 02</title>
+</head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:'Helvetica Neue',Arial,sans-serif;color:#EAEAEA;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;background:#121214;border:1px solid #2A2A2E;border-radius:16px;overflow:hidden;">
+        <tr>
+          <td align="center" style="padding:28px 28px 16px 28px;">
+            <div style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;color:#F59E0B;">{badge}</div>
+            <h1 style="margin:12px 0 0 0;font-size:26px;line-height:1.25;color:#FFFFFF;font-weight:600;">{title}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 28px 8px 28px;">
+            <p style="margin:0;font-size:15px;line-height:1.65;color:#D0D0D0;">{lead}</p>
+          </td>
+        </tr>
+
+        <!-- ACCESS CARD IMAGE -->
+        <tr>
+          <td align="center" style="padding:20px 20px 8px 20px;">
+            <img src="cid:{card_cid}" alt="Level 2 Access Card" width="560" style="display:block;width:100%;max-width:560px;height:auto;border-radius:12px;border:1px solid #2A2A2E;" />
+          </td>
+        </tr>
+
+        <!-- Accreditation summary -->
+        <tr>
+          <td style="padding:6px 28px 16px 28px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0E0E10;border:1px solid #2A2A2E;border-radius:10px;">
+              <tr>
+                <td style="padding:14px 16px;font-family:'Courier New',monospace;font-size:12px;color:#B0B0B0;">
+                  <div style="font-size:10px;letter-spacing:2px;color:#8A8A8A;margin-bottom:6px;">ACCRED.</div>
+                  <div style="font-size:18px;color:#F59E0B;letter-spacing:1px;">{accreditation_number}</div>
+                </td>
+                <td style="padding:14px 16px;font-family:'Courier New',monospace;font-size:12px;color:#B0B0B0;">
+                  <div style="font-size:10px;letter-spacing:2px;color:#8A8A8A;margin-bottom:6px;">{issued_label.upper()}</div>
+                  <div style="font-size:13px;color:#22D3EE;">{issued_at}</div>
+                </td>
+                <td style="padding:14px 16px;font-family:'Courier New',monospace;font-size:12px;color:#B0B0B0;">
+                  <div style="font-size:10px;letter-spacing:2px;color:#8A8A8A;margin-bottom:6px;">{expires_label.upper()}</div>
+                  <div style="font-size:13px;color:#F59E0B;">{expires_at}</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Prophet quote -->
+        <tr>
+          <td style="padding:4px 28px 12px 28px;">
+            <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:3px;color:#8A8A8A;">— {prophet_title.upper()}</div>
+            <blockquote style="margin:8px 0 0 0;padding:10px 14px;border-left:3px solid #F59E0B;font-style:italic;color:#E0E0E0;font-size:15px;line-height:1.55;">{prophet_quote}</blockquote>
+          </td>
+        </tr>
+
+        <!-- Bullets -->
+        <tr>
+          <td style="padding:6px 28px 6px 28px;">
+            <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:3px;color:#8A8A8A;">— {info_title.upper()}</div>
+            <ul style="margin:10px 0 0 18px;padding:0;color:#D0D0D0;font-size:14px;line-height:1.7;">{bullets_html}</ul>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td align="center" style="padding:20px 28px 28px 28px;">
+            <a href="{classified_url}" style="display:inline-block;background:#18C964;color:#000000;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;font-size:14px;">{cta_label} →</a>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:0 28px 28px 28px;border-top:1px solid #2A2A2E;">
+            <p style="margin:16px 0 0 0;color:#7A7A7A;font-size:11px;line-height:1.55;">{footer_line}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>"""
