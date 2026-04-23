@@ -1,47 +1,50 @@
-# Landing Page $DEEPOTUS — Memecoin IA Prophète (Deep State POTUS) finançant GENCOIN
+# Landing Page $DEEPOTUS — Memecoin IA Prophète (Deep State POTUS)
 
 ## User-Validated Configuration
 - **Ticker**: `$DEEPOTUS` (Deep State POTUS)
 - **Language**: Bilingual FR/EN with toggle
 - **Art direction**: Hybrid — institutional/MiCA-compliant top + brutalist crypto-degen/meme bottom + deepfake/AI-generated aesthetic throughout. The AI Prophet is positioned as a **candidate for President of the entire World**, the chosen one of the Deep State to lead humanity.
-- **LLM**: Emergent LLM key (user confirmed — free integration)
+- **LLM**: Emergent LLM key (user confirmed)
 - **All interactive features**: live chat, prophecies feed, tokenomics pie, ROI sim, countdown, roadmap, FAQ, whitelist, social mockups
+
+---
 
 ## Original Problem Statement (Full context preserved)
 
-The project lives inside the framework of a comprehensive dossier de cadrage. The memecoin $DEEPOTUS is a Solana token functioning as a **transparent treasury vehicle** to finance development, compliance, and regulatory costs of the future main token **GENCOIN**, under MiCA alignment.
+The project lives inside the framework of a comprehensive dossier de cadrage. The memecoin $DEEPOTUS is a Solana token functioning as a **transparent treasury vehicle** under MiCA-aligned disclosures.
 
 ### Narrative core
 - Cynical, lucid, mocking AI prophet announcing global recession, potential depression, geopolitical disorder, market fragility
 - Reframed for $DEEPOTUS as **the Deep State's chosen presidential candidate for the entire World**
 - Inspirations: Dogecoin (community viral), Turbo/TURBO (first memecoin co-designed with GPT-4), Truth Terminal/GOAT (AI as autonomous narrative actor)
 
-### Financial parameters (MUST appear on site)
+### Financial parameters (must remain visible on site where applicable)
 - Chain: **Solana**
 - Supply: **1,000,000,000** (1B)
 - Target price: **€0.0005**
 - FDV: **€500,000**
-- Fundraising goal: **€300,000 in 3 weeks**
 - Initial LP: **€2,000** at J0 → **€10,000** at J+2 (~2M tokens injected initially)
+
+> Note: The previous explicit fundraising goal (e.g. €300,000 / 3 weeks) is now intentionally **hidden** in the public narrative and replaced by a *classified* goal mechanism (see Phase 10).
 
 ### Tokenomics (30% Treasury scenario — final)
 | Category | Allocation |
 |---|---|
 | Liquidity / DEX | 10–15% |
-| Project Treasury (GENCOIN + MiCA) | **30%** |
+| Project / Operation Treasury (MiCA + operations) | **30%** |
 | Marketing / KOL / partnerships | 10% |
 | Airdrops / community | 20% |
 | AI / lore reserve | 10% |
 | Team / advisors (vesting) | 15–20% |
 
 ### Transaction tax
-- **3%** total → **2%** GENCOIN/compliance + **1%** liquidity/marketing
-- Clear cap, tax reduction once goal reached
+- **3%** total → **2%** Operation / compliance budget + **1%** liquidity/marketing
+- Clear cap + tax reduction once the objective is reached (reframed as “once the Vault opens”)
 
 ### Liquidity plan
 - **J0**: LP €2K symmetric (~€1K memecoin + ~€1K SOL/USDC), ~2M tokens in pool
 - **J+2**: Scale LP €2K → €10K (net +€8K)
-  - ~€6K from controlled Treasury sale (~12M tokens = ~4% of 300M Treasury) split into small blocks
+  - ~€6K from controlled Treasury sale split into small blocks
   - ~€2K from taxes / external contribution
 
 ### Anti-dump measures
@@ -54,37 +57,46 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 - Token is **highly speculative**
 - **No yield promise**
 - **Not a stablecoin**, **not a financial security**
-- Function: **transparently finance compliance and dev costs of the GENCOIN environment**
+- Function: transparent treasury vehicle with clear structure, governance, risk disclosures
 
-### Honest success probabilities (MUST display honestly)
+### Honest success probabilities (must remain honest)
 - Global memecoin success rate: ~1.4%
 - Qualitative estimate for strong execution: 2–3%
-- Hitting €300K in 3 weeks: ~1% (prudent order of magnitude)
+- Objective achievement within the launch window: ~1% (order of magnitude)
+
+---
 
 ## Target audiences
 - **Serious investors**: Need MiCA transparency, clear tokenomics, risk disclosure, roadmap, team info, vesting
 - **Crypto-degen community**: Need meme energy, AI prophet persona, viral/shitpost tone, deepfake aesthetic
 
+---
+
 ## Sections / features to build
 
-1. **Hero** — Deepfake AI Prophet President candidate banner, bilingual toggle, main CTA ("Join the Deep State"), countdown to launch, $DEEPOTUS ticker big
-2. **AI Prophet Live Chat** — Emergent LLM, in-character cynical Deep State POTUS candidate, bilingual
-3. **Auto-refreshing Prophecies Feed** — LLM-generated apocalyptic one-liners
-4. **Interactive Tokenomics** — Recharts pie with hover details for every allocation
-5. **GENCOIN Mission Section** — Why this memecoin funds GENCOIN, MiCA framing
-6. **Liquidity & Treasury Transparency** — Visual J0 → J+2 timeline, anti-dump measures explained
-7. **ROI Simulator** — Investment input → theoretical tokens, scenarios, honest risk warning
-8. **Roadmap** — Visual timeline with launch, LP scaling, GENCOIN milestones
-9. **FAQ** — MiCA compliance, tax, treasury, team, vesting, risks
-10. **Whitelist / Email Capture** — Stored in MongoDB
-11. **Social Mockups** — X/Twitter, Telegram, Discord (faux handles)
-12. **Risk Disclaimer Footer** — Full MiCA-compliant language, bilingual
-13. **Language Switcher** — FR ↔ EN toggle (entire site)
+1. **Hero** — Deepfake AI Prophet President candidate banner, bilingual toggle, main CTA, countdown, $DEEPOTUS ticker
+2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics (added in Phase 10)
+3. **AI Prophet Live Chat** — Emergent LLM, in-character cynical Deep State POTUS candidate, bilingual
+4. **Auto-refreshing Prophecies Feed** — LLM-generated apocalyptic one-liners
+5. **Mission Section** — MiCA framing + transparent structure, reframed to PROTOCOL ΔΣ / classified operation
+6. **Interactive Tokenomics** — Recharts pie with hover details
+7. **Liquidity & Treasury Transparency** — Visual J0 → J+2 timeline, anti-dump measures
+8. **ROI Simulator** — Investment input → theoretical tokens, honest risk warning
+9. **Roadmap** — Visual timeline
+10. **FAQ** — MiCA compliance, tax, treasury, vesting, risks, and “why goal is hidden”
+11. **Whitelist / Email Capture** — Stored in MongoDB
+12. **Social Mockups** — X/Twitter, Telegram, Discord
+13. **Risk Disclaimer Footer** — Full MiCA-compliant language, bilingual
+14. **Language Switcher** — FR ↔ EN toggle
+15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown (added in Phase 10)
+
+---
 
 ## Tech Stack
 - Backend: FastAPI + MongoDB + `emergentintegrations` (Emergent LLM)
 - Frontend: React + Tailwind + shadcn/ui + framer-motion + recharts + lucide-react
 - i18n: Simple Context-based FR/EN (no heavy library)
+- Email: Resend + webhooks (Svix verification)
 
 ---
 
@@ -93,28 +105,27 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 ### Phase 1 — Core POC (AI Prophet LLM Persona) — **LIGHT POC**
 Single Python script (`/app/tests/test_core.py`) that validates:
 - Emergent LLM integration works
-- Chat persona stays in character in **FR + EN** (cynical Deep State POTUS candidate)
+- Chat persona stays in character in **FR + EN**
 - Prophecy generation is memorable/memetic
 - Language switching preserves persona
 - **Status**: ✅ COMPLETED (PASSED)
 
 ### Phase 2 — Full Landing Page Build
 - Backend routes: `/api/chat`, `/api/prophecy`, `/api/whitelist`, `/api/stats`
-- Frontend: Full bilingual landing with all 13 sections above, i18n, animations, deepfake aesthetic
+- Frontend: Full bilingual landing with all sections, i18n, animations
 - MongoDB collections: `whitelist`, `chat_logs`, `prophecies_cache`
 - **Status**: ✅ COMPLETED
 
 ### Phase 3 — Testing & Polish
-- End-to-end testing via `testing_agent_v3` covering ALL user stories
-- Bug fixes (all priorities)
-- Final delivery via `finish`
+- End-to-end testing covering ALL user stories
+- Bug fixes
 - **Status**: ✅ COMPLETED
 
 ---
 
 ## User Stories (ALL must be validated in testing)
 
-1. As a **serious investor**, I land on the site and immediately grasp it is a MiCA-aware memecoin funding a larger GENCOIN project
+1. As a **serious investor**, I land on the site and immediately grasp it is a MiCA-aware memecoin with transparent structure and governance
 2. As a **degen**, I feel the meme energy + AI Prophet Deep State POTUS persona instantly
 3. As a **French user**, I read the whole site in French; as **English user**, I switch to EN in one click
 4. As a **visitor**, I chat live with the AI Prophet and get cynical in-character responses
@@ -125,10 +136,12 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 9. As a **compliance-aware investor**, I see the J0 → J+2 liquidity timeline + anti-dump measures (multisig/timelock)
 10. As a **visitor**, I submit my email to the whitelist successfully
 11. As a **compliance reader**, I see the full MiCA-aligned risk disclaimer in the footer
-12. As a **visitor**, I see a clear roadmap with GENCOIN milestones
-13. As a **skeptical reader**, I see honest success probabilities (1.4% / 2–3% / ~1%)
+12. As a **visitor**, I see a clear roadmap
+13. As a **skeptical reader**, I see honest success probabilities
 14. As a **visitor**, I see visible social mockups (X, Telegram, Discord)
-15. As an **admin**, I can securely send transactional emails (welcome + test) and observe lifecycle events (sent/delivered/bounced) captured via signed webhooks
+15. As an **admin**, I can securely send transactional emails and observe lifecycle events via signed webhooks
+16. As a **visitor**, I can observe a live “classified vault” that progresses through stages and creates narrative tension
+17. As a **visitor**, I can access `/operation` only once the vault is declassified and see the twist + countdown
 
 ---
 
@@ -136,49 +149,90 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 - Plan created ✅
 - Integration playbook ✅
 - Design guidelines ✅
-- POC script: **✅ PASSED** (FR + EN chat persona + prophecies)
-- Backend build ✅ (landing + admin — 17/17 tests)
-- Frontend build ✅ (13 sections, bilingual, deepfake aesthetic — 22/22 tests)
-- Testing: **✅ 100% / 100%** (both iterations)
+- POC script: ✅ PASSED
+- Backend build ✅
+- Frontend build ✅
+- Testing: ✅ PASS
 - **Delivery ✅**
 
+---
+
 ## Phase 8 — 2FA, Heatmap, Full Export, Email Events Drill-down, Cooldown Blacklist (completed ✅)
-- ✅ **2FA TOTP** — pyotp + qrcode. Optional enable/disable depuis le dashboard admin. Setup flow complet : scan QR → 10 backup codes → verify 6-digit → enabled. Login protégé : password + TOTP code obligatoire quand activé. Backup codes supportés (consommés une seule fois). UI modal dédiée.
-- ✅ **Activity heat-map** sur `/stats` — 7 jours (Lun/Mon..Dim/Sun) × 24 heures UTC, calculé sur les 30 derniers jours, intensité color-scaled teal, légende "Moins/Less → Plus/More", tooltip par cellule.
-- ✅ **Full whitelist export** — Bouton "Export ALL (N)" qui télécharge la totalité de la whitelist en CSV via `/api/admin/whitelist/export` (media_type + Content-Disposition attachment).
-- ✅ **Page `/admin/emails`** — Drill-down des événements webhook Resend avec filtre chips par type (`email.sent`, `email.delivered`, `email.bounced`, etc. colorés), filtre recipient, table paginée, lien back-to-cabinet.
-- ✅ **Cooldown blacklist** — Champ `cooldown_days` optionnel sur l'ajout manuel et l'import CSV. `cooldown_until` stocké sur le doc blacklist. Auto-unblock lazy sur `POST /api/whitelist` si cooldown expiré. Table admin affiche "unlocks DATE" en amber ou badge "PERMANENT".
+- ✅ **2FA TOTP** — pyotp + qrcode, backup codes, enable/disable, protected login
+- ✅ **Activity heat-map** on `/stats`
+- ✅ **Full whitelist export** — `/api/admin/whitelist/export`
+- ✅ **Admin Email Events** — `/admin/emails` drill-down backed by `/api/admin/email-events`
+- ✅ **Cooldown blacklist** — cooldown_until + auto-unblock
+
+---
 
 ## Phase 9 — Resend Webhook Finale (Svix) + Test Emails (completed ✅)
 Objectif : finaliser la boucle **emails sortants** → **webhooks entrants signés** → **observabilité admin**.
 
-### Implémentation (révisée / finalisée)
-1. ✅ **Injection du secret webhook**
-   - Ajout de `RESEND_WEBHOOK_SECRET=whsec_+I+HgWL6ornO/mxuFljrruzFqJQOmauK` dans `/app/backend/.env`.
-2. ✅ **Redémarrage backend**
-   - `supervisorctl restart backend` pour recharger l’environnement.
-3. ✅ **Option (a) — Flow whitelist classique**
-   - Appel `POST /api/whitelist`.
-   - Note : si l’email existe déjà, l’API ne renvoie pas de nouvel envoi. Pour éviter toute pollution et garantir un nouvel envoi tout en livrant dans la même inbox Gmail, usage du **plus-addressing**.
-   - Test exécuté avec `olistruss639+whitelist@gmail.com` (livré dans la boîte `olistruss639@gmail.com`).
-4. ✅ **Option (b) — Endpoint admin dédié (test propre)**
-   - Création de `POST /api/admin/test-email` (JWT admin requis) pour envoyer un email de test **sans** créer d’entrée whitelist.
-   - Ajout d’un event interne `admin.test.sent` dans `email_events` pour corrélation.
-5. ✅ **Vérification observabilité côté admin**
-   - Vérification via `GET /api/admin/email-events`.
-   - Événements confirmés : `email.sent` + `email.delivered` pour les 2 emails.
+### Implémentation
+1. ✅ Inject `RESEND_WEBHOOK_SECRET` into `/app/backend/.env`
+2. ✅ Restart backend
+3. ✅ Option (a) whitelist flow test (plus-addressing)
+4. ✅ Option (b) admin endpoint `POST /api/admin/test-email`
+5. ✅ Verify `email.sent` + `email.delivered` events in `/api/admin/email-events`
 
-### Critères d’acceptation (atteints ✅)
-- ✅ Envoi Resend fonctionne depuis le sender **`wcu@deepotus.xyz`** (adresse inchangée).
-- ✅ Endpoint webhook `/api/webhooks/resend` reçoit et **valide la signature Svix** via `RESEND_WEBHOOK_SECRET`.
-- ✅ Les événements `email.sent` et `email.delivered` sont persistés dans `email_events` et visibles dans l’admin.
+### Critères d’acceptation
+- ✅ Sender `wcu@deepotus.xyz` unchanged
+- ✅ Svix signature verification enabled
+- ✅ Events persisted + visible in admin
 
-## Phase 9 Testing
-- Backend: ✅ Webhook signing + event persistence validés (email.sent / email.delivered)
-- Admin: ✅ endpoint `/api/admin/test-email` opérationnel (JWT requis)
+---
+
+## Phase 10 — PROTOCOL ΔΣ (Coffre classifié + reveal twist) — **COMPLETED ✅**
+
+### Objectives (updated)
+- ✅ Remove **all** public mentions of “GENCOIN” and replace narrative with **PROTOCOL ΔΣ** (Black Op)
+- ✅ Hide the explicit fundraising goal and replace with *classified objective mechanics*
+- ✅ Add a new animated **Vault section** without deleting existing sections
+- ✅ Implement vault progression logic: **1 dial per 1,000 $DEEPOTUS**
+- ✅ Add **hourly auto-tick** independent of purchases
+- ✅ Add a gated **/operation** reveal page that only unlocks at **DECLASSIFIED**
+- ✅ Provide admin controls for vault debugging/demo
+- ✅ Ensure vault security: public endpoints never leak the target combination
+
+### Implementation (what was built)
+**Backend**
+- New module: `/app/backend/vault.py`
+- New collections:
+  - `vault_state` (single doc: stage, digits_locked, tokens_sold, target_combination, config)
+  - `vault_events` (public feed)
+- New endpoints:
+  - `GET /api/vault/state` (public)
+  - `POST /api/vault/report-purchase` (public; clamped to <= 50,000 tokens)
+  - `GET /api/admin/vault/state` (admin; reveals `target_combination`)
+  - `POST /api/admin/vault/crack` (admin; manual crack)
+  - `POST /api/admin/vault/config` (admin; tokens_per_digit, hourly_tick_enabled, reset)
+  - `GET /api/operation/reveal` (public; returns unlocked=false unless DECLASSIFIED)
+- Background task:
+  - `hourly_tick_loop(db)` started at app startup (keeps vault alive)
+- Chat prompt updated to reference Vault/PROTOCOL ΔΣ and never mention GENCOIN
+
+**Frontend**
+- New section inserted (non-destructive): `VaultSection` placed between Manifesto and Chat
+  - 6 animated mechanical dials
+  - Live activity feed
+  - Redacted progress bar
+  - Stage badge (LOCKED/CRACKING/UNLOCKING/DECLASSIFIED)
+- New route page: `/operation`
+  - Locked gate view when vault not declassified
+  - Reveal view with Prophet panic + full lore + countdown to GENCOIN launch + link to `https://gencoin.xyz`
+- New admin page: `/admin/vault`
+  - Crack manual, config (tokens per digit, hourly tick toggle), reset, event list
+- i18n updated (FR/EN): all public copy switched from GENCOIN to PROTOCOL ΔΣ; GENCOIN appears only on `/operation`
+
+### Testing
+- ✅ Backend-only testing agent: **20/20 tests passed** (`/app/test_reports/iteration_7.json`)
+- ✅ Security verified: `target_combination` never present in `GET /api/vault/state`
+- ✅ Regression verified: existing endpoints still functional
 
 ---
 
 ## Remaining / Optional Improvements (P1)
-- Refactor `server.py` (actuellement volumineux ~1500+ lignes) en routers dédiés (`routers/admin.py`, `routers/public.py`, `routers/webhooks.py`) pour améliorer maintenabilité.
-- Warning Recharts au resize (cosmétique, non bloquant) : optionnel.
+- Refactor `server.py` (now larger) into routers (`routers/admin.py`, `routers/public.py`, `routers/webhooks.py`, `routers/vault.py`)
+- Recharts resize warning (cosmetic) — optional
+- Future (P2): Replace `POST /api/vault/report-purchase` client reporting with a true Solana on-chain indexer/worker

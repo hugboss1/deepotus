@@ -1,46 +1,6 @@
 [
   {
-    "content": "Audit existing GENCOIN mentions across codebase",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: add vault_state model + endpoints + lifespan auto-tick task",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: remove/rewrite all GENCOIN mentions (chat prompt, email templates, lore)",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: add /api/operation/reveal endpoint (lore only when declassified)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: create VaultSection component with 6 animated dials",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: create VaultActivityFeed + VaultStatusBadge + redacted progress",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: create /operation reveal page with Prophet panic + countdown",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: update translations FR/EN for all vault + PROTOCOL ΔΣ copy",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: remove remaining GENCOIN mentions + admin vault control panel",
-    "status": "completed"
-  },
-  {
-    "content": "Test vault mechanic end-to-end (ticks, dials, reveal)",
-    "status": "completed"
-  },
-  {
     "content": "Backend comprehensive testing via testing agent",
-    "status": "in_progress"
+    "status": "completed"
   }
 ]
