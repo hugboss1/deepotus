@@ -1,6 +1,18 @@
 [
   {
-    "content": "Final end-to-end QA of the whole funnel",
+    "content": "Generate AI illustration: door with digicode keypad",
+    "status": "completed"
+  },
+  {
+    "content": "Redesign /classified-vault gate with door background + positioned input",
+    "status": "completed"
+  },
+  {
+    "content": "Use VaultChassis mockup in authed real vault view (same anchoring)",
+    "status": "completed"
+  },
+  {
+    "content": "Visual QA desktop + mobile on both gate and authed views",
     "status": "completed"
   }
 ]

@@ -173,6 +173,10 @@ export const translations = {
       gateError: "Accréditation invalide ou expirée.",
       gateHint:
         "Pas encore de numéro ? Rendez-vous sur la page d'accueil, ouvrez le terminal depuis la section du coffre et demandez votre accréditation niveau 02.",
+      gateHintShort: "Saisir directement sur l'écran de la porte ↑",
+      gateChannel: "CANAL SÉCURISÉ",
+      gateLevel: "LEVEL 02 · PROTOCOL ΔΣ",
+      gateIdle: "IDLE",
       gateBack: "Retour au site",
       verify: "Vérifier l'accès",
       verifying: "Vérification…",
@@ -667,6 +671,10 @@ export const translations = {
       gateError: "Invalid or expired accreditation.",
       gateHint:
         "Don't have a number yet? Head back to the home page, open the terminal from the vault section and request your Level 02 accreditation.",
+      gateHintShort: "Type directly onto the door display ↑",
+      gateChannel: "SECURE CHANNEL",
+      gateLevel: "LEVEL 02 · PROTOCOL ΔΣ",
+      gateIdle: "IDLE",
       gateBack: "Back to site",
       verify: "Verify access",
       verifying: "Verifying…",

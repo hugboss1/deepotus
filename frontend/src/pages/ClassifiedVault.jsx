@@ -1,13 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Unlock, Shield, ExternalLink, LogOut, RefreshCcw, AlertTriangle, Radio } from "lucide-react";
+import {
+  Lock,
+  Unlock,
+  Shield,
+  ExternalLink,
+  LogOut,
+  Radio,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
-import CombinationDial from "@/components/landing/vault/CombinationDial";
+import VaultChassis from "@/components/landing/vault/VaultChassis";
 import VaultActivityFeed from "@/components/landing/vault/VaultActivityFeed";
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -17,12 +25,11 @@ const POLL_MS = 8000;
 /**
  * ClassifiedVault — the full-page REAL vault, gated by a Level 2 accreditation.
  *
- * Flow:
- *   1. Check localStorage for an existing session_token
- *   2. If none, show a gate UI (accreditation input + code from query string)
- *   3. After verify: render the real vault — full-page immersive, shows the
- *      LIVE DEX-fed vault activity (same backend data, but presented as the
- *      "real vault" with larger live feed + price + volumes)
+ * - Gate view: AI-generated BLACK-OPS DOOR with keypad illustration.
+ *   On desktop the code input is overlaid INSIDE the LED display zone of the
+ *   door; on mobile the door is a hero and the input sits below it.
+ * - Authed view: REUSES the VaultChassis mockup (same anchoring as the home
+ *   fake vault) so the real vault feels continuous with the narrative.
  */
 export default function ClassifiedVault() {
   const { t } = useI18n();
@@ -96,7 +103,7 @@ export default function ClassifiedVault() {
   }, [session]);
 
   async function verifyCode(raw) {
-    const code = (raw || codeInput || "").trim();
+    const code = (raw || codeInput || "").trim().toUpperCase();
     if (!code) return;
     setVerifying(true);
     setGateError(null);
@@ -129,86 +136,217 @@ export default function ClassifiedVault() {
   }
 
   // =====================================================================
-  // GATE VIEW
+  // GATE VIEW — the cinematic DOOR with keypad illustration
   // =====================================================================
   if (!session?.session_token) {
+    const statusColor = gateError ? "#EF4444" : verifying ? "#F59E0B" : "#22D3EE";
+    const statusLabel = gateError
+      ? "ERROR"
+      : verifying
+      ? "VERIFYING"
+      : t("classifiedVault.gateIdle");
+
     return (
       <div className="min-h-screen bg-black">
         <TopNav />
-        <main className="relative min-h-[80vh] flex items-center justify-center px-4 py-16 overflow-hidden">
-          {/* Bunker backdrop */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.08),transparent_60%)]" />
-            <div
-              aria-hidden
-              className="absolute inset-0 opacity-[0.06]"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(0deg, rgba(255,255,255,0.3) 0 1px, transparent 1px 4px)",
-              }}
-            />
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.45 }}
-            className="relative w-full max-w-lg rounded-2xl border border-[#F59E0B]/40 bg-[#0A0A0A]/90 backdrop-blur p-8 shadow-[0_0_40px_rgba(245,158,11,0.18)]"
-            data-testid="classified-gate"
-          >
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#F59E0B]">
+        <main className="relative px-4 py-10 md:py-16">
+          {/* Header */}
+          <div className="max-w-6xl mx-auto mb-8 md:mb-12">
+            <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#F59E0B]">
               <Lock size={14} /> {t("classifiedVault.gateKicker")}
             </div>
             <h1
-              className="mt-4 font-display text-3xl md:text-4xl font-semibold leading-tight text-white"
+              className="mt-3 font-display text-3xl md:text-5xl font-semibold leading-tight text-white"
               data-testid="classified-gate-title"
             >
               {t("classifiedVault.gateTitle")}
             </h1>
-            <p className="mt-3 text-sm md:text-base text-white/70 leading-relaxed">
+            <p className="mt-3 text-sm md:text-base text-white/70 max-w-2xl">
               {t("classifiedVault.gateSubtitle")}
             </p>
+          </div>
 
-            <form
-              className="mt-6"
-              onSubmit={(e) => {
-                e.preventDefault();
-                verifyCode();
-              }}
+          {/* DOOR CHASSIS with overlay input (desktop) */}
+          <div className="max-w-6xl mx-auto">
+            <div
+              className="relative w-full overflow-hidden rounded-2xl border border-border bg-black shadow-[0_0_40px_rgba(34,211,238,0.12)] aspect-[16/9]"
+              data-testid="classified-door-chassis"
             >
-              <label
-                htmlFor="accred-input"
-                className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60 block mb-2"
-              >
-                {t("classifiedVault.gateLabel")}
-              </label>
-              <Input
-                id="accred-input"
-                value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-                placeholder="DS-02-XXXX-XXXX-XX"
-                className="font-mono bg-black border-[#F59E0B]/40 text-[#F59E0B] tracking-widest placeholder:text-white/20 focus-visible:ring-[#F59E0B]/60"
-                data-testid="classified-accred-input"
-                autoFocus
+              <img
+                src="/door_keypad.png"
+                alt="Deep State reinforced door with digicode keypad"
+                className="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
+                draggable={false}
               />
-              {gateError && (
-                <div className="mt-2 flex items-center gap-2 text-red-400 text-xs">
-                  <AlertTriangle size={12} />
-                  {gateError}
+
+              {/* Ambient pulse behind the LED display (breathes) */}
+              <motion.div
+                aria-hidden
+                className="absolute pointer-events-none"
+                style={{
+                  left: "42%",
+                  top: "38%",
+                  width: "17%",
+                  height: "13%",
+                  background: `radial-gradient(ellipse at center, ${statusColor}55, transparent 70%)`,
+                  filter: "blur(6px)",
+                }}
+                animate={{ opacity: [0.45, 0.9, 0.45] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+              />
+
+              {/* LED DISPLAY overlay — desktop only (input sits INSIDE the door) */}
+              <form
+                className="hidden md:flex absolute items-center justify-center"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  verifyCode();
+                }}
+                style={{
+                  left: "42%",
+                  top: "40%",
+                  width: "17%",
+                  height: "9%",
+                }}
+              >
+                <input
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                  placeholder="DS-02-••••-••••-••"
+                  className="w-full h-full bg-transparent border-0 outline-none text-center font-mono tracking-[0.1em] text-[clamp(9px,0.95vw,14px)] uppercase"
+                  style={{
+                    color: statusColor,
+                    textShadow: `0 0 8px ${statusColor}`,
+                    caretColor: statusColor,
+                  }}
+                  aria-label="Accreditation number"
+                  data-testid="classified-accred-input-desktop"
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </form>
+
+              {/* Status pulse label — only visible during verify / error overrides the baked-in IDLE label */}
+              {(verifying || gateError) && (
+                <div
+                  className="hidden md:block absolute font-mono uppercase tracking-[0.2em] text-[clamp(7px,0.55vw,10px)] px-1.5 py-0.5 rounded"
+                  style={{
+                    left: "59.5%",
+                    top: "39.5%",
+                    color: statusColor,
+                    background: "rgba(0,0,0,0.85)",
+                    textShadow: `0 0 6px ${statusColor}`,
+                  }}
+                >
+                  {statusLabel}
                 </div>
               )}
-              <Button
-                type="submit"
-                disabled={verifying}
-                className="mt-5 w-full rounded-md bg-[#F59E0B] hover:bg-[#F59E0B]/90 text-black font-mono font-semibold"
-                data-testid="classified-verify-btn"
-              >
-                {verifying ? t("classifiedVault.verifying") : t("classifiedVault.verify")}
-              </Button>
-            </form>
 
-            <div className="mt-6 pt-5 border-t border-white/10">
-              <p className="text-xs text-white/50 leading-relaxed">
+              {/* Corner tags */}
+              <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-md bg-black/60 border border-white/10 backdrop-blur-sm">
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ background: statusColor }}
+                />
+                <span
+                  className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em]"
+                  style={{ color: statusColor }}
+                >
+                  {t("classifiedVault.gateChannel")}
+                </span>
+              </div>
+              <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-black/60 border border-white/10 backdrop-blur-sm">
+                <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-[#F59E0B]">
+                  {t("classifiedVault.gateLevel")}
+                </span>
+              </div>
+
+              {/* Declassified flash on success (rare — the green victory pulse) */}
+              <AnimatePresence>
+                {verifying && (
+                  <motion.div
+                    key="verify-pulse"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0.0, 0.18, 0.0] }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.6, repeat: Infinity }}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: "#F59E0B", mixBlendMode: "screen" }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* MOBILE INPUT BELOW DOOR (hidden on desktop) */}
+            <div className="md:hidden mt-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  verifyCode();
+                }}
+                className="rounded-xl border border-[#F59E0B]/30 bg-black/60 p-4"
+              >
+                <label
+                  htmlFor="accred-input-mobile"
+                  className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60 block mb-2"
+                >
+                  {t("classifiedVault.gateLabel")}
+                </label>
+                <Input
+                  id="accred-input-mobile"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                  placeholder="DS-02-XXXX-XXXX-XX"
+                  className="font-mono bg-black border-[#F59E0B]/40 text-[#F59E0B] tracking-widest placeholder:text-white/20 focus-visible:ring-[#F59E0B]/60"
+                  data-testid="classified-accred-input-mobile"
+                  autoFocus
+                />
+                {gateError && (
+                  <div className="mt-2 flex items-center gap-2 text-red-400 text-xs">
+                    <AlertTriangle size={12} /> {gateError}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={verifying}
+                  className="mt-4 w-full rounded-md bg-[#F59E0B] hover:bg-[#F59E0B]/90 text-black font-mono font-semibold"
+                  data-testid="classified-verify-btn-mobile"
+                >
+                  {verifying ? t("classifiedVault.verifying") : t("classifiedVault.verify")}
+                </Button>
+              </form>
+            </div>
+
+            {/* DESKTOP ACTION BAR BELOW DOOR */}
+            <div className="hidden md:flex mt-5 items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
+                {gateError && (
+                  <div className="flex items-center gap-2 text-red-400 text-xs font-mono">
+                    <AlertTriangle size={12} />
+                    {gateError}
+                  </div>
+                )}
+                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
+                  {t("classifiedVault.gateHintShort")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  disabled={verifying}
+                  onClick={() => verifyCode()}
+                  className="rounded-md bg-[#F59E0B] hover:bg-[#F59E0B]/90 text-black font-mono font-semibold"
+                  data-testid="classified-verify-btn-desktop"
+                >
+                  {verifying ? t("classifiedVault.verifying") : t("classifiedVault.verify")} →
+                </Button>
+              </div>
+            </div>
+
+            {/* Secondary info */}
+            <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <p className="text-xs md:text-sm text-white/60 leading-relaxed">
                 {t("classifiedVault.gateHint")}
               </p>
               <a
@@ -219,7 +357,7 @@ export default function ClassifiedVault() {
                 ← {t("classifiedVault.gateBack")}
               </a>
             </div>
-          </motion.div>
+          </div>
         </main>
         <Footer />
       </div>
@@ -227,27 +365,37 @@ export default function ClassifiedVault() {
   }
 
   // =====================================================================
-  // AUTHED VIEW — THE REAL VAULT
+  // AUTHED VIEW — THE REAL VAULT (reuses VaultChassis)
   // =====================================================================
   const stage = vault?.stage || "LOCKED";
   const locked = vault?.digits_locked ?? 0;
   const combo = vault?.current_combination || [0, 0, 0, 0, 0, 0];
   const dexMode = vault?.dex_mode || "off";
   const dexLabel = vault?.dex_label || null;
+  const stageLabel = (t(`vault.stages.${stage}`) || stage).toString();
 
   return (
     <div className="min-h-screen bg-[#060606] text-white">
       <TopNav />
       <main className="relative">
         {/* Authed header strip */}
-        <div className="sticky top-14 z-30 border-b border-[#F59E0B]/20 bg-black/80 backdrop-blur" data-testid="classified-header">
+        <div
+          className="sticky top-14 z-30 border-b border-[#F59E0B]/20 bg-black/80 backdrop-blur"
+          data-testid="classified-header"
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-11 flex items-center gap-3">
             <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-[#F59E0B]">
               <Shield size={12} /> CLEARED · {session.display_name}
             </div>
             <div className="ml-auto flex items-center gap-2 font-mono text-[10px] text-white/50">
-              <span className="hidden md:inline">{t("classifiedVault.sessionUntil")}:</span>
-              <span>{session.expires_at ? new Date(session.expires_at).toLocaleString() : "—"}</span>
+              <span className="hidden md:inline">
+                {t("classifiedVault.sessionUntil")}:
+              </span>
+              <span>
+                {session.expires_at
+                  ? new Date(session.expires_at).toLocaleString()
+                  : "—"}
+              </span>
               <button
                 onClick={logout}
                 className="ml-2 inline-flex items-center gap-1 text-white/60 hover:text-white transition-colors"
@@ -260,7 +408,7 @@ export default function ClassifiedVault() {
         </div>
 
         {/* Hero */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 md:pt-20 pb-10">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 md:pt-16 pb-8">
           <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.3em] text-[#F59E0B]">
             <Unlock size={14} /> {t("classifiedVault.authedKicker")}
           </div>
@@ -287,104 +435,60 @@ export default function ClassifiedVault() {
           )}
         </section>
 
-        {/* Full vault dials + live feed */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Dials panel — larger for the real vault */}
-            <div className="lg:col-span-7">
-              <div
-                className="relative rounded-2xl border border-[#F59E0B]/30 bg-[#0A0A0A] p-6 md:p-8 shadow-[0_0_36px_rgba(245,158,11,0.12)]"
-                data-testid="classified-vault-panel"
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <div className="font-display text-lg md:text-xl font-semibold tracking-tight">
-                    {t("classifiedVault.liveCombination")}
-                  </div>
-                  <AnimatePresence>
-                    <motion.span
-                      key={stage}
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className={`font-mono text-[10px] uppercase tracking-[0.25em] ${
-                        stage === "DECLASSIFIED"
-                          ? "text-[#18C964]"
-                          : stage === "UNLOCKING" || stage === "CRACKING"
-                          ? "text-[#F59E0B]"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {t(`vault.stages.${stage}`) || stage}
-                    </motion.span>
-                  </AnimatePresence>
-                </div>
-                <div className="flex items-center justify-center gap-3 md:gap-5 py-6">
-                  {combo.map((digit, i) => (
-                    <CombinationDial
-                      key={i}
-                      index={i}
-                      value={digit}
-                      locked={i < locked}
-                      stage={stage}
-                      size="default"
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center justify-center gap-3 md:gap-5 mt-1">
-                  {combo.map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-14 md:w-16 text-center font-mono text-[9px] uppercase tracking-wider text-white/40"
-                    >
-                      Δ{i + 1}
-                    </div>
-                  ))}
-                </div>
+        {/* VAULT CHASSIS (same mockup as homepage) */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+          <VaultChassis
+            combo={combo}
+            locked={locked}
+            stage={stage}
+            stageLabel={stageLabel}
+          />
+        </section>
 
-                {/* Metrics grid */}
-                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs">
+        {/* Metrics + feed row */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Metrics panel */}
+            <div className="lg:col-span-5">
+              <div className="rounded-2xl border border-[#F59E0B]/20 bg-[#0A0A0A] p-5">
+                <div className="grid grid-cols-2 gap-3 font-mono text-xs">
                   <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                    <div className="text-white/40 text-[10px] uppercase">{t("classifiedVault.dials")}</div>
+                    <div className="text-white/40 text-[10px] uppercase">
+                      {t("classifiedVault.dials")}
+                    </div>
                     <div className="text-white text-lg mt-0.5">
                       {locked}/{combo.length}
                     </div>
                   </div>
                   <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                    <div className="text-white/40 text-[10px] uppercase">{t("classifiedVault.progress")}</div>
+                    <div className="text-white/40 text-[10px] uppercase">
+                      {t("classifiedVault.progress")}
+                    </div>
                     <div className="text-white text-lg mt-0.5">
                       {Math.round(vault?.progress_pct ?? 0)}%
                     </div>
                   </div>
                   <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                    <div className="text-white/40 text-[10px] uppercase">{t("classifiedVault.tokens")}</div>
+                    <div className="text-white/40 text-[10px] uppercase">
+                      {t("classifiedVault.tokens")}
+                    </div>
                     <div className="text-white text-lg mt-0.5">
                       {(vault?.tokens_sold ?? 0).toLocaleString()}
                     </div>
                   </div>
                   <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                    <div className="text-white/40 text-[10px] uppercase">{t("classifiedVault.mode")}</div>
+                    <div className="text-white/40 text-[10px] uppercase">
+                      {t("classifiedVault.mode")}
+                    </div>
                     <div className="text-white text-lg mt-0.5 uppercase">
                       {dexMode}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 p-3 rounded-md border border-[#F59E0B]/20 bg-[#F59E0B]/5 text-xs text-white/70 leading-relaxed">
+                <div className="mt-4 p-3 rounded-md border border-[#F59E0B]/20 bg-[#F59E0B]/5 text-xs text-white/70 leading-relaxed">
                   {t("classifiedVault.disclaimer")}
                 </div>
-              </div>
-            </div>
-
-            {/* Activity feed — taller variant */}
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl border border-white/10 bg-[#0A0A0A] p-5 md:p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Radio size={14} className="text-[#2DD4BF] animate-pulse" />
-                  <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-white/70">
-                    {t("classifiedVault.feedTitle")}
-                  </div>
-                </div>
-                <VaultActivityFeed events={vault?.recent_events || []} />
               </div>
 
               <div className="mt-5 rounded-2xl border border-white/10 bg-[#0A0A0A] p-5">
@@ -400,6 +504,19 @@ export default function ClassifiedVault() {
                 >
                   dexscreener.com/solana <ExternalLink size={12} />
                 </a>
+              </div>
+            </div>
+
+            {/* Activity feed */}
+            <div className="lg:col-span-7">
+              <div className="rounded-2xl border border-white/10 bg-[#0A0A0A] p-5 md:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Radio size={14} className="text-[#2DD4BF] animate-pulse" />
+                  <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-white/70">
+                    {t("classifiedVault.feedTitle")}
+                  </div>
+                </div>
+                <VaultActivityFeed events={vault?.recent_events || []} />
               </div>
             </div>
           </div>

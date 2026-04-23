@@ -17,7 +17,9 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 - Cynical, lucid, mocking AI prophet announcing global recession, potential depression, geopolitical disorder, market fragility
 - Reframed for $DEEPOTUS as **the Deep State's chosen presidential candidate for the entire World**
 - Inspirations: Dogecoin (community viral), Turbo/TURBO (first memecoin co-designed with GPT-4), Truth Terminal/GOAT (AI as autonomous narrative actor)
-- Public narrative pivot: funding goal is **classified** under **PROTOCOL ΔΣ** (Black Op). **GENCOIN** is a twist revealed only after vault declassification.
+- Public narrative pivot: funding goal is **classified** under **PROTOCOL ΔΣ** (Black Op).
+- **GENCOIN** is a twist revealed only after vault declassification on `/operation`
+- Post-declassification funnel pivot: the “true vault” is gated behind **Level 02** accreditation (email access card) and lives at `/classified-vault`
 
 ### Financial parameters (must remain visible on site where applicable)
 - Chain: **Solana**
@@ -76,7 +78,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 ## Sections / features to build
 
 1. **Hero** — Deepfake AI Prophet President candidate banner, bilingual toggle, main CTA, countdown, $DEEPOTUS ticker
-2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity (Phases 10–13)
+2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity + Level 02 funnel CTA (Phases 10–13)
 3. **AI Prophet Live Chat** — Emergent LLM, in-character cynical Deep State POTUS candidate, bilingual
 4. **Auto-refreshing Prophecies Feed** — LLM-generated apocalyptic one-liners
 5. **Mission Section** — MiCA framing + transparent structure, reframed to PROTOCOL ΔΣ / classified operation
@@ -89,8 +91,8 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 12. **Social Mockups** — X/Twitter, Telegram, Discord
 13. **Risk Disclaimer Footer** — Full MiCA-compliant language, bilingual
 14. **Language Switcher** — FR ↔ EN toggle
-15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown + (Phase 12) cinematic “Fall of Deep State” illustration
-16. **Classified Vault (Level 02) (`/classified-vault`)** — gated full-page “real vault” with accreditation + session token, displaying live activity feed (Phase 13)
+15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown + Phase 12 “Fall of Deep State” illustration
+16. **Classified Vault (Level 02) (`/classified-vault`)** — gated full-page “real vault” with accreditation + session token, displaying live activity feed + Phase 14 door keypad gate UI
 
 ---
 
@@ -100,7 +102,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 - i18n: Simple Context-based FR/EN (no heavy library)
 - Email: Resend + webhooks (Svix verification)
 - Dex / market feed: **DexScreener API** polling (Phase 11)
-- Image generation: Gemini Nano Banana (`gemini-3.1-flash-image-preview`) (Phases 10–13)
+- Image generation: Gemini Nano Banana (`gemini-3.1-flash-image-preview`) (Phases 10–14)
 - Image processing: Pillow (PIL) + qrcode (Phase 13)
 
 ---
@@ -156,6 +158,8 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 24. As a **visitor**, I can request **Level 02** via email and receive a personalized **Deep State access card** (name + accreditation + QR)
 25. As a **Level 02 visitor**, I can access `/classified-vault` by entering my accreditation number and receive a 24h session token
 26. As a **Level 02 visitor**, I can view the “true vault” full-page UI showing live activity (DexScreener) and the combination progress
+27. As a **Level 02 visitor**, the gate UI uses a cinematic AI door with digicode, and the code input is anchored inside the door display on desktop
+28. As a **Level 02 visitor**, the authed “true vault” view uses the same VaultChassis mockup as the home vault for visual continuity
 
 ---
 
@@ -228,10 +232,6 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 
 **Frontend**
 - New section inserted (non-destructive): `VaultSection` placed between Manifesto and Chat
-  - 6 animated mechanical dials
-  - Live activity feed
-  - Redacted progress bar
-  - Stage badge (LOCKED/CRACKING/UNLOCKING/DECLASSIFIED)
 - New route page: `/operation`
   - Locked gate view when vault not declassified
   - Reveal view with Prophet panic + full lore + countdown to GENCOIN launch + link to `https://gencoin.xyz`
@@ -284,148 +284,91 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
     - `demo`: default BONK mint; symbolic ticks (`1 tick per DEMO_BUYS_PER_TICK=5 new buys`, capped)
     - `custom`: configured mint; approximates buy tokens via `Δvolume_usd * buy_ratio / price_usd` and applies **1 tick per `tokens_per_digit`** with carry
   - Stores rolling baselines + carry in `vault_state` to avoid double-counting
-- ✅ Extended vault models (public + admin) to include DEX fields:
-  - Public: `dex_mode`, `dex_label`, `dex_pair_symbol`
-  - Admin: `dex_token_address`, `dex_demo_token_address`, `dex_last_*`, `dex_carry_tokens`, `dex_error`
+- ✅ Extended vault models (public + admin) to include DEX fields
 - ✅ New admin endpoints:
   - `POST /api/admin/vault/dex-config`
   - `POST /api/admin/vault/dex-poll`
 - ✅ Startup tasks:
-  - Dex loop started at startup: `asyncio.create_task(dex_mod.dex_loop(db, vault_mod))`
+  - Dex loop started at startup
 
 **Admin UX (DEX controls)**
-- ✅ Updated `/admin/vault` with “DEX Live Feed · DexScreener” section:
-  - Mode selector: OFF / DEMO / CUSTOM
-  - Custom mint input + “Save & activate”
-  - Stats cards: price, h24 buys, h24 volume, carry
-  - “Force poll now” + link to DexScreener + last poll timestamp
-
-### Current Runtime Defaults
-- ✅ Vault reset state: `LOCKED 0/6`
-- ✅ Dex mode: `demo` enabled by default
-- ✅ Live badge visible on public vault: e.g. `LIVE · Bonk · meteora`
+- ✅ Updated `/admin/vault` with “DEX Live Feed · DexScreener” section
 
 ### Testing
 - ✅ Backend-only testing agent: **22/22 tests passed** (`/app/test_reports/iteration_8.json`)
-- ✅ Security verified:
-  - `GET /api/vault/state` never leaks `target_combination` nor admin-only `dex_*` fields
-  - Admin endpoints require JWT (401 without auth)
-- ✅ Regression verified: all existing endpoints still functional
 
 ---
 
 ## Phase 12 — Mobile Vault Fix + “Fall of Deep State” Illustration (completed ✅)
 
 ### Objectives
-- ✅ Fix mobile vault layout so the dials remain anchored *inside* the vault mockup (no dials rendered below the image).
-- ✅ Add a new AI-generated cinematic illustration on the `/operation` reveal page depicting the Prophet panicking and chased by the RIPPLED crowd (symbolic end of the Deep State).
+- ✅ Fix mobile vault layout so the dials remain anchored *inside* the vault mockup
+- ✅ Add a cinematic illustration on the `/operation` reveal page depicting the Prophet panicking and chased by the RIPPLED crowd
 
 ### Implementation
-
-**Mobile vault anchoring fix**
-- ✅ Unified vault rendering: removed the desktop/mobile split and always use `VaultChassis`.
-- ✅ `VaultChassis` is responsive:
-  - Mobile uses **aspect-ratio 4:3** with `object-cover object-center` to “zoom” into the central display area.
-  - Desktop uses **aspect-ratio 16:9**.
-  - Dial overlay coordinates are responsive via Tailwind (`left/top/width/height` with `md:` overrides).
-- ✅ `CombinationDial` chassis font adjusted for small screens: `clamp(11px, 2.8vw, 42px)`.
-
-**Operation reveal illustration**
+- ✅ `VaultChassis` responsive anchoring (mobile 4:3, desktop 16:9) with coordinate overrides
 - ✅ Script: `/app/tests/generate_prophet_chased.py`
 - ✅ Asset: `/app/frontend/public/prophet_chased.png`
-- ✅ Visual spec: Prophet in panic (suit + loosened red tie), diverse crowd pursuing, banners with RIPPLED logo (golden arcs + central human figure, `#E3D99F`), government architecture, apocalyptic sunset.
-- ✅ Integrated into `/operation` reveal page between the panic quote and the lore.
-- ✅ Added bilingual keys in i18n:
-  - `operation.chasedOverlay`
-  - `operation.chasedCaption`
-  - `operation.chasedAlt`
-
-### Current Runtime Defaults
-- ✅ Vault reset state: `LOCKED 0/6`
-- ✅ Dex mode remains `demo` enabled by default
+- ✅ Integrated into `/operation` reveal with bilingual i18n keys
 
 ---
 
 ## Phase 13 — Funnel NIVEAU 02 (Terminal + Carte d’accès + Vault réel) — **COMPLETED ✅**
 
 ### Objectives
-- ✅ Keep the public vault as-is (PROTOCOL ΔΣ chassis + dials + DexScreener feed).
-- ✅ Replace the declassification CTA behavior:
-  - Instead of navigating directly to `/operation`, clicking the CTA opens a **sarcastic CRT terminal popup**.
-  - The terminal denies “true vault” access for Level 01 and prompts the user to request **Level 02**.
-- ✅ Implement Level 02 upgrade email:
-  - Generate an accreditation code
-  - Send a second email containing a personalized **Deep State access card** (AI template + overlays)
-- ✅ Create a full-page “real vault” page `/classified-vault`:
-  - Gate by accreditation code
-  - Issue a 24h session token
-  - Show the live combination + activity feed as the “true vault”
-- ✅ Ensure deliverability   observability:
-  - Resend delivery tracked via Svix webhooks
-  - Access card email events visible via admin `/admin/emails`
+- ✅ Replace declassification CTA behavior: open a sarcastic CRT terminal popup instead of navigating directly
+- ✅ Implement Level 02 access card email with personalized accreditation + QR
+- ✅ Create `/classified-vault` full-page real vault gated by accreditation + session token
+
+### Implementation
+- ✅ Access card template generation + PIL overlay pipeline (`/app/backend/access_card.py`)
+- ✅ Access card endpoints: request/verify/status/image
+- ✅ Resend email template with inline CID attachment + CTA
+- ✅ TerminalPopup CRT modal with typing denial + request form
+- ✅ ClassifiedVault gate + authed view + session persistence
+- ✅ Backend testing agent: **41/41 tests passed** (`/app/test_reports/iteration_9.json`)
+- ✅ User validated: email receipt OK
+
+### Runtime Defaults
+- ✅ Vault reset state: `LOCKED 0/6`
+- ✅ Dex mode: `demo` enabled by default
+
+---
+
+## Phase 14 — AI Door Gate + VaultChassis Reuse in ClassifiedVault — **COMPLETED ✅**
+
+### Objectives
+- ✅ Make the `/classified-vault` code-entry gate more immersive and anchored in-world
+- ✅ Add an AI-generated reinforced door with keypad, with an empty LED display area reserved for overlay
+- ✅ Anchor the accreditation input into the door display (desktop) while providing a mobile fallback
+- ✅ Reuse the same **VaultChassis** mockup on the authed `/classified-vault` view (visual continuity)
 
 ### Implementation
 
-**AI template (Access Card)**
-- ✅ Script: `/app/tests/generate_access_card_template.py`
-- ✅ Output: `/app/backend/assets/access_card_template.png` (~694KB)
-- ✅ Visual spec: matte black covert-agency card, cyan/amber security accents, empty slots for name/accred/dates/QR.
+**AI Door Illustration (Gemini Nano Banana)**
+- ✅ Script: `/app/tests/generate_door_keypad.py`
+- ✅ Asset: `/app/frontend/public/door_keypad.png` (1376×768, ~669KB)
+- ✅ Visual spec: bunker door, industrial hinges, 3x4 keypad with 0–9 + red X + green OK, cyan LED display (empty), small status LEDs, engraved plates: `PROTOCOL ΔΣ — LEVEL 02` and `DEEP STATE · RESTRICTED`.
 
-**Backend (Access Card system)**
-- ✅ New module: `/app/backend/access_card.py`
-  - Accreditation format: `DS-02-XXXX-XXXX-XX`
-  - Idempotent per email (same email → same accreditation)
-  - PIL overlay pipeline:
-    - Masks template placeholders (including “EMPTY BANNER” artifacts)
-    - Overlays NAME, ACCREDITATION, issue/expire dates, QR code, microtext
-  - 24h access sessions (`access_sessions`)
-- ✅ New MongoDB collections:
-  - `access_cards` (email → accreditation, display_name, card_path, issued_at, expires_at)
-  - `access_sessions` (session_token, accred, display_name, expires_at)
-- ✅ New API endpoints:
-  - `POST /api/access-card/request` (public; generates card + sends email)
-  - `POST /api/access-card/verify` (public; accred → session token)
-  - `GET /api/access-card/status` (public; validates X-Session-Token)
-  - `GET /api/access-card/image/{accred}` (public; serves PNG)
-- ✅ Email templates:
-  - Added bilingual template in `/app/backend/email_templates.py`:
-    - `render_access_card_email` + `access_card_subject`
-  - Email includes inline CID image attachment (card) + accreditation code + CTA to `/classified-vault?code=...`
+**Frontend (ClassifiedVault gate redesign)**
+- ✅ Gate uses the door illustration as a 16:9 chassis.
+- ✅ Desktop overlay: accreditation input anchored inside the door LED display:
+  - `left: 42%`, `top: 40%`, `width: 17%`, `height: 9%`
+  - Placeholder: `DS-02-••••-••••-••`
+  - Color logic: cyan idle, amber verifying, red error
+  - Pulsing halo behind the display
+- ✅ Mobile fallback (`< md`): door image hero + input stacked below in bordered container
+- ✅ i18n additions (FR/EN):
+  - `classifiedVault.gateChannel`, `gateLevel`, `gateIdle`, `gateHintShort`
 
-**Frontend (Terminal + Real vault page)**
-- ✅ New component: `/app/frontend/src/components/landing/vault/TerminalPopup.jsx`
-  - CRT terminal modal with scanlines + phosphor glow + blinking cursor
-  - 5 phases: denied (typing) → form → sending → success → error
-  - Form collects email + optional agent name
-  - Calls `/api/access-card/request`
-- ✅ VaultSection behavior update:
-  - DECLASSIFIED CTA now opens `TerminalPopup` (instead of `/operation`)
-  - Added two shortcuts always visible:
-    - “Demander un niveau d'accréditation” (opens terminal)
-    - “J’ai déjà un numéro d'accréditation” (link to `/classified-vault`)
-- ✅ New route + page: `/classified-vault` (`/app/frontend/src/pages/ClassifiedVault.jsx`)
-  - Gate UI: accreditation input (auto-prefilled by `?code=`)
-  - Verify via `/api/access-card/verify`
-  - Persist session in `localStorage` (`deepotus_access_session`)
-  - Authed full-page “true vault” view:
-    - Session stripe header (expires + logout)
-    - Large 6 dials + metrics + live feed + external link
-- ✅ Router update: `/app/frontend/src/App.js` now includes `/classified-vault`
-- ✅ i18n additions:
-  - `terminal.*`
-  - `classifiedVault.*`
-  - `vault.requestClearance` + `vault.alreadyHaveCode`
+**Frontend (Authed view continuity)**
+- ✅ Authed `/classified-vault` now uses `VaultChassis` (same anchoring as homepage vault) instead of bare dials.
+- ✅ Metrics + feed remain below the chassis.
 
-### Testing
-- ✅ Backend testing agent: **41/41 tests passed** (`/app/test_reports/iteration_9.json`)
-  - 19 new access-card tests + 22 regressions
-- ✅ Email test to `olistruss639@gmail.com` validated:
-  - `access_card.sent` + `email.sent` + `email.delivered` visible in admin email events (Svix verified)
-
-### Current Runtime Defaults
-- ✅ Vault reset state: `LOCKED 0/6`
-- ✅ Dex mode: `demo` enabled by default
-- ✅ Terminal + access-card system ready for production demo
+### Runtime Defaults
+- ✅ Vault reset: `LOCKED 0/6`
+- ✅ Dex mode restored: `demo`
+- ✅ User accreditation still valid: `DS-02-D8HA-NFY3-EI`
 
 ---
 
