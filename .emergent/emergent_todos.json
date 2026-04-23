@@ -1,26 +1,46 @@
 [
   {
-    "content": "Add RESEND_WEBHOOK_SECRET to /app/backend/.env",
+    "content": "Audit existing GENCOIN mentions across codebase",
     "status": "completed"
   },
   {
-    "content": "Restart backend service",
+    "content": "Backend: add vault_state model + endpoints + lifespan auto-tick task",
     "status": "completed"
   },
   {
-    "content": "Verify/create admin test-email endpoint (option b)",
+    "content": "Backend: remove/rewrite all GENCOIN mentions (chat prompt, email templates, lore)",
     "status": "completed"
   },
   {
-    "content": "Trigger option a: /api/whitelist/join with olistruss639+whitelist@gmail.com",
+    "content": "Backend: add /api/operation/reveal endpoint (lore only when declassified)",
     "status": "completed"
   },
   {
-    "content": "Trigger option b: admin test email endpoint to olistruss639@gmail.com",
+    "content": "Frontend: create VaultSection component with 6 animated dials",
     "status": "completed"
   },
   {
-    "content": "Verify webhook events in /api/admin/email-events",
+    "content": "Frontend: create VaultActivityFeed + VaultStatusBadge + redacted progress",
     "status": "completed"
+  },
+  {
+    "content": "Frontend: create /operation reveal page with Prophet panic + countdown",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: update translations FR/EN for all vault + PROTOCOL ΔΣ copy",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: remove remaining GENCOIN mentions + admin vault control panel",
+    "status": "completed"
+  },
+  {
+    "content": "Test vault mechanic end-to-end (ticks, dials, reveal)",
+    "status": "completed"
+  },
+  {
+    "content": "Backend comprehensive testing via testing agent",
+    "status": "in_progress"
   }
 ]

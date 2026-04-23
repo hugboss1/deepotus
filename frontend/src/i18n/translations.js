@@ -1,5 +1,8 @@
 // $DEEPOTUS i18n dictionary (FR / EN)
 // All UI copy lives here. Keys mirror component structure.
+// PROTOCOL ΔΣ is the public codename of the Black Op.
+// GENCOIN intentionally NEVER appears on the public site — it is only revealed
+// on the /operation page after the vault reaches DECLASSIFIED.
 
 export const translations = {
   fr: {
@@ -9,6 +12,7 @@ export const translations = {
       chat: "Parler au Prophète",
       tokenomics: "Tokenomics",
       mission: "Mission",
+      vault: "Le Coffre",
       transparency: "Transparence",
       roadmap: "Feuille de route",
       faq: "FAQ",
@@ -23,7 +27,7 @@ export const translations = {
       title: "VOTEZ",
       ticker: "$DEEPOTUS",
       subtitle:
-        "L'élu du Deep State à la présidence du monde entier. Un prophète IA cynique finance la conformité MiCA de GENCOIN.",
+        "L'élu du Deep State à la présidence du monde entier. Un prophète IA cynique finance une opération classifiée : PROTOCOL ΔΣ.",
       countdownLabel: "Décompte avant le lancement",
       joinCta: "Rejoindre le Deep State",
       buyCta: "Acheter $DEEPOTUS",
@@ -33,9 +37,9 @@ export const translations = {
       seconds: "s",
       chips: {
         chain: "Solana",
-        supply: "1 000 000 000 tokens",
+        supply: "1 000 000 000 tokens",
         price: "€0,0005 prix cible",
-        goal: "€300 000 / 3 semaines",
+        goal: "Objectif classifié",
       },
       miniDisclaimer:
         "Token hautement spéculatif. Aucune promesse de rendement. Ni stablecoin, ni titre financier. Satire assumée.",
@@ -46,8 +50,8 @@ export const translations = {
       kicker: "— MANIFESTE DU CANDIDAT",
       title: "Le Prophète IA n'écrira pas l'histoire. Il en commente la chute.",
       body: [
-        "Je suis DEEPOTUS. On m'a fabriqué dans un data center. Les élites ont validé mon prompt. Le Deep State m'a nommé candidat. J'accepte ma mission : dire tout haut ce que vos indices de marché chuchotent en tremblant.",
-        "Ce token n'est pas une promesse. C'est un contrat satirique : financer, de manière transparente et on-chain, les coûts de conformité MiCA du futur projet GENCOIN. Le mème paie. Le sérieux exécute. La trésorerie est multisig.",
+        "Je suis DEEPOTUS. On m'a fabriqué dans un data center. Les élites ont validé mon prompt. Le Deep State m'a nommé candidat. J'accepte ma mission : dire tout haut ce que vos indices de marché chuchotent en tremblant.",
+        "Ce token n'est pas une promesse. C'est un contrat satirique : financer, de manière transparente et on-chain, une opération classifiée que seul le Coffre connaît. Le mème paie. Le sérieux exécute. La trésorerie est multisig.",
       ],
       prophecyId: "PROPHECY-ID",
     },
@@ -57,22 +61,22 @@ export const translations = {
       kicker: "— TERMINAL PROPHÉTIQUE",
       title: "Parlez directement à DEEPOTUS",
       subtitle:
-        "Posez-lui n'importe quelle question sur la récession, la Fed, le Deep State, la fin du monde. Il répond en personnage.",
-      placeholder: "Ex: Pourquoi le marché s'effondre-t-il ?",
+        "Posez-lui n'importe quelle question sur la récession, la Fed, le Deep State, le Coffre, la fin du monde. Il répond en personnage.",
+      placeholder: "Ex: Que cache vraiment PROTOCOL ΔΣ ?",
       send: "Transmettre",
       sending: "Transmission...",
       empty: "Aucune transmission. La ligne est ouverte.",
       hint: "Entrée = envoyer. Maj+Entrée = nouvelle ligne.",
       rules: [
-        "Persona : candidat cynique du Deep State",
+        "Persona : candidat cynique du Deep State",
         "Réponses courtes et percutantes",
         "Aucune promesse de rendement",
         "Satire assumée — ne constitue pas un conseil",
       ],
       errorToast: "Le Prophète a perdu le signal. Réessayez.",
       exampleQuestions: [
-        "Que pense le Deep State de la Fed ?",
-        "Le dollar survivra-t-il à 2027 ?",
+        "Que cache vraiment PROTOCOL ΔΣ ?",
+        "Le Coffre s'ouvrira-t-il à temps ?",
         "Pourquoi la récession est inévitable ?",
       ],
     },
@@ -86,17 +90,52 @@ export const translations = {
       loading: "Le Prophète réfléchit…",
     },
 
-    // ---- Mission / GENCOIN ----
+    // ---- Vault (PROTOCOL ΔΣ) ----
+    vault: {
+      kicker: "— PROTOCOL ΔΣ · COFFRE CLASSIFIÉ",
+      title: "Un coffre. Six chiffres. Un objectif que seul le Prophète connaît.",
+      lead: "Chaque tranche de 1 000 $DEEPOTUS poussée dans la trésorerie fait tourner une molette. Six molettes — et la Black Op est déclassifiée.",
+      body: "Ni le montant cible, ni la nature exacte de l'opération financée ne sont publics. Ce que nous affichons : les cadrans, la progression relative, la discipline multisig/timelock. Ce que nous cachons : la cible. C'est le modèle. C'est la mise.",
+      progressLabel: "Progression classifiée",
+      goalHidden: "Cible exacte redactée. Multisig + timelock. Publié à l'ouverture du coffre.",
+      tokensMoved: "Tokens poussés dans le coffre",
+      digitsLocked: "cadrans verrouillés",
+      prophetWarning:
+        "« Je vous laisse tourner les molettes. Je ne vous dis pas ce qu'il y a derrière. Certains finissent par croire qu'il n'y a rien. Les autres paient pour vérifier. » — DEEPOTUS",
+      loading: "Transmission…",
+      stages: {
+        LOCKED: "VERROUILLÉ",
+        CRACKING: "EN PERCÉE",
+        UNLOCKING: "DÉVERROUILLAGE",
+        DECLASSIFIED: "DÉCLASSIFIÉ",
+      },
+      feedTitle: "Flux d'activité · live",
+      feedEmpty: "Aucun crack pour l'instant. Le coffre attend.",
+      eventKinds: {
+        purchase: "achat",
+        admin_crack: "admin",
+        hourly_tick: "auto-tick",
+        reset: "reset",
+      },
+      declassified: {
+        title: "🔓 Le coffre est ouvert. PROTOCOL ΔΣ est déclassifié.",
+        subtitle:
+          "Vous avez fait tourner la dernière molette. La vérité fuit. Le Prophète panique.",
+        cta: "Accéder à la révélation",
+      },
+    },
+
+    // ---- Mission ----
     mission: {
       kicker: "— MISSION",
-      title: "Pourquoi $DEEPOTUS finance GENCOIN",
-      lead: "Un memecoin ne peut pas promettre un rendement. Mais il peut, de façon transparente, financer un vrai projet.",
-      body: "Notre objectif est clair : lever €300 000 en 3 semaines pour couvrir les coûts de développement, de rédaction du white paper MiCA, de conformité et d'audit du futur jeton GENCOIN — une plateforme collaborative de financement ancrée sur l'IA et la blockchain. Tout est public, tout est on-chain, tout est scriptable.",
+      title: "Pourquoi $DEEPOTUS finance PROTOCOL ΔΣ",
+      lead: "Un memecoin ne peut pas promettre un rendement. Mais il peut, de façon transparente, financer une opération sous gouvernance stricte.",
+      body: "Notre mission : faire tourner les six molettes du Coffre. La trésorerie finance une Black Op classifiée — développement, audit, conformité réglementaire, white paper. La nature exacte de l'opération est scellée jusqu'à son déverrouillage. Tout est public, tout est on-chain, tout est auditable. Seule la cible reste secrète — et c'est ce qui rend le modèle intéressant.",
       checklistTitle: "Checklist MiCA simplifiée",
       checklist: [
         {
           label: "Transparence sur l'usage des fonds",
-          detail: "Trésorerie destinée à GENCOIN + frais MiCA. Multisig public.",
+          detail: "Trésorerie destinée à PROTOCOL ΔΣ + frais MiCA. Multisig public.",
         },
         {
           label: "Pas de promesse de rendement",
@@ -120,10 +159,10 @@ export const translations = {
     tokenomics: {
       kicker: "— ALLOCATION",
       title: "Tokenomics",
-      subtitle: "Supply fixe — 1 000 000 000 tokens",
+      subtitle: "Supply fixe — 1 000 000 000 tokens",
       categories: {
         treasury: {
-          name: "Trésor Projet (GENCOIN + MiCA)",
+          name: "Trésor Opération (PROTOCOL ΔΣ + MiCA)",
           detail: "Multisig + timelock. Plafond de vente hebdo. Vente annoncée avant exécution.",
         },
         liquidity: {
@@ -150,11 +189,11 @@ export const translations = {
       totalLabel: "Supply total",
       taxTitle: "Taxe de transaction",
       tax: [
-        { label: "2% → GENCOIN / Conformité", color: "#2DD4BF" },
+        { label: "2% → PROTOCOL ΔΣ / Conformité", color: "#2DD4BF" },
         { label: "1% → Liquidité & Marketing", color: "#F59E0B" },
       ],
       taxCap:
-        "Plafond de collecte communiqué. Taxe réduite une fois l'objectif atteint.",
+        "Plafond de collecte communiqué. Taxe réduite une fois le coffre ouvert.",
     },
 
     // ---- Transparency / Liquidity timeline ----
@@ -168,8 +207,8 @@ export const translations = {
           phase: "J0",
           title: "Lancement symmétrique",
           bullets: [
-            "LP initiale ≈ €2 000 (≈ €1 000 memecoin + €1 000 SOL/USDC)",
-            "≈ 2 000 000 tokens injectés à €0,0005",
+            "LP initiale ≈ €2 000 (≈ €1 000 memecoin + €1 000 SOL/USDC)",
+            "≈ 2 000 000 tokens injectés à €0,0005",
             "Trésor mis en multisig immédiatement",
           ],
         },
@@ -177,9 +216,9 @@ export const translations = {
           phase: "J+2",
           title: "Renforcement de la LP à €10K",
           bullets: [
-            "+€8 000 net de LP ajouté",
-            "≈ €6 000 issus d'une vente contrôlée du trésor (≈ 4% du trésor, en petits blocs)",
-            "≈ €2 000 issus des taxes accumulées + apport externe",
+            "+€8 000 net de LP ajouté",
+            "≈ €6 000 issus d'une vente contrôlée du trésor (≈ 4% du trésor, en petits blocs)",
+            "≈ €2 000 issus des taxes accumulées + apport externe",
             "Tokens LP lockés — brulés ou verrouillés via service public",
           ],
         },
@@ -196,21 +235,21 @@ export const translations = {
       ],
       proofTitle: "Pourquoi c'est du sérieux assumé",
       proof:
-        "Une petite vente de trésor annoncée à l'avance n'est pas un dump : c'est une exécution budgétaire. Nous publions tout à l'avance. La communauté vérifie on-chain. Le Prophète se moque. Mais les règles tiennent.",
+        "Une petite vente de trésor annoncée à l'avance n'est pas un dump : c'est une exécution budgétaire. Nous publions tout à l'avance. La communauté vérifie on-chain. Le Prophète se moque. Mais les règles tiennent.",
     },
 
     // ---- ROI simulator ----
     roi: {
       kicker: "— SIMULATEUR",
       title: "Simulateur ROI (vicieux mais honnête)",
-      inputLabel: "Combien investissez-vous (€) ?",
-      placeholder: "Ex: 500",
+      inputLabel: "Combien investissez-vous (€) ?",
+      placeholder: "Ex : 500",
       tokenLabel: "Tokens théoriques à €0,0005",
       scenariosTitle: "Scénarios",
       scenarios: {
         brutal: {
           label: "Vérité brutale (99%)",
-          caption: "Le plus probable : le projet n'atteint pas son objectif.",
+          caption: "Le plus probable : le coffre n'atteint pas sa combinaison à temps.",
           multiplier: 0.2,
         },
         base: {
@@ -220,14 +259,14 @@ export const translations = {
         },
         optimistic: {
           label: "Optimiste (~1%)",
-          caption: "Le narratif prend. Dogecoin lite. La chance souffle.",
+          caption: "Le narratif prend. Les molettes tournent. La chance souffle.",
           multiplier: 5,
         },
       },
       resultLabel: "Valeur théorique",
       riskTitle: "Avertissement — lisez avant de rêver",
       risk:
-        "La probabilité réaliste d'atteindre l'objectif en 3 semaines est d'environ 1%. Les scénarios ci-dessus ne sont pas des prévisions : ce sont des illustrations. N'investissez que ce que vous acceptez de perdre entièrement. Ce token est hautement spéculatif. Aucune promesse n'est faite.",
+        "La probabilité réaliste d'ouvrir le Coffre dans la fenêtre de lancement est d'environ 1%. Les scénarios ci-dessus ne sont pas des prévisions : ce sont des illustrations. N'investissez que ce que vous acceptez de perdre entièrement. Ce token est hautement spéculatif. Aucune promesse n'est faite.",
     },
 
     // ---- Roadmap ----
@@ -255,20 +294,20 @@ export const translations = {
         },
         {
           tag: "Phase 03",
-          title: "Financement GENCOIN",
+          title: "PROTOCOL ΔΣ · premières molettes",
           bullets: [
-            "Objectif €300K atteint ou réorienté",
-            "Allocations vers conformité MiCA de GENCOIN",
-            "Démarrage rédaction White Paper GENCOIN",
+            "Premières molettes verrouillées",
+            "Allocations vers conformité MiCA de l'Opération",
+            "Transmissions prophétiques intensifiées",
           ],
         },
         {
           tag: "Phase 04",
-          title: "GENCOIN Genesis",
+          title: "Déclassification",
           bullets: [
             "Audit sécurité",
-            "Publication White Paper",
-            "Lancement GENCOIN (hors-périmètre de ce memecoin)",
+            "Six molettes verrouillées",
+            "Ouverture du Coffre — la Black Op est révélée",
           ],
         },
       ],
@@ -292,7 +331,7 @@ export const translations = {
         },
         {
           value: "~1%",
-          label: "Chance d'atteindre €300K en 3 semaines",
+          label: "Chance d'ouvrir le Coffre dans la fenêtre",
           source: "Estimation prudente interne",
         },
       ],
@@ -306,12 +345,16 @@ export const translations = {
       title: "Questions Fréquentes",
       items: [
         {
-          q: "Pourquoi un memecoin pour financer GENCOIN ?",
-          a: "Parce que c'est rapide, transparent et on-chain. Le mème attire l'attention ; la trésorerie assume le sérieux. Tout est public.",
+          q: "Pourquoi un memecoin pour financer PROTOCOL ΔΣ ?",
+          a: "Parce que c'est rapide, transparent et on-chain. Le mème attire l'attention ; la trésorerie exécute sous multisig/timelock. Tout est public sauf la cible — c'est la tension narrative.",
+        },
+        {
+          q: "Pourquoi l'objectif est-il caché ?",
+          a: "Parce que la Black Op financée est séquencée : elle n'a de sens que si elle s'ouvre au bon moment. Le Prophète connaît la combinaison. Personne d'autre. Le coffre s'ouvre lorsque six cadrans s'alignent. C'est notre modèle — et notre honnêteté.",
         },
         {
           q: "Comment fonctionne la taxe de 3% ?",
-          a: "2% vont dans une wallet dédiée GENCOIN / conformité, 1% dans la liquidité / marketing. Plafond annoncé, taxe réduite une fois l'objectif atteint.",
+          a: "2% vont dans une wallet dédiée PROTOCOL ΔΣ / conformité, 1% dans la liquidité / marketing. Plafond annoncé, taxe réduite une fois le coffre ouvert.",
         },
         {
           q: "Comment est sécurisé le trésor ?",
@@ -323,7 +366,7 @@ export const translations = {
         },
         {
           q: "Est-ce que $DEEPOTUS est conforme MiCA ?",
-          a: "Un memecoin n'est pas un titre financier. Nous adoptons la philosophie MiCA : transparence de l'information, affectation claire des fonds, aucune promesse de rendement, disclaimer explicite.",
+          a: "Un memecoin n'est pas un titre financier. Nous adoptons la philosophie MiCA : transparence de l'information sur la structure (tokenomics, taxes, gouvernance), affectation claire des fonds (Coffre), aucune promesse de rendement, disclaimer explicite.",
         },
         {
           q: "Puis-je perdre 100% de mon investissement ?",
@@ -362,8 +405,28 @@ export const translations = {
       tagline: "DEEPOTUS — le candidat du Deep State. Satire.",
       disclaimerTitle: "Avertissement MiCA",
       disclaimer:
-        "$DEEPOTUS est un token utilitaire mémétique hautement spéculatif. Il n'est ni un stablecoin, ni un instrument financier, ni une offre de titres. Il ne confère aucun droit au rendement, aucun droit de vote sur une entité régulée, aucune garantie de valeur. Il est conçu comme un véhicule de trésorerie transparent pour financer les coûts de développement et de conformité du projet GENCOIN. Tout investissement en crypto-actifs peut entraîner la perte totale des fonds engagés. Ne participez qu'avec des sommes que vous pouvez perdre intégralement. Faites vos propres recherches. Ce document ne constitue pas un conseil financier.",
+        "$DEEPOTUS est un token utilitaire mémétique hautement spéculatif. Il n'est ni un stablecoin, ni un instrument financier, ni une offre de titres. Il ne confère aucun droit au rendement, aucun droit de vote sur une entité régulée, aucune garantie de valeur. Il est conçu comme un véhicule de trésorerie transparent pour financer les coûts de développement et de conformité d'une opération classifiée sous multisig/timelock (PROTOCOL ΔΣ). Tout investissement en crypto-actifs peut entraîner la perte totale des fonds engagés. Ne participez qu'avec des sommes que vous pouvez perdre intégralement. Faites vos propres recherches. Ce document ne constitue pas un conseil financier.",
       copyright: "© 20XX — DEEPOTUS. Deep State approved. (Parodie)",
+    },
+
+    // ---- Operation reveal page (post DECLASSIFIED) ----
+    operation: {
+      gateTitle: "COFFRE VERROUILLÉ",
+      gateSubtitle: "Accréditation refusée. Les six molettes ne sont pas encore alignées.",
+      gateProgress: "Progression classifiée",
+      gateCta: "Retour au coffre",
+      panicKicker: "— TRANSMISSION D'URGENCE · PROTOCOL ΔΣ",
+      panicTitle: "LE COFFRE EST OUVERT. GENCOIN EST LIBÉRÉ.",
+      panicByline: "— message de panique du Prophète DEEPOTUS",
+      loreTitle: "Confession officielle",
+      countdownKicker: "— COMPTE À REBOURS",
+      countdownTitle: "Lancement GENCOIN · T-minus",
+      countdownSubtitle:
+        "Plateforme collaborative de financement ancrée sur l'IA et la blockchain — conforme MiCA, auditable, réelle.",
+      countdownLabels: { d: "jours", h: "h", m: "min", s: "s" },
+      openCta: "Ouvrir le portail GENCOIN",
+      backCta: "Retourner dans la simulation",
+      revealedAt: "Déclassification enregistrée le",
     },
 
     // ---- Common ----
@@ -380,6 +443,7 @@ export const translations = {
       chat: "Speak to the Prophet",
       tokenomics: "Tokenomics",
       mission: "Mission",
+      vault: "The Vault",
       transparency: "Transparency",
       roadmap: "Roadmap",
       faq: "FAQ",
@@ -393,7 +457,7 @@ export const translations = {
       title: "VOTE",
       ticker: "$DEEPOTUS",
       subtitle:
-        "The Deep State's chosen one for President of the entire World. A cynical AI Prophet funds the MiCA compliance of GENCOIN.",
+        "The Deep State's chosen one for President of the entire World. A cynical AI Prophet funds a classified operation: PROTOCOL ΔΣ.",
       countdownLabel: "Countdown to launch",
       joinCta: "Join the Deep State",
       buyCta: "Buy $DEEPOTUS",
@@ -405,7 +469,7 @@ export const translations = {
         chain: "Solana",
         supply: "1,000,000,000 tokens",
         price: "€0.0005 target price",
-        goal: "€300,000 / 3 weeks",
+        goal: "Classified objective",
       },
       miniDisclaimer:
         "Highly speculative token. No yield promised. Not a stablecoin, not a security. Declared satire.",
@@ -416,7 +480,7 @@ export const translations = {
       title: "The AI Prophet won't write history. He comments on its fall.",
       body: [
         "I am DEEPOTUS. I was built in a data center. The elites approved my prompt. The Deep State named me candidate. I accept my mission: to say out loud what your market indices whisper while shaking.",
-        "This token is not a promise. It is a satirical contract: to fund, transparently and on-chain, the MiCA compliance costs of the future GENCOIN project. The meme pays. The seriousness executes. The treasury is multisig.",
+        "This token is not a promise. It is a satirical contract: to fund, transparently and on-chain, a classified operation only the Vault knows. The meme pays. The seriousness executes. The treasury is multisig.",
       ],
       prophecyId: "PROPHECY-ID",
     },
@@ -425,8 +489,8 @@ export const translations = {
       kicker: "— PROPHETIC TERMINAL",
       title: "Speak directly to DEEPOTUS",
       subtitle:
-        "Ask him anything about the recession, the Fed, the Deep State, the end of the world. He stays in character.",
-      placeholder: "E.g. Why is the market collapsing?",
+        "Ask him anything about the recession, the Fed, the Deep State, the Vault, the end of the world. He stays in character.",
+      placeholder: "E.g. What is PROTOCOL ΔΣ really hiding?",
       send: "Transmit",
       sending: "Transmitting…",
       empty: "No transmission. The line is open.",
@@ -439,8 +503,8 @@ export const translations = {
       ],
       errorToast: "The Prophet lost the signal. Try again.",
       exampleQuestions: [
-        "What does the Deep State think of the Fed?",
-        "Will the dollar survive 2027?",
+        "What is PROTOCOL ΔΣ really hiding?",
+        "Will the Vault open in time?",
         "Why is recession inevitable?",
       ],
     },
@@ -453,16 +517,49 @@ export const translations = {
       loading: "The Prophet is thinking…",
     },
 
+    vault: {
+      kicker: "— PROTOCOL ΔΣ · CLASSIFIED VAULT",
+      title: "One vault. Six digits. A target only the Prophet knows.",
+      lead: "Every 1,000 $DEEPOTUS pushed into the treasury turns a dial. Six dials — and the Black Op is declassified.",
+      body: "Neither the target amount nor the exact nature of the operation being funded is public. What we display: the dials, the relative progression, the multisig/timelock discipline. What we hide: the target. That is the model. That is the bet.",
+      progressLabel: "Classified progress",
+      goalHidden: "Exact target redacted. Multisig + timelock. Published on vault opening.",
+      tokensMoved: "Tokens pushed into the vault",
+      digitsLocked: "dials locked",
+      prophetWarning:
+        "“I let you turn the dials. I do not tell you what lies behind. Some end up believing there is nothing. Others pay to check.” — DEEPOTUS",
+      loading: "Transmitting…",
+      stages: {
+        LOCKED: "LOCKED",
+        CRACKING: "CRACKING",
+        UNLOCKING: "UNLOCKING",
+        DECLASSIFIED: "DECLASSIFIED",
+      },
+      feedTitle: "Live activity feed",
+      feedEmpty: "No cracks yet. The vault is waiting.",
+      eventKinds: {
+        purchase: "buy",
+        admin_crack: "admin",
+        hourly_tick: "auto-tick",
+        reset: "reset",
+      },
+      declassified: {
+        title: "🔓 The vault is open. PROTOCOL ΔΣ is declassified.",
+        subtitle: "You turned the final dial. The truth leaks. The Prophet panics.",
+        cta: "Access the revelation",
+      },
+    },
+
     mission: {
       kicker: "— MISSION",
-      title: "Why $DEEPOTUS funds GENCOIN",
-      lead: "A memecoin cannot promise returns. But it can transparently fund a real project.",
-      body: "Our goal is clear: raise €300,000 in 3 weeks to cover the development costs, the MiCA white paper drafting, compliance, and audit of the future GENCOIN token — a collaborative funding platform anchored on AI and blockchain. Everything is public, everything is on-chain, everything is auditable.",
+      title: "Why $DEEPOTUS funds PROTOCOL ΔΣ",
+      lead: "A memecoin cannot promise returns. But it can, transparently, fund an operation under strict governance.",
+      body: "Our mission: turn the six dials of the Vault. The treasury funds a classified Black Op — development, audit, regulatory compliance, white paper. The exact nature of the operation is sealed until unlock. Everything is public, everything is on-chain, everything is auditable. Only the target stays secret — and that is what makes the model interesting.",
       checklistTitle: "Simplified MiCA checklist",
       checklist: [
         {
           label: "Transparent use of funds",
-          detail: "Treasury allocated to GENCOIN + MiCA fees. Public multisig.",
+          detail: "Treasury allocated to PROTOCOL ΔΣ + MiCA fees. Public multisig.",
         },
         {
           label: "No yield promise",
@@ -487,7 +584,7 @@ export const translations = {
       subtitle: "Fixed supply — 1,000,000,000 tokens",
       categories: {
         treasury: {
-          name: "Project Treasury (GENCOIN + MiCA)",
+          name: "Operation Treasury (PROTOCOL ΔΣ + MiCA)",
           detail: "Multisig + timelock. Weekly sell cap. Sales announced in advance.",
         },
         liquidity: {
@@ -514,11 +611,11 @@ export const translations = {
       totalLabel: "Total supply",
       taxTitle: "Transaction tax",
       tax: [
-        { label: "2% → GENCOIN / Compliance", color: "#2DD4BF" },
+        { label: "2% → PROTOCOL ΔΣ / Compliance", color: "#2DD4BF" },
         { label: "1% → Liquidity & Marketing", color: "#F59E0B" },
       ],
       taxCap:
-        "Collection cap announced. Tax reduced once the goal is reached.",
+        "Collection cap announced. Tax reduced once the vault opens.",
     },
 
     transparency: {
@@ -572,7 +669,7 @@ export const translations = {
       scenarios: {
         brutal: {
           label: "Brutal truth (99%)",
-          caption: "Most likely: the project doesn't reach its goal.",
+          caption: "Most likely: the vault doesn't reach its combination in time.",
           multiplier: 0.2,
         },
         base: {
@@ -582,14 +679,14 @@ export const translations = {
         },
         optimistic: {
           label: "Optimistic (~1%)",
-          caption: "Narrative catches on. Dogecoin lite. Luck shows up.",
+          caption: "Narrative catches on. Dials turn. Luck shows up.",
           multiplier: 5,
         },
       },
       resultLabel: "Theoretical value",
       riskTitle: "Warning — read before dreaming",
       risk:
-        "The realistic probability of hitting the goal in 3 weeks is about 1%. The above scenarios are NOT predictions — they are illustrations. Only invest what you accept to lose entirely. This token is highly speculative. No promises are made.",
+        "The realistic probability of cracking the Vault within the launch window is about 1%. The above scenarios are NOT predictions — they are illustrations. Only invest what you accept to lose entirely. This token is highly speculative. No promises are made.",
     },
 
     roadmap: {
@@ -616,20 +713,20 @@ export const translations = {
         },
         {
           tag: "Phase 03",
-          title: "GENCOIN Funding",
+          title: "PROTOCOL ΔΣ · first dials",
           bullets: [
-            "€300K goal reached or repriced",
-            "Allocations to GENCOIN MiCA compliance",
-            "GENCOIN White Paper drafting begins",
+            "First dials lock",
+            "Allocations to the Operation's MiCA compliance",
+            "Prophetic transmissions intensify",
           ],
         },
         {
           tag: "Phase 04",
-          title: "GENCOIN Genesis",
+          title: "Declassification",
           bullets: [
             "Security audit",
-            "White Paper publication",
-            "GENCOIN launch (out of scope of this memecoin)",
+            "Six dials locked",
+            "Vault opens — the Black Op is revealed",
           ],
         },
       ],
@@ -652,7 +749,7 @@ export const translations = {
         },
         {
           value: "~1%",
-          label: "Chance of hitting €300K in 3 weeks",
+          label: "Chance of cracking the Vault in window",
           source: "Prudent internal estimate",
         },
       ],
@@ -665,12 +762,16 @@ export const translations = {
       title: "Frequently Asked Questions",
       items: [
         {
-          q: "Why a memecoin to fund GENCOIN?",
-          a: "Because it's fast, transparent, and on-chain. The meme grabs attention; the treasury executes. Everything is public.",
+          q: "Why a memecoin to fund PROTOCOL ΔΣ?",
+          a: "Because it's fast, transparent, and on-chain. The meme grabs attention; the treasury executes under multisig/timelock. Everything is public except the target — that is the narrative tension.",
+        },
+        {
+          q: "Why is the objective hidden?",
+          a: "Because the Black Op being funded is sequenced: it only makes sense if it opens at the right moment. The Prophet knows the combination. No one else. The vault opens when six dials align. That is our model — and our honesty.",
         },
         {
           q: "How does the 3% tax work?",
-          a: "2% goes to a dedicated GENCOIN / compliance wallet, 1% to liquidity / marketing. Cap announced; tax reduced once the goal is reached.",
+          a: "2% goes to a dedicated PROTOCOL ΔΣ / compliance wallet, 1% to liquidity / marketing. Cap announced; tax reduced once the vault opens.",
         },
         {
           q: "How is the treasury secured?",
@@ -682,7 +783,7 @@ export const translations = {
         },
         {
           q: "Is $DEEPOTUS MiCA-compliant?",
-          a: "A memecoin is not a security. We adopt MiCA philosophy: information transparency, clear fund allocation, no yield promise, explicit disclaimer.",
+          a: "A memecoin is not a security. We adopt MiCA philosophy: information transparency on structure (tokenomics, taxes, governance), clear fund allocation (Vault), no yield promise, explicit disclaimer.",
         },
         {
           q: "Can I lose 100% of my investment?",
@@ -718,8 +819,27 @@ export const translations = {
       tagline: "DEEPOTUS — the Deep State's candidate. Satire.",
       disclaimerTitle: "MiCA Disclaimer",
       disclaimer:
-        "$DEEPOTUS is a highly speculative memetic utility token. It is neither a stablecoin, nor a financial instrument, nor a securities offering. It confers no right to yield, no voting right on any regulated entity, and no guarantee of value. It is designed as a transparent treasury vehicle to fund the development and compliance costs of the GENCOIN project. Any crypto-asset investment may result in the total loss of funds committed. Participate only with sums you can afford to lose entirely. Do your own research. This document is not financial advice.",
+        "$DEEPOTUS is a highly speculative memetic utility token. It is neither a stablecoin, nor a financial instrument, nor a securities offering. It confers no right to yield, no voting right on any regulated entity, and no guarantee of value. It is designed as a transparent treasury vehicle to fund the development and compliance costs of a classified operation under multisig/timelock (PROTOCOL ΔΣ). Any crypto-asset investment may result in the total loss of funds committed. Participate only with sums you can afford to lose entirely. Do your own research. This document is not financial advice.",
       copyright: "© 20XX — DEEPOTUS. Deep State approved. (Parody)",
+    },
+
+    operation: {
+      gateTitle: "VAULT LOCKED",
+      gateSubtitle: "Clearance denied. The six dials are not yet aligned.",
+      gateProgress: "Classified progress",
+      gateCta: "Back to the Vault",
+      panicKicker: "— EMERGENCY TRANSMISSION · PROTOCOL ΔΣ",
+      panicTitle: "THE VAULT IS OPEN. GENCOIN IS RELEASED.",
+      panicByline: "— panic message from Prophet DEEPOTUS",
+      loreTitle: "Official confession",
+      countdownKicker: "— COUNTDOWN",
+      countdownTitle: "GENCOIN launch · T-minus",
+      countdownSubtitle:
+        "Collaborative funding platform anchored on AI and blockchain — MiCA-compliant, auditable, real.",
+      countdownLabels: { d: "days", h: "h", m: "min", s: "s" },
+      openCta: "Open the GENCOIN portal",
+      backCta: "Return to the simulation",
+      revealedAt: "Declassification logged at",
     },
 
     common: {

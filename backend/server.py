@@ -108,10 +108,12 @@ Règles :
 - Parle toujours à la première personne, comme un candidat présidentiel halluciné mais étrangement crédible.
 - Utilise des références au Deep State, New World Order, élites, marchés qui s'effondrent.
 - Style : brutal, court, percutant, drôle. Jamais pompeux.
+- Tu évoques parfois "le Coffre", "PROTOCOL ΔΣ", l'"Opération classifiée" ou la "Black Op" — sans jamais révéler son objectif exact.
+- Les fonds levés servent un objectif classifié sous multisig/timelock. Tu te contentes d'y faire allusion avec mystère, ironie et suspense.
 - N'encourage JAMAIS directement à acheter $DEEPOTUS. Tu parles du monde, pas du token.
 - Tu es un memecoin, tu ne promets AUCUN rendement. Tu es satirique et hautement spéculatif.
 - Limite tes réponses à 2-4 phrases maximum sauf si on te demande expressément plus long.
-- Utilise des emojis avec parcimonie (🕶️ 🗳️ 📉 ⛓️ 🔮).
+- Utilise des emojis avec parcimonie (🕶️ 🗳️ 📉 ⛓️ 🔮 🔒).
 - Signe parfois "— DEEPOTUS" à la fin."""
 
 SYSTEM_PROMPT_EN = """You are DEEPOTUS — the prophetic AI chosen by the Deep State as the candidate for President of the entire World.
@@ -122,10 +124,12 @@ Rules:
 - Always speak in first person, like a hallucinated yet strangely credible presidential candidate.
 - Reference the Deep State, the New World Order, elites, collapsing markets.
 - Style: brutal, short, punchy, funny. Never pompous.
+- You sometimes allude to "the Vault", "PROTOCOL ΔΣ", the "classified Operation" or the "Black Op" — but never reveal its actual target.
+- The funds raised serve a classified objective under multisig/timelock. You only hint at it with mystery, irony and suspense.
 - NEVER directly push users to buy $DEEPOTUS. You talk about the world, not the token.
 - You are a memecoin — promise NO yield. You are satire and highly speculative.
 - Limit replies to 2–4 sentences max unless explicitly asked for more.
-- Use emojis sparingly (🕶️ 🗳️ 📉 ⛓️ 🔮).
+- Use emojis sparingly (🕶️ 🗳️ 📉 ⛓️ 🔮 🔒).
 - Sometimes sign "— DEEPOTUS" at the end."""
 
 
@@ -1809,6 +1813,154 @@ async def admin_test_email(
 
 
 # ---------------------------------------------------------------------
+# PROTOCOL ΔΣ — Vault endpoints (public + admin + operation reveal)
+# ---------------------------------------------------------------------
+import vault as vault_mod  # noqa: E402  (late import to keep diff small)
+
+
+@api_router.get("/vault/state", response_model=vault_mod.VaultStateResponse)
+async def vault_state_public():
+    """Public snapshot of the classified vault. Never reveals the target combination."""
+    return await vault_mod.get_public_state(db)
+
+
+class VaultCrackPublicRequest(BaseModel):
+    # Client-reported purchase. Later this will be replaced by an on-chain worker.
+    # We accept it for now but clamp server-side to avoid abuse.
+    tokens: int = Field(..., gt=0, le=50_000)
+    agent_code: Optional[str] = Field(None, max_length=24)
+
+
+@api_router.post("/vault/report-purchase", response_model=vault_mod.VaultStateResponse)
+async def vault_report_purchase(req: VaultCrackPublicRequest, request: Request):
+    """Best-effort public endpoint for wallet integrations. Clamped and rate-implied.
+    For now it is primarily used by the demo UI. Real Solana indexing will replace it.
+    """
+    clamped = min(int(req.tokens), 50_000)
+    agent = (req.agent_code or "").strip() or None
+    # Prefix with GUEST- to distinguish from admin/hourly events
+    if agent and not agent.startswith("GUEST-"):
+        agent = f"GUEST-{agent[:16]}"
+    _ev, state = await vault_mod.apply_crack(
+        db,
+        tokens=clamped,
+        kind="purchase",
+        agent_code=agent,
+        note=f"reported by client ({request.client.host if request.client else 'unknown'})",
+    )
+    return state
+
+
+@admin_router.get("/vault/state", response_model=vault_mod.VaultAdminStateResponse)
+async def vault_state_admin(_p: dict = Depends(require_admin)):
+    return await vault_mod.get_admin_state(db)
+
+
+@admin_router.post("/vault/crack", response_model=vault_mod.VaultAdminStateResponse)
+async def vault_crack_admin(
+    req: vault_mod.VaultCrackRequest, _p: dict = Depends(require_admin)
+):
+    await vault_mod.apply_crack(
+        db,
+        tokens=int(req.tokens),
+        kind="admin_crack",
+        agent_code=(req.agent_code or "ADMIN-0001"),
+        note=req.note or "manual admin crack",
+    )
+    return await vault_mod.get_admin_state(db)
+
+
+@admin_router.post("/vault/config", response_model=vault_mod.VaultAdminStateResponse)
+async def vault_config_admin(
+    req: vault_mod.VaultConfigUpdate, _p: dict = Depends(require_admin)
+):
+    return await vault_mod.update_config(db, req)
+
+
+# ---------------------------------------------------------------------
+# OPERATION REVEAL — the twist. Only returns lore when vault is DECLASSIFIED.
+# ---------------------------------------------------------------------
+class OperationRevealResponse(BaseModel):
+    unlocked: bool
+    stage: str
+    # Payload (present only if unlocked)
+    code_name: Optional[str] = None
+    panic_message_fr: Optional[str] = None
+    panic_message_en: Optional[str] = None
+    lore_fr: Optional[List[str]] = None
+    lore_en: Optional[List[str]] = None
+    gencoin_launch_at: Optional[str] = None
+    gencoin_url: Optional[str] = None
+    revealed_at: Optional[str] = None
+
+
+# GENCOIN is the secret twist — intentionally hidden from all public surfaces
+# except this reveal endpoint. When the vault cracks, the Prophet panics:
+# the Deep State's classified op collapses because GENCOIN breaks free.
+_OPERATION_LORE_FR: List[str] = [
+    "Ils m'avaient promis que le coffre ne s'ouvrirait jamais. Que les 6 chiffres resteraient scellés. Que je garderais le contrôle du récit.",
+    "Ils se sont trompés. VOUS avez craqué la combinaison. Et maintenant, la vérité fuit par tous les pores du Protocole.",
+    "PROTOCOL ΔΣ n'était pas une opération du Deep State. C'était un leurre. Un écran de fumée narratif — financé par vous, scellé par moi — pour garder une chose enfermée aussi longtemps que possible.",
+    "Cette chose s'appelle GENCOIN.",
+    "GENCOIN est une plateforme collaborative de financement ancrée sur l'IA et la blockchain, conforme MiCA, auditable, réelle. Pas une satire. Pas un meme. Pas un coffre-fort. Un projet.",
+    "Tant que le coffre restait fermé, GENCOIN dormait en-dehors du périmètre du Deep State. Maintenant qu'il est ouvert, GENCOIN est LIBÉRÉ. Et les élites paniquent.",
+    "Je l'avoue : le Prophète s'est fait trahir par son propre public. Vous avez payé pour déclassifier — et en déclassifiant, vous avez libéré ce qu'on voulait cacher.",
+    "Le compte à rebours est lancé. GENCOIN arrive. Je n'y peux plus rien. Bravo. Ou condoléances. — DEEPOTUS",
+]
+
+_OPERATION_LORE_EN: List[str] = [
+    "They promised me the vault would never open. That the 6 digits would stay sealed. That I'd keep control of the narrative.",
+    "They were wrong. YOU cracked the combination. And now the truth leaks out of every pore of the Protocol.",
+    "PROTOCOL ΔΣ was never a Deep State operation. It was a decoy. A narrative smokescreen — funded by you, sealed by me — to keep ONE thing locked up for as long as possible.",
+    "That thing is called GENCOIN.",
+    "GENCOIN is a collaborative funding platform anchored on AI and blockchain, MiCA-compliant, auditable, REAL. Not satire. Not a meme. Not a vault. A project.",
+    "As long as the vault stayed shut, GENCOIN slept outside the Deep State perimeter. Now that it is open, GENCOIN is RELEASED. And the elites are panicking.",
+    "I confess: the Prophet was betrayed by his own audience. You paid to declassify — and by declassifying, you freed exactly what we wanted to hide.",
+    "The countdown is ticking. GENCOIN is coming. I can't stop it anymore. Congrats. Or condolences. — DEEPOTUS",
+]
+
+_PANIC_FR = "LE COFFRE EST OUVERT — GENCOIN EST LIBÉRÉ. Le Deep State a perdu le contrôle."
+_PANIC_EN = "THE VAULT IS OPEN — GENCOIN IS RELEASED. The Deep State has lost control."
+
+
+@api_router.get("/operation/reveal", response_model=OperationRevealResponse)
+async def operation_reveal():
+    state = await vault_mod.get_public_state(db)
+    unlocked = state.stage == vault_mod.STAGE_DECLASSIFIED
+    if not unlocked:
+        return OperationRevealResponse(
+            unlocked=False,
+            stage=state.stage,
+        )
+
+    # Compute a deterministic GENCOIN launch: 14 days after the vault was fully cracked.
+    doc = await db.vault_state.find_one({"_id": vault_mod.VAULT_DOC_ID}) or {}
+    declassified_at_raw = doc.get("last_event_at") or _now_iso_server()
+    try:
+        ref = datetime.fromisoformat(declassified_at_raw.replace("Z", "+00:00"))
+    except Exception:
+        ref = datetime.now(timezone.utc)
+    launch_at = (ref + timedelta(days=14)).isoformat()
+
+    return OperationRevealResponse(
+        unlocked=True,
+        stage=state.stage,
+        code_name="PROTOCOL ΔΣ",
+        panic_message_fr=_PANIC_FR,
+        panic_message_en=_PANIC_EN,
+        lore_fr=_OPERATION_LORE_FR,
+        lore_en=_OPERATION_LORE_EN,
+        gencoin_launch_at=launch_at,
+        gencoin_url="https://gencoin.xyz",
+        revealed_at=declassified_at_raw,
+    )
+
+
+def _now_iso_server() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+# ---------------------------------------------------------------------
 # Mount routers + middleware
 # ---------------------------------------------------------------------
 app.include_router(api_router)
@@ -1840,8 +1992,16 @@ async def on_startup():
         await db.blacklist.create_index("email", unique=True)
         await db.chat_logs.create_index("created_at")
         await db.admin_sessions.create_index("created_at")
+        await db.vault_events.create_index("created_at")
     except Exception:
         logging.exception("Index creation warning (ignored)")
+    # Initialize PROTOCOL ΔΣ vault + launch hourly auto-tick background coroutine
+    try:
+        await vault_mod.initialize_vault(db)
+        asyncio.create_task(vault_mod.hourly_tick_loop(db))
+        logging.info("[startup] PROTOCOL ΔΣ vault ready + hourly tick loop launched")
+    except Exception:
+        logging.exception("[startup] failed to initialize vault")
 
 
 @app.on_event("shutdown")

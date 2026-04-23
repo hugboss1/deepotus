@@ -669,6 +669,17 @@ export default function Admin() {
               </Link>
             </Button>
             <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="rounded-[var(--btn-radius)]"
+              data-testid="admin-vault-link"
+            >
+              <Link to="/admin/vault">
+                <ShieldAlert size={14} className="mr-1" /> Vault · PROTOCOL ΔΣ
+              </Link>
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={() => loadAll(days)}

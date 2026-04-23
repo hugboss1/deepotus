@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/theme/ThemeProvider";
 import Landing from "@/pages/Landing";
 import Admin from "@/pages/Admin";
 import AdminEmails from "@/pages/AdminEmails";
+import AdminVault from "@/pages/AdminVault";
+import Operation from "@/pages/Operation";
 import PublicStats from "@/pages/PublicStats";
 
 function App() {
@@ -21,8 +23,10 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/operation" element={<Operation />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/emails" element={<AdminEmails />} />
+              <Route path="/admin/vault" element={<AdminVault />} />
               <Route path="/stats" element={<PublicStats />} />
               <Route path="*" element={<Landing />} />
             </Routes>

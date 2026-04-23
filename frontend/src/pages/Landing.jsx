@@ -2,6 +2,7 @@ import React from "react";
 import TopNav from "@/components/landing/TopNav";
 import Hero from "@/components/landing/Hero";
 import Manifesto from "@/components/landing/Manifesto";
+import VaultSection from "@/components/landing/vault/VaultSection";
 import ProphetChat from "@/components/landing/ProphetChat";
 import PropheciesFeed from "@/components/landing/PropheciesFeed";
 import Mission from "@/components/landing/Mission";
@@ -22,6 +23,7 @@ export default function Landing() {
       <main>
         <Hero />
         <Manifesto />
+        <VaultSection />
         <ProphetChat />
         <PropheciesFeed />
         <Mission />

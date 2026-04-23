@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 
 const NAV_ITEMS = [
   { id: "manifesto", key: "nav.manifesto" },
+  { id: "vault", key: "nav.vault" },
   { id: "chat", key: "nav.chat" },
   { id: "mission", key: "nav.mission" },
   { id: "tokenomics", key: "nav.tokenomics" },
