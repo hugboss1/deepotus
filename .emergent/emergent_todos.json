@@ -1,38 +1,22 @@
 [
   {
-    "content": "Check existing image-gen helper pattern in codebase (for Gemini Nano Banana)",
+    "content": "Fix mobile vault: dials anchored inside the vault image (not below)",
     "status": "completed"
   },
   {
-    "content": "Generate AI vault frame image (black military + cyan/ambre LED) via Gemini",
+    "content": "Update plan.md with 3 pending operations for memory",
     "status": "completed"
   },
   {
-    "content": "Integrate vault frame image into VaultSection as layered background with overlaid dials",
+    "content": "Generate AI illustration: Prophet panicking, chased by RIPPLED crowd",
     "status": "completed"
   },
   {
-    "content": "Backend: add dexscreener.py module + hybrid mode (off/demo/custom)",
+    "content": "Integrate new illustration into /operation reveal page",
     "status": "completed"
   },
   {
-    "content": "Backend: extend vault_state schema with DEX fields + admin endpoints",
-    "status": "completed"
-  },
-  {
-    "content": "Backend: launch DexScreener poll loop as async task (30s interval)",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: add DEX config section in /admin/vault page",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend: badge live status on the public vault (demo token / custom / off)",
-    "status": "completed"
-  },
-  {
-    "content": "Test end-to-end: image rendering + DEX polling + tick generation",
+    "content": "Final visual QA on desktop + mobile",
     "status": "completed"
   }
 ]

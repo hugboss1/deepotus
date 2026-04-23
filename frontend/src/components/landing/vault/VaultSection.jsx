@@ -114,7 +114,7 @@ export default function VaultSection() {
           </motion.div>
         </div>
 
-        {/* CHASSIS ROW (desktop-first) */}
+        {/* CHASSIS (unified desktop+mobile) */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -122,50 +122,12 @@ export default function VaultSection() {
           transition={{ duration: 0.6, delay: 0.05 }}
           className="mt-10"
         >
-          {/* Desktop: AI-rendered vault image with dials overlaid */}
-          <div className="hidden md:block">
-            <VaultChassis
-              combo={combo}
-              locked={locked}
-              stage={stage}
-              stageLabel={stageLabel}
-            />
-          </div>
-
-          {/* Mobile: image on top as banner + dials below in a regular row */}
-          <div className="md:hidden">
-            <div
-              className="relative w-full overflow-hidden rounded-xl border border-border bg-black"
-              style={{ aspectRatio: "16 / 9" }}
-            >
-              <img
-                src="/vault_frame.png"
-                alt="PROTOCOL ΔΣ vault"
-                className="absolute inset-0 w-full h-full object-cover"
-                draggable={false}
-              />
-              <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-black/60 border border-white/10">
-                <span
-                  className={`font-mono text-[9px] uppercase tracking-[0.25em] ${meta.color}`}
-                >
-                  {stageLabel}
-                </span>
-              </div>
-            </div>
-            <div className="mt-4 flex items-center justify-center gap-2">
-              {combo.map((digit, i) => (
-                <CombinationDial
-                  key={i}
-                  index={i}
-                  value={digit}
-                  locked={i < locked}
-                  stage={stage}
-                  size="sm"
-                  showLabel={false}
-                />
-              ))}
-            </div>
-          </div>
+          <VaultChassis
+            combo={combo}
+            locked={locked}
+            stage={stage}
+            stageLabel={stageLabel}
+          />
         </motion.div>
 
         {/* DATA ROW: description + status + feed */}

@@ -28,27 +28,23 @@ export default function VaultChassis({
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl border border-border bg-black shadow-[var(--shadow-elev-1)]"
-      style={{ aspectRatio: "16 / 9" }}
+      className="relative w-full overflow-hidden rounded-xl border border-border bg-black shadow-[var(--shadow-elev-1)] aspect-[4/3] md:aspect-[16/9]"
       data-testid="vault-chassis"
     >
-      {/* Vault image */}
+      {/* Vault image — object-cover + center position, so mobile 4:3 crops the sides
+          and zooms into the central panel area for dial readability */}
       <img
         src="/vault_frame.png"
         alt="PROTOCOL ΔΣ electronic vault"
-        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
         draggable={false}
       />
 
       {/* Pulse halo behind the central panel (breathes with the stage) */}
       <motion.div
         aria-hidden
-        className="absolute pointer-events-none"
+        className="absolute pointer-events-none left-[29%] md:left-[34%] top-[36%] w-[42%] md:w-[32%] h-[30%]"
         style={{
-          left: "34%",
-          top: "36%",
-          width: "32%",
-          height: "30%",
           background: `radial-gradient(ellipse at center, ${haloColor}, transparent 70%)`,
           filter: "blur(6px)",
         }}
@@ -56,10 +52,12 @@ export default function VaultChassis({
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* Dial zone — sits inside the empty central panel */}
+      {/* Dial zone — sits inside the empty central panel.
+          On mobile (4:3 + cover) the image is wider than container so the
+          panel lands at ~33% with width ~36% of the container.
+          On desktop (16:9 natural) the panel lands at ~37%/27%. */}
       <div
-        className="absolute flex items-center justify-center gap-[1.2%]"
-        style={{ left: "37%", top: "39%", width: "27%", height: "25%" }}
+        className="absolute flex items-center justify-center gap-[1%] md:gap-[1.2%] left-[33%] md:left-[37%] top-[39%] w-[36%] md:w-[27%] h-[25%]"
         data-testid="vault-chassis-dials"
       >
         {combo.map((digit, i) => (

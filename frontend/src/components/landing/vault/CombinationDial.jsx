@@ -105,7 +105,7 @@ export default function CombinationDial({
       : "w-14 h-20 md:w-16 md:h-24";
   const fontSize =
     size === "chassis"
-      ? "text-[clamp(14px,3vw,42px)]"
+      ? "text-[clamp(11px,2.8vw,42px)]"
       : size === "sm"
       ? "text-2xl"
       : "text-3xl md:text-4xl";

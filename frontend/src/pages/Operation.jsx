@@ -186,6 +186,40 @@ export default function Operation() {
                   « {panic} »
                 </motion.blockquote>
 
+                {/* Cinematic illustration — the fall of the Deep State */}
+                <motion.figure
+                  initial={{ opacity: 0, scale: 0.98, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                  className="mt-12 relative"
+                  data-testid="operation-chased-illustration"
+                >
+                  <div className="relative overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-elev-1)] bg-black">
+                    <img
+                      src="/prophet_chased.png"
+                      alt={t("operation.chasedAlt")}
+                      className="w-full h-auto object-cover"
+                      loading="eager"
+                      draggable={false}
+                    />
+                    {/* Corner overlay tags */}
+                    <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-md bg-black/60 border border-white/10 backdrop-blur-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#E3D99F] animate-pulse" />
+                      <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-white/90">
+                        {t("operation.chasedOverlay")}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-black/60 border border-white/10 backdrop-blur-sm">
+                      <span className="font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-[#E3D99F]">
+                        AI-GENERATED · THE PEOPLE RISES
+                      </span>
+                    </div>
+                  </div>
+                  <figcaption className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                    ⸻ {t("operation.chasedCaption")}
+                  </figcaption>
+                </motion.figure>
+
                 {/* Lore */}
                 <div className="mt-12" data-testid="operation-lore">
                   <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
