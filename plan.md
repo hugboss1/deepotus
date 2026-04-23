@@ -168,6 +168,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Testing ✅
 - **Delivery ✅**
 - **Architecture backend modulaire ✅ (Opération B terminée)**
+- **Hardening code quality ✅ (Phase 17 terminée)**
 
 ---
 
@@ -268,7 +269,65 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
   - DexScreener: 22/22
   - Admin/Public/Access-card/Operation: OK
   - Startup background loops : OK
-- ⚠️ 2 “minor discrepancies” reportées étaient des faux positifs (brief ambigu), aucun drift réel.
+
+---
+
+## Phase 17 — Code Quality Hardening (sécurité + maintenabilité) — **COMPLETED ✅**
+
+### Objectif
+- Appliquer les correctifs **réellement nécessaires** issus du code review, sans casser l’existant.
+- Éviter les gros chantiers non prioritaires (split massif de composants) : **“seulement les pires”**.
+
+### Décisions validées
+- ✅ **Admin token en localStorage** : **conservé** (menace XSS reconnue, mitigée par TTL 24h + révocation serveur)
+- ✅ “Faux positifs” du tool :
+  - `payload undefined` dans `core/security.py` : non modifié (pas de chemin d’exécution réel)
+  - `is None` en Python : conservé (correct)
+  - majority des `exhaustive-deps` : conservé (désactivation volontaire / variables stables)
+- ⏳ Split des très gros composants (Admin 1064 lignes, AdminVault 616, ClassifiedVault 591) : **reporté**
+
+### Correctifs appliqués (immédiats)
+**Backend — sécurité RNG**
+- ✅ `vault.py` : génération de la combinaison cible via `secrets.randbelow(10)` (helper `_secure_digit()`)
+  - ℹ️ `random` conservé uniquement pour éléments cosmétiques (agent codes, digits non-lockés, variance bump horaire)
+- ✅ `access_card.py` : `generate_accreditation_number()` + `_derive_display_name()` via `secrets.choice()`
+  - Raison: l’accréditation est le **Bearer token** du gate `/classified-vault`
+
+**Frontend — hygiène prod**
+- ✅ Ajout `src/lib/logger.js` (dev-only info/warn/debug, error toujours actif)
+- ✅ Remplacement des `console.error` dans :
+  - `AdminVault.jsx` (×4)
+  - `Operation.jsx` (×1)
+  - `PublicStats.jsx` (×1)
+
+**Frontend — keys stables**
+- ✅ Remplacement de `key={index}` pour listes dynamiques :
+  - `ProphetChat.jsx` : messages ont maintenant `id` stable + keys sur rules/examples
+  - `Roadmap.jsx` : key stable pour phases + bullets
+  - `Operation.jsx` : lore paragraphs key stable
+  - ℹ️ Boucles décoratives immuables `Array.from({length:10})` conservées (sans risque)
+
+### Refactors “les pires seulement” (complexité)
+- ✅ `dexscreener.py` : `dex_poll_once()` décomposé
+  - `_resolve_token_address` / `_compute_deltas` / `_apply_demo_ticks` / `_apply_custom_ticks`
+  - `_persist_baselines` / `_persist_fetch_error`
+  - Complexité ~24 → ~7, comportement identique
+- ✅ `routers/admin.py` : `admin_blacklist_import()` décomposé
+  - `_parse_csv_candidates` / `_normalize_email_list` / `_compute_cooldown_iso` / `_insert_blacklist_entry`
+- ✅ `CombinationDial.jsx` : refactor interne
+  - constants de style + `computeStageStyle()`
+  - `computeDimensions(size)`
+  - hooks extraits `useShuffleLoop()` + `useMicroTickFlash()`
+
+### Testing / Evidence
+- ✅ Backend testing agent iteration_12 : **40/43** tests (93%)
+  - Security tests: 4/4
+  - Refactored tests: 6/6
+  - Admin auth: 20/20
+  - Access card: 5/5
+  - Unique “minor issue” : webhook unsigned → 401 (comportement correct avec secret)
+- ✅ Lint backend + frontend : clean
+- ✅ Sanity screenshot landing (hero OK) + absence de crash console
 
 ---
 
@@ -292,5 +351,6 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 
 ## Pending Operations (memorized for later — user requested)
 - ✅ **(B) Backend refactor**: TERMINÉ — monolithe `server.py` → `core/` + `routers/`
+- ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
 - ⏳ **(A) Switch DexScreener mode to real token**: à faire quand le mint $DEEPOTUS est déployé
 - ⏳ **(C) On-chain accuracy upgrade**: indexer Solana per-trade (P2)
