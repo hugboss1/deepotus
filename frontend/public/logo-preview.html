@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>$DEEPOTUS — 3 propositions de logo</title>
+  <title>$DEEPOTUS — Logos & Monogrammes</title>
   <style>
     :root {
-      color-scheme: dark light;
+      color-scheme: dark;
       --bg: #0b0e14;
       --card: #11161f;
       --border: #1f2937;
@@ -14,6 +14,7 @@
       --muted: #7d8691;
       --accent: #33ff33;
       --red: #E11D48;
+      --gold: #d4af37;
     }
     * { box-sizing: border-box; }
     body {
@@ -23,141 +24,147 @@
       color: var(--text);
       padding: 48px 24px 96px;
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(26px, 3vw, 40px);
-      letter-spacing: -0.01em;
+    header { max-width: 1400px; margin: 0 auto 36px; }
+    h1 { margin: 0 0 8px; font-size: clamp(26px, 3vw, 40px); letter-spacing: -0.01em; }
+    h2.section-title {
+      max-width: 1400px; margin: 48px auto 20px;
+      font-size: 16px; font-weight: 700;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent);
+      font-family: "Source Code Pro", ui-monospace, monospace;
+      border-top: 1px solid var(--border); padding-top: 24px;
     }
     p.sub {
-      margin: 0 0 48px;
-      color: var(--muted);
-      max-width: 720px;
-      line-height: 1.55;
+      margin: 0 0 16px; color: var(--muted);
+      max-width: 760px; line-height: 1.55;
     }
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
+      display: grid; gap: 24px;
+      max-width: 1400px; margin: 0 auto;
     }
+    .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
+    .card.highlight { border-color: var(--gold); box-shadow: 0 0 32px rgba(212,175,55,0.12); }
     .thumb {
-      aspect-ratio: 1;
-      background: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      aspect-ratio: 1; background: #000;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
     }
-    .thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .meta {
-      padding: 18px 20px 22px;
-    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .meta { padding: 18px 20px 22px; }
     .tag {
       font-family: "Source Code Pro", ui-monospace, monospace;
-      font-size: 11px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 8px;
+      font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 8px;
     }
-    .title {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0 0 8px;
-    }
-    .desc {
-      font-size: 13.5px;
-      color: var(--muted);
-      line-height: 1.55;
-      margin: 0;
-    }
+    .tag.gold { color: var(--gold); }
+    .title { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+    .desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin: 0; }
     .footer {
-      margin-top: 64px;
-      max-width: 720px;
-      margin-inline: auto;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
+      margin-top: 64px; max-width: 760px; margin-inline: auto;
+      text-align: center; color: var(--muted); font-size: 13px; line-height: 1.6;
     }
     .footer strong { color: var(--text); }
     .pulse {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--red);
-      border-radius: 50%;
-      margin-right: 8px;
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--red); border-radius: 50%; margin-right: 8px;
       animation: p 1.4s ease-in-out infinite;
     }
-    @keyframes p {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.25; }
-    }
+    @keyframes p { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
   </style>
 </head>
 <body>
-  <header style="max-width:1400px; margin: 0 auto 32px;">
+  <header>
     <div style="font-family:'Source Code Pro', monospace; font-size:11px; letter-spacing:0.25em; color:var(--accent); margin-bottom:12px;">
-      <span class="pulse"></span>CLASSIFIED • LOGO CANDIDATE REVIEW
+      <span class="pulse"></span>CLASSIFIED • LOGO & EMBLEM REVIEW
     </div>
-    <h1>$DEEPOTUS — 3 propositions de logo</h1>
+    <h1>$DEEPOTUS — Choix final</h1>
     <p class="sub">
-      Trois directions créatives générées par IA à partir des tendances crypto 2025-2026.
-      Choisis celle qui correspond le mieux à l'ADN du projet : la pièce en or sera ensuite frappée avec ce logo.
+      Tu choisis <strong style="color:var(--text);">1 logo</strong> parmi les 4 propositions (V1 → V4),
+      et <strong style="color:var(--text);">1 monogramme</strong> parmi les 3 (M1, M2, M3) qui sera ensuite
+      frappé sur la pièce en or. Le logo et le monogramme peuvent être indépendants.
     </p>
   </header>
 
-  <main class="grid">
+  <!-- LOGOS -->
+  <h2 class="section-title">1 · Logos candidats</h2>
+  <section class="grid cols-4">
     <article class="card">
-      <div class="thumb"><img src="/logo_v1_ai_prophet.png" alt="V1 — AI Deep State Prophet" /></div>
+      <div class="thumb"><img src="/logo_v1_ai_prophet.png" alt="V1" /></div>
       <div class="meta">
-        <div class="tag">V1 · AI DEEP STATE PROPHET</div>
-        <h2 class="title">Prophet augmenté × Cyber-Deep-State</h2>
-        <p class="desc">
-          Portrait hybride président × IA. Lunettes aviator miroir avec reflets circuits néon. Palette crimson / navy / cyan. Vibes AIXBT × TURBO × WorldCoin.
-        </p>
+        <div class="tag">V1 · AI DEEP STATE</div>
+        <h3 class="title">Prophet augmenté × Cyber</h3>
+        <p class="desc">Portrait IA × président, aviators circuits néon. Navy / crimson / cyan.</p>
       </div>
     </article>
-
     <article class="card">
-      <div class="thumb"><img src="/logo_v2_presidential_coin.png" alt="V2 — Presidential Meme Coin" /></div>
+      <div class="thumb"><img src="/logo_v2_presidential_coin.png" alt="V2" /></div>
       <div class="meta">
-        <div class="tag">V2 · PRESIDENTIAL MEME COIN</div>
-        <h2 class="title">Sceau officiel — candidature Deep State</h2>
-        <p class="desc">
-          Portrait profil façon pièce US officielle (laurel wreath, étoiles, engravure serif). Lunettes noires + earpiece pour l'ironie. Énergie Dogecoin × TRUMP coin × dollar-bill.
-        </p>
+        <div class="tag">V2 · PRESIDENTIAL MEME</div>
+        <h3 class="title">Sceau officiel</h3>
+        <p class="desc">Portrait profil gravé, laurel wreath, ruban « DEEP STATE ».</p>
       </div>
     </article>
-
     <article class="card">
-      <div class="thumb"><img src="/logo_v3_brutalist_degen.png" alt="V3 — Brutalist Degen" /></div>
+      <div class="thumb"><img src="/logo_v3_brutalist_degen.png" alt="V3" /></div>
       <div class="meta">
         <div class="tag">V3 · BRUTALIST DEGEN</div>
-        <h2 class="title">Sticker mascotte × pump.fun</h2>
-        <p class="desc">
-          Mascotte cartoon à traits épais, sunglasses XL, halo corrompu, scanlines CRT. Fond flat saturé. Lisible dès 64×64 (avatar Twitter / Telegram / DEX). Vibes $WIF × $POPCAT × $PEPE.
-        </p>
+        <h3 class="title">Sticker pump.fun</h3>
+        <p class="desc">Mascotte cartoon, halo corrompu, fond orange flat.</p>
       </div>
     </article>
-  </main>
+    <article class="card highlight">
+      <div class="thumb"><img src="/logo_v4_matrix_face.png" alt="V4" /></div>
+      <div class="meta">
+        <div class="tag" style="color:var(--gold);">V4 · MATRIX FACE · NOUVEAU</div>
+        <h3 class="title">Visage de code + aviators</h3>
+        <p class="desc">Monochrome vert Matrix sur noir. Prophète-de-données, minimalisme cyberpunk.</p>
+      </div>
+    </article>
+  </section>
+
+  <!-- MONOGRAMMES -->
+  <h2 class="section-title">2 · Monogrammes pour la pièce en or</h2>
+  <p class="sub" style="max-width:1400px; margin-left:auto; margin-right:auto;">
+    Trois propositions de glyphe unique, dans la lignée des tickers crypto emblématiques (₿, Ξ, Ð, X).
+    C'est ce symbole qui sera frappé au centre de la pièce en or.
+  </p>
+  <section class="grid cols-3">
+    <article class="card">
+      <div class="thumb"><img src="/monogram_m1_delta_dollar.png" alt="M1" /></div>
+      <div class="meta">
+        <div class="tag gold">M1 · Δ$ · DELTA-DOLLAR</div>
+        <h3 class="title">Le protocole classifié monétisé</h3>
+        <p class="desc">Le Δ de PROTOCOL ΔΣ traversé par un $ vertical. Évoque le Black Op + la tokenisation.</p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="thumb"><img src="/monogram_m2_ds_bars.png" alt="M2" /></div>
+      <div class="meta">
+        <div class="tag gold">M2 · ĐS · DEEP-STATE LIGATURE</div>
+        <h3 class="title">DS × double barre Bitcoin</h3>
+        <p class="desc">Les lettres D et S imbriquées, deux barres verticales à la Bitcoin ₿ qui transpercent le S.</p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="thumb"><img src="/monogram_m3_delta_sigma.png" alt="M3" /></div>
+      <div class="meta">
+        <div class="tag gold">M3 · ΔΣ · PROTOCOL PUR</div>
+        <h3 class="title">Les deux lettres grecques fondues</h3>
+        <p class="desc">Hommage direct au nom de l'opération. Minimaliste, mystérieux, collector.</p>
+      </div>
+    </article>
+  </section>
 
   <footer class="footer">
-    <strong>Prochaine étape</strong> — indique la version choisie (V1 / V2 / V3) et je frappe la pièce en or à partir de ce logo.
+    <strong>Prochaine étape</strong> — indique ton choix : <strong style="color:var(--text);">logo = V1 / V2 / V3 / V4</strong>
+    et <strong style="color:var(--text);">pièce = M1 / M2 / M3</strong>. Je frappe ensuite la pièce en or.
   </footer>
 </body>
 </html>
