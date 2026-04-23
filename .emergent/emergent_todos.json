@@ -13,26 +13,26 @@
   },
   {
     "content": "Backend: add dexscreener.py module + hybrid mode (off/demo/custom)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Backend: extend vault_state schema with DEX fields + admin endpoints",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Backend: launch DexScreener poll loop as async task (30s interval)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Frontend: add DEX config section in /admin/vault page",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Frontend: badge live status on the public vault (demo token / custom / off)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test end-to-end: image rendering + DEX polling + tick generation",
-    "status": "pending"
+    "status": "completed"
   }
 ]

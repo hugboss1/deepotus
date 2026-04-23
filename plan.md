@@ -75,7 +75,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 ## Sections / features to build
 
 1. **Hero** — Deepfake AI Prophet President candidate banner, bilingual toggle, main CTA, countdown, $DEEPOTUS ticker
-2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics (added in Phase 10)
+2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity (Phases 10–11)
 3. **AI Prophet Live Chat** — Emergent LLM, in-character cynical Deep State POTUS candidate, bilingual
 4. **Auto-refreshing Prophecies Feed** — LLM-generated apocalyptic one-liners
 5. **Mission Section** — MiCA framing + transparent structure, reframed to PROTOCOL ΔΣ / classified operation
@@ -88,7 +88,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 12. **Social Mockups** — X/Twitter, Telegram, Discord
 13. **Risk Disclaimer Footer** — Full MiCA-compliant language, bilingual
 14. **Language Switcher** — FR ↔ EN toggle
-15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown (added in Phase 10)
+15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown
 
 ---
 
@@ -97,6 +97,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 - Frontend: React + Tailwind + shadcn/ui + framer-motion + recharts + lucide-react
 - i18n: Simple Context-based FR/EN (no heavy library)
 - Email: Resend + webhooks (Svix verification)
+- Dex / market feed: **DexScreener API** polling (Phase 11)
 
 ---
 
@@ -140,8 +141,11 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 13. As a **skeptical reader**, I see honest success probabilities
 14. As a **visitor**, I see visible social mockups (X, Telegram, Discord)
 15. As an **admin**, I can securely send transactional emails and observe lifecycle events via signed webhooks
-16. As a **visitor**, I can observe a live “classified vault” that progresses through stages and creates narrative tension
+16. As a **visitor**, I see a live “classified vault” that progresses through stages and creates narrative tension
 17. As a **visitor**, I can access `/operation` only once the vault is declassified and see the twist + countdown
+18. As a **visitor**, I see a **cinematic electronic vault mockup** containing the 6 dials (AI illustration) for stronger immersion
+19. As a **visitor**, I see **real market activity** reflected in the vault activity feed (DexScreener) when enabled
+20. As an **admin**, I can switch live activity feed modes (off/demo/custom), set the Solana mint, and force a poll for debugging
 
 ---
 
@@ -232,7 +236,82 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 
 ---
 
+## Phase 11 — AI Vault Mockup + DexScreener Live Activity (completed ✅)
+
+### Objectives
+- ✅ Replace the “floating dials” look with a **cinematic electronic vault chassis** generated via AI
+- ✅ Overlay the 6 dials inside the chassis in a responsive, high-fidelity way
+- ✅ Connect vault activity to **real token market activity** using DexScreener in a hybrid mode:
+  - **off** (no polling)
+  - **demo** (BONK live feed to demonstrate activity before $DEEPOTUS deployment)
+  - **custom** (real $DEEPOTUS Solana mint address)
+- ✅ Ensure security: public vault state remains non-sensitive (no admin DEX fields leaked)
+- ✅ Provide admin UX to configure + debug live feed (force poll)
+
+### Implementation
+
+**AI Illustration (Gemini Nano Banana)**
+- ✅ Script: `/app/tests/generate_vault_frame.py` (Gemini `gemini-3.1-flash-image-preview`)
+- ✅ Output asset: `/app/frontend/public/vault_frame.png`
+- ✅ Art direction: black-ops / Deep State / CIA bunker vibe, matte black metal, cyan+amber LEDs, keypad+scanner, and a **central empty display panel** reserved for overlay.
+
+**Frontend (Vault UX refactor)**
+- ✅ Added component: `/app/frontend/src/components/landing/vault/VaultChassis.jsx`
+  - Displays `vault_frame.png` (16:9)
+  - Absolutely positions 6 compact dials inside the reserved central panel
+  - Adds stage badge overlay + dials counter overlay + pulsing halo behind panel
+- ✅ Updated: `VaultSection.jsx`
+  - Desktop: uses `VaultChassis`
+  - Mobile: banner image + compact dials row fallback
+  - Shows public DEX badge when enabled: `LIVE · {dex_label}`
+- ✅ Updated: `CombinationDial.jsx`
+  - Added size modes (`default`, `sm`, `chassis`) for responsive overlay
+
+**Backend (DexScreener integration)**
+- ✅ New module: `/app/backend/dexscreener.py`
+  - Polls DexScreener every **30s** using `httpx`
+  - Selects Solana pair by **activity** (h24 buys+sells) rather than liquidity
+  - Modes:
+    - `off`: skip polling
+    - `demo`: default BONK mint; symbolic ticks (`1 tick per DEMO_BUYS_PER_TICK=5 new buys`, capped)
+    - `custom`: uses configured Solana mint; approximates tokens bought via `Δvolume_usd * buy_ratio / price_usd`, then applies **1 tick per `tokens_per_digit`** with carry accumulation
+  - Stores rolling baselines + carry in `vault_state` to avoid double-counting
+- ✅ Extended vault models (public + admin) to include DEX fields:
+  - Public: `dex_mode`, `dex_label`, `dex_pair_symbol`
+  - Admin: `dex_token_address`, `dex_demo_token_address`, `dex_last_*`, `dex_carry_tokens`, `dex_error`
+- ✅ New admin endpoints:
+  - `POST /api/admin/vault/dex-config` (set mode + optional token address; resets baselines)
+  - `POST /api/admin/vault/dex-poll` (force one poll for debugging; returns diagnostic)
+- ✅ Startup tasks:
+  - Dex loop started at startup: `asyncio.create_task(dex_mod.dex_loop(db, vault_mod))`
+
+**Admin UX (DEX controls)**
+- ✅ Updated `/admin/vault` with full “DEX Live Feed · DexScreener” section:
+  - Mode selector: OFF / DEMO / CUSTOM
+  - Custom mint address input + “Save & activate”
+  - Stats cards: price, h24 buys, h24 volume, carry
+  - “Force poll now” + link to DexScreener + last poll timestamp
+  - Shows last force-poll result
+
+### Current Runtime Defaults
+- ✅ Vault reset state: `LOCKED 0/6`
+- ✅ Dex mode: `demo` enabled by default
+- ✅ Live badge visible on public vault: e.g. `LIVE · Bonk · meteora`
+
+### Testing
+- ✅ Backend-only testing agent: **22/22 tests passed** (`/app/test_reports/iteration_8.json`)
+- ✅ Security verified:
+  - `GET /api/vault/state` never leaks `target_combination` nor admin-only `dex_*` fields
+  - Admin endpoints require JWT (401 without auth)
+- ✅ Regression verified: all existing endpoints still functional
+
+---
+
 ## Remaining / Optional Improvements (P1)
 - Refactor `server.py` (now larger) into routers (`routers/admin.py`, `routers/public.py`, `routers/webhooks.py`, `routers/vault.py`)
 - Recharts resize warning (cosmetic) — optional
-- Future (P2): Replace `POST /api/vault/report-purchase` client reporting with a true Solana on-chain indexer/worker
+
+## Future (P2)
+- Replace client-reported `POST /api/vault/report-purchase` with a true Solana on-chain indexer/worker
+- Improve DexScreener custom-mode accuracy by consuming per-trade endpoints (if available) rather than h24 deltas; or switch to direct on-chain parsing (Raydium/Orca)
+- Optional: add WebSocket/SSE streaming for near-real-time vault feed updates (instead of polling)
