@@ -78,7 +78,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 ## Sections / features to build
 
 1. **Hero** — Deepfake AI Prophet President candidate banner, bilingual toggle, main CTA, countdown, $DEEPOTUS ticker
-2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity + Level 02 funnel CTA (Phases 10–13)
+2. **Vault (PROTOCOL ΔΣ)** — animated “classified vault” section with 6-digit combination mechanics + AI vault chassis mockup + DexScreener live activity + Level 02 funnel CTA (Phases 10–15)
 3. **AI Prophet Live Chat** — Emergent LLM, in-character cynical Deep State POTUS candidate, bilingual
 4. **Auto-refreshing Prophecies Feed** — LLM-generated apocalyptic one-liners
 5. **Mission Section** — MiCA framing + transparent structure, reframed to PROTOCOL ΔΣ / classified operation
@@ -92,7 +92,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 13. **Risk Disclaimer Footer** — Full MiCA-compliant language, bilingual
 14. **Language Switcher** — FR ↔ EN toggle
 15. **Operation Reveal Page (`/operation`)** — gate-locked until vault declassified; reveals twist + countdown + Phase 12 “Fall of Deep State” illustration
-16. **Classified Vault (Level 02) (`/classified-vault`)** — gated full-page “real vault” with accreditation + session token, displaying live activity feed + Phase 14 door keypad gate UI
+16. **Classified Vault (Level 02) (`/classified-vault`)** — gated full-page “real vault” with accreditation + session token, displaying live activity feed + Phase 14 door keypad gate UI + Phase 15 DECLASSIFIED CTA parity
 
 ---
 
@@ -102,7 +102,7 @@ The project lives inside the framework of a comprehensive dossier de cadrage. Th
 - i18n: Simple Context-based FR/EN (no heavy library)
 - Email: Resend + webhooks (Svix verification)
 - Dex / market feed: **DexScreener API** polling (Phase 11)
-- Image generation: Gemini Nano Banana (`gemini-3.1-flash-image-preview`) (Phases 10–14)
+- Image generation: Gemini Nano Banana (`gemini-3.1-flash-image-preview`) (Phases 10–15)
 - Image processing: Pillow (PIL) + qrcode (Phase 13)
 
 ---
@@ -160,6 +160,8 @@ Single Python script (`/app/tests/test_core.py`) that validates:
 26. As a **Level 02 visitor**, I can view the “true vault” full-page UI showing live activity (DexScreener) and the combination progress
 27. As a **Level 02 visitor**, the gate UI uses a cinematic AI door with digicode, and the code input is anchored inside the door display on desktop
 28. As a **Level 02 visitor**, the authed “true vault” view uses the same VaultChassis mockup as the home vault for visual continuity
+29. As a **Level 02 visitor**, the “true vault” authed view shows the same DECLASSIFIED green CTA animation as the homepage and links to `/operation` when declassified
+30. As a **visitor**, the combination responds to real token activity with micro-rotations (10K tokens) and major locks (100M tokens)
 
 ---
 
@@ -207,7 +209,7 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 - ✅ Remove **all** public mentions of “GENCOIN” and replace narrative with **PROTOCOL ΔΣ** (Black Op)
 - ✅ Hide the explicit fundraising goal and replace with *classified objective mechanics*
 - ✅ Add a new animated **Vault section** without deleting existing sections
-- ✅ Implement vault progression logic: **1 dial per 1,000 $DEEPOTUS**
+- ✅ Implement vault progression logic (initially 1 dial / 1,000 tokens; later updated in Phase 15)
 - ✅ Add **hourly auto-tick** independent of purchases
 - ✅ Add a gated **/operation** reveal page that only unlocks at **DECLASSIFIED**
 - ✅ Provide admin controls for vault debugging/demo
@@ -224,7 +226,7 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
   - `POST /api/vault/report-purchase` (public; clamped to <= 50,000 tokens)
   - `GET /api/admin/vault/state` (admin; reveals `target_combination`)
   - `POST /api/admin/vault/crack` (admin; manual crack)
-  - `POST /api/admin/vault/config` (admin; tokens_per_digit, hourly_tick_enabled, reset)
+  - `POST /api/admin/vault/config` (admin; config + reset)
   - `GET /api/operation/reveal` (public; returns unlocked=false unless DECLASSIFIED)
 - Background task:
   - `hourly_tick_loop(db)` started at app startup (keeps vault alive)
@@ -236,7 +238,7 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
   - Locked gate view when vault not declassified
   - Reveal view with Prophet panic + full lore + countdown to GENCOIN launch + link to `https://gencoin.xyz`
 - New admin page: `/admin/vault`
-  - Crack manual, config (tokens per digit, hourly tick toggle), reset, event list
+  - Crack manual, config, reset, event list
 - i18n updated (FR/EN): all public copy switched from GENCOIN to PROTOCOL ΔΣ; GENCOIN appears only on `/operation`
 
 ### Testing
@@ -263,36 +265,17 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 **AI Illustration (Gemini Nano Banana)**
 - ✅ Script: `/app/tests/generate_vault_frame.py` (Gemini `gemini-3.1-flash-image-preview`)
 - ✅ Output asset: `/app/frontend/public/vault_frame.png`
-- ✅ Art direction: black-ops / Deep State / CIA bunker vibe, matte black metal, cyan+amber LEDs, keypad+scanner, and a **central empty display panel** reserved for overlay.
 
 **Frontend (Vault UX refactor)**
 - ✅ Added component: `/app/frontend/src/components/landing/vault/VaultChassis.jsx`
-  - Displays `vault_frame.png`
-  - Absolutely positions 6 compact dials inside the reserved central panel
-  - Adds stage badge overlay + dials counter overlay + pulsing halo behind panel
-- ✅ Updated: `VaultSection.jsx`
-  - Uses `VaultChassis` and displays public DEX badge when enabled: `LIVE · {dex_label}`
-- ✅ Updated: `CombinationDial.jsx`
-  - Added size modes (`default`, `sm`, `chassis`) for responsive overlay
+- ✅ Updated: `VaultSection.jsx` (DEX badge)
+- ✅ Updated: `CombinationDial.jsx` (size modes)
 
 **Backend (DexScreener integration)**
 - ✅ New module: `/app/backend/dexscreener.py`
-  - Polls DexScreener every **30s** using `httpx`
-  - Selects Solana pair by **activity** (h24 buys+sells)
-  - Modes:
-    - `off`: skip polling
-    - `demo`: default BONK mint; symbolic ticks (`1 tick per DEMO_BUYS_PER_TICK=5 new buys`, capped)
-    - `custom`: configured mint; approximates buy tokens via `Δvolume_usd * buy_ratio / price_usd` and applies **1 tick per `tokens_per_digit`** with carry
-  - Stores rolling baselines + carry in `vault_state` to avoid double-counting
-- ✅ Extended vault models (public + admin) to include DEX fields
 - ✅ New admin endpoints:
   - `POST /api/admin/vault/dex-config`
   - `POST /api/admin/vault/dex-poll`
-- ✅ Startup tasks:
-  - Dex loop started at startup
-
-**Admin UX (DEX controls)**
-- ✅ Updated `/admin/vault` with “DEX Live Feed · DexScreener” section
 
 ### Testing
 - ✅ Backend-only testing agent: **22/22 tests passed** (`/app/test_reports/iteration_8.json`)
@@ -306,7 +289,7 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 - ✅ Add a cinematic illustration on the `/operation` reveal page depicting the Prophet panicking and chased by the RIPPLED crowd
 
 ### Implementation
-- ✅ `VaultChassis` responsive anchoring (mobile 4:3, desktop 16:9) with coordinate overrides
+- ✅ `VaultChassis` responsive anchoring (mobile 4:3, desktop 16:9)
 - ✅ Script: `/app/tests/generate_prophet_chased.py`
 - ✅ Asset: `/app/frontend/public/prophet_chased.png`
 - ✅ Integrated into `/operation` reveal with bilingual i18n keys
@@ -344,31 +327,87 @@ Objectif : finaliser la boucle **emails sortants** → **webhooks entrants sign�
 - ✅ Reuse the same **VaultChassis** mockup on the authed `/classified-vault` view (visual continuity)
 
 ### Implementation
-
-**AI Door Illustration (Gemini Nano Banana)**
 - ✅ Script: `/app/tests/generate_door_keypad.py`
-- ✅ Asset: `/app/frontend/public/door_keypad.png` (1376×768, ~669KB)
-- ✅ Visual spec: bunker door, industrial hinges, 3x4 keypad with 0–9 + red X + green OK, cyan LED display (empty), small status LEDs, engraved plates: `PROTOCOL ΔΣ — LEVEL 02` and `DEEP STATE · RESTRICTED`.
+- ✅ Asset: `/app/frontend/public/door_keypad.png`
+- ✅ Gate redesign: overlay input anchored to door LED display (`left 42% · top 40% · w 17% · h 9%`)
+- ✅ i18n additions (FR/EN): `gateChannel`, `gateLevel`, `gateIdle`, `gateHintShort`
 
-**Frontend (ClassifiedVault gate redesign)**
-- ✅ Gate uses the door illustration as a 16:9 chassis.
-- ✅ Desktop overlay: accreditation input anchored inside the door LED display:
-  - `left: 42%`, `top: 40%`, `width: 17%`, `height: 9%`
-  - Placeholder: `DS-02-••••-••••-••`
-  - Color logic: cyan idle, amber verifying, red error
-  - Pulsing halo behind the display
-- ✅ Mobile fallback (`< md`): door image hero + input stacked below in bordered container
-- ✅ i18n additions (FR/EN):
-  - `classifiedVault.gateChannel`, `gateLevel`, `gateIdle`, `gateHintShort`
+---
 
-**Frontend (Authed view continuity)**
-- ✅ Authed `/classified-vault` now uses `VaultChassis` (same anchoring as homepage vault) instead of bare dials.
-- ✅ Metrics + feed remain below the chassis.
+## Phase 15 — Production Mechanics Rework + True Vault DECLASSIFIED Animation Parity — **COMPLETED ✅**
 
-### Runtime Defaults
-- ✅ Vault reset: `LOCKED 0/6`
-- ✅ Dex mode restored: `demo`
-- ✅ User accreditation still valid: `DS-02-D8HA-NFY3-EI`
+### Objectives
+- ✅ Move to production-aligned mechanics:
+  - **1 dial locks per 100,000,000 tokens bought**
+  - **1 micro-rotation per 10,000 tokens bought**
+  - **Declassify at 600,000,000 tokens** (or earlier when treasury ≥ **300,000€** in custom mode)
+- ✅ Implement treasury-based criterion (300K€) using DexScreener price (custom mode)
+- ✅ Ensure hourly tick cannot overshoot in production scale
+- ✅ Ensure DexScreener custom mode applies **real token volume** per poll (no batching)
+- ✅ Implement deterministic micro-rotation animation on the active dial
+- ✅ Bring the **same green DECLASSIFIED CTA animation** to the Level 02 true vault page (`/classified-vault`) with direct link to `/operation`
+- ✅ Expand admin controls for new mechanics (presets + micro + treasury config)
+
+### Implementation
+
+**Backend (`/app/backend/vault.py`)**
+- ✅ New production defaults:
+  - `DEFAULT_TOKENS_PER_DIGIT = 100_000_000`
+  - `DEFAULT_TOKENS_PER_MICRO = 10_000`
+  - `DEFAULT_TREASURY_GOAL_EUR = 300_000`
+  - `DEFAULT_EUR_USD_RATE = 1.08`
+- ✅ Public state extended:
+  - `tokens_per_micro`, `micro_ticks_total`
+  - `treasury_eur_value`, `treasury_progress_pct`
+- ✅ Admin-only state extended:
+  - `treasury_goal_eur`, `eur_usd_rate`
+- ✅ `apply_crack` supports dual declassification:
+  - `digits_locked == num_digits` OR
+  - `treasury_eur >= treasury_goal_eur` (only when `dex_mode=custom` with real price)
+- ✅ `initialize_vault` soft-migration adds missing fields on existing docs
+- ✅ `update_config` extended:
+  - `tokens_per_micro`, `treasury_goal_eur`, `eur_usd_rate`
+  - `preset: production|demo` (demo = 1K/100 fast-crack)
+- ✅ Hourly tick scaled to micro-threshold and capped to ≤10% of one dial
+
+**Backend (`/app/backend/dexscreener.py`)**
+- ✅ Demo mode uses `demo_tick_tokens` scaled to micro threshold (keeps demo alive without cracking instantly at 100M)
+- ✅ Custom mode applies **real estimated tokens** per poll (single event) with fractional carry
+
+**Frontend (`CombinationDial.jsx`)**
+- ✅ New props:
+  - `isActive` (first unlocked dial)
+  - `microTickVersion` (uses `micro_ticks_total`)
+- ✅ On each micro-tick: deterministic `+1` spin with amber flash pulse
+- ✅ Active dial has subtle amber emphasis
+
+**Frontend (VaultChassis + VaultSection + ClassifiedVault)**
+- ✅ Propagate `microTickVersion = micro_ticks_total` to drive micro animations
+- ✅ `/classified-vault` authed view:
+  - Added DECLASSIFIED CTA block matching homepage aesthetics
+  - Green pulsing overlay + animated button → `/operation`
+  - Added metrics: `micro-rotations`, `treasury (€)` with redacted goal display
+
+**Frontend (AdminVault)**
+- ✅ Preset buttons: `Production (100M/10K)` and `Demo (1K/100)`
+- ✅ Config inputs:
+  - `tokens_per_micro`
+  - `treasury_goal_eur`
+  - `eur_usd_rate`
+
+**i18n (FR/EN)**
+- ✅ Added:
+  - `classifiedVault.microTicks`, `classifiedVault.treasury`
+  - `classifiedVault.declassified.{kicker,title,subtitle,cta}`
+
+### Testing
+- ✅ Backend testing agent: **24/24 tests passed** (`/app/test_reports/iteration_10.json`)
+- ✅ Regression coverage included
+
+### Runtime Defaults (current)
+- ✅ Vault: `LOCKED 0/6`
+- ✅ Preset: `production` (100M / 10K)
+- ✅ Dex mode: `demo`
 
 ---
 
