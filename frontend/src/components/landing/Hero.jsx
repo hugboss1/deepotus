@@ -14,6 +14,7 @@ const HERO_VARIANTS = [
   { src: "/deepotus_hero_serious.jpg", label: "SERIOUS" },
   { src: "/deepotus_hero_meme.jpg", label: "MEME" },
   { src: "/deepotus_hero_glitch.jpg", label: "GLITCH" },
+  { src: "/logo_v4_matrix_face.png", label: "MATRIX PROPHET" },
 ];
 const CYCLE_MS = 5000;
 

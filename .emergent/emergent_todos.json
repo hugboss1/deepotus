@@ -1,50 +1,18 @@
 [
   {
-    "content": "Implementer core Helius module (parsing enhanced transactions + catch-up fetch)",
+    "content": "Tokenomics : gold_coin_front.png au centre du donut (couvrir le volume) + déplacer Total Supply 1B en dessous/légende",
     "status": "completed"
   },
   {
-    "content": "Ajouter HELIUS_API_KEY + HELIUS_WEBHOOK_AUTH dans core/config.py et backend/.env",
+    "content": "ROISimulator : gold_coin_3d.png en background + overlay pour lisibilité texte",
     "status": "completed"
   },
   {
-    "content": "Créer endpoint POST /api/webhooks/helius dans routers/webhooks.py (auth + dedup + apply_crack)",
+    "content": "Hero carousel : ajouter logo_v4_matrix_face.png (MATRIX PROPHET) aux variantes",
     "status": "completed"
   },
   {
-    "content": "Adapter vault.py: ajouter dex_mode 'helius' (désactive l'approximation DexScreener)",
-    "status": "completed"
-  },
-  {
-    "content": "Ajouter endpoint admin GET/POST /api/admin/vault/helius-config (configure mint + re-register webhook)",
-    "status": "completed"
-  },
-  {
-    "content": "Adapter admin UI (AdminVault.jsx) pour afficher/configurer le mode Helius",
-    "status": "completed"
-  },
-  {
-    "content": "Demander à l'utilisateur la clé API Helius + le mint $DEEPOTUS (ou confirmer demo mode)",
-    "status": "completed"
-  },
-  {
-    "content": "Ajouter garde-fou mode demo (1 trade = 1 micro-tick, évite crack massif sur BONK)",
-    "status": "completed"
-  },
-  {
-    "content": "Injecter HELIUS_API_KEY + HELIUS_WEBHOOK_AUTH dans .env et restart backend",
-    "status": "completed"
-  },
-  {
-    "content": "Enregistrer le webhook auprès de Helius via /api/admin/vault/helius-register",
-    "status": "completed"
-  },
-  {
-    "content": "Lancer un catch-up et vérifier l'ingestion de trades BONK réels",
-    "status": "completed"
-  },
-  {
-    "content": "Tester le webhook en simulant un payload Helius signed",
+    "content": "Vérifier lint + screenshot des 3 sections modifiées",
     "status": "completed"
   }
 ]

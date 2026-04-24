@@ -106,19 +106,36 @@ export default function Tokenomics() {
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+              {/* Gold coin stamped at the center of the donut — fills the inner void */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                    {t("tokenomics.totalLabel")}
-                  </div>
-                  <div className="font-display font-semibold text-2xl md:text-3xl mt-1 tabular">
-                    1B
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 tabular">
-                    1,000,000,000
-                  </div>
-                </div>
+                <motion.img
+                  src="/gold_coin_front.png"
+                  alt="$DEEPOTUS · PROTOCOL ΔΣ — frappe officielle"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+                  className="h-[55%] w-[55%] object-contain drop-shadow-[0_10px_28px_rgba(212,175,55,0.35)] select-none"
+                  data-testid="tokenomics-coin-center"
+                  draggable={false}
+                />
               </div>
+            </div>
+
+            {/* Total supply — moved below the chart for legibility */}
+            <div
+              className="mt-4 flex items-center justify-center gap-3 rounded-xl border border-border bg-card/70 px-4 py-3"
+              data-testid="tokenomics-total-supply"
+            >
+              <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                {t("tokenomics.totalLabel")}
+              </span>
+              <span className="font-display font-semibold text-xl md:text-2xl tabular">
+                1B
+              </span>
+              <span className="text-xs text-muted-foreground tabular hidden sm:inline">
+                · 1,000,000,000
+              </span>
             </div>
           </motion.div>
 

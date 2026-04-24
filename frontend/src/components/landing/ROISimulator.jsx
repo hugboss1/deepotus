@@ -46,7 +46,7 @@ export default function ROISimulator() {
     const a = Number(amount) || 0;
     const val = a * s.multiplier;
     return (
-      <div className="rounded-xl border border-border bg-card p-5 h-full flex flex-col gap-3">
+      <div className="rounded-xl border border-border bg-card/85 backdrop-blur-md p-5 h-full flex flex-col gap-3 shadow-[var(--shadow-elev-1,0_8px_28px_rgba(0,0,0,0.18))]">
         <div className="flex items-center justify-between">
           <Badge variant="outline" className="font-mono uppercase tracking-widest text-[10px]">
             {key}
@@ -72,15 +72,44 @@ export default function ROISimulator() {
   return (
     <section
       id="roi"
-      className="py-14 sm:py-18 lg:py-24 border-t border-border bg-secondary/30"
+      className="relative py-14 sm:py-18 lg:py-24 border-t border-border overflow-hidden"
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Cinematic gold coin backdrop */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        data-testid="roi-coin-backdrop"
+      >
+        <img
+          src="/gold_coin_3d.png"
+          alt=""
+          className="h-full w-full object-cover object-center opacity-25 md:opacity-30 select-none"
+          draggable={false}
+        />
+        {/* Readability overlays: tint + radial fade to keep center darker (cards sit there) */}
+        <div className="absolute inset-0 bg-background/75 dark:bg-background/80" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, hsl(var(--background) / 0.9) 0%, hsl(var(--background) / 0.55) 55%, hsl(var(--background) / 0.3) 100%)",
+          }}
+        />
+        {/* Subtle top + bottom fades to blend with adjacent sections */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+      </div>
+
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
           {t("roi.kicker")}
         </div>
         <div className="flex items-center gap-3 mt-2">
           <Calculator size={22} className="text-accent" />
-          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight">
+          <h2
+            className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight"
+            style={{ textShadow: "0 2px 14px hsl(var(--background) / 0.55)" }}
+          >
             {t("roi.title")}
           </h2>
         </div>
@@ -88,7 +117,7 @@ export default function ROISimulator() {
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Input */}
           <div className="lg:col-span-5">
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-card/85 backdrop-blur-md p-5 shadow-[var(--shadow-elev-1,0_8px_28px_rgba(0,0,0,0.18))]">
               <label
                 htmlFor="roi-amount"
                 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
@@ -112,7 +141,7 @@ export default function ROISimulator() {
                 />
               </div>
 
-              <div className="mt-5 rounded-lg border border-border bg-background p-4">
+              <div className="mt-5 rounded-lg border border-border bg-background/90 backdrop-blur-sm p-4">
                 <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
                   {t("roi.tokenLabel")}
                 </div>
@@ -165,7 +194,7 @@ export default function ROISimulator() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4 }}
-          className="mt-8 rounded-xl border-2 border-[--campaign-red] bg-[--campaign-red]/5 p-5 md:p-6"
+          className="mt-8 rounded-xl border-2 border-[--campaign-red] bg-[--campaign-red]/5 backdrop-blur-md p-5 md:p-6 shadow-[var(--shadow-elev-1,0_8px_28px_rgba(0,0,0,0.18))]"
           data-testid="roi-risk-warning"
         >
           <div className="flex items-start gap-3">
