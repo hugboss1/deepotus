@@ -1,38 +1,30 @@
 [
   {
-    "content": "Phase 2: Create core/prophet_studio.py (LLM content generator, 4 types x FR/EN)",
+    "content": "Backend: Add EMERGENT_IMAGE_LLM_KEY env var + fallback to EMERGENT_LLM_KEY",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Extend bot_config with llm_model field + per-platform char limits",
+    "content": "Backend: Add generate_image() to prophet_studio.py (Nano Banana, 16:9 X format, style per content_type)",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Add POST /api/admin/bots/generate-preview endpoint (no posting)",
+    "content": "Backend: Extend generate-preview endpoint with include_image flag + image response field",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Add GET /api/admin/bots/content-types (persona metadata)",
+    "content": "Backend: Test image generation via curl for 2 content types",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Test content generation via curl (all 4 types, FR+EN, model switch)",
+    "content": "Frontend: Add image toggle + preview + download in AdminBots Preview tab",
     "status": "completed"
   },
   {
-    "content": "Phase 6: Create AdminBots.jsx page (kill-switch, toggles, preview, log)",
+    "content": "Frontend: Test end-to-end (text + image generation + display)",
     "status": "completed"
   },
   {
-    "content": "Phase 6: Register /admin/bots route + add nav link in admin pages",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 6: Visual + interaction testing (screenshot + testing agent)",
-    "status": "completed"
-  },
-  {
-    "content": "Run testing agent for regression + new admin bots endpoints/UI",
+    "content": "Document deployment env var setup (Render/Vercel)",
     "status": "completed"
   }
 ]

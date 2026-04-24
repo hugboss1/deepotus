@@ -19,6 +19,8 @@ import {
   TrendingUp,
   Wand2,
   Languages,
+  Image as ImageIcon,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +74,8 @@ export default function AdminBots() {
   const [kolPost, setKolPost] = useState("");
   const [preview, setPreview] = useState(null);
   const [previewBusy, setPreviewBusy] = useState(false);
+  const [includeImage, setIncludeImage] = useState(false);
+  const [imageAspect, setImageAspect] = useState("16:9");
 
   // Filters for post log
   const [platformFilter, setPlatformFilter] = useState("all");
@@ -206,17 +210,41 @@ export default function AdminBots() {
     setPreviewBusy(true);
     setPreview(null);
     try {
-      const body = { content_type: previewType, platform: previewPlatform };
+      const body = {
+        content_type: previewType,
+        platform: previewPlatform,
+        include_image: includeImage,
+        image_aspect_ratio: imageAspect,
+      };
       if (previewType === "kol_reply") body.kol_post = kolPost.trim();
       const { data } = await axios.post(`${API}/api/admin/bots/generate-preview`, body, { headers });
       setPreview(data);
-      toast.success(`Prophet generated a ${previewType} preview`);
+      if (data.image_error) {
+        toast.warning(`Image failed: ${data.image_error}`);
+      } else if (data.image) {
+        toast.success(`Prophet generated ${previewType} + Nano Banana illustration`);
+      } else {
+        toast.success(`Prophet generated a ${previewType} preview`);
+      }
     } catch (err) {
       logger.error(err);
       toast.error(err?.response?.data?.detail || "Generation failed");
     } finally {
       setPreviewBusy(false);
     }
+  }
+
+  function downloadPreviewImage() {
+    if (!preview?.image?.image_base64) return;
+    const { image_base64, mime_type, aspect_ratio, content_type } = preview.image;
+    const a = document.createElement("a");
+    a.href = `data:${mime_type};base64,${image_base64}`;
+    const ext = mime_type?.includes("jpeg") ? "jpg" : "png";
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    a.download = `deepotus_${content_type}_${aspect_ratio.replace(":", "x")}_${ts}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   if (loading) {
@@ -709,6 +737,47 @@ export default function AdminBots() {
                   </div>
                 )}
 
+                <Separator />
+
+                {/* Nano Banana image toggle */}
+                <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon size={14} className="text-[#F59E0B]" />
+                      <Label className="font-medium text-sm">Nano Banana illustration</Label>
+                    </div>
+                    <Switch
+                      checked={includeImage}
+                      onCheckedChange={setIncludeImage}
+                      data-testid="preview-image-toggle"
+                    />
+                  </div>
+                  {includeImage && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                        Aspect ratio
+                      </Label>
+                      <Select value={imageAspect} onValueChange={setImageAspect}>
+                        <SelectTrigger className="mt-2" data-testid="preview-image-ratio">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="16:9">16:9 · X landscape</SelectItem>
+                          <SelectItem value="3:4">3:4 · X portrait</SelectItem>
+                          <SelectItem value="1:1">1:1 · Square</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                        Uses Gemini Nano Banana via{" "}
+                        <code className="font-mono text-[10px]">EMERGENT_IMAGE_LLM_KEY</code>{" "}
+                        if set, else falls back to{" "}
+                        <code className="font-mono text-[10px]">EMERGENT_LLM_KEY</code>.
+                        Gen takes ~8–20s.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <Button
                   onClick={generatePreview}
                   disabled={previewBusy}
@@ -717,11 +786,13 @@ export default function AdminBots() {
                 >
                   {previewBusy ? (
                     <>
-                      <RefreshCcw size={14} className="mr-2 animate-spin" /> Generating…
+                      <RefreshCcw size={14} className="mr-2 animate-spin" />
+                      {includeImage ? "Generating text + image…" : "Generating…"}
                     </>
                   ) : (
                     <>
-                      <Sparkles size={14} className="mr-2" /> Generate preview
+                      <Sparkles size={14} className="mr-2" />
+                      {includeImage ? "Generate text + illustration" : "Generate preview"}
                     </>
                   )}
                 </Button>
@@ -802,8 +873,61 @@ export default function AdminBots() {
                         </Badge>
                       ))}
                     </div>
+
+                    {/* Nano Banana illustration */}
+                    {preview.image && (
+                      <div
+                        className="rounded-lg border border-border/80 bg-background/40 p-4 space-y-3"
+                        data-testid="preview-output-image-block"
+                      >
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon size={14} className="text-[#F59E0B]" />
+                            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                              Illustration · {preview.image.aspect_ratio} · {Math.round((preview.image.size_bytes || 0) / 1024)} KB
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={downloadPreviewImage}
+                            className="h-7 rounded-[var(--btn-radius)]"
+                            data-testid="preview-output-image-download"
+                          >
+                            <Download size={12} className="mr-1" /> Download
+                          </Button>
+                        </div>
+                        <div className="rounded-md overflow-hidden border border-border/60 bg-black">
+                          <img
+                            src={`data:${preview.image.mime_type};base64,${preview.image.image_base64}`}
+                            alt="Prophet Studio illustration"
+                            className="w-full h-auto block"
+                            data-testid="preview-output-image"
+                          />
+                        </div>
+                        <div className="font-mono text-[10px] text-muted-foreground">
+                          via {preview.image.provider}/{preview.image.model}
+                        </div>
+                      </div>
+                    )}
+
+                    {preview.image_error && !preview.image && (
+                      <div
+                        className="rounded-md border border-[#E11D48]/40 bg-[#E11D48]/5 p-3 flex items-start gap-2"
+                        data-testid="preview-output-image-error"
+                      >
+                        <AlertTriangle size={14} className="text-[#E11D48] shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-[#E11D48]">
+                            Image generation failed
+                          </div>
+                          <div className="text-foreground/80 mt-1">{preview.image_error}</div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="font-mono text-[10px] text-muted-foreground">
-                      via {preview.provider}/{preview.model}
+                      text via {preview.provider}/{preview.model}
                     </div>
                   </div>
                 )}

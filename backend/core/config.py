@@ -38,6 +38,16 @@ EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 LLM_PROVIDER = "openai"
 LLM_MODEL = "gpt-4o"
 
+# Dedicated key for IMAGE generation (Nano Banana).
+# Lets you bill image spend on a SEPARATE Emergent LLM key once deployed
+# (important because image models burn credits much faster than text).
+# Falls back transparently to EMERGENT_LLM_KEY when not set.
+EMERGENT_IMAGE_LLM_KEY = (
+    os.environ.get("EMERGENT_IMAGE_LLM_KEY") or EMERGENT_LLM_KEY
+)
+IMAGE_LLM_PROVIDER = "gemini"
+IMAGE_LLM_MODEL = "gemini-3.1-flash-image-preview"  # aka Nano Banana
+
 # ---------------------------------------------------------------------
 # Auth / JWT
 # ---------------------------------------------------------------------
@@ -143,6 +153,9 @@ __all__ = [
     "EMERGENT_LLM_KEY",
     "LLM_PROVIDER",
     "LLM_MODEL",
+    "EMERGENT_IMAGE_LLM_KEY",
+    "IMAGE_LLM_PROVIDER",
+    "IMAGE_LLM_MODEL",
     "ADMIN_PASSWORD",
     "JWT_ALGO",
     "JWT_TTL_HOURS",

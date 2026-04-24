@@ -27,7 +27,13 @@ from typing import Any, Dict, List, Optional
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 from core.bot_scheduler import get_bot_config
-from core.config import EMERGENT_LLM_KEY, logger
+from core.config import (
+    EMERGENT_IMAGE_LLM_KEY,
+    EMERGENT_LLM_KEY,
+    IMAGE_LLM_MODEL,
+    IMAGE_LLM_PROVIDER,
+    logger,
+)
 
 # ---------------------------------------------------------------------
 # Defaults (can be overridden via bot_config)
@@ -335,5 +341,186 @@ async def generate_post(
         model,
         len(content_fr),
         len(content_en),
+    )
+    return result
+
+
+
+# =====================================================================
+# IMAGE generation (Nano Banana / gemini-3.1-flash-image-preview)
+# =====================================================================
+# Aspect ratios supported on X:
+#   - in-feed single image best looks = 16:9 landscape (1600 × 900)
+#   - portrait 3:4 also works well for collages
+# Nano Banana honors aspect ratio directives given in the prompt text.
+IMAGE_ASPECT_RATIOS: Dict[str, str] = {
+    "x_landscape": "16:9",
+    "x_portrait": "3:4",
+    "x_square": "1:1",
+}
+
+# Per-content-type visual direction. Kept consistent with the site's
+# Matrix / Deep-State / PROTOCOL ΔΣ aesthetic so posts feel part of the
+# same universe as the landing page.
+IMAGE_STYLE_BRIEFS: Dict[str, str] = {
+    "prophecy": (
+        "A dystopian cinematic wide-shot of a collapsing skyline seen "
+        "through cascading Matrix green digits (#33FF33). Markets crumble "
+        "in the background, neon cyan (#2DD4BF) and warm gold (#F59E0B) "
+        "rim-lights on the foreground. Dense volumetric fog, grainy noir "
+        "film texture. Mood: cynical prophecy, inevitable descent. No "
+        "people close-up."
+    ),
+    "market_commentary": (
+        "A deep-state war-room interior: a wall of CRT trading terminals "
+        "with red candle charts bleeding down, a single silhouetted figure "
+        "watching from the shadows, Matrix code raining on translucent "
+        "panels. Cyan (#2DD4BF) rim-light from the left, amber (#F59E0B) "
+        "from the right. Cinematic depth-of-field, film grain, brutal "
+        "cyberpunk newsroom."
+    ),
+    "vault_update": (
+        "An ancient massive stone vault inside a cyberpunk temple. Huge "
+        "Greek letters Delta and Sigma engraved in gold on the vault door, "
+        "glowing faintly. Six holographic combination dials float in front "
+        "of the door, cyan digits (#2DD4BF). Multisig cryptographic keys "
+        "orbit slowly. Candlelit atmosphere blended with holographic UI "
+        "panels. Mysterious, sacred, classified."
+    ),
+    "kol_reply": (
+        "A close-up of The Prophet DEEPOTUS — a translucent androgynous "
+        "head made of flowing Matrix green digits (#33FF33) forming a "
+        "mocking half-smile, cracked porcelain face fragments revealing "
+        "circuit traces. Wearing a black presidential suit, glitched flag "
+        "lapel pin. Background: dark war room with soft cyan bokeh. Direct "
+        "eye-contact with the viewer. Cynical, oracular, mentor-mocking vibe."
+    ),
+}
+
+# Global anti-hallucination guidance — stamped on every image request to
+# enforce brand coherence.
+IMAGE_HARD_RULES = (
+    "ABSOLUTE RULES:\n"
+    "- NO visible text, NO letters, NO numbers unless they are clearly "
+    "part of the Matrix code rain or the engraved Greek glyphs.\n"
+    "- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n"
+    "- NO real politician likeness, NO real brand logos.\n"
+    "- NO hands with more than 5 fingers.\n"
+    "- Palette locked to: near-black #0B0D10, Matrix green #33FF33, "
+    "cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n"
+    "- Photorealistic hybrid with digital-painting finish, cinematic "
+    "volumetric lighting, 35mm film grain, subtle chromatic aberration."
+)
+
+
+def _resolve_image_key() -> str:
+    """Pick the image key: dedicated one if set, otherwise the base one."""
+    key = EMERGENT_IMAGE_LLM_KEY or EMERGENT_LLM_KEY
+    if not key:
+        raise RuntimeError("no_image_llm_key_configured")
+    return key
+
+
+def _build_image_prompt(
+    content_type: str,
+    aspect_ratio: str,
+    text_hint: Optional[str] = None,
+) -> str:
+    """Compose the final image prompt from style brief + optional text hint."""
+    style_brief = IMAGE_STYLE_BRIEFS.get(content_type, IMAGE_STYLE_BRIEFS["prophecy"])
+    ratio_label = {
+        "16:9": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display",
+        "3:4": "Portrait 3:4 frame, optimized for mobile X feed",
+        "1:1": "Square 1:1 frame",
+    }.get(aspect_ratio, "Cinematic 16:9 LANDSCAPE frame")
+
+    parts = [ratio_label, "", "Visual direction:", style_brief]
+    if text_hint:
+        snippet = text_hint.strip()[:400]
+        parts.extend(
+            [
+                "",
+                "Narrative hook (translate this idea into a purely visual scene — "
+                "DO NOT render the text itself inside the image):",
+                f'"{snippet}"',
+            ]
+        )
+    parts.extend(["", IMAGE_HARD_RULES])
+    return "\n".join(parts)
+
+
+async def generate_image(
+    content_type: str,
+    *,
+    aspect_ratio: str = "16:9",
+    text_hint: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Generate a single illustration via Gemini Nano Banana.
+
+    Args:
+        content_type: must be one of VALID_CONTENT_TYPES
+        aspect_ratio: "16:9" (default X landscape), "3:4" or "1:1"
+        text_hint: optional narrative snippet to inspire the scene (usually
+            the content_en returned by `generate_post`).
+
+    Returns a dict ready to ship to the frontend:
+        {
+          "content_type": str, "aspect_ratio": str,
+          "provider": str, "model": str, "prompt": str,
+          "mime_type": str, "image_base64": str, "size_bytes": int,
+        }
+    """
+    if content_type not in VALID_CONTENT_TYPES:
+        raise ValueError(f"unknown content_type={content_type}")
+    if aspect_ratio not in {"16:9", "3:4", "1:1"}:
+        raise ValueError(f"unsupported aspect_ratio={aspect_ratio}")
+
+    image_key = _resolve_image_key()
+    prompt = _build_image_prompt(content_type, aspect_ratio, text_hint=text_hint)
+
+    try:
+        chat_client = LlmChat(
+            api_key=image_key,
+            session_id=f"prophet-studio-img-{content_type}",
+            system_message=(
+                "You are a master cyberpunk concept illustrator for the "
+                "$DEEPOTUS / PROTOCOL ΔΣ universe. Output ONE single "
+                "illustration as a PNG — no text renderings, no watermarks."
+            ),
+        ).with_model(IMAGE_LLM_PROVIDER, IMAGE_LLM_MODEL)
+        _text, images = await chat_client.send_message_multimodal_response(
+            UserMessage(text=prompt)
+        )
+    except Exception as exc:
+        logging.exception("[prophet_studio] image LLM call failed")
+        raise RuntimeError(f"image_llm_failure: {exc}") from exc
+
+    if not images:
+        raise RuntimeError("image_llm_no_output")
+
+    first = images[0] or {}
+    raw_b64 = first.get("data") or ""
+    mime = first.get("mime_type") or "image/png"
+    if not raw_b64:
+        raise RuntimeError("image_llm_empty_data")
+
+    size_bytes = int(len(raw_b64) * 3 / 4)
+
+    result = {
+        "content_type": content_type,
+        "aspect_ratio": aspect_ratio,
+        "provider": IMAGE_LLM_PROVIDER,
+        "model": IMAGE_LLM_MODEL,
+        "prompt": prompt,
+        "mime_type": mime,
+        "image_base64": raw_b64,
+        "size_bytes": size_bytes,
+    }
+    logger.info(
+        "[prophet_studio] image generated type=%s ratio=%s size=%d KB (dedicated_key=%s)",
+        content_type,
+        aspect_ratio,
+        size_bytes // 1024,
+        bool(EMERGENT_IMAGE_LLM_KEY and EMERGENT_IMAGE_LLM_KEY != EMERGENT_LLM_KEY),
     )
     return result

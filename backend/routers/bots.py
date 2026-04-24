@@ -30,6 +30,7 @@ from core.config import db
 from core.prophet_studio import (
     PLATFORM_CHAR_BUDGETS,
     VALID_CONTENT_TYPES,
+    generate_image,
     generate_post,
     list_content_types,
 )
@@ -69,6 +70,18 @@ class GeneratePreviewRequest(BaseModel):
     platform: str = Field(default="x", description="x | telegram")
     kol_post: Optional[str] = Field(default=None, max_length=600)
     extra_context: Optional[str] = Field(default=None, max_length=1000)
+    include_image: bool = Field(default=False, description="Also generate an X illustration via Nano Banana")
+    image_aspect_ratio: str = Field(default="16:9", description="16:9 | 3:4 | 1:1")
+
+
+class GeneratedImage(BaseModel):
+    content_type: str
+    aspect_ratio: str
+    provider: str
+    model: str
+    mime_type: str
+    image_base64: str
+    size_bytes: int
 
 
 class GeneratePreviewResponse(BaseModel):
@@ -81,6 +94,8 @@ class GeneratePreviewResponse(BaseModel):
     content_en: str
     hashtags: List[str]
     primary_emoji: str
+    image: Optional[GeneratedImage] = None
+    image_error: Optional[str] = None
 
 
 class ContentTypeMeta(BaseModel):
@@ -366,4 +381,33 @@ async def generate_preview(
         raise HTTPException(status_code=400, detail=str(exc))
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
-    return GeneratePreviewResponse(**result)
+
+    # Optional image generation — failure is non-fatal for text preview.
+    image_payload: Optional[GeneratedImage] = None
+    image_error: Optional[str] = None
+    if payload.include_image:
+        try:
+            img = await generate_image(
+                content_type=payload.content_type,
+                aspect_ratio=payload.image_aspect_ratio,
+                text_hint=result.get("content_en"),
+            )
+            image_payload = GeneratedImage(
+                content_type=img["content_type"],
+                aspect_ratio=img["aspect_ratio"],
+                provider=img["provider"],
+                model=img["model"],
+                mime_type=img["mime_type"],
+                image_base64=img["image_base64"],
+                size_bytes=img["size_bytes"],
+            )
+        except ValueError as exc:
+            image_error = f"invalid_image_request: {exc}"
+        except RuntimeError as exc:
+            image_error = str(exc)
+
+    return GeneratePreviewResponse(
+        **result,
+        image=image_payload,
+        image_error=image_error,
+    )
