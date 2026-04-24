@@ -66,6 +66,16 @@ if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 
 # ---------------------------------------------------------------------
+# Helius (Solana per-trade indexer)
+# ---------------------------------------------------------------------
+# Free API key: https://dashboard.helius.dev (100K req/month tier)
+HELIUS_API_KEY = os.environ.get("HELIUS_API_KEY", "").strip()
+# Shared secret sent as the `Authorization` header by Helius webhooks so we can
+# reject spoofed callbacks. Configured at webhook creation time on the Helius
+# dashboard (field: authHeader).
+HELIUS_WEBHOOK_AUTH = os.environ.get("HELIUS_WEBHOOK_AUTH", "").strip()
+
+# ---------------------------------------------------------------------
 # Launch / countdown
 # ---------------------------------------------------------------------
 LAUNCH_ISO = os.environ.get("DEEPOTUS_LAUNCH_ISO")
@@ -142,6 +152,8 @@ __all__ = [
     "RESEND_WEBHOOK_SECRET",
     "SENDER_EMAIL",
     "PUBLIC_BASE_URL",
+    "HELIUS_API_KEY",
+    "HELIUS_WEBHOOK_AUTH",
     "LAUNCH_ISO",
     "CORS_ORIGINS",
     "SYSTEM_PROMPT_FR",

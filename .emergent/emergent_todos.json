@@ -1,34 +1,34 @@
 [
   {
-    "content": "Phase 1a: Migrer vault.py random.randint(0,9) vers secrets pour la combinaison cible",
+    "content": "Implementer core Helius module (parsing enhanced transactions + catch-up fetch)",
     "status": "completed"
   },
   {
-    "content": "Phase 1b: Migrer access_card.py random.choices vers secrets.choice pour accreditation_number + display_name",
+    "content": "Ajouter HELIUS_API_KEY + HELIUS_WEBHOOK_AUTH dans core/config.py et backend/.env",
     "status": "completed"
   },
   {
-    "content": "Phase 2a: Retirer/wrapper console.* en production (PublicStats.jsx + autres)",
+    "content": "Créer endpoint POST /api/webhooks/helius dans routers/webhooks.py (auth + dedup + apply_crack)",
     "status": "completed"
   },
   {
-    "content": "Phase 2b: Corriger array index as key dans ProphetChat / Roadmap / Operation / VaultSection",
+    "content": "Adapter vault.py: ajouter dex_mode 'helius' (désactive l'approximation DexScreener)",
     "status": "completed"
   },
   {
-    "content": "Phase 3a: Refactor dex_poll_once (split en fetch/extract/apply)",
+    "content": "Ajouter endpoint admin GET/POST /api/admin/vault/helius-config (configure mint + re-register webhook)",
     "status": "completed"
   },
   {
-    "content": "Phase 3b: Refactor admin_blacklist_import (split validation/parsing/insertion)",
+    "content": "Adapter admin UI (AdminVault.jsx) pour afficher/configurer le mode Helius",
     "status": "completed"
   },
   {
-    "content": "Phase 3c: Refactor CombinationDial (extract hooks et handlers)",
-    "status": "completed"
+    "content": "Demander à l'utilisateur la clé API Helius + le mint $DEEPOTUS (ou confirmer demo mode)",
+    "status": "in_progress"
   },
   {
-    "content": "Tester régression backend + sanity frontend (lint + screenshot)",
-    "status": "completed"
+    "content": "Tester le webhook en simulant un payload Helius signed",
+    "status": "pending"
   }
 ]

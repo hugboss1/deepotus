@@ -277,8 +277,10 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
     doc = await db.vault_state.find_one({"_id": VAULT_DOC_ID}) or {}
     mode = (doc.get("dex_mode") or "off").lower()
 
-    if mode == "off":
-        return {"mode": "off", "skipped": True}
+    if mode in ("off", "helius"):
+        # `helius` mode uses push webhooks as the authoritative source — do not
+        # double-count by polling the DexScreener aggregate window too.
+        return {"mode": mode, "skipped": True}
 
     address, err = _resolve_token_address(doc, mode)
     if err or not address:

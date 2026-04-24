@@ -140,7 +140,7 @@ class VaultStateResponse(BaseModel):
     updated_at: str
     recent_events: List[VaultEvent] = Field(default_factory=list)
     # DEX public status (non-sensitive; just advertises live-feed source)
-    dex_mode: str = "off"           # off | demo | custom
+    dex_mode: str = "off"           # off | demo | custom | helius
     dex_label: Optional[str] = None # e.g. "BONK · raydium"
     dex_pair_symbol: Optional[str] = None
 
@@ -369,13 +369,13 @@ class VaultDexConfigUpdate(BaseModel):
 
 async def update_dex_config(db, cfg: VaultDexConfigUpdate) -> VaultAdminStateResponse:
     mode = (cfg.mode or "off").lower().strip()
-    if mode not in ("off", "demo", "custom"):
+    if mode not in ("off", "demo", "custom", "helius"):
         mode = "off"
 
     doc = await initialize_vault(db)
     updates: Dict[str, Any] = {"dex_mode": mode}
 
-    if mode == "custom":
+    if mode in ("custom", "helius"):
         addr = (cfg.token_address or "").strip()
         if addr:
             updates["dex_token_address"] = addr

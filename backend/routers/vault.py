@@ -4,16 +4,20 @@ Two routers cohabit in this module:
     - `router` (prefix `/api/vault`) public vault state + report-purchase
     - `admin_router` (prefix `/api/admin/vault`) admin cracks + config
 
-Domain logic (state, events, dexscreener polling) lives in the top-level
-`vault` and `dexscreener` modules.
+Domain logic (state, events, dexscreener polling, helius indexer) lives in
+the top-level `vault`, `dexscreener`, and `helius` modules.
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+
+import helius as helius_mod
 import vault as vault_mod
-from core.config import db
+from core.config import HELIUS_API_KEY, PUBLIC_BASE_URL, db
 from core.models import VaultCrackPublicRequest
 from core.security import require_admin
 
@@ -92,3 +96,152 @@ async def vault_dex_poll_now_admin(_p: dict = Depends(require_admin)):
 
     result = await dex_mod.dex_poll_once(db, vault_mod)
     return result
+
+
+
+# ---------------------------------------------------------------------
+# Helius admin endpoints (NEW — replaces DexScreener approximation)
+# ---------------------------------------------------------------------
+class HeliusConfigRequest(BaseModel):
+    """Configure which Solana mint + pool the Helius indexer should track."""
+
+    mint: Optional[str] = Field(None, max_length=64)
+    pool_address: Optional[str] = Field(None, max_length=64)
+    # Bearer value Helius will send back on every webhook. Rotate by calling
+    # /helius-register again with a new value.
+    webhook_auth: Optional[str] = Field(None, max_length=128)
+
+
+class HeliusRegisterRequest(HeliusConfigRequest):
+    register_webhook: bool = True
+
+
+@admin_router.get("/helius-status", response_model=dict)
+async def helius_status(_p: dict = Depends(require_admin)):
+    """Return current Helius configuration and the list of active webhooks."""
+    vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
+    existing = await helius_mod.list_webhooks(HELIUS_API_KEY) if HELIUS_API_KEY else []
+    return {
+        "api_key_configured": bool(HELIUS_API_KEY),
+        "mint": vs.get("dex_token_address"),
+        "pool_address": vs.get("helius_pool_address"),
+        "webhook_id": vs.get("helius_webhook_id"),
+        "webhook_url": f"{PUBLIC_BASE_URL}/api/webhooks/helius",
+        "helius_webhooks": existing,
+        "dex_mode": vs.get("dex_mode"),
+    }
+
+
+@admin_router.post("/helius-config", response_model=dict)
+async def helius_config(
+    req: HeliusConfigRequest, _p: dict = Depends(require_admin)
+):
+    """Persist mint + pool_address + webhook_auth on vault_state."""
+    update = {}
+    if req.mint is not None:
+        update["dex_token_address"] = req.mint.strip() or None
+    if req.pool_address is not None:
+        update["helius_pool_address"] = req.pool_address.strip() or None
+    # Note: webhook_auth is stored in env var (HELIUS_WEBHOOK_AUTH), not DB,
+    # because it's a secret. We just record that one was set.
+    if req.webhook_auth is not None:
+        update["helius_webhook_auth_set"] = bool(req.webhook_auth.strip())
+    if not update:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    await db.vault_state.update_one(
+        {"_id": "protocol_delta_sigma"}, {"$set": update}, upsert=True
+    )
+    return {"ok": True, "updated": list(update.keys())}
+
+
+@admin_router.post("/helius-register", response_model=dict)
+async def helius_register(
+    req: HeliusRegisterRequest, _p: dict = Depends(require_admin)
+):
+    """Register our /api/webhooks/helius callback with Helius for the given mint.
+
+    Must be called once after the admin has added HELIUS_API_KEY + set a
+    HELIUS_WEBHOOK_AUTH env var. Persists the returned webhookID so we can
+    delete/update it later.
+    """
+    if not HELIUS_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="HELIUS_API_KEY not configured. Add it to backend/.env first.",
+        )
+    mint = (req.mint or "").strip()
+    if not mint:
+        # fallback to stored config
+        vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
+        mint = (vs.get("dex_token_address") or "").strip()
+    if not mint:
+        raise HTTPException(status_code=400, detail="No mint provided or configured")
+
+    # Import lazily to pick up any hot-reloaded env var
+    from core.config import HELIUS_WEBHOOK_AUTH
+
+    callback_url = f"{PUBLIC_BASE_URL}/api/webhooks/helius"
+    try:
+        res = await helius_mod.register_webhook(
+            api_key=HELIUS_API_KEY,
+            webhook_url=callback_url,
+            mint=mint,
+            auth_header=HELIUS_WEBHOOK_AUTH or None,
+            transaction_types=["SWAP"],
+            webhook_type="enhanced",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=502, detail=f"Helius registration failed: {str(e)[:300]}"
+        )
+
+    webhook_id = res.get("webhookID") or res.get("id")
+    await db.vault_state.update_one(
+        {"_id": "protocol_delta_sigma"},
+        {
+            "$set": {
+                "dex_token_address": mint,
+                "helius_pool_address": (req.pool_address or "").strip() or None,
+                "helius_webhook_id": webhook_id,
+                "dex_mode": "helius",  # disable the dex approximation
+            }
+        },
+        upsert=True,
+    )
+    return {
+        "ok": True,
+        "webhook_id": webhook_id,
+        "callback_url": callback_url,
+        "mint": mint,
+    }
+
+
+@admin_router.post("/helius-catchup", response_model=dict)
+async def helius_catchup(_p: dict = Depends(require_admin)):
+    """Pull the last 50 SWAP txns from Helius and ingest any we haven't seen."""
+    if not HELIUS_API_KEY:
+        raise HTTPException(status_code=400, detail="HELIUS_API_KEY not configured")
+    vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
+    mint = (vs.get("dex_token_address") or "").strip()
+    pool = (vs.get("helius_pool_address") or "").strip() or None
+    if not mint:
+        raise HTTPException(status_code=400, detail="No mint configured")
+    return await helius_mod.catch_up_from_helius(
+        db, vault_mod, HELIUS_API_KEY, mint, pool=pool
+    )
+
+
+@admin_router.delete("/helius-webhook/{webhook_id}", response_model=dict)
+async def helius_delete_webhook(
+    webhook_id: str, _p: dict = Depends(require_admin)
+):
+    """Remove a previously-registered Helius webhook."""
+    if not HELIUS_API_KEY:
+        raise HTTPException(status_code=400, detail="HELIUS_API_KEY not configured")
+    ok = await helius_mod.delete_webhook(HELIUS_API_KEY, webhook_id)
+    if ok:
+        await db.vault_state.update_one(
+            {"_id": "protocol_delta_sigma"},
+            {"$unset": {"helius_webhook_id": ""}},
+        )
+    return {"ok": ok}

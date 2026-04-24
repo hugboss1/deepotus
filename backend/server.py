@@ -89,13 +89,33 @@ async def on_startup():
         await vault_mod.initialize_vault(db)
         asyncio.create_task(vault_mod.hourly_tick_loop(db))
 
-        # DexScreener live-feed poll loop
+        # DexScreener live-feed poll loop (falls back silently when mode=helius/off)
         import dexscreener as dex_mod
 
         asyncio.create_task(dex_mod.dex_loop(db, vault_mod))
 
+        # Helius: ensure dedup TTL index + opportunistic catch-up if configured
+        import helius as helius_mod
+        from core.config import HELIUS_API_KEY
+
+        await helius_mod.ensure_dedup_index(db)
+        vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
+        if HELIUS_API_KEY and vs.get("dex_mode") == "helius" and vs.get("dex_token_address"):
+            asyncio.create_task(
+                helius_mod.catch_up_from_helius(
+                    db,
+                    vault_mod,
+                    HELIUS_API_KEY,
+                    vs["dex_token_address"],
+                    pool=vs.get("helius_pool_address"),
+                )
+            )
+            logger.info(
+                f"[startup] Helius catch-up scheduled for mint={vs['dex_token_address'][:8]}…"
+            )
+
         logger.info(
-            "[startup] PROTOCOL ΔΣ vault ready + hourly tick + DexScreener loops launched"
+            "[startup] PROTOCOL ΔΣ vault ready + hourly tick + DexScreener + Helius wiring launched"
         )
     except Exception:
         logging.exception("[startup] failed to initialize vault")

@@ -1,8 +1,12 @@
-"""Resend webhook receiver (svix-signed).
+"""Webhook receivers.
 
-Incoming events (`email.delivered`, `email.bounced`, etc.) are persisted
-in `email_events` and used to update the matching `whitelist` entry so
-the admin dashboard surfaces delivery status in real-time.
+Two providers:
+    - POST /api/webhooks/resend : email events (svix-signed)
+    - POST /api/webhooks/helius : Solana swap events (authHeader-signed)
+
+Each handler persists its raw payload into a dedicated Mongo collection
+for audit + forwards the meaningful signal to the right consumer
+(whitelist status update for Resend, vault.apply_crack() for Helius).
 """
 
 from __future__ import annotations
@@ -11,11 +15,14 @@ import json as _json
 import logging
 import uuid
 from datetime import datetime, timezone
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request
 from svix.webhooks import Webhook, WebhookVerificationError
 
-from core.config import RESEND_WEBHOOK_SECRET, db
+import helius as helius_mod
+import vault as vault_mod
+from core.config import HELIUS_WEBHOOK_AUTH, RESEND_WEBHOOK_SECRET, db
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
@@ -103,3 +110,85 @@ async def resend_webhook(request: Request):
         await db.whitelist.update_one(query, {"$set": update})
 
     return {"ok": True, "processed": event_type}
+
+
+
+# ---------------------------------------------------------------------
+# Helius — Solana swap feed (per-trade, push)
+# ---------------------------------------------------------------------
+@router.post("/helius")
+async def helius_webhook(request: Request):
+    """Receive enhanced Solana SWAP events pushed by Helius.
+
+    Security: Helius sends the `authHeader` value we configured (stored in
+    HELIUS_WEBHOOK_AUTH env var) verbatim in the `Authorization` header. If
+    the env var is unset, we accept unsigned payloads in DEMO mode but log a
+    prominent warning.
+
+    Flow:
+      1. Verify Authorization header matches HELIUS_WEBHOOK_AUTH.
+      2. Read the vault config to pick up the configured mint + pool.
+      3. Pass the transactions array to helius.ingest_enhanced_transactions(),
+         which handles dedup and invokes vault.apply_crack() per buy.
+
+    Helius retries on non-2xx, so we strive to always 2xx unless the
+    signature is wrong. Internal errors are logged but still return 200.
+    """
+    # --- 1. Auth ---
+    auth_hdr = request.headers.get("authorization") or ""
+    if HELIUS_WEBHOOK_AUTH:
+        if auth_hdr.strip() != HELIUS_WEBHOOK_AUTH:
+            logging.warning("[helius] webhook auth mismatch")
+            raise HTTPException(status_code=401, detail="Invalid auth header")
+    else:
+        logging.warning(
+            "[helius] HELIUS_WEBHOOK_AUTH not configured — accepting unsigned webhook"
+        )
+
+    # --- 2. Payload ---
+    try:
+        payload = await request.json()
+    except Exception:
+        raw = await request.body()
+        try:
+            payload = _json.loads(raw.decode("utf-8") or "[]")
+        except Exception:
+            payload = []
+
+    # Helius sends an ARRAY of enhanced transactions
+    txs: List[Dict[str, Any]] = payload if isinstance(payload, list) else [payload]
+
+    # --- 3. Route through the ingest pipeline ---
+    vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
+    mint = (vs.get("dex_token_address") or "").strip()
+    pool = (vs.get("helius_pool_address") or "").strip() or None
+
+    await helius_mod.ensure_dedup_index(db)
+
+    # Always keep a raw audit trail (capped-ish: we just insert; the TTL on
+    # helius_ingested covers the signature-level dedup)
+    try:
+        await db.helius_webhook_events.insert_one(
+            {
+                "_id": str(uuid.uuid4()),
+                "received_at": datetime.now(timezone.utc).isoformat(),
+                "tx_count": len(txs),
+                "raw_sample": txs[:2],  # keep only first 2 for storage sanity
+            }
+        )
+    except Exception:
+        logging.exception("[helius] failed to persist raw audit trail")
+
+    if not mint:
+        logging.warning(
+            "[helius] no dex_token_address configured on vault_state — ignoring payload"
+        )
+        return {"ok": True, "ignored": True, "reason": "no mint configured"}
+
+    result = await helius_mod.ingest_enhanced_transactions(
+        db, vault_mod, txs, mint=mint, pool=pool, source="webhook"
+    )
+    logging.info(
+        f"[helius] webhook {result} (tx={len(txs)}, mint={mint[:8]}…, pool={pool})"
+    )
+    return {"ok": True, **result}
