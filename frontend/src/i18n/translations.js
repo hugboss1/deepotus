@@ -274,6 +274,13 @@ export const translations = {
       taxCap: "Le financement du PROTOCOL ΔΣ est assuré par la valorisation du Trésor (30%) — scellé en multisig, ventes planifiées et annoncées à l'avance.",
       cynicalTitle: "Transparence Cynique",
       cynicalBody: "L'absence de taxe signifie que nous comptons uniquement sur la croissance du jeton pour financer PROTOCOL ΔΣ. Si le prix monte, le coffre se remplit. Si le coffre se remplit, la vérité éclate. C'est le seul indicateur qui compte.",
+      lockBadgeTitle: "Jupiter Lock Certified",
+      lockBadgePending: "Verrouillage activé au lancement · vérifiable on-chain",
+      lockBadgeVerified: "Tokens verrouillés publiquement · vérification live",
+      lockTeamLabel: "Équipe — Lock vesting",
+      lockTreasuryLabel: "Trésor — Lock vesting",
+      lockVerifyCta: "Vérifier on-chain",
+      lockDescription: "Les 15% de l'équipe et les 30% du Trésor PROTOCOL ΔΣ sont verrouillés via Jupiter Lock — l'outil standard des projets Solana sérieux. Personne ne peut dumper. Dashboard public, vérifiable par tout agent, 24/7.",
     },
 
     // ---- Transparency / Liquidity timeline ----
@@ -788,6 +795,13 @@ export const translations = {
       taxCap: "PROTOCOL ΔΣ funding comes from the Treasury's own valuation (30%) — multisig-sealed, sales scheduled and pre-announced.",
       cynicalTitle: "Cynical Transparency",
       cynicalBody: "No tax means we rely solely on the token's growth to fund PROTOCOL ΔΣ. If the price rises, the vault fills. If the vault fills, the truth breaks. That's the only metric that matters.",
+      lockBadgeTitle: "Jupiter Lock Certified",
+      lockBadgePending: "Lock activated at launch · on-chain verifiable",
+      lockBadgeVerified: "Tokens publicly locked · live verification",
+      lockTeamLabel: "Team — Vesting lock",
+      lockTreasuryLabel: "Treasury — Vesting lock",
+      lockVerifyCta: "Verify on-chain",
+      lockDescription: "The 15% team allocation and the 30% PROTOCOL ΔΣ Treasury are locked via Jupiter Lock — the standard tool used by serious Solana projects. Nobody can dump. Public dashboard, verifiable by any agent, 24/7.",
     },
 
     transparency: {

@@ -7,15 +7,25 @@ import {
   Tooltip,
 } from "recharts";
 import { motion } from "framer-motion";
+import { ShieldCheck, ExternalLink, Lock } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  TEAM_LOCK_URL,
+  TREASURY_LOCK_URL,
+  hasTeamLock,
+  hasTreasuryLock,
+  hasAnyLock,
+} from "@/lib/links";
 
+// Allocations: 30/20/15/15/10/10. `lockable` flags mark categories that will
+// be publicly locked via Jupiter Lock at launch (team + treasury).
 const ALLOCATIONS = [
-  { key: "treasury", value: 30, color: "#2DD4BF" },
-  { key: "airdrops", value: 20, color: "#E11D48" },
-  { key: "team", value: 15, color: "#0B0D10" },
-  { key: "liquidity", value: 15, color: "#33FF33" },
-  { key: "marketing", value: 10, color: "#F59E0B" },
-  { key: "ai_lore", value: 10, color: "#16A34A" },
+  { key: "treasury", value: 30, color: "#2DD4BF", lockable: true },
+  { key: "airdrops", value: 20, color: "#E11D48", lockable: false },
+  { key: "team", value: 15, color: "#0B0D10", lockable: true },
+  { key: "liquidity", value: 15, color: "#33FF33", lockable: false },
+  { key: "marketing", value: 10, color: "#F59E0B", lockable: false },
+  { key: "ai_lore", value: 10, color: "#16A34A", lockable: false },
 ];
 
 function CustomTooltip({ active, payload }) {
@@ -45,10 +55,15 @@ export default function Tokenomics() {
       key: a.key,
       value: a.value,
       color: a.color,
+      lockable: a.lockable,
       label: t(`tokenomics.categories.${a.key}.name`),
       detail: t(`tokenomics.categories.${a.key}.detail`),
     }));
   }, [t]);
+
+  const teamLocked = hasTeamLock();
+  const treasuryLocked = hasTreasuryLock();
+  const anyLocked = hasAnyLock();
 
   return (
     <section
@@ -138,6 +153,77 @@ export default function Tokenomics() {
                 · 1,000,000,000
               </span>
             </div>
+
+            {/* Jupiter Lock Certified badge */}
+            <div
+              className={`mt-3 rounded-xl border px-4 py-3 flex items-start gap-3 ${
+                anyLocked
+                  ? "border-[#18C964]/50 bg-[#18C964]/8"
+                  : "border-border bg-card/70"
+              }`}
+              data-testid="tokenomics-lock-badge"
+            >
+              <div
+                className={`mt-0.5 rounded-full p-1.5 ${
+                  anyLocked ? "bg-[#18C964]/20" : "bg-muted"
+                }`}
+              >
+                <ShieldCheck
+                  size={14}
+                  className={anyLocked ? "text-[#18C964]" : "text-muted-foreground"}
+                  strokeWidth={2.2}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="font-display font-semibold text-sm">
+                    {t("tokenomics.lockBadgeTitle")}
+                  </div>
+                  <span
+                    className={`font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                      anyLocked
+                        ? "bg-[#18C964]/15 text-[#18C964] border border-[#18C964]/40"
+                        : "bg-muted text-muted-foreground border border-border"
+                    }`}
+                  >
+                    {anyLocked ? "VERIFIED" : "PENDING LAUNCH"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  {anyLocked
+                    ? t("tokenomics.lockBadgeVerified")
+                    : t("tokenomics.lockBadgePending")}
+                </p>
+                {anyLocked && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {teamLocked && (
+                      <a
+                        href={TEAM_LOCK_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-[#18C964] hover:underline"
+                        data-testid="tokenomics-lock-team-cta"
+                      >
+                        {t("tokenomics.lockTeamLabel")}
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                    {treasuryLocked && (
+                      <a
+                        href={TREASURY_LOCK_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-[#18C964] hover:underline"
+                        data-testid="tokenomics-lock-treasury-cta"
+                      >
+                        {t("tokenomics.lockTreasuryLabel")}
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </motion.div>
 
           <div className="lg:col-span-6" data-testid="tokenomics-legend">
@@ -163,6 +249,21 @@ export default function Tokenomics() {
                           style={{ background: d.color }}
                         />
                         <span className="font-medium truncate">{d.label}</span>
+                        {d.lockable && (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest shrink-0 ${
+                              (d.key === "team" && teamLocked) ||
+                              (d.key === "treasury" && treasuryLocked)
+                                ? "border border-[#18C964]/50 bg-[#18C964]/10 text-[#18C964]"
+                                : "border border-border bg-muted text-muted-foreground"
+                            }`}
+                            title={t("tokenomics.lockBadgeTitle")}
+                            data-testid={`tokenomics-lock-chip-${d.key}`}
+                          >
+                            <Lock size={9} strokeWidth={2.5} />
+                            LOCK
+                          </span>
+                        )}
                       </div>
                       <span className="tabular font-mono text-sm text-foreground/80">
                         {d.value}%

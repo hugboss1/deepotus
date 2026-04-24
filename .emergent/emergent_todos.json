@@ -1,26 +1,22 @@
 [
   {
-    "content": "i18n FR : tokenomics (0% tax, nouveaux noms catégories) + transparency + roadmap (Bonding Curve Trial / Raydium Ascension) + FAQ",
+    "content": "Ajouter badge 'Jupiter Lock Certified' sur le graphique Tokenomics + env vars TEAM_LOCK_URL / TREASURY_LOCK_URL",
     "status": "completed"
   },
   {
-    "content": "i18n EN : miroir FR",
+    "content": "Ajouter mini-badges 'LOCK' sur les allocations Équipe (15%) + Trésor (30%) dans la légende",
     "status": "completed"
   },
   {
-    "content": "Tokenomics.jsx : remplacer le bloc Tax 3% par un bloc 0% Tax Protocol + Transparence Cynique",
+    "content": "Traduire FR/EN les nouveaux textes de lock",
     "status": "completed"
   },
   {
-    "content": "Hero.jsx + TopNav.jsx : boutons Acheter → URL pump.fun (paramétrée, fallback vers whitelist)",
+    "content": "Screenshot de validation",
     "status": "completed"
   },
   {
-    "content": "Transparency.jsx : mettre à jour timeline (Pump.fun launch, Raydium migration)",
-    "status": "completed"
-  },
-  {
-    "content": "Présenter plan bots + calendrier contenu détaillé",
+    "content": "Fournir liste détaillée KOLs + plan final + démarrer P1 bots en mock",
     "status": "in_progress"
   }
 ]
