@@ -1,12 +1,21 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Twitter, Send as TelegramIcon, MessageSquare } from "lucide-react";
+import { Twitter, Send as TelegramIcon } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 
 const CARDS = [
-  { key: "x", icon: Twitter, color: "#1DA1F2" },
-  { key: "telegram", icon: TelegramIcon, color: "#2AABEE" },
-  { key: "discord", icon: MessageSquare, color: "#5865F2" },
+  {
+    key: "x",
+    icon: Twitter,
+    color: "#1DA1F2",
+    href: "https://x.com/deepotus_ai",
+  },
+  {
+    key: "telegram",
+    icon: TelegramIcon,
+    color: "#2AABEE",
+    href: "https://t.me/deepotus",
+  },
 ];
 
 export default function Socials() {
@@ -29,12 +38,13 @@ export default function Socials() {
           <div className="text-muted-foreground">{t("socials.subtitle")}</div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {CARDS.map(({ key, icon: Icon, color }, i) => (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+          {CARDS.map(({ key, icon: Icon, color, href }, i) => (
             <motion.a
               key={key}
-              href="#"
-              onClick={(e) => e.preventDefault()}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}

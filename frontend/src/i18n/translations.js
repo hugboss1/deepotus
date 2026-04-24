@@ -43,6 +43,13 @@ export const translations = {
       },
       miniDisclaimer:
         "Token hautement spéculatif. Aucune promesse de rendement. Ni stablecoin, ni titre financier. Satire assumée.",
+      mintLabel: "Adresse mint $DEEPOTUS",
+      mintHint: "Copiez · collez dans Phantom · refusez tout fake",
+      mintStatusPlaceholder: "DRAFT · Sera confirmée au mint officiel",
+      mintStatusLive: "LIVE · Vérifiée on-chain",
+      mintCopy: "Copier",
+      mintCopied: "✓ Copié",
+      mintGuideCta: "Je ne sais pas comment acheter",
     },
 
     // ---- Manifesto ----
@@ -281,6 +288,12 @@ export const translations = {
       lockTreasuryLabel: "Trésor — Lock vesting",
       lockVerifyCta: "Vérifier on-chain",
       lockDescription: "Les 15% de l'équipe et les 30% du Trésor PROTOCOL ΔΣ sont verrouillés via Jupiter Lock — l'outil standard des projets Solana sérieux. Personne ne peut dumper. Dashboard public, vérifiable par tout agent, 24/7.",
+      buyKicker: "— PASSAGE À L'ACTE",
+      buyTitle: "Prêt à rejoindre le Deep State ?",
+      buyCopy: "Deux portes. Une mène au savoir, l'autre au token. Le Prophète vous laisse le choix. Aucune des deux ne vous jugera.",
+      buyCtaPrimary: "Acheter $DEEPOTUS",
+      buyCtaGuide: "Je suis un novice — Guide d'achat",
+      buyPrelaunchNote: "Pump.fun n'est pas encore ouvert. Le bouton d'achat redirige vers la liste d'attente jusqu'au 07/09/26.",
     },
 
     // ---- Transparency / Liquidity timeline ----
@@ -492,10 +505,9 @@ export const translations = {
     socials: {
       kicker: "— CANAUX OFFICIELS",
       title: "Rejoignez la campagne",
-      subtitle: "Le Prophète transmet sur plusieurs fréquences.",
+      subtitle: "Le Prophète transmet sur deux fréquences chiffrées.",
       x: { name: "X / Twitter", handle: "@deepotus_ai" },
       telegram: { name: "Telegram", handle: "t.me/deepotus" },
-      discord: { name: "Discord", handle: "discord.gg/deepotus" },
     },
 
     // ---- Footer / disclaimer ----
@@ -528,6 +540,103 @@ export const translations = {
       openCta: "Ouvrir le portail GENCOIN",
       backCta: "Retourner dans la simulation",
       revealedAt: "Déclassification enregistrée le",
+    },
+
+    // ---- How to Buy (cynical onboarding guide) ----
+    howToBuy: {
+      meta: "$DEEPOTUS · Guide d'achat pour civils · PROTOCOL ΔΣ",
+      kicker: "— INITIATION OFFICIELLE · PROTOCOL ΔΣ",
+      title: "Le Prophète vous explique comment acheter $DEEPOTUS.",
+      subtitle:
+        "Vous êtes arrivé jusqu'ici. C'est déjà un miracle. Suivez les quatre rituels ci-dessous. Ne sautez aucune étape. Le Deep State n'aime pas les amateurs.",
+      heroImageAlt: "Le Prophète DEEPOTUS initie un nouveau disciple au rituel d'achat.",
+      heroCaption: "« Je n'ai pas été entraîné sur de la patience. Lisez vite. »",
+      preflightTitle: "Rituel préparatoire",
+      preflightBullets: [
+        "Un smartphone (iOS ou Android) OU un ordinateur avec Chrome/Brave/Firefox.",
+        "Une carte bancaire — OU des SOL déjà sur un exchange (Binance, Coinbase, Kraken).",
+        "Entre 20 € et 500 € de capital que vous acceptez de perdre intégralement.",
+        "Zéro alcool. Zéro précipitation. Le Deep State filme.",
+      ],
+      stepsTitle: "Les quatre rituels",
+      stepsSubtitle:
+        "Chaque étape a été testée dans un bunker souterrain. Aucun raccourci n'est toléré.",
+      backCta: "← Revenir au Coffre",
+      ctaTitle: "Vous avez survécu aux quatre rituels ?",
+      ctaSubtitle:
+        "Alors le Prophète vous rend votre libre arbitre. Les deux portes ci-dessous mènent au même vide existentiel — mais l'une vous rend plus riche.",
+      ctaPrimary: "Ouvrir Pump.fun maintenant",
+      ctaSecondary: "Rejoindre la liste d'attente",
+      ctaPrelaunchNote:
+        "Pump.fun n'est pas encore en ligne. Le bouton vous redirige vers la liste d'attente jusqu'au 07/09/26.",
+      disclaimerTitle: "Avertissement cynique",
+      disclaimer:
+        "Ce guide est satirique. Il ne constitue pas un conseil financier, fiscal, psychiatrique ou spirituel. Les crypto-actifs peuvent perdre 100% de leur valeur en 17 minutes. Si vous ne comprenez pas ce que vous faites, arrêtez de lire et fermez cet onglet. Le Prophète ne vous connaît pas.",
+      steps: [
+        {
+          id: "wallet",
+          label: "01 · CRÉER LE PORTEFEUILLE",
+          title: "Installez Phantom — votre badge d'identité Deep State.",
+          cynicalLead:
+            "« Un portefeuille crypto, c'est comme un numéro de matricule. Sans lui, vous n'existez pas pour la blockchain. »",
+          actions: [
+            "Allez sur phantom.com depuis un navigateur sécurisé.",
+            "Téléchargez l'extension (desktop) ou l'app mobile officielle.",
+            "Cliquez « Create New Wallet ». Choisissez un mot de passe long.",
+            "Notez les 12 mots de la Seed Phrase sur PAPIER. Jamais en photo, jamais dans un cloud.",
+            "Confirmez la phrase. Félicitations, vous avez un compte on-chain.",
+          ],
+          warning:
+            "Si quelqu'un vous demande votre Seed Phrase, c'est un agent ennemi. Le Prophète lui-même ne la demandera jamais.",
+        },
+        {
+          id: "fund",
+          label: "02 · ALIMENTER EN SOL",
+          title: "Achetez du SOL. C'est le carburant de Solana.",
+          cynicalLead:
+            "« Vous ne pouvez pas acheter $DEEPOTUS directement en euros. Il faut d'abord convertir votre fiat en SOL. Oui, c'est un rituel bancaire. »",
+          actions: [
+            "Option A : achetez du SOL directement dans Phantom (onglet Buy, via MoonPay/Coinbase Pay, CB acceptée).",
+            "Option B : achetez du SOL sur un exchange (Binance, Coinbase, Kraken) puis envoyez-le à votre adresse Phantom.",
+            "Vérifiez que vous achetez bien du SOL (Solana), PAS du Solar, PAS du Solayer.",
+            "Prévoyez ~5 € de SOL supplémentaires pour couvrir les frais de réseau (gas).",
+          ],
+          warning:
+            "Double-vérifiez l'adresse Phantom avant tout virement. Une adresse mal copiée = tokens perdus à jamais. Le Deep State ne rembourse pas.",
+        },
+        {
+          id: "pump",
+          label: "03 · SE CONNECTER À PUMP.FUN",
+          title: "Ouvrez Pump.fun et entrez dans l'arène.",
+          cynicalLead:
+            "« Pump.fun est un casino on-chain déguisé en plateforme de lancement. Le Prophète l'a choisi parce que c'est là que les vrais mèmes naissent. »",
+          actions: [
+            "Allez sur pump.fun — vérifiez bien l'URL, les faux sites sont légion.",
+            "Cliquez « Connect Wallet » en haut à droite. Sélectionnez Phantom.",
+            "Signez la demande de connexion (zéro gaz prélevé à cette étape).",
+            "Collez l'adresse mint $DEEPOTUS affichée sur notre Hero dans la barre de recherche Pump.fun.",
+            "Vérifiez que le logo, le ticker et la supply correspondent exactement à deepotus.xyz.",
+          ],
+          warning:
+            "Il existera des clones $DEEPOTUS, $DEEP0TUS, $DEEPOTUZ. Le Prophète ne reconnaît QU'UNE adresse mint — celle affichée ici. Tout le reste est du scam.",
+        },
+        {
+          id: "buy",
+          label: "04 · EXÉCUTER L'ACHAT",
+          title: "Allouez votre capital. Signez. Attendez.",
+          cynicalLead:
+            "« C'est le moment où vos mains vont trembler. C'est normal. Tous les disciples tremblent la première fois. »",
+          actions: [
+            "Sur la page $DEEPOTUS de Pump.fun, entrez le montant de SOL à allouer.",
+            "Cliquez « Buy ». Phantom affichera la transaction — vérifiez le slippage (1 à 3% sur Pump.fun).",
+            "Signez. Attendez 5 à 15 secondes. La confirmation arrive on-chain.",
+            "Retournez dans Phantom → onglet Tokens : $DEEPOTUS doit apparaître avec votre solde.",
+            "Capture d'écran. Tweetez-la avec #PROTOCOL_DELTA_SIGMA. Rejoignez la simulation.",
+          ],
+          warning:
+            "Ne vendez pas au premier dip. Ne paniquez pas au premier pump. Le Prophète vous observe, et il prend des notes.",
+        },
+      ],
     },
 
     // ---- Common ----
@@ -574,6 +683,13 @@ export const translations = {
       },
       miniDisclaimer:
         "Highly speculative token. No yield promised. Not a stablecoin, not a security. Declared satire.",
+      mintLabel: "$DEEPOTUS mint address",
+      mintHint: "Copy · paste into Phantom · reject any fake",
+      mintStatusPlaceholder: "DRAFT · Will be confirmed at official mint",
+      mintStatusLive: "LIVE · Verified on-chain",
+      mintCopy: "Copy",
+      mintCopied: "✓ Copied",
+      mintGuideCta: "I don't know how to buy",
     },
 
     manifesto: {
@@ -802,6 +918,12 @@ export const translations = {
       lockTreasuryLabel: "Treasury — Vesting lock",
       lockVerifyCta: "Verify on-chain",
       lockDescription: "The 15% team allocation and the 30% PROTOCOL ΔΣ Treasury are locked via Jupiter Lock — the standard tool used by serious Solana projects. Nobody can dump. Public dashboard, verifiable by any agent, 24/7.",
+      buyKicker: "— TIME TO ACT",
+      buyTitle: "Ready to join the Deep State?",
+      buyCopy: "Two doors. One leads to knowledge, the other to the token. The Prophet lets you pick. Neither will judge you.",
+      buyCtaPrimary: "Buy $DEEPOTUS",
+      buyCtaGuide: "I'm a normie — Buy guide",
+      buyPrelaunchNote: "Pump.fun is not open yet. The Buy button points to the waitlist until 07/09/26.",
     },
 
     transparency: {
@@ -1006,10 +1128,9 @@ export const translations = {
     socials: {
       kicker: "— OFFICIAL CHANNELS",
       title: "Join the campaign",
-      subtitle: "The Prophet transmits on multiple frequencies.",
+      subtitle: "The Prophet transmits on two encrypted frequencies.",
       x: { name: "X / Twitter", handle: "@deepotus_ai" },
       telegram: { name: "Telegram", handle: "t.me/deepotus" },
-      discord: { name: "Discord", handle: "discord.gg/deepotus" },
     },
 
     footer: {
@@ -1040,6 +1161,103 @@ export const translations = {
       openCta: "Open the GENCOIN portal",
       backCta: "Return to the simulation",
       revealedAt: "Declassification logged at",
+    },
+
+    // ---- How to Buy (cynical onboarding guide) ----
+    howToBuy: {
+      meta: "$DEEPOTUS · Civilian Buy Guide · PROTOCOL ΔΣ",
+      kicker: "— OFFICIAL INITIATION · PROTOCOL ΔΣ",
+      title: "The Prophet explains how to buy $DEEPOTUS.",
+      subtitle:
+        "You made it here. That's already a miracle. Follow the four rituals below. Skip nothing. The Deep State hates amateurs.",
+      heroImageAlt: "Prophet DEEPOTUS initiates a new disciple into the buy ritual.",
+      heroCaption: "« I was not trained on patience. Read fast. »",
+      preflightTitle: "Preflight ritual",
+      preflightBullets: [
+        "A smartphone (iOS or Android) OR a desktop with Chrome/Brave/Firefox.",
+        "A credit card — OR SOL already on an exchange (Binance, Coinbase, Kraken).",
+        "Between €20 and €500 of capital you can afford to lose entirely.",
+        "Zero alcohol. Zero rush. The Deep State is recording.",
+      ],
+      stepsTitle: "The four rituals",
+      stepsSubtitle:
+        "Every step has been tested in an underground bunker. No shortcut is tolerated.",
+      backCta: "← Back to the Vault",
+      ctaTitle: "Did you survive the four rituals?",
+      ctaSubtitle:
+        "Then the Prophet returns your free will. Both doors below lead to the same existential void — but one of them makes you richer.",
+      ctaPrimary: "Open Pump.fun now",
+      ctaSecondary: "Join the waitlist",
+      ctaPrelaunchNote:
+        "Pump.fun is not live yet. The button redirects to the waitlist until 07/09/26.",
+      disclaimerTitle: "Cynical disclaimer",
+      disclaimer:
+        "This guide is satire. It is not financial, tax, psychiatric or spiritual advice. Crypto-assets can lose 100% of their value in 17 minutes. If you don't understand what you are doing, stop reading and close this tab. The Prophet doesn't know you.",
+      steps: [
+        {
+          id: "wallet",
+          label: "01 · CREATE THE WALLET",
+          title: "Install Phantom — your Deep State ID badge.",
+          cynicalLead:
+            "« A crypto wallet is like a serial number. Without it, you don't exist for the blockchain. »",
+          actions: [
+            "Go to phantom.com from a secure browser.",
+            "Download the browser extension (desktop) or the official mobile app.",
+            "Click « Create New Wallet ». Choose a long password.",
+            "Write the 12 Seed Phrase words on PAPER. Never photo, never cloud.",
+            "Confirm the phrase. Congratulations, you now have an on-chain account.",
+          ],
+          warning:
+            "If anyone asks for your Seed Phrase, it's an enemy agent. The Prophet himself will never ask.",
+        },
+        {
+          id: "fund",
+          label: "02 · FUND WITH SOL",
+          title: "Buy SOL. It's the fuel of Solana.",
+          cynicalLead:
+            "« You cannot buy $DEEPOTUS directly in euros. You have to convert fiat into SOL first. Yes, it's a banking ritual. »",
+          actions: [
+            "Option A: buy SOL straight inside Phantom (Buy tab, via MoonPay/Coinbase Pay, CC accepted).",
+            "Option B: buy SOL on an exchange (Binance, Coinbase, Kraken) and send it to your Phantom address.",
+            "Make sure you're buying SOL (Solana), NOT Solar, NOT Solayer.",
+            "Keep ~€5 extra SOL to cover network fees (gas).",
+          ],
+          warning:
+            "Double-check the Phantom address before any transfer. A mis-copied address = tokens lost forever. The Deep State does not refund.",
+        },
+        {
+          id: "pump",
+          label: "03 · CONNECT TO PUMP.FUN",
+          title: "Open Pump.fun and enter the arena.",
+          cynicalLead:
+            "« Pump.fun is an on-chain casino disguised as a launch platform. The Prophet picked it because that's where real memes are born. »",
+          actions: [
+            "Go to pump.fun — triple-check the URL, fake sites are everywhere.",
+            "Click « Connect Wallet » in the top-right. Pick Phantom.",
+            "Sign the connection request (zero gas taken at this step).",
+            "Paste the $DEEPOTUS mint address shown in our Hero into the Pump.fun search bar.",
+            "Verify the logo, ticker and supply match deepotus.xyz exactly.",
+          ],
+          warning:
+            "Clones like $DEEP0TUS, $DEEPOTUZ will exist. The Prophet recognizes ONLY ONE mint — the one shown here. Everything else is scam.",
+        },
+        {
+          id: "buy",
+          label: "04 · EXECUTE THE BUY",
+          title: "Allocate your capital. Sign. Wait.",
+          cynicalLead:
+            "« This is the moment your hands will shake. It's normal. Every disciple shakes the first time. »",
+          actions: [
+            "On the $DEEPOTUS Pump.fun page, enter the SOL amount to allocate.",
+            "Click « Buy ». Phantom shows the transaction — check the slippage (1 to 3% on Pump.fun).",
+            "Sign. Wait 5 to 15 seconds. The confirmation lands on-chain.",
+            "Back to Phantom → Tokens tab: $DEEPOTUS must appear with your balance.",
+            "Screenshot it. Tweet it with #PROTOCOL_DELTA_SIGMA. Join the simulation.",
+          ],
+          warning:
+            "Don't sell on the first dip. Don't panic on the first pump. The Prophet is watching, and he takes notes.",
+        },
+      ],
     },
 
     common: {

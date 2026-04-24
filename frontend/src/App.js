@@ -11,6 +11,7 @@ import AdminVault from "@/pages/AdminVault";
 import Operation from "@/pages/Operation";
 import ClassifiedVault from "@/pages/ClassifiedVault";
 import PublicStats from "@/pages/PublicStats";
+import HowToBuy from "@/pages/HowToBuy";
 
 function App() {
   useEffect(() => {
@@ -24,6 +25,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/how-to-buy" element={<HowToBuy />} />
               <Route path="/operation" element={<Operation />} />
               <Route path="/classified-vault" element={<ClassifiedVault />} />
               <Route path="/admin" element={<Admin />} />

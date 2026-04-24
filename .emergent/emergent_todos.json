@@ -1,22 +1,38 @@
 [
   {
-    "content": "ClassifiedVault.jsx : ajouter logger.error + user feedback sur les 2 catch vides",
+    "content": "Generate AI image of Prophet Guide via Gemini Nano Banana",
     "status": "completed"
   },
   {
-    "content": "vault.py : migrer les 4 random cosmétiques vers secrets (cohérence hardening)",
+    "content": "Add mock mint address constant + translations",
     "status": "completed"
   },
   {
-    "content": "routers/public.py : prophecy fallback random.choice → secrets.choice",
+    "content": "Add Mint Address field in Hero.jsx (copyable)",
     "status": "completed"
   },
   {
-    "content": "helius.py : refactor _classify_swap_via_events (CC 26→7 via extract helpers)",
+    "content": "Add 2 Buy CTAs in Tokenomics.jsx",
     "status": "completed"
   },
   {
-    "content": "Lint + smoke test backend",
+    "content": "Remove Discord from Socials.jsx + translations",
     "status": "completed"
+  },
+  {
+    "content": "Create HowToBuy.jsx page (cynical FR/EN guide)",
+    "status": "completed"
+  },
+  {
+    "content": "Register /how-to-buy route in App.js",
+    "status": "completed"
+  },
+  {
+    "content": "Test frontend with screenshot + testing agent",
+    "status": "completed"
+  },
+  {
+    "content": "Provide Namecheap deployment guide (deepotus.xyz)",
+    "status": "in_progress"
   }
 ]

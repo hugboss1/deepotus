@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n/I18nProvider";
-import { getBuyUrl, isBuyUrlExternal } from "@/lib/links";
-import { Radio, ShieldAlert, Cpu, Coins } from "lucide-react";
+import {
+  getBuyUrl,
+  isBuyUrlExternal,
+  DEEPOTUS_MINT,
+  isMintConfigured,
+} from "@/lib/links";
+import { Radio, ShieldAlert, Cpu, Coins, Copy, Check, HelpCircle } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -54,6 +61,7 @@ export default function Hero() {
   const [launchIso, setLaunchIso] = useState(null);
   const [variantIdx, setVariantIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     axios
@@ -61,6 +69,35 @@ export default function Hero() {
       .then((r) => setLaunchIso(r.data.launch_timestamp))
       .catch(() => {});
   }, []);
+
+  const handleCopyMint = async () => {
+    try {
+      await navigator.clipboard.writeText(DEEPOTUS_MINT);
+      setCopied(true);
+      toast.success(t("hero.mintCopied") || "Copied");
+      setTimeout(() => setCopied(false), 1800);
+    } catch (_err) {
+      // Fallback for older browsers / insecure contexts
+      const ta = document.createElement("textarea");
+      ta.value = DEEPOTUS_MINT;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "absolute";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        toast.success(t("hero.mintCopied") || "Copied");
+        setTimeout(() => setCopied(false), 1800);
+      } catch (_err2) {
+        toast.error("Copy failed");
+      }
+      document.body.removeChild(ta);
+    }
+  };
+
+  const mintLive = isMintConfigured();
 
   // Preload all variants
   useEffect(() => {
@@ -186,6 +223,68 @@ export default function Hero() {
                   {t("hero.buyCta")}
                 </a>
               </Button>
+            </div>
+
+            {/* $DEEPOTUS mint address — copyable terminal block */}
+            <div
+              className="mt-6 rounded-xl border border-border bg-card/70 p-3 sm:p-4 max-w-2xl"
+              data-testid="hero-mint-address"
+            >
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                  {t("hero.mintLabel")}
+                </div>
+                <span
+                  className={`font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                    mintLive
+                      ? "border-[#18C964]/50 bg-[#18C964]/10 text-[#18C964]"
+                      : "border-[#F59E0B]/50 bg-[#F59E0B]/10 text-[#F59E0B]"
+                  }`}
+                  data-testid="hero-mint-status"
+                >
+                  {mintLive
+                    ? t("hero.mintStatusLive")
+                    : t("hero.mintStatusPlaceholder")}
+                </span>
+              </div>
+              <div className="flex items-stretch gap-2">
+                <code
+                  className="flex-1 min-w-0 font-mono text-[11px] sm:text-xs text-foreground/90 bg-background/60 border border-border rounded-md px-3 py-2 overflow-x-auto whitespace-nowrap tabular"
+                  data-testid="hero-mint-value"
+                  aria-label="$DEEPOTUS mint address"
+                >
+                  {DEEPOTUS_MINT}
+                </code>
+                <button
+                  type="button"
+                  onClick={handleCopyMint}
+                  aria-label="Copy mint address"
+                  data-testid="hero-mint-copy-button"
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3 rounded-md font-mono text-[10px] uppercase tracking-widest border transition-colors ${
+                    copied
+                      ? "border-[#18C964]/60 bg-[#18C964]/15 text-[#18C964]"
+                      : "border-border bg-background/60 text-foreground/80 hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  <span>
+                    {copied ? t("hero.mintCopied") : t("hero.mintCopy")}
+                  </span>
+                </button>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 flex-wrap">
+                <div className="font-mono text-[10px] text-muted-foreground">
+                  {t("hero.mintHint")}
+                </div>
+                <Link
+                  to="/how-to-buy"
+                  className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-[#2DD4BF] hover:underline"
+                  data-testid="hero-mint-guide-link"
+                >
+                  <HelpCircle size={11} />
+                  {t("hero.mintGuideCta")}
+                </Link>
+              </div>
             </div>
 
             <p className="mt-5 text-[11px] font-mono text-muted-foreground max-w-md leading-relaxed">

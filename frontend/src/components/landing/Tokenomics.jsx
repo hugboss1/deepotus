@@ -7,7 +7,9 @@ import {
   Tooltip,
 } from "recharts";
 import { motion } from "framer-motion";
-import { ShieldCheck, ExternalLink, Lock } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ShieldCheck, ExternalLink, Lock, Rocket, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   TEAM_LOCK_URL,
@@ -15,6 +17,9 @@ import {
   hasTeamLock,
   hasTreasuryLock,
   hasAnyLock,
+  getBuyUrl,
+  isBuyUrlExternal,
+  PUMPFUN_URL,
 } from "@/lib/links";
 
 // Allocations: 30/20/15/15/10/10. `lockable` flags mark categories that will
@@ -306,6 +311,56 @@ export default function Tokenomics() {
                   {t("tokenomics.cynicalBody")}
                 </p>
               </div>
+            </div>
+
+            {/* Buy $DEEPOTUS — double CTA (guide + direct buy) */}
+            <div
+              className="mt-6 rounded-xl border border-border bg-card p-5"
+              data-testid="tokenomics-buy-cta-block"
+            >
+              <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                {t("tokenomics.buyKicker")}
+              </div>
+              <h3 className="mt-1 font-display font-semibold text-xl md:text-2xl">
+                {t("tokenomics.buyTitle")}
+              </h3>
+              <p className="mt-2 text-sm text-foreground/80 leading-relaxed">
+                {t("tokenomics.buyCopy")}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="rounded-[var(--btn-radius)] btn-press font-semibold"
+                  data-testid="tokenomics-buy-primary"
+                >
+                  <a
+                    href={getBuyUrl()}
+                    target={isBuyUrlExternal() ? "_blank" : undefined}
+                    rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
+                  >
+                    <Rocket size={16} className="mr-1" />
+                    {t("tokenomics.buyCtaPrimary")}
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="rounded-[var(--btn-radius)] btn-press font-semibold"
+                  data-testid="tokenomics-buy-guide"
+                >
+                  <Link to="/how-to-buy">
+                    <BookOpen size={16} className="mr-1" />
+                    {t("tokenomics.buyCtaGuide")}
+                  </Link>
+                </Button>
+              </div>
+              {!PUMPFUN_URL && (
+                <p className="mt-3 font-mono text-[10px] text-muted-foreground">
+                  {t("tokenomics.buyPrelaunchNote")}
+                </p>
+              )}
             </div>
           </div>
         </div>
