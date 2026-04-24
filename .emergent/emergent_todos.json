@@ -1,38 +1,34 @@
 [
   {
-    "content": "Generate AI image of Prophet Guide via Gemini Nano Banana",
-    "status": "completed"
-  },
-  {
-    "content": "Add mock mint address constant + translations",
-    "status": "completed"
-  },
-  {
-    "content": "Add Mint Address field in Hero.jsx (copyable)",
-    "status": "completed"
-  },
-  {
-    "content": "Add 2 Buy CTAs in Tokenomics.jsx",
-    "status": "completed"
-  },
-  {
-    "content": "Remove Discord from Socials.jsx + translations",
-    "status": "completed"
-  },
-  {
-    "content": "Create HowToBuy.jsx page (cynical FR/EN guide)",
-    "status": "completed"
-  },
-  {
-    "content": "Register /how-to-buy route in App.js",
-    "status": "completed"
-  },
-  {
-    "content": "Test frontend with screenshot + testing agent",
-    "status": "completed"
-  },
-  {
     "content": "Provide Namecheap deployment guide (deepotus.xyz)",
-    "status": "in_progress"
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Add APScheduler to requirements + install",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Create BotConfig & BotPost Pydantic models",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Create core/scheduler.py (async lifecycle)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Create routers/bots.py (admin endpoints)",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Hook scheduler into FastAPI startup/shutdown in server.py",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Heartbeat job + kill switch verification",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1 Bot: Test all admin endpoints via curl",
+    "status": "completed"
   }
 ]

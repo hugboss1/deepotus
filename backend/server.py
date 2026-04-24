@@ -33,6 +33,7 @@ from core.security import ensure_jwt_secrets
 from routers import (
     access_card as access_card_router,
     admin as admin_router,
+    bots as bots_router,
     operation as operation_router,
     public as public_router,
     public_stats as public_stats_router,
@@ -54,6 +55,7 @@ app.include_router(vault_router.router)
 app.include_router(vault_router.admin_router)
 app.include_router(access_card_router.router)
 app.include_router(operation_router.router)
+app.include_router(bots_router.router)
 
 # CORS
 app.add_middleware(
@@ -124,7 +126,23 @@ async def on_startup():
     except Exception:
         logging.exception("[startup] failed to initialize vault")
 
+    # ---- Phase 1 bot fleet foundation (X / Telegram) ----
+    try:
+        from core.bot_scheduler import start_scheduler
+        await db.bot_posts.create_index("created_at")
+        await db.bot_posts.create_index([("platform", 1), ("created_at", -1)])
+        await db.bot_posts.create_index([("status", 1), ("created_at", -1)])
+        await start_scheduler()
+        logger.info("[startup] bot scheduler online (Phase 1 — kill-switch ON by default).")
+    except Exception:
+        logging.exception("[startup] bot scheduler failed to start")
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    try:
+        from core.bot_scheduler import shutdown_scheduler
+        await shutdown_scheduler()
+    except Exception:
+        logging.exception("[shutdown] bot scheduler shutdown warning")
     client.close()
