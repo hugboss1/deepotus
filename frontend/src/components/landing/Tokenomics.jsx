@@ -103,11 +103,14 @@ export default function Tokenomics() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    wrapperStyle={{ zIndex: 50, outline: "none" }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
               {/* Gold coin stamped at the center of the donut — fills the inner void */}
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
                 <motion.img
                   src="/gold_coin_front.png"
                   alt="$DEEPOTUS · PROTOCOL ΔΣ — frappe officielle"
