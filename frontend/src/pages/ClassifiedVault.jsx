@@ -19,6 +19,7 @@ import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
 import VaultChassis from "@/components/landing/vault/VaultChassis";
 import VaultActivityFeed from "@/components/landing/vault/VaultActivityFeed";
+import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const SESSION_KEY = "deepotus_access_session";
@@ -74,8 +75,11 @@ export default function ClassifiedVault() {
           localStorage.removeItem(SESSION_KEY);
           setSession(null);
         }
-      } catch {
-        /* ignore */
+      } catch (e) {
+        // Session-check failure: keep the existing session rather than logging
+        // the user out on a transient network hiccup. The next poll or a user
+        // action will naturally revalidate or prompt re-auth.
+        logger.error("[classified-vault] session status check failed", e);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,8 +96,10 @@ export default function ClassifiedVault() {
         const data = await res.json();
         if (!aliveRef.current) return;
         setVault(data);
-      } catch {
-        /* ignore */
+      } catch (e) {
+        // Non-blocking: the next interval tick will retry. We only surface the
+        // error via logger so it stays visible during dev without breaking UX.
+        logger.error("[classified-vault] vault poll failed", e);
       }
     };
     fetchState();

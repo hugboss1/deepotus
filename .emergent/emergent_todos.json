@@ -1,22 +1,22 @@
 [
   {
-    "content": "Ajouter badge 'Jupiter Lock Certified' sur le graphique Tokenomics + env vars TEAM_LOCK_URL / TREASURY_LOCK_URL",
+    "content": "ClassifiedVault.jsx : ajouter logger.error + user feedback sur les 2 catch vides",
     "status": "completed"
   },
   {
-    "content": "Ajouter mini-badges 'LOCK' sur les allocations Équipe (15%) + Trésor (30%) dans la légende",
+    "content": "vault.py : migrer les 4 random cosmétiques vers secrets (cohérence hardening)",
     "status": "completed"
   },
   {
-    "content": "Traduire FR/EN les nouveaux textes de lock",
+    "content": "routers/public.py : prophecy fallback random.choice → secrets.choice",
     "status": "completed"
   },
   {
-    "content": "Screenshot de validation",
+    "content": "helius.py : refactor _classify_swap_via_events (CC 26→7 via extract helpers)",
     "status": "completed"
   },
   {
-    "content": "Fournir liste détaillée KOLs + plan final + démarrer P1 bots en mock",
-    "status": "in_progress"
+    "content": "Lint + smoke test backend",
+    "status": "completed"
   }
 ]

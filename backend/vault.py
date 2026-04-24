@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -89,17 +88,23 @@ def _compute_stage(digits_locked: int, num_digits: int) -> str:
 
 
 def _fake_agent_code() -> str:
-    prefix = random.choice(AGENT_PREFIXES)
-    num = random.randint(10, 9999)
+    """Generate a decorative agent code like `SIGMA-0472` for the live feed.
+
+    Uses `secrets` even though this is cosmetic — it removes the uncertainty
+    around "is this RNG path ever used for security?" and keeps the whole
+    vault module on one RNG standard.
+    """
+    prefix = secrets.choice(AGENT_PREFIXES)
+    num = secrets.randbelow(9990) + 10  # 10..9999 inclusive
     return f"{prefix}-{num:04d}"
 
 
 def _render_current_combination(
     target: List[int], digits_locked: int
 ) -> List[int]:
-    """Locked dials show target digit; unlocked dials show a random 0-9."""
+    """Locked dials show target digit; unlocked dials show a spinning 0-9."""
     return [
-        target[i] if i < digits_locked else random.randint(0, 9)
+        target[i] if i < digits_locked else secrets.randbelow(10)
         for i in range(len(target))
     ]
 
@@ -575,7 +580,7 @@ async def hourly_tick_loop(db):
                 high = max(low + 1, int(tokens_per_micro * 11))
                 # Safety cap: never add more than 10% of one dial per hour
                 high = min(high, max(low + 1, tokens_per_digit // 10))
-                bump = random.randint(low, high)
+                bump = low + secrets.randbelow(max(1, high - low + 1))
                 await apply_crack(
                     db,
                     tokens=bump,

@@ -7,7 +7,7 @@ Prophet chat and the countdown/KPI strip.
 from __future__ import annotations
 
 import logging
-import random
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -125,7 +125,7 @@ async def prophecy(lang: str = "fr", live: bool = True):
     if not live or not EMERGENT_LLM_KEY:
         pool = SEEDED_PROPHECIES_FR if lang == "fr" else SEEDED_PROPHECIES_EN
         return ProphecyResponse(
-            prophecy=random.choice(pool),
+            prophecy=secrets.choice(pool),
             lang=lang,
             generated_at=datetime.now(timezone.utc).isoformat(),
         )
@@ -165,7 +165,7 @@ async def prophecy(lang: str = "fr", live: bool = True):
         logging.exception("Prophecy error, falling back")
         pool = SEEDED_PROPHECIES_FR if lang == "fr" else SEEDED_PROPHECIES_EN
         return ProphecyResponse(
-            prophecy=random.choice(pool),
+            prophecy=secrets.choice(pool),
             lang=lang,
             generated_at=datetime.now(timezone.utc).isoformat(),
         )

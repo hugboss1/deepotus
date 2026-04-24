@@ -84,54 +84,61 @@ def _identify_pool(
     return None
 
 
-def _classify_swap_via_events(
-    tx: Dict[str, Any], mint: str
-) -> Tuple[str, float, Optional[str]]:
-    """Use Helius `events.swap` (structured) when available — the most reliable path.
+def _coerce_token_amount(entry: Dict[str, Any]) -> float:
+    """Extract a normalized (decimals-applied) token amount from a swap entry.
 
-    Helius enhanced schema exposes events.swap.tokenInputs / tokenOutputs with
-    the user account, the mint, and the raw amount. We don't need any pool
-    knowledge: if our mint is in tokenOutputs → user receives it = BUY;
-    if it's in tokenInputs → user sends it = SELL.
-
-    Returns ("buy"|"sell"|"unknown", token_amount, user_wallet)
+    Helius uses two shapes:
+        - `tokenAmount` (float, already decimal-normalized)
+        - `rawTokenAmount: {tokenAmount, decimals}` (raw integer + decimals)
     """
-    events = tx.get("events") or {}
-    swap = events.get("swap") if isinstance(events, dict) else None
-    if not isinstance(swap, dict):
-        return "unknown", 0.0, None
+    raw_obj = entry.get("rawTokenAmount") or {}
+    amt = entry.get("tokenAmount") or raw_obj.get("tokenAmount") or 0
+    try:
+        value = float(amt)
+    except (TypeError, ValueError):
+        return 0.0
 
-    def _scan(entries, prefer_user_key="userAccount"):
-        """Return (total_amount, user_wallet) summed across entries matching our mint."""
-        total = 0.0
-        wallet: Optional[str] = None
-        for e in entries or []:
-            if not isinstance(e, dict):
-                continue
-            if (e.get("mint") or "").strip() != mint:
-                continue
-            amt = e.get("tokenAmount") or e.get("rawTokenAmount", {}).get(
-                "tokenAmount"
-            ) or 0
-            try:
-                amt = float(amt)
-                if e.get("rawTokenAmount"):
-                    # decimals normalization
-                    decimals = int(
-                        e.get("rawTokenAmount", {}).get("decimals") or 0
-                    )
-                    if decimals > 0:
-                        amt = amt / (10 ** decimals)
-            except Exception:
-                amt = 0.0
-            total += abs(amt)
-            if not wallet:
-                wallet = e.get(prefer_user_key) or e.get("account")
-        return total, wallet
+    decimals = 0
+    try:
+        decimals = int(raw_obj.get("decimals") or 0)
+    except (TypeError, ValueError):
+        decimals = 0
 
-    out_tokens, out_user = _scan(swap.get("tokenOutputs"))
-    in_tokens, in_user = _scan(swap.get("tokenInputs"))
+    if raw_obj and decimals > 0:
+        value = value / (10 ** decimals)
+    return value
 
+
+def _scan_swap_entries(
+    entries, mint: str, prefer_user_key: str = "userAccount"
+) -> Tuple[float, Optional[str]]:
+    """Sum token amounts matching `mint` across a list of swap entries.
+
+    Returns (total_amount, first_non_empty_wallet).
+    """
+    if not entries:
+        return 0.0, None
+
+    total = 0.0
+    wallet: Optional[str] = None
+    for e in entries:
+        if not isinstance(e, dict):
+            continue
+        if (e.get("mint") or "").strip() != mint:
+            continue
+        total += abs(_coerce_token_amount(e))
+        if not wallet:
+            wallet = e.get(prefer_user_key) or e.get("account")
+    return total, wallet
+
+
+def _decide_direction(
+    out_tokens: float,
+    in_tokens: float,
+    out_user: Optional[str],
+    in_user: Optional[str],
+) -> Tuple[str, float, Optional[str]]:
+    """Pure decision layer: compare input vs output sums to label a swap."""
     if out_tokens > 0 and in_tokens == 0:
         return "buy", out_tokens, out_user
     if in_tokens > 0 and out_tokens == 0:
@@ -143,20 +150,33 @@ def _classify_swap_via_events(
     return "unknown", 0.0, out_user or in_user
 
 
-def _classify_swap(
+def _classify_swap_via_events(
+    tx: Dict[str, Any], mint: str
+) -> Tuple[str, float, Optional[str]]:
+    """Use Helius `events.swap` (structured) when available — the most reliable path.
+
+    If our mint is in tokenOutputs → user receives it = BUY.
+    If it's in tokenInputs → user sends it = SELL.
+    No pool knowledge required.
+    """
+    events = tx.get("events") or {}
+    swap = events.get("swap") if isinstance(events, dict) else None
+    if not isinstance(swap, dict):
+        return "unknown", 0.0, None
+
+    out_tokens, out_user = _scan_swap_entries(swap.get("tokenOutputs"), mint)
+    in_tokens, in_user = _scan_swap_entries(swap.get("tokenInputs"), mint)
+    return _decide_direction(out_tokens, in_tokens, out_user, in_user)
+
+
+def _classify_swap_via_transfers(
     tx: Dict[str, Any], mint: str, pool: Optional[str]
 ) -> Tuple[str, float, Optional[str]]:
-    """Return (direction, token_amount, user_wallet).
+    """Fallback parser when `events.swap` is missing.
 
-    Tries `events.swap` first (most reliable, needs no pool info).
-    Falls back to tokenTransfers + pool heuristic if events.swap is missing.
+    Relies on the pool address to tell apart incoming and outgoing transfers.
+    Without a pool, this fallback returns `unknown`.
     """
-    # --- Primary: structured events.swap ---
-    direction, tokens, user = _classify_swap_via_events(tx, mint)
-    if direction != "unknown" and tokens > 0:
-        return direction, tokens, user
-
-    # --- Fallback: raw tokenTransfers against known pool ---
     transfers = _token_transfers_for_mint(tx, mint)
     if not transfers:
         return "unknown", 0.0, None
@@ -166,7 +186,10 @@ def _classify_swap(
     user_wallet: Optional[str] = None
 
     for t in transfers:
-        amount = float(t.get("tokenAmount") or 0)
+        try:
+            amount = float(t.get("tokenAmount") or 0)
+        except (TypeError, ValueError):
+            amount = 0.0
         src = t.get("fromUserAccount") or ""
         dst = t.get("toUserAccount") or ""
         if pool and src == pool:
@@ -177,18 +200,25 @@ def _classify_swap(
             total_from_user += amount
             if not user_wallet and src:
                 user_wallet = src
-        else:
-            continue
 
-    if total_to_user > 0 and total_from_user == 0:
-        return "buy", total_to_user, user_wallet
-    if total_from_user > 0 and total_to_user == 0:
-        return "sell", total_from_user, user_wallet
-    if total_to_user > total_from_user:
-        return "buy", total_to_user - total_from_user, user_wallet
-    if total_from_user > total_to_user:
-        return "sell", total_from_user - total_to_user, user_wallet
-    return "unknown", 0.0, user_wallet
+    direction, tokens, wallet = _decide_direction(
+        total_to_user, total_from_user, user_wallet, user_wallet
+    )
+    return direction, tokens, wallet
+
+
+def _classify_swap(
+    tx: Dict[str, Any], mint: str, pool: Optional[str]
+) -> Tuple[str, float, Optional[str]]:
+    """Return (direction, token_amount, user_wallet).
+
+    Tries `events.swap` first (most reliable, needs no pool info).
+    Falls back to tokenTransfers + pool heuristic if events.swap is missing.
+    """
+    direction, tokens, user = _classify_swap_via_events(tx, mint)
+    if direction != "unknown" and tokens > 0:
+        return direction, tokens, user
+    return _classify_swap_via_transfers(tx, mint, pool)
 
 
 # ---------------------------------------------------------------------
