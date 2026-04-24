@@ -13,7 +13,7 @@ from typing import List
 from fastapi import APIRouter
 
 import vault as vault_mod
-from core.config import db
+from core.config import LAUNCH_ISO, db
 from core.models import OperationRevealResponse
 
 router = APIRouter(prefix="/api/operation", tags=["operation"])
@@ -58,16 +58,22 @@ async def operation_reveal():
             stage=state.stage,
         )
 
-    # Compute a deterministic GENCOIN launch: 14 days after the vault was fully cracked.
+    # GENCOIN launch date is pinned by DEEPOTUS_LAUNCH_ISO env var when set.
+    # Otherwise we fall back to "14 days after the vault was fully cracked"
+    # which keeps the narrative consistent if the date ever becomes dynamic.
     doc = await db.vault_state.find_one({"_id": vault_mod.VAULT_DOC_ID}) or {}
     declassified_at_raw = doc.get("last_event_at") or datetime.now(
         timezone.utc
     ).isoformat()
-    try:
-        ref = datetime.fromisoformat(declassified_at_raw.replace("Z", "+00:00"))
-    except Exception:
-        ref = datetime.now(timezone.utc)
-    launch_at = (ref + timedelta(days=14)).isoformat()
+
+    if LAUNCH_ISO:
+        launch_at = LAUNCH_ISO
+    else:
+        try:
+            ref = datetime.fromisoformat(declassified_at_raw.replace("Z", "+00:00"))
+        except Exception:
+            ref = datetime.now(timezone.utc)
+        launch_at = (ref + timedelta(days=14)).isoformat()
 
     return OperationRevealResponse(
         unlocked=True,
