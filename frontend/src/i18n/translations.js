@@ -238,85 +238,95 @@ export const translations = {
 
     // ---- Tokenomics ----
     tokenomics: {
-      kicker: "— ALLOCATION",
-      title: "Tokenomics",
-      subtitle: "Supply fixe — 1 000 000 000 tokens",
+      kicker: "— ALLOCATION & DISCIPLINE",
+      title: "Tokenomics · Protocole 0% Tax",
+      subtitle: "Supply fixe — 1 000 000 000 tokens · Lancement sur Pump.fun",
       categories: {
         treasury: {
-          name: "Trésor Opération (PROTOCOL ΔΣ + MiCA)",
-          detail: "Multisig + timelock. Plafond de vente hebdo. Vente annoncée avant exécution.",
+          name: "Trésor Opérationnel (PROTOCOL ΔΣ)",
+          detail: "Réserve de guerre pour le futur projet MiCA-compliant. Multisig public. Financé par sa propre valorisation — jamais par vos échanges.",
         },
         liquidity: {
-          name: "Liquidité / DEX",
-          detail: "LP initiale €2K → renfort €10K à J+2. Tokens LP lockés.",
+          name: "Liquidité & Ascension Raydium",
+          detail: "Départ sur Pump.fun. Migration chirurgicale vers Raydium dès la complétion de la Bonding Curve. Renfort de LP pour stabiliser le prix cible ≈ 0,0005€.",
         },
         marketing: {
-          name: "Marketing / KOL",
-          detail: "Traction — pas de KOL non-vesté autour de J+2.",
+          name: "Traction & Opérations X/TG",
+          detail: "Propagande et acquisition. Parce qu'un prophète silencieux ne sert à rien dans ce marché.",
         },
         airdrops: {
-          name: "Airdrops / Communauté",
-          detail: "Incentives, concours, diffusion virale. Pas de drop massif non-locké.",
+          name: "Communauté & Airdrops",
+          detail: "Pour les agents actifs. Distributions ciblées et verrouillées pour récompenser la loyauté, pas le dump.",
         },
         ai_lore: {
-          name: "Réserve IA / Lore",
-          detail: "Soutient le personnage prophétique et ses expériences narratives.",
+          name: "Réserve IA & Lore",
+          detail: "Maintient les serveurs de la simulation et alimente les prophéties quotidiennes.",
         },
         team: {
-          name: "Équipe / Conseillers",
-          detail: "Vesting linéaire sur 12 mois + cliff 3 mois.",
+          name: "Équipe & Prophète",
+          detail: "Vesting linéaire 12 mois + cliff 3 mois. Verrouillage public via Streamflow.",
         },
       },
       totalLabel: "Supply total",
-      taxTitle: "Taxe de transaction",
-      tax: [
-        { label: "2% → PROTOCOL ΔΣ / Conformité", color: "#2DD4BF" },
-        { label: "1% → Liquidité & Marketing", color: "#F59E0B" },
-      ],
-      taxCap:
-        "Plafond de collecte communiqué. Taxe réduite une fois le coffre ouvert.",
+      taxTitle: "0% TAX PROTOCOL",
+      taxBadge: "Vélocité maximale",
+      taxIntro: "Le Deep State a décidé d'éliminer les frictions inutiles. $DEEPOTUS adopte une structure 0% Tax à l'achat comme à la vente. Pas de frais cachés, pas de bureaucratie on-chain.",
+      taxCap: "Le financement du PROTOCOL ΔΣ est assuré par la valorisation du Trésor (30%) — scellé en multisig, ventes planifiées et annoncées à l'avance.",
+      cynicalTitle: "Transparence Cynique",
+      cynicalBody: "L'absence de taxe signifie que nous comptons uniquement sur la croissance du jeton pour financer PROTOCOL ΔΣ. Si le prix monte, le coffre se remplit. Si le coffre se remplit, la vérité éclate. C'est le seul indicateur qui compte.",
     },
 
     // ---- Transparency / Liquidity timeline ----
     transparency: {
       kicker: "— TRANSPARENCE ON-CHAIN",
-      title: "Plan de Liquidité & Discipline du Trésor",
+      title: "Lancement Pump.fun & Discipline du Trésor",
       subtitle:
-        "De J0 à J+2 et au-delà. Chaque étape est publiée avant exécution.",
+        "De J0 à l'Ascension Raydium. Chaque étape est publiée avant exécution.",
       timeline: [
         {
           phase: "J0",
-          title: "Lancement symmétrique",
+          title: "Lancement Pump.fun · 0% Tax",
           bullets: [
-            "LP initiale ≈ €2 000 (≈ €1 000 memecoin + €1 000 SOL/USDC)",
-            "≈ 2 000 000 tokens injectés à €0,0005",
-            "Trésor mis en multisig immédiatement",
+            "Mint 1 000 000 000 $DEEPOTUS · standard SPL Pump.fun",
+            "Dev-buy modéré du fondateur pour crédibilité (annoncé on-chain)",
+            "Tokens équipe lockés immédiatement via Streamflow (vesting 12m + cliff 3m)",
+            "Trésor (30%) scellé en multisig public",
           ],
         },
         {
-          phase: "J+2",
-          title: "Renforcement de la LP à €10K",
+          phase: "Bonding Curve",
+          title: "Montée sur la courbe de Pump.fun",
           bullets: [
-            "+€8 000 net de LP ajouté",
-            "≈ €6 000 issus d'une vente contrôlée du trésor (≈ 4% du trésor, en petits blocs)",
-            "≈ €2 000 issus des taxes accumulées + apport externe",
-            "Tokens LP lockés — brulés ou verrouillés via service public",
+            "Prix déterminé par la bonding curve — pas de taxe sur les swaps",
+            "Objectif : atteindre 100% de la courbe (≈ 60k$ de MC)",
+            "Le coffre commence à se verrouiller au fil des achats",
+            "Aucune vente du trésor tant que la migration n'est pas faite",
           ],
         },
         {
-          phase: "J+2 → ∞",
+          phase: "Ascension Raydium",
+          title: "Migration automatique vers Raydium",
+          bullets: [
+            "Pump.fun brûle la LP initiale et la migre vers Raydium (≈ 12k$)",
+            "Renfort chirurgical de la LP pour stabiliser le prix cible ≈ 0,0005€",
+            "Apport externe (2–4k€) + ventes contrôlées du trésor annoncées à l'avance",
+            "Audit sécurité publié + vérification on-chain ouverte à tous",
+          ],
+        },
+        {
+          phase: "Raydium → ∞",
           title: "Discipline Anti-Dump",
           bullets: [
             "Multisig + timelock sur le trésor",
-            "Plafond hebdomadaire de vente affiché",
-            "Ventes découpées en petits blocs",
-            "Zero airdrop massif sync autour du renforcement LP",
+            "Plafond hebdomadaire de vente du trésor affiché publiquement",
+            "Ventes découpées en petits blocs, annoncées 48h à l'avance",
+            "Zéro airdrop massif sync autour des renforts de LP",
           ],
         },
       ],
       proofTitle: "Pourquoi c'est du sérieux assumé",
       proof:
-        "Une petite vente de trésor annoncée à l'avance n'est pas un dump : c'est une exécution budgétaire. Nous publions tout à l'avance. La communauté vérifie on-chain. Le Prophète se moque. Mais les règles tiennent.",
+        "0% Tax signifie un coffre qui se remplit uniquement par la croissance. Chaque action du trésor est annoncée avant exécution, la communauté vérifie on-chain, et le Prophète se moque pendant ce temps. Les règles tiennent — même quand le narratif est cynique.",
     },
 
     // ---- ROI simulator ----
@@ -357,38 +367,38 @@ export const translations = {
       phases: [
         {
           tag: "Phase 01",
-          title: "Lancement $DEEPOTUS",
+          title: "The Bonding Curve Trial — Lancement Pump.fun",
           bullets: [
-            "Création du contrat Solana",
-            "LP initiale €2K",
-            "Ouverture du terminal prophétique",
+            "Mint 1B tokens sur Pump.fun · 0% Tax Protocol",
+            "Le Prophète teste la foi de ses disciples sur la Bonding Curve",
+            "Objectif : atteindre 100% de la courbe (≈ 60k$ MC)",
           ],
         },
         {
           tag: "Phase 02",
-          title: "Consolidation",
+          title: "Raydium Ascension — Migration automatique",
           bullets: [
-            "LP à €10K, verrouillée",
-            "Communauté, airdrops, lore IA",
-            "Premières publications de transparence",
+            "LP automatiquement brûlée et migrée vers Raydium par Pump.fun",
+            "Renforcement stratégique de la LP pour stabiliser le prix cible ≈ 0,0005€",
+            "Tokens équipe lockés publiquement via Streamflow (vesting 12m + cliff 3m)",
           ],
         },
         {
           tag: "Phase 03",
           title: "PROTOCOL ΔΣ · premières molettes",
           bullets: [
-            "Premières molettes verrouillées",
-            "Allocations vers conformité MiCA de l'Opération",
-            "Transmissions prophétiques intensifiées",
+            "Premières molettes verrouillées au fil des achats",
+            "Allocations Trésor vers préparation du projet MiCA-compliant",
+            "Transmissions prophétiques intensifiées (X + Telegram)",
           ],
         },
         {
           tag: "Phase 04",
           title: "Déclassification",
           bullets: [
-            "Audit sécurité",
-            "Six molettes verrouillées",
-            "Ouverture du Coffre — la Black Op est révélée",
+            "Six molettes verrouillées · Coffre ouvert",
+            "Audit sécurité publié",
+            "La Black Op est révélée — transition vers la phase MiCA",
           ],
         },
       ],
@@ -434,8 +444,8 @@ export const translations = {
           a: "Parce que la Black Op financée est séquencée : elle n'a de sens que si elle s'ouvre au bon moment. Le Prophète connaît la combinaison. Personne d'autre. Le coffre s'ouvre lorsque six cadrans s'alignent. C'est notre modèle — et notre honnêteté.",
         },
         {
-          q: "Comment fonctionne la taxe de 3% ?",
-          a: "2% vont dans une wallet dédiée PROTOCOL ΔΣ / conformité, 1% dans la liquidité / marketing. Plafond annoncé, taxe réduite une fois le coffre ouvert.",
+          q: "Pourquoi 0% de taxe ? Comment financer le Trésor alors ?",
+          a: "Pump.fun interdit les taxes sur les tokens SPL standard — et c'est mieux pour la vélocité. Le Trésor de 30% est scellé en multisig et financé par sa propre valorisation. Chaque vente du Trésor est planifiée, plafonnée et annoncée avant exécution.",
         },
         {
           q: "Comment est sécurisé le trésor ?",
@@ -447,7 +457,7 @@ export const translations = {
         },
         {
           q: "Est-ce que $DEEPOTUS est conforme MiCA ?",
-          a: "Un memecoin n'est pas un titre financier. Nous adoptons la philosophie MiCA : transparence de l'information sur la structure (tokenomics, taxes, gouvernance), affectation claire des fonds (Coffre), aucune promesse de rendement, disclaimer explicite.",
+          a: "Un memecoin n'est pas un titre financier. Nous adoptons la philosophie MiCA : transparence de l'information sur la structure (tokenomics, allocation, gouvernance), affectation claire des fonds (Coffre), aucune promesse de rendement, disclaimer explicite.",
         },
         {
           q: "Puis-je perdre 100% de mon investissement ?",
@@ -742,84 +752,94 @@ export const translations = {
     },
 
     tokenomics: {
-      kicker: "— ALLOCATION",
-      title: "Tokenomics",
-      subtitle: "Fixed supply — 1,000,000,000 tokens",
+      kicker: "— ALLOCATION & DISCIPLINE",
+      title: "Tokenomics · 0% Tax Protocol",
+      subtitle: "Fixed supply — 1,000,000,000 tokens · Launched on Pump.fun",
       categories: {
         treasury: {
-          name: "Operation Treasury (PROTOCOL ΔΣ + MiCA)",
-          detail: "Multisig + timelock. Weekly sell cap. Sales announced in advance.",
+          name: "Operational Treasury (PROTOCOL ΔΣ)",
+          detail: "War reserve for the future MiCA-compliant project. Public multisig. Funded by its OWN valuation — never by your swaps.",
         },
         liquidity: {
-          name: "Liquidity / DEX",
-          detail: "Initial LP €2K → scale to €10K at J+2. LP tokens locked.",
+          name: "Liquidity & Raydium Ascension",
+          detail: "Launched on Pump.fun. Surgical migration to Raydium as soon as the Bonding Curve completes. LP reinforcement stabilizes the ≈€0.0005 target price.",
         },
         marketing: {
-          name: "Marketing / KOL",
-          detail: "Traction — no unvested KOL around J+2.",
+          name: "Traction & X/TG Operations",
+          detail: "Propaganda and acquisition. A silent prophet is useless in this market.",
         },
         airdrops: {
-          name: "Airdrops / Community",
-          detail: "Incentives, contests, viral distribution. No massive unlocked drop.",
+          name: "Community & Airdrops",
+          detail: "For active agents. Targeted, locked distributions rewarding loyalty, not the dump.",
         },
         ai_lore: {
-          name: "AI / Lore Reserve",
-          detail: "Supports the prophet character and narrative experiments.",
+          name: "AI Reserve & Lore",
+          detail: "Keeps the simulation servers running and fuels the daily prophecies.",
         },
         team: {
-          name: "Team / Advisors",
-          detail: "Linear vesting 12 months + 3-month cliff.",
+          name: "Team & Prophet",
+          detail: "12-month linear vesting + 3-month cliff. Public lock via Streamflow.",
         },
       },
       totalLabel: "Total supply",
-      taxTitle: "Transaction tax",
-      tax: [
-        { label: "2% → PROTOCOL ΔΣ / Compliance", color: "#2DD4BF" },
-        { label: "1% → Liquidity & Marketing", color: "#F59E0B" },
-      ],
-      taxCap:
-        "Collection cap announced. Tax reduced once the vault opens.",
+      taxTitle: "0% TAX PROTOCOL",
+      taxBadge: "Maximum velocity",
+      taxIntro: "The Deep State eliminated useless friction. $DEEPOTUS runs a 0% tax structure on buy and sell. No hidden fees, no on-chain bureaucracy.",
+      taxCap: "PROTOCOL ΔΣ funding comes from the Treasury's own valuation (30%) — multisig-sealed, sales scheduled and pre-announced.",
+      cynicalTitle: "Cynical Transparency",
+      cynicalBody: "No tax means we rely solely on the token's growth to fund PROTOCOL ΔΣ. If the price rises, the vault fills. If the vault fills, the truth breaks. That's the only metric that matters.",
     },
 
     transparency: {
       kicker: "— ON-CHAIN TRANSPARENCY",
-      title: "Liquidity Plan & Treasury Discipline",
+      title: "Pump.fun Launch & Treasury Discipline",
       subtitle:
-        "From J0 to J+2 and beyond. Every step is published before execution.",
+        "From D0 to Raydium Ascension. Every step is published before execution.",
       timeline: [
         {
-          phase: "J0",
-          title: "Symmetric launch",
+          phase: "D0",
+          title: "Pump.fun Launch · 0% Tax",
           bullets: [
-            "Initial LP ≈ €2,000 (≈ €1,000 memecoin + €1,000 SOL/USDC)",
-            "≈ 2,000,000 tokens injected at €0.0005",
-            "Treasury moved to multisig immediately",
+            "Mint 1,000,000,000 $DEEPOTUS · Pump.fun SPL standard",
+            "Moderate founder dev-buy for credibility (announced on-chain)",
+            "Team tokens immediately locked via Streamflow (12-month vesting + 3-month cliff)",
+            "Treasury (30%) sealed in public multisig",
           ],
         },
         {
-          phase: "J+2",
-          title: "LP scaled to €10K",
+          phase: "Bonding Curve",
+          title: "Climbing the Pump.fun curve",
           bullets: [
-            "+€8,000 net LP added",
-            "≈ €6,000 from a controlled treasury sale (≈ 4% of treasury, in small blocks)",
-            "≈ €2,000 from accumulated taxes + external input",
-            "LP tokens locked — burned or time-locked via public service",
+            "Price set by the bonding curve — no swap tax",
+            "Target: complete 100% of the curve (≈ $60k MC)",
+            "Vault dials start locking as buys accumulate",
+            "Zero treasury selling until migration is complete",
           ],
         },
         {
-          phase: "J+2 → ∞",
-          title: "Anti-dump discipline",
+          phase: "Raydium Ascension",
+          title: "Automatic migration to Raydium",
           bullets: [
-            "Multisig + timelock on treasury",
-            "Public weekly sell cap",
-            "Sales split into small blocks",
-            "No massive airdrop sync around LP reinforcement",
+            "Pump.fun burns the initial LP and migrates to Raydium (≈ $12k)",
+            "Surgical LP reinforcement to stabilize target price ≈ €0.0005",
+            "External top-up (€2–4k) + controlled treasury sales pre-announced",
+            "Security audit published + on-chain verification open to everyone",
+          ],
+        },
+        {
+          phase: "Raydium → ∞",
+          title: "Anti-Dump Discipline",
+          bullets: [
+            "Multisig + timelock on the treasury",
+            "Weekly treasury-sale cap publicly posted",
+            "Sales broken into small blocks, pre-announced 48h ahead",
+            "No mass airdrop synced with LP reinforcements",
           ],
         },
       ],
-      proofTitle: "Why this is declared seriousness",
+      proofTitle: "Why this is genuinely serious",
       proof:
-        "A small treasury sale announced in advance is not a dump: it is budgetary execution. We publish everything upfront. The community checks on-chain. The Prophet mocks. But the rules hold.",
+        "0% Tax means a vault that fills only through growth. Every treasury action is announced before execution, the community verifies on-chain, and the Prophet mocks everyone in the meantime. The rules hold — even when the narrative is cynical.",
     },
 
     roi: {
@@ -854,42 +874,42 @@ export const translations = {
 
     roadmap: {
       kicker: "— ROADMAP",
-      title: "AI Candidate Campaign",
+      title: "The AI Candidate Campaign",
       phases: [
         {
           tag: "Phase 01",
-          title: "$DEEPOTUS Launch",
+          title: "The Bonding Curve Trial — Pump.fun Launch",
           bullets: [
-            "Solana contract creation",
-            "Initial €2K LP",
-            "Prophetic terminal opens",
+            "Mint 1B tokens on Pump.fun · 0% Tax Protocol",
+            "The Prophet tests his disciples' faith on the Bonding Curve",
+            "Target: complete 100% of the curve (≈ $60k MC)",
           ],
         },
         {
           tag: "Phase 02",
-          title: "Consolidation",
+          title: "Raydium Ascension — Automatic Migration",
           bullets: [
-            "LP scaled to €10K, locked",
-            "Community, airdrops, AI lore",
-            "First transparency publications",
+            "LP auto-burned and migrated to Raydium by Pump.fun",
+            "Strategic LP reinforcement to stabilize target price ≈ €0.0005",
+            "Team tokens publicly locked via Streamflow (12-month vesting + 3-month cliff)",
           ],
         },
         {
           tag: "Phase 03",
           title: "PROTOCOL ΔΣ · first dials",
           bullets: [
-            "First dials lock",
-            "Allocations to the Operation's MiCA compliance",
-            "Prophetic transmissions intensify",
+            "First dials lock as buys accumulate",
+            "Treasury allocations towards MiCA-compliant project prep",
+            "Prophetic transmissions intensified (X + Telegram)",
           ],
         },
         {
           tag: "Phase 04",
           title: "Declassification",
           bullets: [
-            "Security audit",
-            "Six dials locked",
-            "Vault opens — the Black Op is revealed",
+            "Six dials locked · Vault open",
+            "Security audit published",
+            "The Black Op is revealed — transition to MiCA phase",
           ],
         },
       ],
@@ -933,8 +953,8 @@ export const translations = {
           a: "Because the Black Op being funded is sequenced: it only makes sense if it opens at the right moment. The Prophet knows the combination. No one else. The vault opens when six dials align. That is our model — and our honesty.",
         },
         {
-          q: "How does the 3% tax work?",
-          a: "2% goes to a dedicated PROTOCOL ΔΣ / compliance wallet, 1% to liquidity / marketing. Cap announced; tax reduced once the vault opens.",
+          q: "Why 0% tax? How is the Treasury funded then?",
+          a: "Pump.fun forbids transaction taxes on standard SPL tokens — and honestly it's better for velocity. The 30% Treasury is multisig-sealed and funded by its OWN valuation. Every Treasury sale is scheduled, capped and pre-announced.",
         },
         {
           q: "How is the treasury secured?",
@@ -946,7 +966,7 @@ export const translations = {
         },
         {
           q: "Is $DEEPOTUS MiCA-compliant?",
-          a: "A memecoin is not a security. We adopt MiCA philosophy: information transparency on structure (tokenomics, taxes, governance), clear fund allocation (Vault), no yield promise, explicit disclaimer.",
+          a: "A memecoin is not a security. We adopt MiCA philosophy: information transparency on structure (tokenomics, allocation, governance), clear fund allocation (Vault), no yield promise, explicit disclaimer.",
         },
         {
           q: "Can I lose 100% of my investment?",

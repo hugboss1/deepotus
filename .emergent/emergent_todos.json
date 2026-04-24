@@ -1,14 +1,26 @@
 [
   {
-    "content": "Régénérer gold_coin_front.png SANS fond (transparent alpha PNG)",
+    "content": "i18n FR : tokenomics (0% tax, nouveaux noms catégories) + transparency + roadmap (Bonding Curve Trial / Raydium Ascension) + FAQ",
     "status": "completed"
   },
   {
-    "content": "Atténuer les overlays ROI (opacité image ↑, tints ↓, radial allégé) pour que le fond apparaisse clairement",
+    "content": "i18n EN : miroir FR",
     "status": "completed"
   },
   {
-    "content": "Screenshots de validation des 2 sections",
+    "content": "Tokenomics.jsx : remplacer le bloc Tax 3% par un bloc 0% Tax Protocol + Transparence Cynique",
     "status": "completed"
+  },
+  {
+    "content": "Hero.jsx + TopNav.jsx : boutons Acheter → URL pump.fun (paramétrée, fallback vers whitelist)",
+    "status": "completed"
+  },
+  {
+    "content": "Transparency.jsx : mettre à jour timeline (Pump.fun launch, Raydium migration)",
+    "status": "completed"
+  },
+  {
+    "content": "Présenter plan bots + calendrier contenu détaillé",
+    "status": "in_progress"
   }
 ]

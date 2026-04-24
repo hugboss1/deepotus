@@ -50,8 +50,6 @@ export default function Tokenomics() {
     }));
   }, [t]);
 
-  const tax = t("tokenomics.tax") || [];
-
   return (
     <section
       id="tokenomics"
@@ -178,28 +176,34 @@ export default function Tokenomics() {
               })}
             </ul>
 
-            {/* Tax block */}
-            <div className="mt-6 rounded-xl border border-border bg-card p-4">
-              <div className="font-display font-semibold mb-2">
-                {t("tokenomics.taxTitle")} ·{" "}
-                <span className="tabular text-accent">3%</span>
+            {/* 0% Tax Protocol · Cynical Transparency */}
+            <div className="mt-6 rounded-xl border-2 border-[#18C964]/40 bg-gradient-to-br from-[#18C964]/5 to-card p-5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#18C964]/50 bg-[#18C964]/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-[#18C964]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#18C964] animate-pulse" />
+                  Pump.fun
+                </span>
+                <div className="font-display font-semibold text-lg">
+                  {t("tokenomics.taxTitle")}
+                </div>
+                <span className="ml-auto font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {t("tokenomics.taxBadge")}
+                </span>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                {tax.map((tx, i) => (
-                  <div
-                    key={i}
-                    className="inline-flex items-center gap-2 text-xs rounded-full border border-border px-3 py-1.5 bg-background"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: tx.color }}
-                    />
-                    <span>{tx.label}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              <p className="text-sm text-foreground/85 mt-2 leading-relaxed">
+                {t("tokenomics.taxIntro")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
                 {t("tokenomics.taxCap")}
+              </p>
+
+              <div className="mt-4 pt-4 border-t border-[#18C964]/20">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-[#18C964] mb-1.5">
+                  {t("tokenomics.cynicalTitle")}
+                </div>
+                <p className="text-sm text-foreground/80 italic leading-relaxed">
+                  {t("tokenomics.cynicalBody")}
+                </p>
               </div>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n/I18nProvider";
+import { getBuyUrl, isBuyUrlExternal } from "@/lib/links";
 import { Radio, ShieldAlert, Cpu, Coins } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -177,7 +178,13 @@ export default function Hero() {
                 className="rounded-[var(--btn-radius)] btn-press font-semibold"
                 data-testid="hero-buy-button"
               >
-                <a href="#chat">{t("hero.buyCta")}</a>
+                <a
+                  href={getBuyUrl()}
+                  target={isBuyUrlExternal() ? "_blank" : undefined}
+                  rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
+                >
+                  {t("hero.buyCta")}
+                </a>
               </Button>
             </div>
 

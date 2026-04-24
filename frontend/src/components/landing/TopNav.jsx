@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "@/i18n/I18nProvider";
+import { getBuyUrl, isBuyUrlExternal, PUMPFUN_URL } from "@/lib/links";
 
 const NAV_ITEMS = [
   { id: "manifesto", key: "nav.manifesto" },
@@ -71,7 +72,13 @@ export default function TopNav() {
             className="hidden sm:inline-flex rounded-[var(--btn-radius)] btn-press"
             data-testid="nav-buy-button"
           >
-            <a href="#whitelist">{t("nav.join")}</a>
+            <a
+              href={PUMPFUN_URL ? getBuyUrl() : "#whitelist"}
+              target={isBuyUrlExternal() ? "_blank" : undefined}
+              rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
+            >
+              {PUMPFUN_URL ? t("hero.buyCta") : t("nav.join")}
+            </a>
           </Button>
           <button
             className="lg:hidden p-2 rounded-md border border-border bg-background/60"
