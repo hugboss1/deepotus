@@ -1,18 +1,14 @@
 [
   {
-    "content": "Tokenomics : gold_coin_front.png au centre du donut (couvrir le volume) + déplacer Total Supply 1B en dessous/légende",
+    "content": "Régénérer gold_coin_front.png SANS fond (transparent alpha PNG)",
     "status": "completed"
   },
   {
-    "content": "ROISimulator : gold_coin_3d.png en background + overlay pour lisibilité texte",
+    "content": "Atténuer les overlays ROI (opacité image ↑, tints ↓, radial allégé) pour que le fond apparaisse clairement",
     "status": "completed"
   },
   {
-    "content": "Hero carousel : ajouter logo_v4_matrix_face.png (MATRIX PROPHET) aux variantes",
-    "status": "completed"
-  },
-  {
-    "content": "Vérifier lint + screenshot des 3 sections modifiées",
+    "content": "Screenshots de validation des 2 sections",
     "status": "completed"
   }
 ]

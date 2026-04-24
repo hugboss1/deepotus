@@ -83,21 +83,22 @@ export default function ROISimulator() {
         <img
           src="/gold_coin_3d.png"
           alt=""
-          className="h-full w-full object-cover object-center opacity-25 md:opacity-30 select-none"
+          className="h-full w-full object-cover object-center opacity-70 md:opacity-80 select-none"
           draggable={false}
         />
-        {/* Readability overlays: tint + radial fade to keep center darker (cards sit there) */}
-        <div className="absolute inset-0 bg-background/75 dark:bg-background/80" />
+        {/* Very light tint just to keep text contrast */}
+        <div className="absolute inset-0 bg-background/25 dark:bg-background/35" />
+        {/* Soft radial darkening ONLY around the cards area, not the whole section */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at center, hsl(var(--background) / 0.9) 0%, hsl(var(--background) / 0.55) 55%, hsl(var(--background) / 0.3) 100%)",
+              "radial-gradient(ellipse 70% 55% at center, hsl(var(--background) / 0.45) 0%, hsl(var(--background) / 0.15) 55%, hsl(var(--background) / 0) 100%)",
           }}
         />
         {/* Subtle top + bottom fades to blend with adjacent sections */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent" />
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
