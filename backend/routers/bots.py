@@ -27,6 +27,12 @@ from core.bot_scheduler import (
     update_bot_config,
 )
 from core.config import db
+from core.prophet_studio import (
+    PLATFORM_CHAR_BUDGETS,
+    VALID_CONTENT_TYPES,
+    generate_post,
+    list_content_types,
+)
 from core.security import require_admin
 
 router = APIRouter(prefix="/api/admin/bots", tags=["admin-bots"])
@@ -40,10 +46,16 @@ class PlatformPatch(BaseModel):
     post_frequency_hours: Optional[int] = Field(default=None, ge=1, le=48)
 
 
+class LlmPatch(BaseModel):
+    provider: Optional[str] = Field(default=None, max_length=32)
+    model: Optional[str] = Field(default=None, max_length=80)
+
+
 class BotConfigPatch(BaseModel):
     kill_switch_active: Optional[bool] = None
     platforms: Optional[Dict[str, PlatformPatch]] = None
     content_modes: Optional[Dict[str, bool]] = None
+    llm: Optional[LlmPatch] = None
     heartbeat_interval_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
     max_posts_per_day: Optional[int] = Field(default=None, ge=0, le=500)
 
@@ -52,10 +64,39 @@ class KillSwitchPayload(BaseModel):
     active: bool
 
 
+class GeneratePreviewRequest(BaseModel):
+    content_type: str = Field(..., description="prophecy | market_commentary | vault_update | kol_reply")
+    platform: str = Field(default="x", description="x | telegram")
+    kol_post: Optional[str] = Field(default=None, max_length=600)
+    extra_context: Optional[str] = Field(default=None, max_length=1000)
+
+
+class GeneratePreviewResponse(BaseModel):
+    content_type: str
+    platform: str
+    char_budget: int
+    provider: str
+    model: str
+    content_fr: str
+    content_en: str
+    hashtags: List[str]
+    primary_emoji: str
+
+
+class ContentTypeMeta(BaseModel):
+    id: str
+    label_fr: str
+    label_en: str
+    description_fr: str
+    description_en: str
+    suggested_hashtags: List[str]
+
+
 class BotConfigResponse(BaseModel):
     kill_switch_active: bool
     platforms: Dict[str, Dict[str, Any]]
     content_modes: Dict[str, bool]
+    llm: Dict[str, Any]
     heartbeat_interval_minutes: int
     max_posts_per_day: int
     last_updated_at: Optional[str] = None
@@ -100,6 +141,8 @@ def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
         "kill_switch_active": bool(doc.get("kill_switch_active", True)),
         "platforms": doc.get("platforms") or {},
         "content_modes": doc.get("content_modes") or {},
+        "llm": doc.get("llm")
+        or {"provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
         "heartbeat_interval_minutes": int(doc.get("heartbeat_interval_minutes") or 5),
         "max_posts_per_day": int(doc.get("max_posts_per_day") or 12),
         "last_updated_at": doc.get("last_updated_at"),
@@ -152,6 +195,13 @@ async def put_config(
         for k, v in payload.content_modes.items():
             merged[k] = bool(v)
         patch_dict["content_modes"] = merged
+    if payload.llm is not None:
+        merged_llm = dict(current.get("llm") or {})
+        if payload.llm.provider is not None:
+            merged_llm["provider"] = payload.llm.provider
+        if payload.llm.model is not None:
+            merged_llm["model"] = payload.llm.model
+        patch_dict["llm"] = merged_llm
     if payload.heartbeat_interval_minutes is not None:
         patch_dict["heartbeat_interval_minutes"] = payload.heartbeat_interval_minutes
     if payload.max_posts_per_day is not None:
@@ -267,3 +317,53 @@ async def manual_heartbeat(_p: dict = Depends(require_admin)):
         extra=doc.get("extra") or {},
         created_at=doc.get("created_at", ""),
     )
+
+
+
+# ---------------------------------------------------------------------
+# Phase 2 — Prophet Studio preview endpoints
+# ---------------------------------------------------------------------
+@router.get("/content-types", response_model=List[ContentTypeMeta])
+async def get_content_types(_p: dict = Depends(require_admin)):
+    """Metadata for the 4 content archetypes the Prophet can broadcast."""
+    return list_content_types()
+
+
+@router.post("/generate-preview", response_model=GeneratePreviewResponse)
+async def generate_preview(
+    payload: GeneratePreviewRequest,
+    _p: dict = Depends(require_admin),
+):
+    """Dry-run content generation (no posting, not logged as a post).
+
+    Useful to preview exactly what the Prophet will produce before
+    enabling a platform or adjusting prompts. Available even when the
+    kill-switch is active (admin-only, read-only for external services).
+    """
+    if payload.content_type not in VALID_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"invalid content_type — expected one of {sorted(VALID_CONTENT_TYPES)}",
+        )
+    if payload.platform not in PLATFORM_CHAR_BUDGETS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"invalid platform — expected one of {sorted(PLATFORM_CHAR_BUDGETS.keys())}",
+        )
+    if payload.content_type == "kol_reply" and not payload.kol_post:
+        raise HTTPException(
+            status_code=400,
+            detail="kol_reply requires a non-empty 'kol_post' field",
+        )
+    try:
+        result = await generate_post(
+            content_type=payload.content_type,
+            platform=payload.platform,
+            kol_post=payload.kol_post,
+            extra_context=payload.extra_context,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return GeneratePreviewResponse(**result)

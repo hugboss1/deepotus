@@ -1,34 +1,38 @@
 [
   {
-    "content": "Provide Namecheap deployment guide (deepotus.xyz)",
+    "content": "Phase 2: Create core/prophet_studio.py (LLM content generator, 4 types x FR/EN)",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Add APScheduler to requirements + install",
+    "content": "Phase 2: Extend bot_config with llm_model field + per-platform char limits",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Create BotConfig & BotPost Pydantic models",
+    "content": "Phase 2: Add POST /api/admin/bots/generate-preview endpoint (no posting)",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Create core/scheduler.py (async lifecycle)",
+    "content": "Phase 2: Add GET /api/admin/bots/content-types (persona metadata)",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Create routers/bots.py (admin endpoints)",
+    "content": "Phase 2: Test content generation via curl (all 4 types, FR+EN, model switch)",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Hook scheduler into FastAPI startup/shutdown in server.py",
+    "content": "Phase 6: Create AdminBots.jsx page (kill-switch, toggles, preview, log)",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Heartbeat job + kill switch verification",
+    "content": "Phase 6: Register /admin/bots route + add nav link in admin pages",
     "status": "completed"
   },
   {
-    "content": "Phase 1 Bot: Test all admin endpoints via curl",
+    "content": "Phase 6: Visual + interaction testing (screenshot + testing agent)",
     "status": "completed"
+  },
+  {
+    "content": "Run testing agent for regression + new admin bots endpoints/UI",
+    "status": "in_progress"
   }
 ]

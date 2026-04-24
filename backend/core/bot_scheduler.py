@@ -49,6 +49,12 @@ DEFAULT_BOT_CONFIG: Dict[str, Any] = {
         "vault_update": True,
         "kol_reply": False,
     },
+    "llm": {
+        # Default: Claude Sonnet 4.5 — best satirical voice for the Prophet.
+        # Swap via PUT /api/admin/bots/config with {"llm": {...}}.
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5-20250929",
+    },
     "heartbeat_interval_minutes": 5,
     "max_posts_per_day": 12,
     "last_updated_at": None,
@@ -86,6 +92,7 @@ async def update_bot_config(patch: Dict[str, Any], updated_by: str = "admin") ->
         "kill_switch_active",
         "platforms",
         "content_modes",
+        "llm",
         "heartbeat_interval_minutes",
         "max_posts_per_day",
     }

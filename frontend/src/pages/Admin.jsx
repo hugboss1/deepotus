@@ -34,6 +34,7 @@ import {
   RotateCw,
   Mail,
   Clock,
+  Bot,
   ExternalLink,
 } from "lucide-react";
 import {
@@ -677,6 +678,17 @@ export default function Admin() {
             >
               <Link to="/admin/vault">
                 <ShieldAlert size={14} className="mr-1" /> Vault · PROTOCOL ΔΣ
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="rounded-[var(--btn-radius)]"
+              data-testid="admin-bots-link"
+            >
+              <Link to="/admin/bots">
+                <Bot size={14} className="mr-1" /> Bots Fleet
               </Link>
             </Button>
             <Button
