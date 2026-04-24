@@ -84,15 +84,79 @@ def _identify_pool(
     return None
 
 
+def _classify_swap_via_events(
+    tx: Dict[str, Any], mint: str
+) -> Tuple[str, float, Optional[str]]:
+    """Use Helius `events.swap` (structured) when available — the most reliable path.
+
+    Helius enhanced schema exposes events.swap.tokenInputs / tokenOutputs with
+    the user account, the mint, and the raw amount. We don't need any pool
+    knowledge: if our mint is in tokenOutputs → user receives it = BUY;
+    if it's in tokenInputs → user sends it = SELL.
+
+    Returns ("buy"|"sell"|"unknown", token_amount, user_wallet)
+    """
+    events = tx.get("events") or {}
+    swap = events.get("swap") if isinstance(events, dict) else None
+    if not isinstance(swap, dict):
+        return "unknown", 0.0, None
+
+    def _scan(entries, prefer_user_key="userAccount"):
+        """Return (total_amount, user_wallet) summed across entries matching our mint."""
+        total = 0.0
+        wallet: Optional[str] = None
+        for e in entries or []:
+            if not isinstance(e, dict):
+                continue
+            if (e.get("mint") or "").strip() != mint:
+                continue
+            amt = e.get("tokenAmount") or e.get("rawTokenAmount", {}).get(
+                "tokenAmount"
+            ) or 0
+            try:
+                amt = float(amt)
+                if e.get("rawTokenAmount"):
+                    # decimals normalization
+                    decimals = int(
+                        e.get("rawTokenAmount", {}).get("decimals") or 0
+                    )
+                    if decimals > 0:
+                        amt = amt / (10 ** decimals)
+            except Exception:
+                amt = 0.0
+            total += abs(amt)
+            if not wallet:
+                wallet = e.get(prefer_user_key) or e.get("account")
+        return total, wallet
+
+    out_tokens, out_user = _scan(swap.get("tokenOutputs"))
+    in_tokens, in_user = _scan(swap.get("tokenInputs"))
+
+    if out_tokens > 0 and in_tokens == 0:
+        return "buy", out_tokens, out_user
+    if in_tokens > 0 and out_tokens == 0:
+        return "sell", in_tokens, in_user
+    if out_tokens > in_tokens:
+        return "buy", out_tokens - in_tokens, out_user or in_user
+    if in_tokens > out_tokens:
+        return "sell", in_tokens - out_tokens, in_user or out_user
+    return "unknown", 0.0, out_user or in_user
+
+
 def _classify_swap(
     tx: Dict[str, Any], mint: str, pool: Optional[str]
 ) -> Tuple[str, float, Optional[str]]:
     """Return (direction, token_amount, user_wallet).
 
-    direction: "buy" | "sell" | "unknown"
-    token_amount: absolute tokens of $DEEPOTUS moved (native decimals applied)
-    user_wallet: the counterparty (for logging / leaderboard)
+    Tries `events.swap` first (most reliable, needs no pool info).
+    Falls back to tokenTransfers + pool heuristic if events.swap is missing.
     """
+    # --- Primary: structured events.swap ---
+    direction, tokens, user = _classify_swap_via_events(tx, mint)
+    if direction != "unknown" and tokens > 0:
+        return direction, tokens, user
+
+    # --- Fallback: raw tokenTransfers against known pool ---
     transfers = _token_transfers_for_mint(tx, mint)
     if not transfers:
         return "unknown", 0.0, None
@@ -106,17 +170,14 @@ def _classify_swap(
         src = t.get("fromUserAccount") or ""
         dst = t.get("toUserAccount") or ""
         if pool and src == pool:
-            # Pool → user: this is a BUY leg
             total_to_user += amount
             if not user_wallet and dst:
                 user_wallet = dst
         elif pool and dst == pool:
-            # user → pool: SELL leg
             total_from_user += amount
             if not user_wallet and src:
                 user_wallet = src
         else:
-            # Unknown role; skip
             continue
 
     if total_to_user > 0 and total_from_user == 0:
@@ -169,8 +230,22 @@ async def ingest_enhanced_transactions(
     mint: str,
     pool: Optional[str] = None,
     source: str = "webhook",
+    demo_tokens_per_buy: Optional[int] = None,
 ) -> Dict[str, int]:
     """Parse + feed each BUY into vault.apply_crack().
+
+    Args:
+        db: Mongo database handle
+        vault_mod: the `vault` module (imported lazily to avoid cycles)
+        transactions: array of Helius enhanced transaction dicts
+        mint: the SPL mint we care about (used to filter tokenTransfers)
+        pool: optional pool LP address for precise buy/sell detection
+        source: "webhook" | "poll_catchup" | etc. — stamped on audit rows
+        demo_tokens_per_buy: when set (demo mode, e.g. tracking BONK before
+            $DEEPOTUS is deployed), every detected BUY applies exactly this
+            many tokens to the vault instead of the real on-chain amount.
+            Prevents a single multi-million-token BONK trade from instantly
+            cracking the vault.
 
     Returns diagnostics: {ingested, buys, sells, duplicates, skipped}.
     """
@@ -202,12 +277,20 @@ async def ingest_enhanced_transactions(
 
         if direction == "buy":
             agent_code = f"SOL-{(user_wallet or 'anon')[:6].upper()}"
+            applied_tokens = (
+                int(demo_tokens_per_buy)
+                if demo_tokens_per_buy and demo_tokens_per_buy > 0
+                else int(tokens)
+            )
+            note_tokens = f"{tokens:.0f}"
+            if demo_tokens_per_buy:
+                note_tokens = f"{tokens:.0f} raw → {applied_tokens} demo"
             await vault_mod.apply_crack(
                 db,
-                tokens=int(tokens),
+                tokens=applied_tokens,
                 kind="purchase",
                 agent_code=agent_code,
-                note=f"helius {source}: buy sig={signature[:10]}… ({tokens:.0f} tokens)",
+                note=f"helius {source}: buy sig={signature[:10]}… ({note_tokens} tokens)",
             )
             buys += 1
         else:
@@ -268,14 +351,25 @@ async def fetch_recent_swaps(
 
 
 async def catch_up_from_helius(
-    db, vault_mod, api_key: str, mint: str, pool: Optional[str] = None
+    db,
+    vault_mod,
+    api_key: str,
+    mint: str,
+    pool: Optional[str] = None,
+    demo_tokens_per_buy: Optional[int] = None,
 ) -> Dict[str, Any]:
     """On boot or on-demand: pull the last 50 swaps and ingest any not-yet-seen."""
     txs = await fetch_recent_swaps(api_key, mint, limit=50)
     if not txs:
         return {"fetched": 0, "ingested": 0}
     result = await ingest_enhanced_transactions(
-        db, vault_mod, txs, mint=mint, pool=pool, source="poll_catchup"
+        db,
+        vault_mod,
+        txs,
+        mint=mint,
+        pool=pool,
+        source="poll_catchup",
+        demo_tokens_per_buy=demo_tokens_per_buy,
     )
     result["fetched"] = len(txs)
     return result

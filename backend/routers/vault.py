@@ -196,6 +196,14 @@ async def helius_register(
         )
 
     webhook_id = res.get("webhookID") or res.get("id")
+
+    # Auto-enable demo mode when the tracked mint is our well-known demo token
+    # (BONK). Real $DEEPOTUS launch → this flag stays False so the real
+    # on-chain token amount drives the vault.
+    from dexscreener import DEMO_TOKEN_ADDRESS
+
+    demo_mode = mint == DEMO_TOKEN_ADDRESS
+
     await db.vault_state.update_one(
         {"_id": "protocol_delta_sigma"},
         {
@@ -203,6 +211,7 @@ async def helius_register(
                 "dex_token_address": mint,
                 "helius_pool_address": (req.pool_address or "").strip() or None,
                 "helius_webhook_id": webhook_id,
+                "helius_demo_mode": demo_mode,
                 "dex_mode": "helius",  # disable the dex approximation
             }
         },
@@ -213,6 +222,7 @@ async def helius_register(
         "webhook_id": webhook_id,
         "callback_url": callback_url,
         "mint": mint,
+        "demo_mode": demo_mode,
     }
 
 
@@ -224,10 +234,18 @@ async def helius_catchup(_p: dict = Depends(require_admin)):
     vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
     mint = (vs.get("dex_token_address") or "").strip()
     pool = (vs.get("helius_pool_address") or "").strip() or None
+    demo_tokens_per_buy: Optional[int] = None
+    if vs.get("helius_demo_mode"):
+        demo_tokens_per_buy = int(vs.get("tokens_per_micro") or 10_000)
     if not mint:
         raise HTTPException(status_code=400, detail="No mint configured")
     return await helius_mod.catch_up_from_helius(
-        db, vault_mod, HELIUS_API_KEY, mint, pool=pool
+        db,
+        vault_mod,
+        HELIUS_API_KEY,
+        mint,
+        pool=pool,
+        demo_tokens_per_buy=demo_tokens_per_buy,
     )
 
 

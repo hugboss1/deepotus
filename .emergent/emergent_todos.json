@@ -25,10 +25,26 @@
   },
   {
     "content": "Demander à l'utilisateur la clé API Helius + le mint $DEEPOTUS (ou confirmer demo mode)",
-    "status": "in_progress"
+    "status": "completed"
+  },
+  {
+    "content": "Ajouter garde-fou mode demo (1 trade = 1 micro-tick, évite crack massif sur BONK)",
+    "status": "completed"
+  },
+  {
+    "content": "Injecter HELIUS_API_KEY + HELIUS_WEBHOOK_AUTH dans .env et restart backend",
+    "status": "completed"
+  },
+  {
+    "content": "Enregistrer le webhook auprès de Helius via /api/admin/vault/helius-register",
+    "status": "completed"
+  },
+  {
+    "content": "Lancer un catch-up et vérifier l'ingestion de trades BONK réels",
+    "status": "completed"
   },
   {
     "content": "Tester le webhook en simulant un payload Helius signed",
-    "status": "pending"
+    "status": "completed"
   }
 ]

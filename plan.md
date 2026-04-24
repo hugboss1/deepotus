@@ -79,7 +79,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ## Sections / features to build
 
 1. **Hero** — bannière candidat présidentiel, toggle FR/EN, CTA, countdown
-2. **Vault (PROTOCOL ΔΣ)** — coffre animé 6 digits + chassis IA + feed activité DexScreener + funnel Niveau 02
+2. **Vault (PROTOCOL ΔΣ)** — coffre animé 6 digits + chassis IA + feed activité on-chain + funnel Niveau 02
 3. **AI Prophet Live Chat** — Emergent LLM, persona FR/EN
 4. **Prophecies Feed** — punchlines auto-refresh
 5. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
@@ -102,7 +102,8 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Frontend: React + Tailwind + shadcn/ui + framer-motion + recharts + lucide-react
 - i18n: Context FR/EN
 - Email: Resend + webhooks (Svix)
-- Dex feed: DexScreener polling (off/demo/custom)
+- **On-chain feed (authoritative)**: **Helius Enhanced Transactions (webhooks + catch-up polling)**
+- Dex feed (fallback): DexScreener polling (off/demo/custom) — **bypass automatique quand dex_mode=helius**
 - Images: Gemini Nano Banana (gemini-3.1-flash-image-preview)
 - Image processing: Pillow (PIL) + qrcode
 
@@ -146,7 +147,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 16. Coffre classifié progressif (stages)
 17. `/operation` lock/unlock + twist
 18. Coffre illustré (chassis IA)
-19. Activité marché reflétée (DexScreener)
+19. Activité marché reflétée (live)
 20. Admin: switch mode feed + force poll
 21. Mobile: dials ancrés dans l’image
 22. Illustration “Fall of Deep State” sur `/operation`
@@ -158,6 +159,8 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 28. Reuse VaultChassis sur true vault
 29. Animation CTA DECLASSIFIED identique + lien `/operation`
 30. Micro-rotations (10K tokens) + locks majeurs (100M tokens)
+31. **Per-trade on-chain indexer**: activité reflétée par swaps réels (webhooks) + dédup
+32. **Mode démo**: avant lancement, tracker BONK sans casser la progression du coffre
 
 ---
 
@@ -169,6 +172,8 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - **Delivery ✅**
 - **Architecture backend modulaire ✅ (Opération B terminée)**
 - **Hardening code quality ✅ (Phase 17 terminée)**
+- **Indexer Solana per-trade via Helius ✅ (Phase 18 terminée, LIVE)**
+- **Brand assets V4 + coin ΔΣ ✅ (Phase 19 terminée)**
 
 ---
 
@@ -246,7 +251,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - ✅ `/app/backend/routers/`
   - `public.py` (`/api/*` public)
   - `public_stats.py` (`/api/public/stats`)
-  - `webhooks.py` (`/api/webhooks/resend`)
+  - `webhooks.py` (`/api/webhooks/resend` + plus tard Helius)
   - `admin.py` (`/api/admin/*` hors vault)
   - `vault.py` (public + `/api/admin/vault/*`)
   - `access_card.py` (`/api/access-card/*`)
@@ -257,7 +262,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
   - Factory FastAPI + CORS
   - `include_router()`
   - startup/shutdown
-  - lancement des boucles `hourly_tick_loop` + `dex_loop`
+  - lancement des boucles `hourly_tick_loop` + `dex_loop` (+ wiring Helius ensuite)
 
 ### Compatibilité
 - ✅ URLs, payloads, codes HTTP, auth flows préservés **1:1**
@@ -265,92 +270,116 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 
 ### Testing
 - ✅ Backend testing agent iteration_11 : régression confirmée
-  - Vault: 20/20
-  - DexScreener: 22/22
-  - Admin/Public/Access-card/Operation: OK
-  - Startup background loops : OK
 
 ---
 
 ## Phase 17 — Code Quality Hardening (sécurité + maintenabilité) — **COMPLETED ✅**
 
 ### Objectif
-- Appliquer les correctifs **réellement nécessaires** issus du code review, sans casser l’existant.
-- Éviter les gros chantiers non prioritaires (split massif de composants) : **“seulement les pires”**.
+- Appliquer les correctifs réellement nécessaires (sécurité RNG, hygiène prod, complexité) sans casser l’existant.
 
-### Décisions validées
-- ✅ **Admin token en localStorage** : **conservé** (menace XSS reconnue, mitigée par TTL 24h + révocation serveur)
-- ✅ “Faux positifs” du tool :
-  - `payload undefined` dans `core/security.py` : non modifié (pas de chemin d’exécution réel)
-  - `is None` en Python : conservé (correct)
-  - majority des `exhaustive-deps` : conservé (désactivation volontaire / variables stables)
-- ⏳ Split des très gros composants (Admin 1064 lignes, AdminVault 616, ClassifiedVault 591) : **reporté**
-
-### Correctifs appliqués (immédiats)
-**Backend — sécurité RNG**
-- ✅ `vault.py` : génération de la combinaison cible via `secrets.randbelow(10)` (helper `_secure_digit()`)
-  - ℹ️ `random` conservé uniquement pour éléments cosmétiques (agent codes, digits non-lockés, variance bump horaire)
-- ✅ `access_card.py` : `generate_accreditation_number()` + `_derive_display_name()` via `secrets.choice()`
-  - Raison: l’accréditation est le **Bearer token** du gate `/classified-vault`
-
-**Frontend — hygiène prod**
-- ✅ Ajout `src/lib/logger.js` (dev-only info/warn/debug, error toujours actif)
-- ✅ Remplacement des `console.error` dans :
-  - `AdminVault.jsx` (×4)
-  - `Operation.jsx` (×1)
-  - `PublicStats.jsx` (×1)
-
-**Frontend — keys stables**
-- ✅ Remplacement de `key={index}` pour listes dynamiques :
-  - `ProphetChat.jsx` : messages ont maintenant `id` stable + keys sur rules/examples
-  - `Roadmap.jsx` : key stable pour phases + bullets
-  - `Operation.jsx` : lore paragraphs key stable
-  - ℹ️ Boucles décoratives immuables `Array.from({length:10})` conservées (sans risque)
-
-### Refactors “les pires seulement” (complexité)
-- ✅ `dexscreener.py` : `dex_poll_once()` décomposé
-  - `_resolve_token_address` / `_compute_deltas` / `_apply_demo_ticks` / `_apply_custom_ticks`
-  - `_persist_baselines` / `_persist_fetch_error`
-  - Complexité ~24 → ~7, comportement identique
-- ✅ `routers/admin.py` : `admin_blacklist_import()` décomposé
-  - `_parse_csv_candidates` / `_normalize_email_list` / `_compute_cooldown_iso` / `_insert_blacklist_entry`
-- ✅ `CombinationDial.jsx` : refactor interne
-  - constants de style + `computeStageStyle()`
-  - `computeDimensions(size)`
-  - hooks extraits `useShuffleLoop()` + `useMicroTickFlash()`
+### Correctifs appliqués
+- ✅ RNG crypto-secure (`secrets`) pour la combinaison du coffre + codes d’accès
+- ✅ Logger dev-only (suppression console prod)
+- ✅ Keys stables React sur listes dynamiques
+- ✅ Refactors ciblés : `dex_poll_once`, `admin_blacklist_import`, `CombinationDial`
 
 ### Testing / Evidence
-- ✅ Backend testing agent iteration_12 : **40/43** tests (93%)
-  - Security tests: 4/4
-  - Refactored tests: 6/6
-  - Admin auth: 20/20
-  - Access card: 5/5
-  - Unique “minor issue” : webhook unsigned → 401 (comportement correct avec secret)
-- ✅ Lint backend + frontend : clean
-- ✅ Sanity screenshot landing (hero OK) + absence de crash console
+- ✅ Backend testing agent iteration_12 (93% — minor issue attendu sur webhook non signé)
+
+---
+
+## Phase 18 — Task C (P2) : Indexer Solana per-trade via Helius — **SHIPPED ✅ (LIVE)**
+
+### Objectif
+- Remplacer l’approximation DexScreener (delta/h24) par une ingestion **per-trade** fiable (swaps Solana) afin d’alimenter PROTOCOL ΔΣ avec des signaux réels.
+
+### Résultat (implémentation)
+**Backend core**
+- ✅ `/app/backend/helius.py`
+  - Parsing **primary** via `events.swap.tokenInputs/tokenOutputs` (fiable sans pool)
+  - Fallback `tokenTransfers + pool` si nécessaire
+  - `ingest_enhanced_transactions()` avec **dédup** (signature) + `demo_tokens_per_buy`
+  - `fetch_recent_swaps()` + `catch_up_from_helius()` (cold-start)
+  - `register_webhook()` / `list_webhooks()` / `delete_webhook()`
+
+**Config**
+- ✅ `core/config.py` : `HELIUS_API_KEY`, `HELIUS_WEBHOOK_AUTH`
+- ✅ `.env` : placeholders + injection réelle en env preview
+
+**Webhooks**
+- ✅ `POST /api/webhooks/helius`
+  - Vérifie `Authorization` == `HELIUS_WEBHOOK_AUTH`
+  - 401 si absent/mauvais (quand secret défini)
+  - Audit trail : `helius_webhook_events`
+  - Dédup : `helius_ingested` (TTL 30 jours)
+
+**Admin endpoints**
+- ✅ `/api/admin/vault/helius-status`
+- ✅ `/api/admin/vault/helius-config`
+- ✅ `/api/admin/vault/helius-register` (active `dex_mode=helius`, auto demo si BONK)
+- ✅ `/api/admin/vault/helius-catchup`
+- ✅ `/api/admin/vault/helius-webhook/{id}` (delete)
+
+**DexScreener coexistence**
+- ✅ `dexscreener.dex_poll_once()` skip si `dex_mode in (off, helius)` → évite double-count
+
+**Startup**
+- ✅ `server.py` : catch-up opportuniste au boot (propage clamp demo si `helius_demo_mode=true`)
+
+### Garde-fou demo (critique)
+- ✅ Si mint = BONK (`DEMO_TOKEN_ADDRESS`) → `helius_demo_mode=true`
+- ✅ Chaque BUY applique exactement `tokens_per_micro` (actuel: 100) **au lieu** du montant réel on-chain
+- ✅ Objectif : 1 buy = 1 micro-tick, pas de crack massif en démo
+
+### Validation (live preview)
+- ✅ Webhook Helius enregistré (enhanced/SWAP) avec authHeader actif
+- ✅ Webhook signé : ingested + buy OK
+- ✅ Replays : dédup OK
+- ✅ Sans/ mauvais auth : 401
+- ✅ Catch-up : ingère buys/sells; certaines transactions multi-hop restent “skipped” (attendu)
+- ✅ UI admin : section Helius complète
+
+---
+
+## Phase 19 — Brand Assets (V4 + monogram ΔΣ + pièce en or) — **COMPLETED ✅**
+
+### Objectif
+- Stabiliser une identité visuelle moderne et mémétique cohérente avec le lore.
+
+### Assets livrés (public)
+- ✅ Logo officiel V4 (monochrome Matrix-face, visage générique)
+  - `/app/frontend/public/logo_v4_matrix_face.png`
+- ✅ Pièce en or frappée ΔΣ
+  - Flat studio : `/app/frontend/public/gold_coin_front.png`
+  - 3D hero shot : `/app/frontend/public/gold_coin_3d.png`
+- ✅ Page de preview
+  - `/app/frontend/public/logo-preview.html`
 
 ---
 
 ## Remaining / Optional Improvements (P1)
-- (A) **Switch DexScreener custom** vers le vrai token $DEEPOTUS (mint Solana) après déploiement
-  - Action: configurer `dex_mode=custom` + mint via `/admin/vault`
-  - Validation: feed live cohérent + ticks basés sur volume réel
+
+### (A) Switch vers le vrai mint $DEEPOTUS (après déploiement)
+- ⏳ Une fois le token déployé sur Solana :
+  - `POST /api/admin/vault/helius-register` avec le vrai mint
+  - `helius_demo_mode` s’éteint automatiquement
+  - (optionnel) renseigner le pool LP address pour encore plus de précision
+
+### Intégration branding dans le front (en attente du feu vert)
+- ⏳ Remplacer l’avatar/visuel hero par `logo_v4_matrix_face.png`
+- ⏳ Ajouter les rendus `gold_coin_front.png` / `gold_coin_3d.png` au hero / press-kit / sections marketing
 
 ---
 
-## Future (P2)
-- (C) **Upgrade précision on-chain**
-  - Remplacer l’approx DexScreener (delta/h24) par un indexer trades Solana
-  - Options:
-    - Helius (webhooks / enhanced transactions)
-    - Solscan/Solsniffer-like APIs
-    - RPC direct + parsing Raydium/Orca
-  - Objectif: détection per-trade fiable (buy volume), anti-abuse, meilleure corrélation UI ↔ chain
+## Future (P2+)
+- (Option) Ajouter un parseur Raydium/Orca plus profond pour réduire les “skipped” sur swaps multi-hop
+- (Option) Persister des métriques agrégées Helius (buys/sells/volume) pour un dashboard public plus précis
 
 ---
 
 ## Pending Operations (memorized for later — user requested)
 - ✅ **(B) Backend refactor**: TERMINÉ — monolithe `server.py` → `core/` + `routers/`
 - ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
-- ⏳ **(A) Switch DexScreener mode to real token**: à faire quand le mint $DEEPOTUS est déployé
-- ⏳ **(C) On-chain accuracy upgrade**: indexer Solana per-trade (P2)
+- ✅ **(C) On-chain accuracy upgrade**: TERMINÉ — indexer Solana per-trade via Helius (webhooks + catch-up)
+- ⏳ **(A) Switch à $DEEPOTUS réel**: à faire dès que le mint Solana est connu

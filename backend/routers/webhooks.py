@@ -162,6 +162,9 @@ async def helius_webhook(request: Request):
     vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
     mint = (vs.get("dex_token_address") or "").strip()
     pool = (vs.get("helius_pool_address") or "").strip() or None
+    demo_tokens_per_buy: int | None = None
+    if vs.get("helius_demo_mode"):
+        demo_tokens_per_buy = int(vs.get("tokens_per_micro") or 10_000)
 
     await helius_mod.ensure_dedup_index(db)
 
@@ -186,9 +189,15 @@ async def helius_webhook(request: Request):
         return {"ok": True, "ignored": True, "reason": "no mint configured"}
 
     result = await helius_mod.ingest_enhanced_transactions(
-        db, vault_mod, txs, mint=mint, pool=pool, source="webhook"
+        db,
+        vault_mod,
+        txs,
+        mint=mint,
+        pool=pool,
+        source="webhook",
+        demo_tokens_per_buy=demo_tokens_per_buy,
     )
     logging.info(
-        f"[helius] webhook {result} (tx={len(txs)}, mint={mint[:8]}…, pool={pool})"
+        f"[helius] webhook {result} (tx={len(txs)}, mint={mint[:8]}…, pool={pool}, demo={bool(demo_tokens_per_buy)})"
     )
     return {"ok": True, **result}

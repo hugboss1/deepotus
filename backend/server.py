@@ -101,6 +101,9 @@ async def on_startup():
         await helius_mod.ensure_dedup_index(db)
         vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
         if HELIUS_API_KEY and vs.get("dex_mode") == "helius" and vs.get("dex_token_address"):
+            startup_demo_tokens = None
+            if vs.get("helius_demo_mode"):
+                startup_demo_tokens = int(vs.get("tokens_per_micro") or 10_000)
             asyncio.create_task(
                 helius_mod.catch_up_from_helius(
                     db,
@@ -108,10 +111,11 @@ async def on_startup():
                     HELIUS_API_KEY,
                     vs["dex_token_address"],
                     pool=vs.get("helius_pool_address"),
+                    demo_tokens_per_buy=startup_demo_tokens,
                 )
             )
             logger.info(
-                f"[startup] Helius catch-up scheduled for mint={vs['dex_token_address'][:8]}…"
+                f"[startup] Helius catch-up scheduled for mint={vs['dex_token_address'][:8]}… (demo={bool(startup_demo_tokens)})"
             )
 
         logger.info(
