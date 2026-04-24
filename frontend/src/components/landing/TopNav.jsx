@@ -38,24 +38,24 @@ export default function TopNav() {
           : "bg-background/0"
       }`}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 xl:gap-6">
         <a
           href="#top"
-          className="font-display font-semibold tracking-tight text-base md:text-lg"
+          className="flex items-center gap-2 font-display font-semibold tracking-tight text-base md:text-lg shrink-0"
           data-testid="nav-logo"
         >
-          <span className="text-foreground">$DEEPOTUS</span>
-          <span className="hidden sm:inline text-muted-foreground text-xs ml-2 font-mono uppercase tracking-widest">
+          <span className="text-foreground whitespace-nowrap">$DEEPOTUS</span>
+          <span className="hidden xl:inline text-muted-foreground text-[10px] font-mono uppercase tracking-[0.2em] whitespace-nowrap">
             /deep-state-potus
           </span>
         </a>
 
-        <nav className="hidden lg:flex items-center gap-5 text-sm text-foreground/80">
+        <nav className="hidden lg:flex items-center gap-4 xl:gap-5 text-[13px] xl:text-sm text-foreground/75">
           {NAV_ITEMS.map((it) => (
             <a
               key={it.id}
               href={`#${it.id}`}
-              className="hover:text-foreground transition-colors"
+              className="relative whitespace-nowrap py-1 hover:text-foreground transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-0.5 after:h-px after:w-0 after:bg-foreground after:transition-[width] after:duration-200 hover:after:w-full"
               data-testid={`nav-link-${it.id}`}
             >
               {t(it.key)}
@@ -63,13 +63,13 @@ export default function TopNav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <ThemeToggle />
           <LanguageToggle />
           <Button
             asChild
             size="sm"
-            className="hidden sm:inline-flex rounded-[var(--btn-radius)] btn-press"
+            className="hidden sm:inline-flex rounded-[var(--btn-radius)] btn-press whitespace-nowrap"
             data-testid="nav-buy-button"
           >
             <a
@@ -93,7 +93,7 @@ export default function TopNav() {
 
       {open && (
         <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-md">
-          <nav className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 text-sm">
+          <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3 text-sm">
             {NAV_ITEMS.map((it) => (
               <a
                 key={it.id}

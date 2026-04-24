@@ -9,12 +9,12 @@ export const translations = {
     // ---- Meta / Nav ----
     nav: {
       manifesto: "Manifeste",
-      chat: "Parler au Prophète",
+      chat: "Prophète",
       tokenomics: "Tokenomics",
       mission: "Mission",
-      vault: "Le Coffre",
+      vault: "Coffre",
       transparency: "Transparence",
-      roadmap: "Feuille de route",
+      roadmap: "Roadmap",
       faq: "FAQ",
       join: "Rejoindre le Deep State",
       buy: "Acheter $DEEPOTUS",
@@ -650,10 +650,10 @@ export const translations = {
   en: {
     nav: {
       manifesto: "Manifesto",
-      chat: "Speak to the Prophet",
+      chat: "Prophet",
       tokenomics: "Tokenomics",
       mission: "Mission",
-      vault: "The Vault",
+      vault: "Vault",
       transparency: "Transparency",
       roadmap: "Roadmap",
       faq: "FAQ",
