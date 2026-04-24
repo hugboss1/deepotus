@@ -1,29 +1,37 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, CheckCircle2, AlertTriangle, Mail } from "lucide-react";
+import { X, Send, CheckCircle2, AlertTriangle, Mail, KeyRound, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 
 const API = process.env.REACT_APP_BACKEND_URL;
+const SESSION_KEY = "deepotus_access_session";
 
 /**
  * TerminalPopup — a CRT-style terminal modal used as the GATE after the
  * fake vault cracks. It denies direct access, taunts the visitor ("nice try,
- * you only have LEVEL 1 clearance") and lets them request a Level 2 access card.
+ * you only have LEVEL 1 clearance") and offers TWO branches:
+ *   1. Request a fresh Level-2 access card (email-gated).
+ *   2. Verify an existing accreditation code (for visitors returning within
+ *      the 24 h validity window — they go straight to the vault).
  *
  * Phases:
- *   "denied"    — typing-animated refusal + CTA to request clearance
- *   "form"      — email + optional display name
- *   "sending"   — loading animation with status lines
- *   "success"   — accreditation summary + "check your inbox"
- *   "error"     — technical failure (rare)
+ *   "denied"            — typing-animated refusal + 2 CTAs
+ *   "form"              — email + optional display name (request flow)
+ *   "verify-existing"   — accred code input (returning-visitor flow)
+ *   "sending"           — loading animation (request)
+ *   "verifying"         — loading animation (verify-existing)
+ *   "success"           — accreditation summary + "check your inbox"
+ *   "verify-success"    — clearance confirmed + redirect to vault
+ *   "error"             — technical failure
  */
 export default function TerminalPopup({ open, onClose }) {
   const { t, lang } = useI18n();
   const [phase, setPhase] = useState("denied");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [existingCode, setExistingCode] = useState("");
   const [result, setResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [typedLines, setTypedLines] = useState([]);
@@ -42,6 +50,7 @@ export default function TerminalPopup({ open, onClose }) {
     setTypedLines([]);
     setEmail("");
     setDisplayName("");
+    setExistingCode("");
     setResult(null);
     setErrorMsg(null);
   }, [open]);
@@ -97,6 +106,60 @@ export default function TerminalPopup({ open, onClose }) {
       const data = await res.json();
       setResult(data);
       setPhase("success");
+    } catch (err) {
+      setErrorMsg(String(err?.message || err));
+      setPhase("error");
+    }
+  }
+
+  async function submitVerifyExisting(e) {
+    e?.preventDefault();
+    // Sanitize: uppercase + only alnum and dashes
+    const raw = (existingCode || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9-]/g, "");
+    if (!raw || raw.length < 6) {
+      setErrorMsg(t("terminal.codeInvalid") || "Invalid code");
+      return;
+    }
+    setErrorMsg(null);
+    setPhase("verifying");
+    try {
+      const res = await fetch(`${API}/api/access-card/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Language": lang,
+        },
+        body: JSON.stringify({ accreditation_number: raw }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) {
+        // Backend returns ok=false for "not recognized" / "expired" with a
+        // human message — surface it back to the visitor.
+        setErrorMsg(data?.message || t("terminal.codeRejected"));
+        setPhase("verify-existing");
+        return;
+      }
+      // Persist the session under the SAME key the /classified-vault page
+      // reads — this lets the visitor land directly inside the vault when
+      // we redirect, with no digicode prompt.
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+      } catch (storageErr) {
+        // localStorage can throw in private mode — still proceed with the
+        // redirect, the page will simply prompt for the code again.
+        // (logged via console for dev)
+        // eslint-disable-next-line no-console
+        console.warn("session persist failed", storageErr);
+      }
+      setResult(data);
+      setPhase("verify-success");
+      // Auto-redirect after a short beat so the user sees the confirmation
+      setTimeout(() => {
+        window.location.href = "/classified-vault";
+      }, 1500);
     } catch (err) {
       setErrorMsg(String(err?.message || err));
       setPhase("error");
@@ -183,21 +246,39 @@ export default function TerminalPopup({ open, onClose }) {
                     <span className="inline-block w-2 h-4 bg-[#18C964] align-middle ml-1" />
                   )}
                   {typedLines.length >= deniedLines.length && (
-                    <div className="mt-6 flex items-center gap-3 flex-wrap">
-                      <Button
-                        onClick={() => setPhase("form")}
-                        className="rounded-md bg-[#18C964] hover:bg-[#18C964]/90 text-black font-mono font-semibold"
-                        data-testid="terminal-request-level2"
-                      >
-                        {t("terminal.ctaRequest")} →
-                      </Button>
-                      <button
-                        onClick={onClose}
-                        className="text-[#18C964]/60 hover:text-[#18C964] font-mono text-xs underline decoration-dashed underline-offset-2"
-                        data-testid="terminal-retreat"
-                      >
-                        {t("terminal.ctaRetreat")}
-                      </button>
+                    <div className="mt-6 flex flex-col gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Button
+                          onClick={() => setPhase("form")}
+                          className="rounded-md bg-[#18C964] hover:bg-[#18C964]/90 text-black font-mono font-semibold"
+                          data-testid="terminal-request-level2"
+                        >
+                          {t("terminal.ctaRequest")} →
+                        </Button>
+                        <button
+                          onClick={onClose}
+                          className="text-[#18C964]/60 hover:text-[#18C964] font-mono text-xs underline decoration-dashed underline-offset-2"
+                          data-testid="terminal-retreat"
+                        >
+                          {t("terminal.ctaRetreat")}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#18C964]/20 mt-1">
+                        <span className="text-[10px] text-[#18C964]/50 font-mono">
+                          {t("terminal.alreadyCleared")}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setErrorMsg(null);
+                            setPhase("verify-existing");
+                          }}
+                          className="inline-flex items-center gap-1 text-[#22D3EE] hover:text-[#67E8F9] font-mono text-[11px] uppercase tracking-widest underline decoration-dotted underline-offset-2"
+                          data-testid="terminal-verify-existing-cta"
+                        >
+                          <KeyRound size={11} />
+                          {t("terminal.ctaVerifyExisting")}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -270,6 +351,121 @@ export default function TerminalPopup({ open, onClose }) {
                     </button>
                   </div>
                 </form>
+              )}
+
+              {/* VERIFY-EXISTING phase — for visitors returning within 24h */}
+              {phase === "verify-existing" && (
+                <form
+                  onSubmit={submitVerifyExisting}
+                  data-testid="terminal-phase-verify-existing"
+                >
+                  <div className="text-[#22D3EE]/80 text-[11px] mb-3">
+                    &gt; verify.existing.clearance · {lang.toUpperCase()}
+                  </div>
+                  <div className="mb-3 leading-relaxed">
+                    {t("terminal.verifyExistingIntro")}
+                  </div>
+                  <div className="space-y-3 max-w-md">
+                    <div>
+                      <label
+                        htmlFor="terminal-existing-code"
+                        className="text-[11px] text-[#22D3EE]/80 block mb-1"
+                      >
+                        &gt; {t("terminal.codeLabel")}
+                      </label>
+                      <Input
+                        id="terminal-existing-code"
+                        value={existingCode}
+                        onChange={(e) =>
+                          setExistingCode(e.target.value.toUpperCase())
+                        }
+                        placeholder={t("terminal.codePlaceholder")}
+                        autoFocus
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="bg-black border-[#22D3EE]/40 focus-visible:ring-[#22D3EE]/60 text-[#22D3EE] font-mono tracking-widest placeholder:text-[#22D3EE]/30"
+                        data-testid="terminal-existing-code-input"
+                      />
+                    </div>
+                  </div>
+                  {errorMsg && (
+                    <div className="mt-3 flex items-center gap-2 text-red-400 text-xs">
+                      <AlertTriangle size={12} /> {errorMsg}
+                    </div>
+                  )}
+                  <div className="mt-5 flex items-center gap-3 flex-wrap">
+                    <Button
+                      type="submit"
+                      className="rounded-md bg-[#22D3EE] hover:bg-[#22D3EE]/90 text-black font-mono font-semibold"
+                      data-testid="terminal-verify-existing-submit"
+                    >
+                      <KeyRound size={14} className="mr-1.5" />
+                      {t("terminal.verifyExistingSubmit")}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setErrorMsg(null);
+                        setPhase("denied");
+                      }}
+                      className="text-[#18C964]/60 hover:text-[#18C964] font-mono text-xs"
+                    >
+                      ← {t("terminal.back")}
+                    </button>
+                  </div>
+                  <div className="mt-4 text-[10px] text-[#22D3EE]/50 leading-relaxed">
+                    {t("terminal.verifyExistingHint")}
+                  </div>
+                </form>
+              )}
+
+              {/* VERIFYING phase */}
+              {phase === "verifying" && (
+                <div data-testid="terminal-phase-verifying">
+                  <div className="space-y-1 text-[13px] text-[#22D3EE]">
+                    <div>&gt; CONTACTING DEEP-STATE REGISTRY…</div>
+                    <div>&gt; CHECKING ACCREDITATION VALIDITY…</div>
+                    <div>&gt; VERIFYING 24H WINDOW…</div>
+                    <div>
+                      &gt; FINALIZING CLEARANCE
+                      {showCursor ? " █" : " "}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VERIFY-SUCCESS phase — auto-redirects to /classified-vault */}
+              {phase === "verify-success" && result && (
+                <div data-testid="terminal-phase-verify-success">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 size={18} className="text-[#22D3EE]" />
+                    <span className="text-[#22D3EE] font-semibold">
+                      {t("terminal.verifySuccessTitle")}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div>
+                      &gt; agent:{" "}
+                      <span className="text-[#F59E0B]">
+                        {result.display_name || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      &gt; accred:{" "}
+                      <span className="text-[#22D3EE] tracking-widest">
+                        {result.accreditation_number}
+                      </span>
+                    </div>
+                    <div>
+                      &gt; status:{" "}
+                      <span className="text-[#18C964]">CLEARED · LEVEL 02</span>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex items-center gap-2 text-[#22D3EE]/80 text-xs">
+                    <ArrowRight size={12} />
+                    {t("terminal.verifySuccessRedirecting")}
+                  </div>
+                </div>
               )}
 
               {/* SENDING phase */}

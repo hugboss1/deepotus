@@ -53,11 +53,14 @@ export default function ClassifiedVault() {
   const [vault, setVault] = useState(null);
   const aliveRef = useRef(true);
 
-  // Auto-verify if ?code=... in URL and no session yet
+  // Pre-fill the digicode input from `?code=...` (used by the email link
+  // and the QR code on the access card) but DO NOT auto-submit. The visitor
+  // must explicitly click "Verify" so they always pass through the digicode
+  // page consciously — even when arriving from a one-click email or QR scan.
   useEffect(() => {
     const code = params.get("code");
     if (code && !session) {
-      verifyCode(code.trim());
+      setCodeInput(code.trim().toUpperCase());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

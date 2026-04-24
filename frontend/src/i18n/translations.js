@@ -178,6 +178,22 @@ export const translations = {
       accredHidden: "transmis par voie chiffrée",
       shortcutHint:
         "Astuce : le QR code de votre carte d'accréditation ouvre directement la porte. Le lien dans l'email aussi. Validité : 24 h.",
+      // ---- Returning visitor (within 24h) — verify-existing branch ----
+      alreadyCleared: "Déjà accrédité ?",
+      ctaVerifyExisting: "J'ai un code valide",
+      verifyExistingIntro:
+        "Si votre accréditation est encore active (validité 24 h après émission), entrez-la ici. Aucun mail ne sera envoyé. Vous serez admis directement dans le coffre.",
+      codeLabel: "Numéro d'accréditation",
+      codePlaceholder: "DS-XX-XXXX-XXXX-XX",
+      codeInvalid: "Format invalide. Numéro attendu : DS-XX-XXXX-XXXX-XX.",
+      codeRejected:
+        "Numéro non reconnu ou expiré. Demandez une nouvelle accréditation.",
+      verifyExistingSubmit: "Vérifier l'accréditation",
+      verifyExistingHint:
+        "Ce numéro est sensible. Le Prophète le considère comme votre passeport — ne le partagez pas.",
+      verifySuccessTitle: "ACCRÉDITATION VALIDÉE",
+      verifySuccessRedirecting:
+        "Redirection vers le coffre dans une seconde…",
       close: "Fermer le terminal",
       retry: "Réessayer",
     },
@@ -824,6 +840,22 @@ export const translations = {
       accredHidden: "transmitted via encrypted channel",
       shortcutHint:
         "Tip: the QR code on your accreditation card opens the door directly. So does the link in the email. Validity: 24h.",
+      // ---- Returning visitor (within 24h) — verify-existing branch ----
+      alreadyCleared: "Already cleared?",
+      ctaVerifyExisting: "I have a valid code",
+      verifyExistingIntro:
+        "If your accreditation is still active (valid for 24h after issuance), enter it here. No email will be sent. You'll be admitted to the vault directly.",
+      codeLabel: "Accreditation number",
+      codePlaceholder: "DS-XX-XXXX-XXXX-XX",
+      codeInvalid: "Invalid format. Expected: DS-XX-XXXX-XXXX-XX.",
+      codeRejected:
+        "Number not recognized or expired. Request a new accreditation.",
+      verifyExistingSubmit: "Verify accreditation",
+      verifyExistingHint:
+        "This number is sensitive. The Prophet treats it as your passport — do not share it.",
+      verifySuccessTitle: "ACCREDITATION VERIFIED",
+      verifySuccessRedirecting:
+        "Redirecting to the vault in one second…",
       close: "Close terminal",
       retry: "Retry",
     },
