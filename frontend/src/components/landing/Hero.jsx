@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -15,9 +14,6 @@ import {
 } from "@/lib/links";
 import { Radio, ShieldAlert, Cpu, Coins, Copy, Check, HelpCircle } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
 const HERO_VARIANTS = [
   { src: "/deepotus_hero_serious.jpg", label: "SERIOUS" },
   { src: "/deepotus_hero_meme.jpg", label: "MEME" },
@@ -26,28 +22,26 @@ const HERO_VARIANTS = [
 ];
 const CYCLE_MS = 5000;
 
-function useCountdown(targetIso) {
-  const [now, setNow] = useState(() => Date.now());
+function useGlitchNumber(refreshMs = 80) {
+  // Random 2-digit number that shuffles fast — gives a "Matrix terminal
+  // about to lock in" vibe without ever revealing a real countdown.
+  const [n, setN] = useState(() => Math.floor(Math.random() * 100));
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(
+      () => setN(Math.floor(Math.random() * 100)),
+      refreshMs,
+    );
     return () => clearInterval(id);
-  }, []);
-  if (!targetIso) return null;
-  const target = new Date(targetIso).getTime();
-  const diff = Math.max(0, target - now);
-  const s = Math.floor(diff / 1000);
-  const days = Math.floor(s / 86400);
-  const hours = Math.floor((s % 86400) / 3600);
-  const minutes = Math.floor((s % 3600) / 60);
-  const seconds = s % 60;
-  return { days, hours, minutes, seconds };
+  }, [refreshMs]);
+  return n;
 }
 
-function Num({ value, label }) {
+function GlitchNum({ label, refreshMs }) {
+  const v = useGlitchNumber(refreshMs);
   return (
     <div className="text-center">
       <div className="tabular font-mono font-semibold text-2xl md:text-3xl text-foreground">
-        {String(value).padStart(2, "0")}
+        {String(v).padStart(2, "0")}
       </div>
       <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
         {label}
@@ -58,17 +52,9 @@ function Num({ value, label }) {
 
 export default function Hero() {
   const { t } = useI18n();
-  const [launchIso, setLaunchIso] = useState(null);
   const [variantIdx, setVariantIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    axios
-      .get(`${API}/stats`)
-      .then((r) => setLaunchIso(r.data.launch_timestamp))
-      .catch(() => {});
-  }, []);
 
   const handleCopyMint = async () => {
     try {
@@ -119,7 +105,6 @@ export default function Hero() {
     return () => clearInterval(id);
   }, [paused]);
 
-  const cd = useCountdown(launchIso);
   const currentVariant = HERO_VARIANTS[variantIdx];
 
   return (
@@ -378,20 +363,67 @@ export default function Hero() {
 
               <Separator />
 
-              <div className="p-4">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-[--campaign-red]" />
-                  {t("hero.countdownLabel")}
-                </div>
-                <div
-                  data-testid="hero-countdown"
-                  className="grid grid-cols-4 gap-2"
-                >
-                  <Num value={cd?.days ?? 0} label={t("hero.days")} />
-                  <Num value={cd?.hours ?? 0} label={t("hero.hours")} />
-                  <Num value={cd?.minutes ?? 0} label={t("hero.minutes")} />
-                  <Num value={cd?.seconds ?? 0} label={t("hero.seconds")} />
-                </div>
+              {/* ---- Dual-state launch indicator ----
+                   Pre-mint  → "MINT IMMINENT" with glitched random digits
+                              and a cynical sub-line. No fixed date so we
+                              never miss a countdown / lose credibility.
+                   Post-mint → "LIVE ON PUMP.FUN" badge + CTA.
+              */}
+              <div className="p-4" data-testid="hero-countdown-block">
+                {!mintLive ? (
+                  <>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                      <span className="relative inline-flex">
+                        <span className="absolute inset-0 inline-block w-2 h-2 rounded-full bg-[--campaign-red] animate-ping opacity-70" />
+                        <span className="relative inline-block w-2 h-2 rounded-full bg-[--campaign-red]" />
+                      </span>
+                      {t("hero.imminentKicker")}
+                    </div>
+                    <div
+                      className="grid grid-cols-4 gap-2 select-none"
+                      aria-hidden="true"
+                      data-testid="hero-countdown"
+                    >
+                      <GlitchNum label={t("hero.days")} refreshMs={420} />
+                      <GlitchNum label={t("hero.hours")} refreshMs={170} />
+                      <GlitchNum label={t("hero.minutes")} refreshMs={90} />
+                      <GlitchNum label={t("hero.seconds")} refreshMs={55} />
+                    </div>
+                    <p className="mt-3 font-mono text-[10px] text-muted-foreground leading-relaxed">
+                      {t("hero.imminentSubtitle")}
+                    </p>
+                  </>
+                ) : (
+                  <div data-testid="hero-live-badge">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-[#18C964] mb-2 flex items-center gap-2">
+                      <span className="relative inline-flex">
+                        <span className="absolute inset-0 inline-block w-2 h-2 rounded-full bg-[#18C964] animate-ping" />
+                        <span className="relative inline-block w-2 h-2 rounded-full bg-[#18C964]" />
+                      </span>
+                      {t("hero.liveKicker")}
+                    </div>
+                    <div className="font-display text-xl md:text-2xl font-semibold leading-tight">
+                      {t("hero.liveTitle")}
+                    </div>
+                    <p className="mt-2 text-sm text-foreground/80 leading-relaxed">
+                      {t("hero.liveSubtitle")}
+                    </p>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="mt-3 rounded-[var(--btn-radius)] btn-press font-semibold"
+                      data-testid="hero-live-buy-button"
+                    >
+                      <a
+                        href={getBuyUrl()}
+                        target={isBuyUrlExternal() ? "_blank" : undefined}
+                        rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
+                      >
+                        {t("hero.liveCta")}
+                      </a>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

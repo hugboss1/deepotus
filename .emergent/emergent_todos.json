@@ -1,30 +1,26 @@
 [
   {
-    "content": "Backend: Add EMERGENT_IMAGE_LLM_KEY env var + fallback to EMERGENT_LLM_KEY",
+    "content": "Inspect current Hero countdown logic",
     "status": "completed"
   },
   {
-    "content": "Backend: Add generate_image() to prophet_studio.py (Nano Banana, 16:9 X format, style per content_type)",
+    "content": "Refactor Hero countdown into dual-state component (Imminent / Live)",
     "status": "completed"
   },
   {
-    "content": "Backend: Extend generate-preview endpoint with include_image flag + image response field",
+    "content": "Add FR/EN translations for new countdown copy",
     "status": "completed"
   },
   {
-    "content": "Backend: Test image generation via curl for 2 content types",
+    "content": "Verify Gencoin Lore page countdown remains independent",
     "status": "completed"
   },
   {
-    "content": "Frontend: Add image toggle + preview + download in AdminBots Preview tab",
+    "content": "Visual test (FR + EN, both states)",
     "status": "completed"
   },
   {
-    "content": "Frontend: Test end-to-end (text + image generation + display)",
-    "status": "completed"
-  },
-  {
-    "content": "Document deployment env var setup (Render/Vercel)",
-    "status": "completed"
+    "content": "Regenerate DEPLOYMENT_AND_PHASES_GUIDE.md with full mint procedure + admin docs",
+    "status": "in_progress"
   }
 ]

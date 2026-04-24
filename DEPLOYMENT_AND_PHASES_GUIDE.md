@@ -1,26 +1,34 @@
-# 🛸 $DEEPOTUS · Guide de déploiement & finition (Phases 3 → 7)
+# 🛸 $DEEPOTUS · Guide complet de mint, déploiement, finition & administration
 
-> **Document maître séquentiel.** Toutes les étapes sont liées entre elles dans l'ordre d'exécution recommandé. Les sections `🟢 NEO` sont du code que je peux implémenter, les sections `🟡 TOI` sont manuelles (création de comptes, copie de credentials, paiements). Les `⚠️ PIÈGES` listent les erreurs typiques à éviter.
+> **Document maître séquentiel.** Tout est lié et numéroté pour que tu puisses suivre dans l'ordre. Légende :
+> - 🟢 **NEO** = code que je peux/vais écrire
+> - 🟡 **TOI** = action manuelle (création de compte, copie de credentials, paiement)
+> - ⚠️ **PIÈGES** = erreurs typiques à éviter
+> - 🔗 **Liens** = directs vers le bon dashboard du service
 
 ---
 
 ## 📑 Table des matières
 
 - [0. Snapshot — état actuel du projet](#0-snapshot)
-- [1. Pré-requis : comptes & services à créer](#1-prerequis)
-- [2. Phase 3 — Telegram content bot (aiogram)](#2-phase-3-telegram-content-bot)
-- [3. Phase 4 — X / Twitter posting bot (Tweepy)](#3-phase-4-x-twitter-posting-bot)
-- [4. Phase 5 — X KOL mentions listener](#4-phase-5-x-kol-listener)
-- [5. Telegram TRADING bot — Maestro / BonkBot / Trojan](#5-telegram-trading-bot)
-- [6. Déploiement Backend → Render](#6-deploy-backend-render)
-- [7. Déploiement Frontend → Vercel](#7-deploy-frontend-vercel)
-- [8. DNS Namecheap → deepotus.xyz](#8-dns-namecheap)
-- [9. MongoDB Atlas — base de prod](#9-mongodb-atlas)
-- [10. Resend — DKIM / SPF / domaine](#10-resend-dkim)
-- [11. Helius — passage en mode prod (vrai mint)](#11-helius-prod)
-- [12. Post-deploy checklist + Go-Live D-day](#12-post-deploy)
-- [13. Récap : qui fait quoi, dans quel ordre](#13-recap-final)
-- [14. Coûts mensuels estimés](#14-couts)
+- [1. Pré-requis — comptes & services à créer](#1-prerequis)
+- [2. Stratégie countdown — pourquoi on a viré la date fixe](#2-strategie-countdown)
+- [3. Mint $DEEPOTUS sur Pump.fun — procédure A à Z](#3-mint-pumpfun)
+- [4. Phase 3 — Telegram content bot (aiogram)](#4-phase-3-telegram-content-bot)
+- [5. Phase 4 — X / Twitter posting bot (Tweepy)](#5-phase-4-x-twitter-posting-bot)
+- [6. Phase 5 — X KOL mentions listener](#6-phase-5-x-kol-listener)
+- [7. Telegram TRADING bot — Maestro / BonkBot / Trojan](#7-telegram-trading-bot)
+- [8. Déploiement Backend → Render](#8-deploy-backend-render)
+- [9. Déploiement Frontend → Vercel](#9-deploy-frontend-vercel)
+- [10. DNS Namecheap → deepotus.xyz](#10-dns-namecheap)
+- [11. MongoDB Atlas — base de prod](#11-mongodb-atlas)
+- [12. Resend — DKIM / SPF / domaine](#12-resend-dkim)
+- [13. Helius — passage en mode prod (vrai mint)](#13-helius-prod)
+- [14. Documentation Admin — comment piloter le site](#14-admin-docs)
+- [15. Sécurité — changer mdp, activer 2FA, révoquer sessions](#15-securite)
+- [16. Post-deploy checklist + Go-Live D-day](#16-post-deploy)
+- [17. Récap final — qui fait quoi, dans quel ordre](#17-recap-final)
+- [18. Coûts mensuels estimés](#18-couts)
 
 ---
 
@@ -28,169 +36,347 @@
 
 | Module | Statut | Notes |
 |---|---|---|
-| Site front (Hero / Tokenomics / Vault / ROI / FAQ / How-to-Buy) | ✅ Live preview | Bilingue FR/EN, Matrix/Deep State theme |
-| Admin dashboard (`/admin`, `/admin/vault`, `/admin/emails`, `/admin/bots`) | ✅ Live | JWT + 2FA |
-| Helius webhook (per-trade DEX polling) | 🟡 Demo mode (BONK) | À basculer sur le vrai mint au launch — voir [§11](#11-helius-prod) |
-| Resend emails (whitelist + access cards) | ✅ Live | Domaine `deepotus.xyz` à valider — voir [§10](#10-resend-dkim) |
+| Site front (Hero, Tokenomics, Vault, ROI, FAQ, How-to-Buy) | ✅ Live preview | Bilingue FR/EN, Matrix/Deep State |
+| Hero countdown — **dual-state IMMINENT / LIVE** | ✅ Implémenté | Voir [§2](#2-strategie-countdown) |
+| Admin dashboard (`/admin`, `/admin/vault`, `/admin/emails`, `/admin/bots`) | ✅ Live | JWT + 2FA TOTP |
+| Helius webhook (per-trade) | 🟡 Demo (BONK) | Switch au mint réel — [§13](#13-helius-prod) |
+| Resend emails | ✅ Code OK | Domaine `deepotus.xyz` à valider — [§12](#12-resend-dkim) |
 | Phase 1 — Scheduler bots (APScheduler + kill-switch) | ✅ Implémenté | |
 | Phase 2 — Prophet Studio LLM (texte + image Nano Banana) | ✅ Implémenté | Clé image séparable via `EMERGENT_IMAGE_LLM_KEY` |
-| Phase 3 — Telegram content bot | ❌ À faire | [§2](#2-phase-3-telegram-content-bot) |
-| Phase 4 — X posting bot | ❌ À faire | [§3](#3-phase-4-x-twitter-posting-bot) |
-| Phase 5 — X KOL listener | ❌ À faire | [§4](#4-phase-5-x-kol-listener) |
+| Phase 3 — Telegram content bot | ❌ À faire | [§4](#4-phase-3-telegram-content-bot) |
+| Phase 4 — X posting bot | ❌ À faire | [§5](#5-phase-4-x-twitter-posting-bot) |
+| Phase 5 — X KOL listener | ❌ À faire | [§6](#6-phase-5-x-kol-listener) |
 | Phase 6 — Admin Dashboard UI Bots | ✅ Implémenté | Config / Preview / Jobs / Logs |
-| Telegram **trading** bot | 🟡 Externe | [§5](#5-telegram-trading-bot) |
-| Déploiement Vercel + Render + Atlas + Namecheap | ❌ À faire | [§6](#6-deploy-backend-render) à [§9](#9-mongodb-atlas) |
+| Mint $DEEPOTUS Pump.fun | 🟡 Manuel | [§3](#3-mint-pumpfun) |
+| Telegram **trading** bot (Maestro/BonkBot/Trojan) | 🟡 Externe | [§7](#7-telegram-trading-bot) |
+| Déploiement Vercel + Render + Atlas + Namecheap | ❌ À faire | [§8](#8-deploy-backend-render) à [§11](#11-mongodb-atlas) |
 
 ---
 
 ## <a id="1-prerequis"></a>1. Pré-requis — comptes & services à créer
 
-> Crée tous ces comptes **avant** d'attaquer le déploiement. La plupart sont gratuits.
-
 ### 🟡 TOI — Comptes obligatoires
 
 | # | Service | Lien direct | Coût | Pourquoi |
 |---|---|---|---|---|
-| 1 | **GitHub** | [github.com/signup](https://github.com/signup) | Gratuit | Héberger le code source de l'app |
+| 1 | **GitHub** | [github.com/signup](https://github.com/signup) | Gratuit | Code source de l'app |
 | 2 | **Vercel** | [vercel.com/signup](https://vercel.com/signup) | Gratuit | Hébergement frontend React |
 | 3 | **Render** | [render.com/register](https://render.com/register) | Starter $7/mo | Hébergement backend FastAPI |
 | 4 | **MongoDB Atlas** | [cloud.mongodb.com/v2/register](https://cloud.mongodb.com/v2/register) | M0 Free | Base de données prod |
 | 5 | **Resend** *(déjà configuré)* | [resend.com](https://resend.com) | Free 3K emails/mo | Emails transactionnels |
 | 6 | **Helius** *(déjà configuré)* | [dashboard.helius.dev](https://dashboard.helius.dev) | Free 100K req/mo | Solana indexer |
-| 7 | **Namecheap** *(tu as déjà deepotus.xyz)* | [namecheap.com](https://namecheap.com) | — | DNS |
+| 7 | **Phantom Wallet** *(pour mint)* | [phantom.com](https://phantom.com) | Gratuit | Mint $DEEPOTUS sur Pump.fun |
+| 8 | **Pump.fun** *(pour mint)* | [pump.fun](https://pump.fun) | ~0.02 SOL fee | Plateforme de lancement memecoin |
 
 ### 🟡 TOI — Comptes optionnels selon les phases
 
 | # | Service | Lien | Coût | Phase concernée |
 |---|---|---|---|---|
-| 8 | **Telegram BotFather** | [@BotFather](https://t.me/BotFather) sur Telegram | Gratuit | [Phase 3](#2-phase-3-telegram-content-bot) |
-| 9 | **X / Twitter Developer** | [developer.x.com/en/portal/dashboard](https://developer.x.com/en/portal/dashboard) | Basic $200/mo | [Phase 4 + 5](#3-phase-4-x-twitter-posting-bot) |
-| 10 | **BonkBot / Maestro / Trojan** | [§5](#5-telegram-trading-bot) | Gratuit (commission 1%) | [Trading bot](#5-telegram-trading-bot) |
+| 9 | **Telegram BotFather** | [@BotFather](https://t.me/BotFather) sur Telegram | Gratuit | [Phase 3](#4-phase-3-telegram-content-bot) |
+| 10 | **X / Twitter Developer** | [developer.x.com/en/portal/dashboard](https://developer.x.com/en/portal/dashboard) | Basic $200/mo | [Phase 4 + 5](#5-phase-4-x-twitter-posting-bot) |
+| 11 | **BonkBot / Maestro / Trojan** | [§7](#7-telegram-trading-bot) | Gratuit | [Trading bot](#7-telegram-trading-bot) |
+| 12 | **rugcheck.xyz** *(verif post-mint)* | [rugcheck.xyz](https://rugcheck.xyz) | Gratuit | [Mint §3](#3-mint-pumpfun) |
 
 ---
 
-## <a id="2-phase-3-telegram-content-bot"></a>2. Phase 3 — Telegram content bot (aiogram)
+## <a id="2-strategie-countdown"></a>2. Stratégie countdown — pourquoi on a viré la date fixe
 
-> Le bot publie automatiquement les prophéties générées par Phase 2 dans ton canal Telegram public, à la fréquence définie dans l'admin (ex. toutes les 6h).
+**Décision stratégique implémentée** : le compte à rebours dur du Hero (07/09/2026) a été remplacé par un système **dual-state intelligent**.
+
+### Avant ❌
+
+Hero affichait `J 432 · H 12 · MIN 47 · S 23` pointant vers 07/09/2026.
+Problèmes :
+- Si tu mintes avant (cas le + probable, dès que la levée de fonds est OK) → countdown devient **absurde**
+- Si tu loupes la date → **perte de crédibilité instantanée** (la culture memecoin est impitoyable)
+- Confusion avec le countdown de la page Gencoin Lore (qui lui pointe vraiment vers la phase régulée)
+
+### Après ✅
+
+| État | Trigger | Affichage Hero |
+|---|---|---|
+| **PRE-MINT** *(défaut)* | `REACT_APP_DEEPOTUS_MINT` non set | Badge `🔴 MINT IMMINENT · CIRCUIT VERROUILLÉ` + 4 chiffres qui **glitchent à des vitesses différentes** (effet Matrix qui tape sur la vérité sans la dire) + sous-texte `"Le Prophète n'annonce pas la date. Il appuie sur le bouton quand le Deep State lui souffle l'instant. Reste connecté."` |
+| **POST-MINT** | `REACT_APP_DEEPOTUS_MINT` set sur Vercel | Badge `🟢 LIVE ON PUMP.FUN` + titre `"$DEEPOTUS est en circulation"` + sous-texte expliquant le lien memecoin → Vault → Gencoin + bouton "Trader maintenant" qui redirige sur Pump.fun |
+
+### Bénéfices stratégiques
+
+1. **Anti-rugpull narrative** : tu ne promets aucune date, donc pas de "rugpull soft" perçu si glissement
+2. **FOMO authentique** : l'effet glitch crée de l'urgence sans mentir
+3. **Bascule automatique** : le jour où tu set `REACT_APP_DEEPOTUS_MINT` sur Vercel, le Hero passe en mode LIVE sans aucune intervention
+4. **Cohérence narrative** : le 07/09/2026 reste sur la page Gencoin Lore (cible long-terme phase MiCA), pas sur le Hero (court-terme memecoin)
+
+### Cycle de vie complet
+
+```
+JOUR J - 30 (whitelist + buzz)
+  Hero  : 🔴 MINT IMMINENT (chiffres glitch)
+  Lore  : ⏳ Gencoin Phase 2 — 07/09/2026
+
+JOUR J = MINT (tu mintes sur Pump.fun, mets REACT_APP_DEEPOTUS_MINT sur Vercel)
+  Hero  : 🟢 LIVE ON PUMP.FUN (CTA Trade now)
+  Lore  : ⏳ Gencoin Phase 2 — 07/09/2026 (inchangé)
+
+JOUR J + 30 (Vault commence à se remplir)
+  Hero  : 🟢 LIVE + données live (ajout possible Phase 7 : market cap, holders)
+  Lore  : ⏳ Gencoin Phase 2 — 07/09/2026 (ou ré-ajusté selon la levée)
+
+JOUR 07/09/2026 (Gencoin lance la phase régulée)
+  Hero  : 🟢 LIVE + Gencoin badge "Phase 2 active"
+  Lore  : ✅ Gencoin Phase 2 ACTIVE
+```
+
+> 💡 **Évolution future possible (Phase 7)** : remplacer le badge LIVE par un widget temps-réel (market cap, holders, 24h volume via DexScreener public API). Je peux le coder en ~2h quand tu seras live.
+
+---
+
+## <a id="3-mint-pumpfun"></a>3. Mint $DEEPOTUS sur Pump.fun — procédure A à Z
+
+> 🎯 **Important** : Pump.fun est une plateforme **no-code**. Il n'y a pas de smart-contract à déployer — tu remplis un formulaire et leur bonding curve crée le token automatiquement. Coût total ~0.02 SOL (~$5).
+
+### 🟡 TOI — J-7 : Pré-mint preparation (1h)
+
+#### 3.1 Phantom + SOL en réserve
+
+1. Installe [phantom.com](https://phantom.com) — extension Chrome OU app mobile
+2. **Crée un wallet dédié au projet** *(ne réutilise pas ton wallet personnel)* — labellise-le "DEEPOTUS-DEPLOYER"
+3. **Note la seed phrase** sur papier, dans un coffre, jamais en photo, jamais cloud
+4. **Approvisionne** le wallet avec **3-5 SOL** *(0.02 pour le mint, le reste pour : dev buy initial + fees + mint des futurs lock Jupiter)*
+5. **Récupère ton adresse publique** du wallet (44 chars base58) — tu en auras besoin pour les locks plus tard
+
+#### 3.2 Préparer les assets visuels
+
+Sur Emergent ou en local, vérifie que tu as :
+
+| Asset | Chemin actuel | Format Pump.fun |
+|---|---|---|
+| **Logo carré 512×512** *(token icon)* | `/app/frontend/public/logo_v4_matrix_face.png` | PNG, max 1 MB |
+| **Banner X 1500×500** *(optionnel mais conseillé)* | À générer via Phase 2 Nano Banana avec prompt "X header banner $DEEPOTUS" | PNG/JPG |
+| **Description courte** *(280 chars)* | À rédiger en bilingue | Pump.fun field "description" |
+
+> 💡 Si tu veux générer le banner X depuis l'admin : `/admin/bots` → Preview → content_type `prophecy` → image toggle ON → ratio `16:9` → ajuste le prompt manuellement si besoin.
+
+**Description Pump.fun proposée (FR + EN combinées)** *(279 chars, copy-paste direct)* :
+
+```
+$DEEPOTUS — The Deep State's chosen AI Prophet for World President. Funds a classified Operation: PROTOCOL ΔΣ. Memecoin → Vault → Gencoin (regulated MiCA phase). Pure satire. Highly speculative. Not advice. → deepotus.xyz
+```
+
+#### 3.3 Préparer les liens à attacher au token
+
+Au moment du mint, Pump.fun te demande :
+- **Website** : `https://deepotus.xyz` *(à condition que [§10](#10-dns-namecheap) soit fait)*
+- **Twitter / X** : `https://x.com/deepotus_ai`
+- **Telegram** : `https://t.me/deepotus_official` *(à condition que [§4](#4-phase-3-telegram-content-bot) soit fait)*
+
+> ⚠️ **Mint AVANT que ces 3 liens soient prêts** est risqué : Pump.fun n'autorise pas l'édition des liens après création (sauf Pro plan $100/mo). Donc finis [§10](#10-dns-namecheap) + [§4](#4-phase-3-telegram-content-bot) **avant** le mint.
+
+#### 3.4 Choix stratégiques pré-mint
+
+| Question | Recommandation |
+|---|---|
+| **Dev buy initial ?** | OUI, ~10-20% de la supply en achetant immédiatement après création (snipe protection contre les bots) |
+| **Wallet du dev buy ?** | Le **même** wallet "DEEPOTUS-DEPLOYER" — un sniper bot voyant un autre wallet "drainer" la curve va crier scam |
+| **Anti-bot delay ?** | Pump.fun n'a pas d'option native. Solution : annonce le mint **simultanément** sur Telegram/X au moment du clic, pas avant |
+| **Lock supply ?** | OUI, dès que tu as 30% de la supply, lock 15% team + 30% Treasury via [Jupiter Lock](https://lock.jup.ag) (cf [§3.6](#3-mint-pumpfun)) |
+
+### 🟡 TOI — Jour J : Mint live (15 min total)
+
+#### 3.5 Procédure de mint sur Pump.fun
+
+1. Va sur [pump.fun](https://pump.fun) → connecte ton wallet Phantom (top right)
+2. Clique **`Start a new coin`** (gros bouton rose)
+3. Remplis le formulaire :
+
+| Champ | Valeur |
+|---|---|
+| **Token name** | `DEEPOTUS` |
+| **Ticker** | `DEEPOTUS` |
+| **Description** | *(le texte de §3.2)* |
+| **Image** | Upload `logo_v4_matrix_face.png` |
+| **Twitter link** | `https://x.com/deepotus_ai` |
+| **Telegram link** | `https://t.me/deepotus_official` |
+| **Website** | `https://deepotus.xyz` |
+| **Banner** *(optionnel)* | Upload ton banner 1500×500 |
+| **Buy amount (SOL)** *(optionnel)* | `0.5` à `2` SOL pour le snipe initial |
+
+4. Clique **`Create coin`** → Phantom popup pour signer la transaction (~0.02 SOL fee)
+5. Confirme dans Phantom → attends 5-15 secondes
+6. Une fois confirmé, Pump.fun t'envoie sur la page de ton token — l'**URL contient le mint address** :
+   `https://pump.fun/coin/<TON_MINT_44_CHARS>`
+7. **COPIE le mint address immédiatement** (44 chars base58, commence souvent par un chiffre ou une lettre random)
+
+#### 3.6 Lock du Treasury via Jupiter Lock
+
+> Lock = blocage on-chain d'une portion de la supply pour X mois → preuve de non-rugpull, exigée par les holders sérieux.
+
+1. Va sur [lock.jup.ag](https://lock.jup.ag) → connecte ton wallet Phantom
+2. **Create lock** :
+
+| Champ | Valeur |
+|---|---|
+| **Token mint** | `<TON_MINT>` |
+| **Recipient** | `<TON_ADRESSE_PUBLIQUE>` *(toi-même, à débloquer plus tard)* |
+| **Amount** | 15% de la supply (équipe) |
+| **Vesting** | Cliff 6 mois, puis linear sur 12 mois |
+| **Cancellable** | NON *(important, un lock cancellable ne compte pas)* |
+
+3. Confirm → tu reçois une **URL publique** style `https://lock.jup.ag/lock/xxxxxx` → **copie-la**
+4. Refais l'opération pour 30% Treasury (mêmes paramètres ou cliff plus long)
+
+#### 3.7 Mise à jour env vars Vercel + Render
+
+| Service | Clé | Valeur |
+|---|---|---|
+| **Vercel** | `REACT_APP_DEEPOTUS_MINT` | `<TON_MINT_44_CHARS>` |
+| **Vercel** | `REACT_APP_PUMPFUN_URL` | `https://pump.fun/coin/<TON_MINT>` |
+| **Vercel** | `REACT_APP_TEAM_LOCK_URL` | `https://lock.jup.ag/lock/<lock_team>` |
+| **Vercel** | `REACT_APP_TREASURY_LOCK_URL` | `https://lock.jup.ag/lock/<lock_treasury>` |
+
+→ Vercel **Redeploy** *(les env vars ne s'appliquent pas à chaud, il faut redéployer)*
+→ Le Hero bascule automatiquement sur le mode `🟢 LIVE` ([§2](#2-strategie-countdown))
+
+#### 3.8 Switch Helius vers le vrai mint
+
+→ Voir [§13](#13-helius-prod)
+
+#### 3.9 Vérification rugcheck.xyz
+
+1. Va sur [rugcheck.xyz](https://rugcheck.xyz)
+2. Colle ton mint → Analyze
+3. **Score attendu : GOOD ou EXCELLENT**
+4. Vérifications clés :
+   - **Mint authority** : `null` ou `revoked` *(sinon = peut mint à l'infini = scam)*
+   - **Freeze authority** : `null` ou `revoked` *(sinon = peut geler les wallets = scam)*
+   - **LP locked** : OUI *(ta liquidité est dans la bonding curve Pump.fun, donc verrouillée tant que pas migré)*
+
+> ⚠️ Si le score est "DANGER" ou "WARNING", **NE PROMEUVE PAS le token tant que tu n'as pas compris pourquoi**. Pump.fun par défaut révoque mint + freeze authority — si ce n'est pas le cas, tu as un bug à corriger avec leur support.
+
+#### 3.10 Migration vers Raydium (J + variable)
+
+Pump.fun migre **automatiquement** vers Raydium quand le marketcap atteint **~$69K** (graduation event). Tu n'as **rien à faire** — la liquidité bascule, le LP est burn (locked forever) par Pump.fun. C'est ce qui te donne définitivement le label "rug-resistant".
+
+### ⚠️ PIÈGES Mint
+
+- **Wallet leaks** : ne JAMAIS partager la seed du wallet "DEEPOTUS-DEPLOYER", même par DM officiel — aucun service légitime ne te la demandera
+- **Mint trop tôt** : sans Telegram + X + site live, tu cannibalise ton lancement (les sniper bots arrivent avant tes vrais holders)
+- **Dev buy trop gros** : >25% de la supply = "dev premine" perçu = rugpull-vibe
+- **Liens cassés sur Pump.fun** : ils ne sont **pas éditables après création** sauf Pro plan. Triple-check avant de cliquer Create coin
+- **Banner X aux mauvaises dimensions** : Pump.fun crop si ce n'est pas pile 1500×500
+- **Description > 280 chars** : Pump.fun tronque, ton ":" stratégique peut sauter
+- **Pas de SOL pour les fees** : prévois 5 SOL min sinon tu peux te retrouver bloqué entre mint + lock + dev buy
+- **Snipe bots** : 99% des memecoins se font sniper dans les 3 premières secondes. Ton dev buy + annonce simultanée Telegram/X minimisent l'impact
+
+---
+
+## <a id="4-phase-3-telegram-content-bot"></a>4. Phase 3 — Telegram content bot (aiogram)
+
+> Le bot publie automatiquement les prophéties de Phase 2 dans ton canal Telegram, à la fréquence définie dans l'admin.
 
 ### 🟡 TOI — Avant que je code (5 min)
 
-#### 2.1 Créer le bot Telegram
+#### 4.1 Créer le bot Telegram
 
 1. Sur Telegram, ouvre [@BotFather](https://t.me/BotFather)
 2. Tape `/newbot`
-3. **Name** : `DEEPOTUS Prophet` *(nom affiché)*
+3. **Name** : `DEEPOTUS Prophet`
 4. **Username** : `deepotus_prophet_bot` *(doit finir par `bot`)*
-5. BotFather te renvoie un **token** au format `7891234567:AAH-xxxxxxxxxxxxxxx` → **copie-le**
+5. BotFather te renvoie un **token** au format `7891234567:AAH-xxxxx` → **copie-le**
 6. Tape `/setdescription` → *"The Prophet's official broadcast channel · PROTOCOL ΔΣ · Not financial advice"*
-7. Tape `/setuserpic` → upload `/app/frontend/public/logo_v4_matrix_face.png`
-8. Tape `/setprivacy` → **Disable** (pour que le bot puisse répondre dans les groupes plus tard)
+7. Tape `/setuserpic` → upload `logo_v4_matrix_face.png`
+8. Tape `/setprivacy` → **Disable**
 
-#### 2.2 Créer le canal de diffusion
+#### 4.2 Créer le canal de diffusion
 
 1. Telegram → menu burger → **New Channel**
 2. Nom : `$DEEPOTUS · PROTOCOL ΔΣ`
-3. Username public : `@deepotus_official` *(à choisir)*
-4. Description : copie-colle ton manifeste court
-5. **Add Subscribers** → ajoute ton bot `@deepotus_prophet_bot` comme **Admin** avec permissions `Post Messages` + `Edit Messages` minimum
-6. Copie l'username public (`@deepotus_official`) — il te servira de `chat_id`
+3. Username public : `@deepotus_official`
+4. Description : copy ton manifeste court
+5. **Add Subscribers** → ajoute `@deepotus_prophet_bot` comme **Admin** avec permissions `Post Messages` + `Edit Messages`
 
-#### 2.3 Récupérer le `chat_id` numérique (pour fiabilité)
+#### 4.3 Récupérer le `chat_id` numérique
 
-1. Une fois le bot ajouté au canal, envoie un message test depuis ton compte
+1. Envoie un message test depuis ton compte dans le canal
 2. Ouvre dans le navigateur :
    `https://api.telegram.org/bot<TON_TOKEN>/getUpdates`
 3. Cherche `"chat":{"id":-100xxxxxxxxxx,...}` → copie ce nombre négatif
-4. **Garde token + chat_id** pour me les fournir
 
-#### ⚠️ PIÈGES Phase 3
-- Token leak : ne JAMAIS commit `BOT_TOKEN` dans git, toujours via env vars Render
-- Bot non-admin : sans droit `Post Messages` le bot reçoit `403 Forbidden`
-- Privacy ON : si tu oublies `/setprivacy disable`, le bot ignore les replies dans les groupes
-- Rate limit Telegram : 30 messages/sec global, 1/sec par chat → on a une marge énorme avec 1 post/6h
-- Aspect ratio image Telegram : 16:9 OK, 1:1 OK, mais 3:4 portrait s'affiche cropped
+### ⚠️ PIÈGES Phase 3
+- Token leak : ne JAMAIS commit `BOT_TOKEN` dans git
+- Bot non-admin : sans `Post Messages` → 403
+- Privacy ON : sans `/setprivacy disable`, le bot ignore les replies de groupe
+- Aspect ratio image Telegram : 16:9 OK, 1:1 OK, 3:4 cropped
 
-### 🟢 NEO — Une fois token + chat_id reçus (~1h de code)
+### 🟢 NEO — Une fois token + chat_id reçus (~1h)
 
 ```
 Backend additions:
-  • backend/integrations/telegram_bot.py  (aiogram async client)
-  • backend/integrations/posters/telegram_poster.py  (post text + image)
-  • routers/bots.py: nouveau endpoint POST /admin/bots/post-now {platform:"telegram"}
-  • core/bot_scheduler.py: hook sync_jobs_from_config pour activer le job Telegram
+  • backend/integrations/telegram_bot.py  (aiogram async)
+  • backend/integrations/posters/telegram_poster.py
+  • routers/bots.py: POST /admin/bots/post-now {platform:"telegram"}
+  • core/bot_scheduler.py: hook sync_jobs_from_config pour activer Telegram
   • requirements.txt: + aiogram>=3.4
 
 Frontend additions:
-  • AdminBots.jsx Config tab: input "Telegram bot token" + "chat_id" (lus depuis env)
-  • AdminBots.jsx Preview tab: bouton "🚀 Post to Telegram now" (utilise dernière prévisualisation)
-  • Test post button avec confirmation modale
+  • AdminBots.jsx Preview: bouton "🚀 Post to Telegram now"
 ```
 
-**Env vars Render à ajouter quand prêt** :
+**Env vars Render** :
 | Clé | Valeur |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | `7891234567:AAH-xxxxx` *(de BotFather)* |
-| `TELEGRAM_CHAT_ID` | `-1001234567890` *(numérique du canal)* |
-| `TELEGRAM_PARSE_MODE` | `MarkdownV2` *(par défaut)* |
+| `TELEGRAM_BOT_TOKEN` | de BotFather |
+| `TELEGRAM_CHAT_ID` | numérique du canal |
+| `TELEGRAM_PARSE_MODE` | `MarkdownV2` |
 
 ---
 
-## <a id="3-phase-4-x-twitter-posting-bot"></a>3. Phase 4 — X / Twitter posting bot (Tweepy)
-
-> Le bot poste les prophéties + illustrations sur le compte X officiel `@deepotus_ai` à la fréquence définie dans l'admin (ex. toutes les 4h).
+## <a id="5-phase-4-x-twitter-posting-bot"></a>5. Phase 4 — X / Twitter posting bot (Tweepy)
 
 ### 🟡 TOI — Compte X Developer (15-30 min)
 
-#### 3.1 Créer le compte développeur
+#### 5.1 Subscribe Basic plan ($200/mo)
 
-1. **Connecte-toi avec @deepotus_ai** sur [developer.x.com/en/portal/dashboard](https://developer.x.com/en/portal/dashboard)
-2. Souscris au plan **Basic ($200/mo)** — le Free tier est trop limité (50 posts/24h, pas de filtered stream pour KOL listener)
-3. Crée un **Project** : nom `DEEPOTUS Prophet`
-4. Crée une **App** dedans : nom `deepotus-poster`, description courte
-5. Dans l'App → **User authentication settings** → **Set up** :
-   - **App permissions** : `Read and write` *(et `Read, write, and Direct message` si tu veux DM plus tard)*
-   - **Type of App** : `Web App, Automated App or Bot`
-   - **Callback URL** : `https://deepotus.xyz/admin/bots/x/callback`
-   - **Website URL** : `https://deepotus.xyz`
+1. Connecte-toi avec **@deepotus_ai** sur [developer.x.com/en/portal/dashboard](https://developer.x.com/en/portal/dashboard)
+2. Souscris **Basic ($200/mo)** *(le Free tier est insuffisant)*
+3. Crée un **Project** : `DEEPOTUS Prophet`
+4. Crée une **App** : `deepotus-poster`
+5. **User authentication settings** :
+   - App permissions : `Read and write`
+   - Type : `Web App, Automated App or Bot`
+   - Callback URL : `https://deepotus.xyz/admin/bots/x/callback`
+   - Website URL : `https://deepotus.xyz`
 
-#### 3.2 Récupérer les 5 credentials
+#### 5.2 Récupérer les 5 credentials
 
-Dans ton App → onglet **Keys and tokens** :
-
-| Credential | Section dashboard | Format |
+| Credential | Section | Format |
 |---|---|---|
-| `X_API_KEY` | API Key and Secret → **API Key** | `AbCdEfGh1234567890` |
-| `X_API_SECRET` | API Key and Secret → **API Key Secret** | `XyZ1...` (50+ chars) |
-| `X_BEARER_TOKEN` | Bearer Token → **Bearer Token** | `AAAAAAAAAA...` (80+ chars) |
-| `X_ACCESS_TOKEN` | Access Token and Secret → **Access Token** | `1234567890-Ab...` |
-| `X_ACCESS_TOKEN_SECRET` | Access Token and Secret → **Access Token Secret** | `xy...` (45 chars) |
+| `X_API_KEY` | API Key and Secret → API Key | `AbCdEfGh1234567890` |
+| `X_API_SECRET` | API Key and Secret → API Key Secret | 50+ chars |
+| `X_BEARER_TOKEN` | Bearer Token | 80+ chars |
+| `X_ACCESS_TOKEN` | Access Token and Secret → Access Token | `123-Ab...` |
+| `X_ACCESS_TOKEN_SECRET` | Access Token Secret | 45 chars |
 
-> 💡 Génère l'Access Token APRÈS avoir configuré les permissions Read+Write, sinon il sera read-only et le post fail en `403`.
+> ⚠️ Génère l'Access Token APRÈS Read+Write sinon il sera read-only.
 
-#### ⚠️ PIÈGES Phase 4
-- **Plan Free = useless** : tu peux read mais pas poster en automatique (ratio limit 50/24h, pas d'app autonome)
-- **Permissions read-only par défaut** : génère TOUJOURS l'Access Token APRÈS avoir validé `Read and write`
-- **Image upload v1.1** : X API v2 ne gère pas l'upload media → il faut combiner v1.1 (`media/upload`) pour l'image puis v2 (`tweets`) pour le post
-- **Char limit X** : 280 max — Phase 2 truncate à 270 pour laisser place au mint footer
-- **Erreur 403 Forbidden** : check tes permissions ET regen Access Token, c'est 95% des cas
-- **Erreur 429 Rate Limit** : Basic tier = 1500 posts/mois, soit ~50/jour ; on en fait 6/jour donc safe
+### ⚠️ PIÈGES Phase 4
+- Free = useless (pas de post automatique)
+- Permissions read-only → regen Access Token après Read+Write
+- Image upload requires v1.1 + v2 combo
+- Char limit 280 → Phase 2 truncate à 270
+- 403 = 95% des cas = perms ou Access Token pas regen
+- 429 Rate Limit = Basic 1500 posts/mois (50/jour) → on en fait 6 OK
 
-### 🟢 NEO — Une fois 5 credentials reçus (~1.5h de code)
+### 🟢 NEO — Une fois 5 credentials reçus (~1.5h)
 
 ```
 Backend additions:
-  • backend/integrations/x_client.py  (Tweepy async wrapper, OAuth1 + media upload)
-  • backend/integrations/posters/x_poster.py  (post tweet + image, retry on 429)
-  • routers/bots.py: endpoint POST /admin/bots/post-now {platform:"x"}
-  • core/bot_scheduler.py: scheduled X jobs honoring config.platforms.x.post_frequency_hours
+  • backend/integrations/x_client.py  (Tweepy async OAuth1 + media)
+  • backend/integrations/posters/x_poster.py
+  • routers/bots.py: POST /admin/bots/post-now {platform:"x"}
+  • core/bot_scheduler.py: scheduled X jobs
   • requirements.txt: + tweepy>=4.14
-
-Frontend additions:
-  • AdminBots.jsx: bouton "🚀 Post to X now" + status (last_post_url cliquable)
-  • Sécurité: confirmation modal avant tout post manuel (eviter dérapage)
 ```
 
-**Env vars Render à ajouter** :
+**Env vars Render** :
 ```
 X_API_KEY=...
 X_API_SECRET=...
@@ -201,188 +387,140 @@ X_ACCESS_TOKEN_SECRET=...
 
 ---
 
-## <a id="4-phase-5-x-kol-listener"></a>4. Phase 5 — X KOL mentions listener
+## <a id="6-phase-5-x-kol-listener"></a>6. Phase 5 — X KOL mentions listener
 
-> Le bot écoute en temps réel les tweets des KOLs que tu cibles, génère une réplique cynique via Phase 2 (`kol_reply`), et la pousse dans une **queue d'approbation admin** avant de poster (mode safe par défaut).
+### 🟡 TOI — Liste KOLs
 
-### 🟡 TOI — Liste des KOLs à monitorer
+Donne-moi 3 à 10 handles X. Exemples :
 
-Donne-moi 3 à 10 handles X que le Prophète doit "écouter" et potentiellement répondre. Exemples adaptés à un memecoin Solana cynique :
+| Handle | Pourquoi |
+|---|---|
+| `@SolanaFloor` | Sentiment Solana |
+| `@pumpdotfun` | Plateforme launch |
+| `@ansemf` | KOL Solana memecoin |
+| `@JupiterExchange` | DEX agrégateur |
+| `@aeyakovenko` | Co-fondateur Solana |
+| `@FartCoinSOL` | Memecoin culture |
 
-| Handle | Pourquoi | Ton conseillé |
-|---|---|---|
-| `@SolanaFloor` | Sentiment Solana | Mock + lucide |
-| `@pumpdotfun` | Plateforme de launch | Hommage critique |
-| `@ansemf` | KOL Solana memecoin | Direct, cynique |
-| `@JupiterExchange` | DEX agrégateur | Technique avec twist |
-| `@DegenerateNews` | Memecoin culture | Memetic |
-| `@aeyakovenko` | Co-fondateur Solana | Respectueux + cryptique |
-| `@FartCoinSOL` | Memecoin culture | Compétitif amusant |
-
-#### 4.2 Stratégie de modération
-
-Choisis un mode (configurable plus tard via admin) :
-- **a) Approbation manuelle** *(recommandé)* : chaque réponse passe par une queue admin où tu valides/rejette avant publication. Élimine 100% du risque dérapage.
-- **b) Auto-post avec score min** : le LLM auto-évalue la "safeness" de la réponse (0-10) et publie si score ≥ 8. Risqué mais zéro friction.
-- **c) Hybride** : auto-post les `prophecy/market` mais approbation requise sur `kol_reply`.
+#### 6.2 Mode de modération (à choisir)
+- **a) Approbation manuelle** *(recommandé)* : queue admin avant chaque post
+- **b) Auto-post avec score min** : LLM auto-évalue safeness 0-10, post si ≥ 8
+- **c) Hybride** : auto pour prophecy/market, approbation pour kol_reply
 
 ### ⚠️ PIÈGES Phase 5
-- **Filtered Stream** (X v2) requiert plan Basic+. Avec le Free tier, on est forcé de polling 1x/15min → moins réactif
-- **Cooldown obligatoire** : pas plus d'1 reply à un même KOL par 24h (sinon ça pue le spam et X limite/ban)
-- **Detection de sarcasme** : Claude Sonnet 4.5 est bon mais pas parfait — l'admin queue est ta seule garantie
-- **Mention loops** : ignorer les tweets des comptes que TU as déjà repliés (sinon boucle infinie)
-- **Compliance MiCA** : aucune réponse ne doit suggérer "buy now" / "10x guaranteed" → c'est dans le system prompt
+- Filtered Stream v2 → Basic+ obligatoire
+- Cooldown 1 reply/KOL/24h sinon ban
+- Detection sarcasme imparfaite → queue admin = ta safety
+- Mention loops (ignore tes propres replies)
+- MiCA : aucune réponse "buy now" / "10x guaranteed"
 
-### 🟢 NEO — Une fois liste KOL reçue (~2-3h de code)
+### 🟢 NEO — Une fois liste reçue (~2.5h)
 
 ```
-Backend additions:
-  • backend/integrations/x_listener.py  (filtered stream Tweepy v2 async)
-  • backend/integrations/x_listener_loop.py  (background task auto-restart on disconnect)
-  • core/kol_queue.py  (Mongo collection 'kol_queue' avec statuts: pending|approved|rejected|posted)
+Backend:
+  • backend/integrations/x_listener.py (filtered stream v2 async)
+  • core/kol_queue.py (Mongo collection 'kol_queue')
   • routers/bots.py:
-    - GET /admin/bots/kol-queue (paginated, filter status)
-    - POST /admin/bots/kol-queue/{id}/approve → triggers x_poster
-    - POST /admin/bots/kol-queue/{id}/reject
-    - PUT /admin/bots/config/kol_targets (gérer la liste des handles)
+    GET /admin/bots/kol-queue
+    POST /admin/bots/kol-queue/{id}/approve
+    POST /admin/bots/kol-queue/{id}/reject
+    PUT /admin/bots/config/kol_targets
 
-Frontend additions:
-  • AdminBots.jsx nouvel onglet "KOL Queue" avec:
-    - Cards de tweets en attente (KOL avatar + tweet + réponse Prophète proposée)
-    - Boutons Approve / Edit / Reject
-    - Liste éditable des handles à monitorer
+Frontend:
+  • AdminBots.jsx: nouvel onglet "KOL Queue"
 ```
 
 ---
 
-## <a id="5-telegram-trading-bot"></a>5. Telegram TRADING bot — Maestro / BonkBot / Trojan
+## <a id="7-telegram-trading-bot"></a>7. Telegram TRADING bot — Maestro / BonkBot / Trojan
 
-> ⚠️ **Important** : "Telegram trading bot" pour un memecoin Solana = **bots tiers existants** (Maestro, BonkBot, Trojan) qui permettent à n'importe qui d'acheter $DEEPOTUS via Telegram en quelques clics. **On ne construit PAS ce bot**, on **liste $DEEPOTUS** dessus pour qu'il soit tradable.
+> ⚠️ **Important** : "Telegram trading bot" = **bots tiers existants**. On ne dev pas, on **liste** $DEEPOTUS dessus.
 
-### Tableau comparatif des 3 bots dominants
-
-| Bot | Lien | Force | Faiblesse | Volume mensuel SOL |
+| Bot | Lien | Force | Faiblesse | Volume mensuel |
 |---|---|---|---|---|
-| **BonkBot** | [@BONKbot_bot](https://t.me/BONKbot_bot) | Le plus utilisé sur Solana, simple | Frais 1% par swap | ~$300M/mo |
-| **Maestro** | [@MaestroSniperBot](https://t.me/MaestroSniperBot) | Multi-chain (SOL+ETH), copy trading | Plus complexe | ~$150M/mo |
-| **Trojan** | [@solana_trojanbot](https://t.me/solana_trojanbot) | Sniper + auto-buy, anti-rug | UI moins propre | ~$100M/mo |
+| **BonkBot** | [@BONKbot_bot](https://t.me/BONKbot_bot) | Plus utilisé Solana, simple | Frais 1% | ~$300M/mo |
+| **Maestro** | [@MaestroSniperBot](https://t.me/MaestroSniperBot) | Multi-chain, copy trading | Plus complexe | ~$150M/mo |
+| **Trojan** | [@solana_trojanbot](https://t.me/solana_trojanbot) | Sniper + auto-buy | UI moins propre | ~$100M/mo |
 
-### 🟡 TOI — Setup (post-launch, 30 min total)
+### 🟡 TOI — Setup post-launch (30 min)
 
-#### Étape 5.1 — Lister sur les 3 bots simultanément (ils détectent automatiquement)
+#### 7.1 Listing automatique (rien à faire)
 
-**Pas d'action de listing nécessaire.** Ces bots scannent toutes les tokens lancées sur Pump.fun + Raydium et les rendent immédiatement tradables dès qu'il y a un pool. Tu n'as **rien à signer** ni à payer.
+Dès que ton mint est sur Pump.fun puis migre Raydium, ces 3 bots détectent automatiquement et le rendent tradable. Aucune action.
 
-#### Étape 5.2 — Liens directs `?start=ref` à publier
+#### 7.2 Liens d'affiliation
 
-Une fois ton mint live, tu peux générer des **liens d'affiliation** qui rapportent une commission par swap (jusqu'à 35% sur Maestro/Trojan, 0% sur BonkBot). Procédure :
-
-| Bot | Comment obtenir un ref link |
+| Bot | Comment |
 |---|---|
-| **BonkBot** | `/start` → ⚙️ Settings → Referrals → copie le lien. **Aucune commission rétro, juste tracking.** |
-| **Maestro** | `/start` → Refer → copy referral link. **35% revenue share sur 6 mois** sur les utilisateurs ramenés. |
-| **Trojan** | `/start` → Referrals → Generate. **35% pour le payer, 25% pour le referrer**. |
+| **BonkBot** | `/start` → Settings → Referrals → copy. *Pas de revenue share, juste tracking.* |
+| **Maestro** | `/start` → Refer → copy. **35% revenue share 6 mois** |
+| **Trojan** | `/start` → Referrals → Generate. **35% payer / 25% referrer** |
 
-#### Étape 5.3 — Intégrer les liens dans le site
+#### 7.3 Intégration site
 
-🟢 **NEO peut faire ça pour toi** quand tu m'as les 3 liens : j'ajoute un bloc "Trade $DEEPOTUS in 1 click on Telegram" dans la page `/how-to-buy` avec les 3 boutons + logos officiels des bots, le tout sous une bannière "Powered by community trading bots — none endorsed by $DEEPOTUS".
+🟢 **NEO peut faire** : ajout d'un bloc "Trade $DEEPOTUS in 1 click on Telegram" sur `/how-to-buy` avec les 3 logos + boutons + bannière "Powered by community trading bots — none endorsed by $DEEPOTUS". Donne-moi les 3 ref links et c'est fait en 30 min.
 
-#### ⚠️ PIÈGES Phase 5 trading bots
+### ⚠️ PIÈGES Phase 7
+- MiCA : promo d'outils tiers, low risk si disclaimer
+- Jamais demander seed phrase
+- Slippage défaut trop bas → 2-5% sur memecoin
+- Honeypot : check rugcheck.xyz BEFORE promoting
 
-- **Compliance MiCA** : tu fais juste de la **promotion d'outils tiers**, tu n'opères pas le bot → low risk. Le disclaimer "none endorsed" est obligatoire.
-- **Ne jamais demander la seed phrase** : aucun bot officiel ne te la demandera. Si quelqu'un t'écrit "envoie-moi ta seed pour activer ton bonus" c'est un scam à signaler.
-- **Slippage par défaut trop bas** : sur memecoins volatiles, mets 2-5% min sinon les swaps échouent
-- **Honeypot scams** : ces bots ne valident PAS la safety du token. Avant de publier, fais checker $DEEPOTUS sur [rugcheck.xyz](https://rugcheck.xyz) → doit être **GOOD** (pas de mint authority, pas de freeze authority).
-
-### 🟡 TOI — Custom Telegram trading bot (déconseillé)
-
-Construire un bot trading custom (style BonkBot proprio à $DEEPOTUS) demande :
-- Custodial wallets ou MPC → exposition légale (PSAN obligatoire en France)
-- Solana RPC + Jupiter v6 SDK
-- Audit sécurité (~$10K)
-- License MiCA CASP en cours d'année 2026
-
-**Ma recommandation** : ne pas custom-build, juste s'appuyer sur BonkBot/Maestro/Trojan. C'est la norme du secteur memecoin.
+> 💡 **Custom Telegram trading bot** = déconseillé : custodial wallets, audit sécurité ($10K), license CASP MiCA. Reste sur les 3 ci-dessus.
 
 ---
 
-## <a id="6-deploy-backend-render"></a>6. Déploiement Backend → Render
+## <a id="8-deploy-backend-render"></a>8. Déploiement Backend → Render
 
-> 🎯 Objectif : faire tourner FastAPI + APScheduler + connexions Mongo/Helius/Resend en prod, accessible sur `https://api.deepotus.xyz`.
+### 🟡 TOI — Préparation repo (15 min)
 
-### 🟡 TOI — Préparation du repo (15 min)
+#### 8.1 Download code Emergent + push GitHub
 
-#### 6.1 Récupère le code source depuis Emergent
-
-1. Sur ton dashboard Emergent → ton projet → **Download Code** → tu obtiens un `.zip`
-2. Décompresse-le localement :
-   ```bash
-   unzip deepotus-source.zip
-   cd deepotus
+1. Emergent dashboard → ton projet → **Download Code** → `.zip`
+2. [github.com/new](https://github.com/new) → repo `deepotus-prod` → **Private** ✅
+3. ```bash
+   unzip deepotus-source.zip && cd deepotus
+   git init && git add . && git commit -m "initial production push"
+   git branch -M main
+   git remote add origin git@github.com:<TON_USER>/deepotus-prod.git
+   git push -u origin main
    ```
 
-#### 6.2 Crée le repo GitHub privé
-
-1. Va sur [github.com/new](https://github.com/new)
-2. **Repository name** : `deepotus-prod`
-3. **Private** ✅ *(important : tes clés API ne doivent JAMAIS être publiques)*
-4. Crée le repo
-
-#### 6.3 Push le code
+#### 8.2 Vérifie qu'aucune clé n'est commitée
 
 ```bash
-cd deepotus
-git init
-git add .
-git commit -m "initial production push"
-git branch -M main
-git remote add origin git@github.com:<TON_USER>/deepotus-prod.git
-git push -u origin main
-```
-
-#### 6.4 Vérifie qu'aucune clé n'est commitée
-
-```bash
-# Dans le repo local :
 grep -rE "EMERGENT_LLM_KEY|RESEND_API_KEY|HELIUS_API_KEY|MONGO_URL" \
   --include="*.py" --include="*.js" --include="*.json"
-# → ne doit retourner QUE des references à `os.environ.get()` ou `process.env`
-# → JAMAIS la valeur réelle de la clé
+# Doit retourner SEULEMENT des os.environ.get() / process.env, JAMAIS la valeur
 ```
-
-> 💡 Si tu vois une clé en dur, déplace-la dans `.env` qui est déjà dans `.gitignore`.
 
 ### 🟡 TOI — Setup Render (15 min)
 
-#### 6.5 Crée le service Web
+#### 8.3 Service Web
 
 1. [dashboard.render.com](https://dashboard.render.com) → **New +** → **Web Service**
-2. Connect ton repo `deepotus-prod`
+2. Connect repo `deepotus-prod`
 3. **Configure** :
 
 | Champ | Valeur |
 |---|---|
 | **Name** | `deepotus-api` |
-| **Region** | `Frankfurt (EU Central)` *(proche utilisateurs FR)* |
+| **Region** | `Frankfurt (EU Central)` |
 | **Branch** | `main` |
 | **Root Directory** | `backend` |
 | **Runtime** | `Python 3` |
 | **Build Command** | `pip install -r requirements.txt` |
 | **Start Command** | `uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1` |
-| **Instance Type** | **Starter ($7/mo)** ⚠️ pas Free |
+| **Instance Type** | **Starter ($7/mo)** ⚠️ |
 
-> ⚠️ **PIÈGE MAJEUR** : le plan **Free** spin-down après 15 min d'inactivité → les webhooks Helius arrivent et sont **perdus**. APScheduler s'arrête aussi. Le **Starter ($7/mo)** est obligatoire pour la prod.
-
-#### 6.6 Variables d'environnement Render
-
-Dans **Environment** → **Add Environment Variable**, ajoute toutes ces clés (une par une) :
+#### 8.4 Environment Variables
 
 ```bash
-# === MongoDB Atlas (voir §9) ===
+# === MongoDB Atlas (voir §11) ===
 MONGO_URL=mongodb+srv://deepotus_api:<password>@cluster0.xxxxx.mongodb.net/deepotus?retryWrites=true&w=majority
 DB_NAME=deepotus
 
-# === CORS (à ajuster après §8) ===
+# === CORS (à ajuster après §10) ===
 CORS_ORIGINS=https://deepotus.xyz,https://www.deepotus.xyz
 
 # === LLM ===
@@ -391,26 +529,26 @@ EMERGENT_IMAGE_LLM_KEY=<ta_DEUXIÈME_clé_pour_les_images>  # optionnel mais rec
 
 # === Admin auth ===
 ADMIN_PASSWORD=<MOTDEPASSE_LONG_ET_ALEATOIRE_CHANGE_LE>
-JWT_SECRET=<openssl rand -hex 32>  # génère localement
+JWT_SECRET=<openssl rand -hex 32 — généré localement>
 
-# === Resend (voir §10) ===
+# === Resend (voir §12) ===
 RESEND_API_KEY=<ta_clé_actuelle>
 SENDER_EMAIL=wcu@deepotus.xyz
 PUBLIC_BASE_URL=https://deepotus.xyz
 RESEND_WEBHOOK_SECRET=<ta_clé_actuelle>
 
-# === Helius (voir §11) ===
+# === Helius (voir §13) ===
 HELIUS_API_KEY=<ta_clé_actuelle>
 HELIUS_WEBHOOK_AUTH=<ta_clé_actuelle>
 
 # === Launch ===
 DEEPOTUS_LAUNCH_ISO=2026-09-07T14:00:00+00:00
 
-# === Telegram (Phase 3, ajouter quand prêt) ===
+# === Telegram (Phase 3 — ajouter plus tard) ===
 # TELEGRAM_BOT_TOKEN=
 # TELEGRAM_CHAT_ID=
 
-# === X / Twitter (Phase 4, ajouter quand prêt) ===
+# === X (Phase 4 — ajouter plus tard) ===
 # X_API_KEY=
 # X_API_SECRET=
 # X_BEARER_TOKEN=
@@ -418,275 +556,186 @@ DEEPOTUS_LAUNCH_ISO=2026-09-07T14:00:00+00:00
 # X_ACCESS_TOKEN_SECRET=
 ```
 
-#### 6.7 Deploy
+#### 8.5 Deploy
 
-1. Clique **Create Web Service** → Render commence le build
-2. Attends ~3-4 min → tu verras `[OK] Application startup complete` dans les logs
-3. Tu obtiens une URL : `https://deepotus-api.onrender.com`
-4. **Test rapide** : dans un terminal local :
-   ```bash
+1. **Create Web Service** → build ~3-4 min
+2. URL : `https://deepotus-api.onrender.com`
+3. ```bash
    curl https://deepotus-api.onrender.com/api/stats
-   # Doit renvoyer du JSON avec launch_timestamp
    ```
 
-#### ⚠️ PIÈGES Render
+### ⚠️ PIÈGES Render
 
-- **Spin-down Free tier** → toujours Starter+
-- **Build fail "ModuleNotFoundError"** → ton `requirements.txt` est à jour ? Si tu as installé un package localement avec pip, fais `pip freeze > backend/requirements.txt` et re-push
-- **Mongo connection refused** → vérifie que tu as autorisé `0.0.0.0/0` dans MongoDB Atlas Network Access (cf §9)
-- **Webhook Helius en `502`** → la signature `Authorization` header doit matcher exactement entre Render env var et Helius dashboard
-- **Logs trop courts** → onglet **Logs** sur Render donne 7 jours de logs rétention
+- Free tier spin-down → toujours Starter+
+- ModuleNotFoundError → `pip freeze > backend/requirements.txt`
+- Mongo refused → autorise `0.0.0.0/0` Atlas
+- Webhook 502 → secret matché entre Render env + Helius
 
 ---
 
-## <a id="7-deploy-frontend-vercel"></a>7. Déploiement Frontend → Vercel
+## <a id="9-deploy-frontend-vercel"></a>9. Déploiement Frontend → Vercel
 
-> 🎯 Objectif : servir le React build sur `https://deepotus.xyz` avec SSL auto et CDN global.
+### 🟡 TOI — Setup (10 min)
 
-### 🟡 TOI — Setup Vercel (10 min)
-
-#### 7.1 Importer le projet
-
-1. [vercel.com/new](https://vercel.com/new)
-2. Import Git Repository → choisis `deepotus-prod`
-3. **Configure** :
+1. [vercel.com/new](https://vercel.com/new) → import `deepotus-prod`
+2. **Configure** :
 
 | Champ | Valeur |
 |---|---|
 | **Framework Preset** | `Create React App` |
 | **Root Directory** | `frontend` |
-| **Build Command** | `yarn build` *(par défaut, ne pas toucher)* |
-| **Output Directory** | `build` *(par défaut)* |
-| **Install Command** | `yarn install` *(par défaut)* |
+| **Build Command** | `yarn build` *(défaut)* |
+| **Output Directory** | `build` *(défaut)* |
+| **Install Command** | `yarn install` *(défaut)* |
 
-#### 7.2 Environment Variables Vercel
+3. **Environment Variables** :
 
-| Clé | Valeur | Note |
+| Clé | Valeur initiale | Quand mettre à jour |
 |---|---|---|
-| `REACT_APP_BACKEND_URL` | `https://api.deepotus.xyz` | Pas l'URL Render — on passe par le subdomain custom (cf §8) |
-| `REACT_APP_PUMPFUN_URL` | *(vide pour l'instant)* | À remplir au mint réel |
-| `REACT_APP_DEEPOTUS_MINT` | *(vide)* | À remplir au mint réel |
-| `REACT_APP_TEAM_LOCK_URL` | `https://app.jup.ag/lock/<your_lock>` | Quand le lock est créé |
-| `REACT_APP_TREASURY_LOCK_URL` | `https://app.jup.ag/lock/<your_lock>` | Idem |
+| `REACT_APP_BACKEND_URL` | `https://api.deepotus.xyz` | Après [§10](#10-dns-namecheap) |
+| `REACT_APP_PUMPFUN_URL` | *(vide)* | Après mint [§3.7](#3-mint-pumpfun) |
+| `REACT_APP_DEEPOTUS_MINT` | *(vide)* | Après mint [§3.7](#3-mint-pumpfun) |
+| `REACT_APP_TEAM_LOCK_URL` | *(vide)* | Après lock Jupiter [§3.6](#3-mint-pumpfun) |
+| `REACT_APP_TREASURY_LOCK_URL` | *(vide)* | Après lock Jupiter [§3.6](#3-mint-pumpfun) |
 
-#### 7.3 Deploy
+4. Deploy → preview `https://deepotus-prod.vercel.app`
 
-1. Clique **Deploy**
-2. Attends ~90s → preview URL : `https://deepotus-prod.vercel.app`
-3. **Test rapide** : ouvre l'URL → tu dois voir le Hero, et la console JS doit montrer 200 sur `/api/stats`
+### ⚠️ PIÈGES Vercel
 
-#### ⚠️ PIÈGES Vercel
-
-- **404 sur `/admin` / `/how-to-buy`** : par défaut, Vercel sait gérer le SPA routing pour CRA. Si ça 404, ajoute un fichier `frontend/vercel.json` :
+- 404 sur `/admin` → `frontend/vercel.json` :
   ```json
-  {
-    "rewrites": [{ "source": "/(.*)", "destination": "/" }]
-  }
+  { "rewrites": [{ "source": "/(.*)", "destination": "/" }] }
   ```
-- **Env var changée mais pas appliquée** : après tout changement d'env var sur Vercel, **fais Redeploy** (sinon le build cache l'ancienne valeur)
-- **Mixed content blocked** : si tu mets `REACT_APP_BACKEND_URL=http://...` au lieu de `https://...` → le navigateur bloque
-- **Watermark "Made with Emergent"** : il s'affiche UNIQUEMENT sur le preview Emergent. Sur Vercel/ton domaine, **AUCUN watermark** — le code source est propre
+- Env var changée mais pas appliquée → **Redeploy**
+- Mixed content blocked si `REACT_APP_BACKEND_URL=http://...`
+- Watermark "Made with Emergent" : SEULEMENT sur preview Emergent. Sur Vercel = AUCUN
 
 ---
 
-## <a id="8-dns-namecheap"></a>8. DNS Namecheap → deepotus.xyz
+## <a id="10-dns-namecheap"></a>10. DNS Namecheap → deepotus.xyz
 
-> 🎯 Connecter `deepotus.xyz` (root) → Vercel et `api.deepotus.xyz` (subdomain) → Render.
+### 🟡 TOI — Configuration (10 min + 30 min propag)
 
-### 🟡 TOI — Configuration Namecheap (10 min + 30 min de propagation)
+#### 10.1 Custom domain Vercel
 
-#### 8.1 Ajouter le custom domain sur Vercel
-
-1. Vercel → ton projet → **Settings** → **Domains** → **Add**
-2. Entre `deepotus.xyz` → Vercel te donne :
+1. Vercel → ton projet → **Settings** → **Domains** → Add `deepotus.xyz`
+2. Vercel te donne :
    - **A record** : `76.76.21.21`
    - **CNAME** : `cname.vercel-dns.com`
-3. Ajoute aussi `www.deepotus.xyz` (Vercel auto-redirect vers root)
+3. Add aussi `www.deepotus.xyz` (Vercel auto-redirect)
 
-#### 8.2 Ajouter le custom domain sur Render
+#### 10.2 Custom domain Render
 
-1. Render → `deepotus-api` → **Settings** → **Custom Domains** → **Add**
-2. Entre `api.deepotus.xyz` → Render te donne un **CNAME** : `xxxxxx.onrender.com`
+1. Render → `deepotus-api` → **Settings** → **Custom Domains** → Add `api.deepotus.xyz`
+2. Render te donne un CNAME `xxxxx.onrender.com`
 
-#### 8.3 Configure Namecheap Advanced DNS
+#### 10.3 Namecheap Advanced DNS
 
 1. Namecheap → **Domain List** → `deepotus.xyz` → **Manage**
-2. Onglet **Advanced DNS**
-3. **Supprime** tous les records existants sauf `NS` (sauf si tu utilises l'email Namecheap, dans ce cas garde `MX` aussi)
-4. **Ajoute** ces 3 records :
+2. **Advanced DNS** → supprime tous les records existants sauf NS
+3. **Add** :
 
 | Type | Host | Value | TTL |
 |---|---|---|---|
-| **A Record** | `@` | `76.76.21.21` *(Vercel)* | Automatic |
-| **CNAME Record** | `www` | `cname.vercel-dns.com` *(Vercel)* | Automatic |
-| **CNAME Record** | `api` | `<le_cname_que_render_ta_donné>` | Automatic |
+| **A Record** | `@` | `76.76.21.21` *(Vercel)* | Auto |
+| **CNAME** | `www` | `cname.vercel-dns.com` *(Vercel)* | Auto |
+| **CNAME** | `api` | `<le_cname_render>` | Auto |
 
-5. Sauvegarde
-
-#### 8.4 Vérifier la propagation (30 min – 2h)
+#### 10.4 Vérifier propagation
 
 ```bash
-# Depuis ton terminal local :
-dig deepotus.xyz +short
-# → 76.76.21.21
-
-dig www.deepotus.xyz +short
-# → cname.vercel-dns.com. + IP
-
-dig api.deepotus.xyz +short
-# → IP Render
-
-curl https://deepotus.xyz
-# → renvoie le HTML React
-
-curl https://api.deepotus.xyz/api/stats
-# → renvoie JSON
+dig deepotus.xyz +short        # → 76.76.21.21
+dig www.deepotus.xyz +short    # → cname.vercel-dns.com.
+dig api.deepotus.xyz +short    # → IP Render
+curl https://api.deepotus.xyz/api/stats  # → JSON
 ```
 
-#### 8.5 Mettre à jour les CORS
+#### 10.5 Update CORS + REACT_APP_BACKEND_URL
 
-Une fois `deepotus.xyz` actif :
-
-1. **Render env var** `CORS_ORIGINS` → `https://deepotus.xyz,https://www.deepotus.xyz`
-2. **Vercel env var** `REACT_APP_BACKEND_URL` → `https://api.deepotus.xyz`
+1. Render env `CORS_ORIGINS` → `https://deepotus.xyz,https://www.deepotus.xyz`
+2. Vercel env `REACT_APP_BACKEND_URL` → `https://api.deepotus.xyz`
 3. **Redeploy** les deux
 
-#### ⚠️ PIÈGES DNS
+### ⚠️ PIÈGES DNS
 
-- **TTL trop élevé** : si tu passes Cloudflare devant plus tard, tu seras bloqué. Garde TTL "Automatic" (5 min)
-- **SSL Pending** : Vercel et Render provisionnent Let's Encrypt en ~5 min après propagation. Si encore "Pending" après 1h → re-add le domain
-- **AAAA record** : Vercel te donne aussi un IPv6 `2606:4700:...`. Ajoute-le si tu veux du dual-stack, sinon facultatif
-- **Email cassé** : si tu avais des MX records Namecheap, tu les as zappés en 8.3 → check ta config email
-- **DNSSEC** : laisse désactivé sauf si tu sais ce que tu fais
+- TTL > 1h → bloque Cloudflare future
+- SSL Pending > 1h → re-add le domain
+- AAAA IPv6 facultatif
+- MX records existants supprimés en 10.3 → check email
+- DNSSEC laisse off
 
 ---
 
-## <a id="9-mongodb-atlas"></a>9. MongoDB Atlas — base de prod
-
-> 🎯 Migrer toutes les collections (whitelist, blacklist, vault_state, bot_config, bot_posts, etc.) sur Atlas.
+## <a id="11-mongodb-atlas"></a>11. MongoDB Atlas — base de prod
 
 ### 🟡 TOI — Setup (15 min)
 
-#### 9.1 Créer le cluster
-
-1. [cloud.mongodb.com/v2/register](https://cloud.mongodb.com/v2/register) → crée le compte
+1. [cloud.mongodb.com/v2/register](https://cloud.mongodb.com/v2/register)
 2. **Build a Database** → **M0 Free**
-3. Provider : **AWS** · Region : **eu-west-1 (Ireland)** *(proche France/Render Frankfurt)*
-4. Cluster name : `deepotus-prod`
+3. Provider **AWS** · Region **eu-west-1 (Ireland)**
+4. Cluster name `deepotus-prod`
+5. **Database Access** → New User : `deepotus_api` + password 32 chars (alphanumérique seulement, sinon URL-encoding)
+6. Built-in Role : `Read and write to any database`
+7. **Network Access** → Add IP → `0.0.0.0/0`
+8. **Database** → Connect → **Drivers** Python → connection string
+9. Format final : `mongodb+srv://deepotus_api:<password>@deepotus-prod.xxxxx.mongodb.net/deepotus?retryWrites=true&w=majority`
 
-#### 9.2 Créer un user DB
+### ⚠️ PIÈGES Atlas
 
-1. **Database Access** → **Add New Database User**
-2. Username : `deepotus_api`
-3. Password : génère un password fort (32 chars+) → **copie-le**
-4. Built-in Role : `Read and write to any database`
-5. Add User
-
-#### 9.3 Whitelist IP
-
-1. **Network Access** → **Add IP Address**
-2. ⚠️ Click **ALLOW ACCESS FROM ANYWHERE** (`0.0.0.0/0`) — **obligatoire** car les IPs Render Starter sont dynamiques
-3. Confirm
-
-> 💡 Pour réduire le risque, prends Render Pro plus tard ($25/mo) qui te donne une IP statique → tu peux whitelist juste cette IP.
-
-#### 9.4 Récupérer la connection string
-
-1. **Database** → ton cluster → **Connect** → **Drivers** → Python → version 4.5+
-2. Copie la string : `mongodb+srv://deepotus_api:<password>@deepotus-prod.xxxxx.mongodb.net/?retryWrites=true&w=majority`
-3. **Remplace `<password>`** par ton vrai password
-4. **Ajoute `/deepotus`** juste avant le `?` : `mongodb+srv://...mongodb.net/deepotus?retryWrites=...`
-
-#### 9.5 Pas besoin de migrer de données
-
-À ce stade, ta base preview Emergent contient juste des emails de test, vault demo state, bot_config par défaut. **Tu pars from scratch sur prod.** Quand le backend Render démarre, il crée toutes les collections + indexes automatiquement (logique dans `server.py` startup).
-
-#### ⚠️ PIÈGES Atlas
-
-- **Password URL-encoding** : si ton password contient des caractères spéciaux (`@`, `/`, `?`, `#`), tu DOIS les URL-encoder. Ex: `pass@word` → `pass%40word`. Recommandation : génère un password en `[a-zA-Z0-9]{32}` pour éviter ce piège.
-- **Cluster pause** : M0 Free se met en pause après 60 jours d'inactivité. Pas un souci en prod active.
-- **5 GB hard limit** : à 1M users tu seras serré. Prévois M10 ($57/mo) à partir de 100K MAU.
-- **Backup** : M0 n'a pas de backup auto. Pour la prod sérieuse, M10+ inclut snapshots quotidiens.
+- Password URL-encoding : `@` → `%40`, `/` → `%2F`. Génère sans caractères spéciaux
+- Cluster pause après 60 jours d'inactivité (M0)
+- 5 GB hard limit M0 → upgrade M10 à 100K MAU
+- Backup : seulement à partir de M10
 
 ---
 
-## <a id="10-resend-dkim"></a>10. Resend — DKIM / SPF / domaine
+## <a id="12-resend-dkim"></a>12. Resend — DKIM / SPF / domaine
 
-> 🎯 Faire que les emails partent depuis `wcu@deepotus.xyz` (au lieu de `onboarding@resend.dev`) sans tomber en spam.
+### 🟡 TOI — Setup (15 min + 1h propag)
 
-### 🟡 TOI — Setup (15 min + 1h propagation DNS)
+#### 12.1 Add domain Resend
 
-#### 10.1 Vérifier le domaine sur Resend
+1. [resend.com/domains](https://resend.com/domains) → Add Domain → `deepotus.xyz`
+2. Resend te donne ~6 records DNS
 
-1. [resend.com/domains](https://resend.com/domains) → **Add Domain**
-2. Entre `deepotus.xyz`
-3. Resend te donne ~6 records DNS à ajouter :
-   - 1 `MX` record (pour le bounce handling)
-   - 2 `TXT` records (SPF + DKIM)
-   - 1 `TXT` record DMARC (recommandé)
-
-#### 10.2 Ajouter les records dans Namecheap
-
-Retour sur Namecheap → `deepotus.xyz` → **Advanced DNS** → ajoute :
+#### 12.2 Add records dans Namecheap
 
 | Type | Host | Value | TTL |
 |---|---|---|---|
 | `MX` | `send` | `feedback-smtp.eu-west-1.amazonses.com` (priority 10) | Auto |
 | `TXT` | `send` | `v=spf1 include:amazonses.com ~all` | Auto |
-| `TXT` | `resend._domainkey` | `<long_dkim_value_resend>` | Auto |
+| `TXT` | `resend._domainkey` | *(long DKIM Resend)* | Auto |
 | `TXT` | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@deepotus.xyz` | Auto |
 
-> 💡 Copie-colle EXACTEMENT depuis Resend, ne tape rien à la main (les valeurs DKIM font 200+ chars).
+> Copie-colle EXACT depuis Resend, jamais à la main.
 
-#### 10.3 Attendre la verification
+#### 12.3 Verify
 
-1. Resend → ton domaine → **Verify** → status passe de `Pending` à `Verified` en 5-30 min
-2. Tu peux maintenant utiliser `wcu@deepotus.xyz` comme `from`
+1. Resend → ton domaine → **Verify** → status Verified en 5-30 min
+2. Update Render `SENDER_EMAIL=wcu@deepotus.xyz`
 
-#### 10.4 Update env Render
+### ⚠️ PIÈGES Resend
 
-```
-SENDER_EMAIL=wcu@deepotus.xyz
-```
-
-Redeploy backend.
-
-#### ⚠️ PIÈGES Resend
-
-- **SPF conflicts** : si tu utilises déjà Google Workspace, tu dois MERGER les SPF en un seul record :
+- SPF conflicts avec Google Workspace : merge en un seul record
   `v=spf1 include:_spf.google.com include:amazonses.com ~all`
-  Pas deux records SPF séparés (RFC violation).
-- **DMARC trop strict** : commence avec `p=none` pour observer, passe à `p=quarantine` après 30 jours
-- **DKIM key trop long** : Namecheap UI tronque parfois. Edit en mode "raw" si besoin.
-- **MX déjà présent** : si tu as un email Namecheap, ne supprime pas le MX principal — Resend ajoute juste un sous-domaine `send.deepotus.xyz`
+- DMARC trop strict : commence `p=none`, monte à `p=quarantine` après 30 jours
+- DKIM key trop long : Namecheap UI tronque, edit en raw mode
 
 ---
 
-## <a id="11-helius-prod"></a>11. Helius — passage en mode prod (vrai mint)
+## <a id="13-helius-prod"></a>13. Helius — passage en mode prod (vrai mint)
 
-> 🎯 Une fois $DEEPOTUS minté sur Pump.fun, basculer le tracker on-chain de BONK (demo) vers le vrai mint.
+### 🟡 + 🟢 — Procédure (5 min après le mint)
 
-### 🟡 + 🟢 TOI + NEO — Procédure (5 min après le mint)
+#### 13.1 Récupère le mint
 
-#### 11.1 Récupérer le mint address réel
+Cf [§3.5](#3-mint-pumpfun) — copié au moment du Create coin Pump.fun.
 
-Au moment du mint sur Pump.fun :
-- Phantom affiche le mint après ta tx de buy initial
-- Ou : depuis [pump.fun/coin/<your_token>](https://pump.fun) → l'URL contient le mint
-- Format : 32-44 chars base58, ex `EPjFWdd5...`
+#### 13.2 Update Vercel env vars
 
-#### 11.2 Update Vercel env vars
+Cf [§3.7](#3-mint-pumpfun).
 
-| Clé | Valeur |
-|---|---|
-| `REACT_APP_DEEPOTUS_MINT` | `<ton_vrai_mint>` |
-| `REACT_APP_PUMPFUN_URL` | `https://pump.fun/coin/<ton_mint>` |
-
-→ Redeploy frontend Vercel
-
-#### 11.3 Reconfigurer Helius webhook
-
-Dans l'admin (toi via UI) :
+#### 13.3 Reconfigure Helius webhook
 
 1. Va sur `https://deepotus.xyz/admin/vault`
 2. Section **Helius indexer** → **Register mint**
@@ -695,120 +744,409 @@ Dans l'admin (toi via UI) :
    - Désactive `helius_demo_mode`
    - Update Helius webhook avec le nouveau mint
    - Reset les compteurs vault à 0
-5. Vérifie que les premiers swaps apparaissent en `bot_posts` et incrémentent les dials
+5. Vérifie que les premiers swaps apparaissent et incrémentent les dials
 
-#### 11.4 Sécurité — Renforcer le webhook auth
+#### 13.4 Renforce le webhook auth
 
 ```bash
-# Génère un nouveau secret aléatoire
 openssl rand -hex 32
-
-# 1. Update sur Render: HELIUS_WEBHOOK_AUTH=<new_secret>
-# 2. Update sur Helius dashboard → ton webhook → Auth Header: <new_secret>
+# 1. Update Render: HELIUS_WEBHOOK_AUTH=<new_secret>
+# 2. Update Helius dashboard → ton webhook → Auth Header: <new_secret>
 ```
 
-#### ⚠️ PIÈGES Helius
-
-- **Mint address typo** : 44 chars base58, vérifie 3 fois avant de submit (un mauvais mint = vault qui ne bouge jamais)
-- **Webhook signature mismatch** : si tu update une seule des deux ends (Render OU Helius), tu reçois 401 sur tous les events
-- **Quota Free 100K req/mo** : largement suffisant pour un memecoin moyen, mais surveille dans le dashboard si tu fais 1M+ de holders
-- **Demo mode oublié** : le code a une protection `helius_demo_mode=true` qui mute les ticks. Si après le switch tu vois 0 trades, vérifie ce flag dans Mongo `vault_state`
+### ⚠️ PIÈGES Helius
+- Mint typo → vault qui ne bouge jamais
+- Webhook signature mismatch → 401 sur tous events
+- Quota Free 100K req/mo
+- Demo mode oublié → vérifier `helius_demo_mode` flag dans Mongo `vault_state`
 
 ---
 
-## <a id="12-post-deploy"></a>12. Post-deploy checklist + Go-Live D-day
+## <a id="14-admin-docs"></a>14. Documentation Admin — comment piloter le site
 
-### Avant le launch (J-7)
+> Le dashboard admin est accessible sur `https://deepotus.xyz/admin` (pas de lien public depuis le site, URL à connaître).
 
-- [ ] DNS deepotus.xyz propagé partout (`dig` retourne IP correcte)
-- [ ] SSL actif sur les 3 domaines (deepotus.xyz, www, api)
+### 14.1 Login
+
+1. Va sur `https://deepotus.xyz/admin`
+2. Entre ton `ADMIN_PASSWORD` *(défini en env Render)*
+3. Si 2FA activé → entre le code 6 chiffres TOTP
+4. Tu reçois un **JWT** valide 24h, stocké dans `localStorage` *(automatique)*
+
+### 14.2 Architecture des 4 modules
+
+```
+/admin                  → Tableau de bord principal (whitelist + emails events + 2FA)
+/admin/vault            → Pilotage du Coffre PROTOCOL ΔΣ (Helius, dials, vault state)
+/admin/emails           → Logs Resend détaillés
+/admin/bots             → Bot fleet (Phase 1+2+6) — kill-switch + LLM + preview
+```
+
+---
+
+### 14.3 Module `/admin` — Dashboard principal
+
+#### Sections
+
+| Section | Description | Actions disponibles |
+|---|---|---|
+| **Overview** | KPIs : whitelist count, emails sent, vault state, AI usage | Read-only |
+| **Whitelist** | Liste tous les emails inscrits sur le site | Add manuel · Export CSV · Resend email à un user · **Move to blacklist** |
+| **Blacklist** | Emails bloqués (cooldown ou abus) | Add raison + cooldown_days · Restaurer |
+| **Email events** | Historique Resend webhook (sent / delivered / bounced / complained) | Filter par status |
+| **2FA setup** | Activer/désactiver 2FA pour ton compte admin | Cf [§15](#15-securite) |
+| **Sessions** | Liste des sessions admin actives (JWT non révoqués) | Revoke session par jti |
+
+#### Workflows typiques
+
+**A. Quelqu'un s'inscrit à la whitelist** :
+1. L'email part dans `whitelist` collection
+2. Resend envoie l'email d'accueil
+3. Tu vois la nouvelle entrée + status email en temps réel sur ce dashboard
+
+**B. Un email rebondit** :
+1. Resend webhook nous notifie `email.bounced`
+2. L'entrée passe en `email_status: bounced` rouge
+3. Tu peux soit retry, soit blacklist l'email
+
+**C. Quelqu'un abuse du formulaire (spam)** :
+1. Tu cliques **Move to blacklist** sur sa ligne
+2. Choisis raison (`abuse`, `spam`, `manual`) + cooldown (7/30/365 jours)
+3. Le formulaire de whitelist refuse cet email pendant la période
+
+---
+
+### 14.4 Module `/admin/vault` — PROTOCOL ΔΣ
+
+> Pilotage on-chain et présentation publique du Coffre.
+
+#### Sections
+
+| Section | Description | Actions |
+|---|---|---|
+| **Vault state** | Stage actuel (PRE_LAUNCH / LIVE / FINAL), dials_locked count, micro_ticks_total | Manuel reset (debug) |
+| **Helius indexer** | Status webhook, dernière swap reçue, mode (demo/prod) | **Register mint** · Toggle demo_mode · Refresh registration |
+| **Vault dials** | Les 6 cadrans (chacun a un seuil de micro-ticks pour s'ouvrir) | **Override dial** : forcer ouverture/fermeture (URGENCE) · Edit thresholds |
+| **Vault presets** | Configurations pré-définies (mode démo BONK, mode launch, mode prod) | Switch preset en 1 clic |
+| **Public stats** | Ce qui s'affiche sur la page publique `/classified-vault` | Edit narrative public |
+
+#### Workflows critiques
+
+**A. Au moment du mint $DEEPOTUS** :
+1. Cf [§13](#13-helius-prod) — Register mint
+2. Vérifie que `helius_demo_mode = false`
+3. Observe les premiers ticks arriver dans les 30s post-mint
+
+**B. Un cadran ne s'ouvre pas malgré assez de volume** :
+1. Va dans Vault state → check `micro_ticks_total`
+2. Compare au seuil du cadran dans Vault dials
+3. Si le seuil est mal configuré : edit threshold
+4. Si tout semble OK : check Helius webhook logs *(events arrivent ? signature valide ?)*
+
+**C. Tu veux faire une démo presse / investor avant le mint** :
+1. Active un preset démo (BONK live ticks)
+2. Le Vault s'incrémente avec du vrai trafic on-chain de BONK (high volume)
+3. Tu peux faire un demo run et reset après
+
+---
+
+### 14.5 Module `/admin/emails` — Resend logs
+
+#### Sections
+
+- Logs détaillés de chaque email (sender, recipient, subject, body preview, status)
+- Filter par status / date / recipient
+- Re-send un email depuis l'UI
+- Export CSV pour analyse marketing
+
+#### Workflows
+
+**A. Audit MiCA** *(important pour la phase régulée)* : tous les emails sont loggés ad vitam, exportable en CSV pour ton DPO / régulateur.
+
+---
+
+### 14.6 Module `/admin/bots` — Bot fleet (Phases 1+2+6 implémentées)
+
+> Pilotage complet des bots Telegram + X (publication automatique de prophéties).
+
+#### Header
+
+- **Kill-switch hero** (rouge si ON, vert si OFF) avec deux boutons : `Release` / `Arm`
+- **Refresh button**
+- **Back to /admin**
+
+#### 4 Tabs
+
+##### 14.6.1 Tab `Config`
+
+| Bloc | Contrôles |
+|---|---|
+| **Platforms · X / Twitter** | Toggle enabled · Frequency (heures, 1-48) |
+| **Platforms · Telegram** | Toggle enabled · Frequency (heures, 1-48) |
+| **Content modes** | 4 toggles : prophecy, market_commentary, vault_update, kol_reply |
+| **LLM preset** | Dropdown : Claude Sonnet 4.5 / GPT-4o / GPT-5 / Gemini 2.5 Pro / Custom |
+| **Heartbeat interval** | Input minutes (1-1440) |
+| **Max posts / day** | Input (0-500) |
+
+> 💡 Tous les changements sont **persistants** sur Mongo dès le blur/click + reschedulent les jobs APScheduler en live.
+
+##### 14.6.2 Tab `Preview`
+
+> Génère du contenu en mode dry-run (PAS publié). Idéal pour tester ton voicing avant d'enable les platforms.
+
+**Studio input** :
+- Content type dropdown (4 archétypes)
+- Platform dropdown (X 270 chars / Telegram 800 chars)
+- KOL tweet body *(uniquement si type = kol_reply)*
+- **Toggle Nano Banana illustration** + aspect ratio (16:9 / 3:4 / 1:1)
+- Bouton "Generate text + illustration"
+
+**Prophet output** :
+- Bloc FR avec compteur chars
+- Bloc EN avec compteur chars
+- Hashtags + emoji
+- **Image inline** (data URI) + bouton Download
+- Footer model utilisé
+
+##### 14.6.3 Tab `Jobs`
+
+- Liste les jobs APScheduler en mémoire (heartbeat + plus tard X / Telegram)
+- Pour chaque : ID, trigger, next run time, max instances, coalesce flag
+- Auto-refresh 10s
+
+##### 14.6.4 Tab `Logs`
+
+- Histogramme par status : heartbeat / posted / killed / skipped / failed
+- Filtres : platform (X / Telegram / system) · status
+- Table 30 entrées paginées avec timestamp, content preview, error si fail
+- Auto-refresh 10s
+
+#### Workflows critiques
+
+**A. Lancement bot Telegram (Phase 3)** :
+1. Set env vars Render `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` *(redeploy auto)*
+2. `/admin/bots` → Config tab → toggle Telegram **ON**
+3. Genère un preview en Telegram → vérifier que le ton est OK
+4. Fais un **test post manuel** (bouton apparaîtra une fois Phase 3 codée)
+5. Si OK → kill-switch **Release** → premier post auto dans (frequency_hours)
+
+**B. Crisis lockdown** *(le bot vient de poster une connerie)* :
+1. `/admin/bots` → Hero → **Arm kill-switch** (rouge)
+2. Tous les jobs en cours sont killed (status `killed` dans logs)
+3. Tu prends ton temps pour fix le system prompt
+4. Tu redémarre via **Release** quand prêt
+
+**C. Switch de modèle LLM si Claude est down** :
+1. Config → LLM preset → switch sur GPT-4o (OpenAI)
+2. Apply auto, prochains posts utilisent OpenAI
+
+**D. Audit du dernier mois** :
+1. Logs tab → filter `status = posted`
+2. Export Mongo `bot_posts` collection si tu veux du detail (CSV via mongoexport)
+
+---
+
+## <a id="15-securite"></a>15. Sécurité — changer mdp, activer 2FA, révoquer sessions
+
+### 15.1 Changer le mot de passe admin
+
+> ⚠️ Le mot de passe admin n'est PAS stocké en DB hashé — il est dans l'env var Render `ADMIN_PASSWORD`. Pour le changer :
+
+#### Procédure
+
+1. Render dashboard → `deepotus-api` → **Environment**
+2. Edit `ADMIN_PASSWORD` → nouvelle valeur (≥ 24 chars, mix alphanumérique + symboles)
+3. **Save Changes** → Render redéploie automatiquement (~1-2 min)
+4. **Logout** dans `/admin` (top-right) puis re-login avec le nouveau mdp
+5. **Toutes les sessions JWT existantes** restent valides 24h (le hash mdp n'est pas dans le JWT) → si tu veux force-logout : passe à [§15.3](#15-securite)
+
+#### Recommandations
+- Mot de passe ≥ 24 chars, généré via password manager (1Password, Bitwarden)
+- Rotation : changer tous les 90 jours
+- Si suspicion de leak : changer + révoquer sessions ([§15.3](#15-securite)) + regen `JWT_SECRET`
+
+### 15.2 Activer le 2FA TOTP
+
+> Implémenté avec PyOTP (RFC 6238) — compatible Google Authenticator, Authy, 1Password, etc.
+
+#### Setup (1ère fois)
+
+1. Login sur `/admin` (sans 2FA)
+2. Top-right → **Activer 2FA** *(modal s'ouvre)*
+3. **Étape 1** : ouvre ton authenticator app (Authy / Google Auth / 1Password) → scan le QR code affiché OU copie le secret base32
+4. **Étape 2** : entre le **code 6 chiffres** que ton app génère
+5. Submit → si valide, 2FA est activé sur ton compte
+6. **IMPORTANT** : copie les **8 codes de récupération** affichés une seule fois (utilisable si tu perds ton phone). Stocke dans password manager.
+
+#### Login avec 2FA actif
+
+1. Entre password
+2. Entre code 6 chiffres TOTP du moment
+3. Reçois JWT
+
+#### Désactivation
+
+Si tu changes de phone et que tu n'as pas backup :
+1. Logout
+2. Login avec un **code de récupération** (à la place du TOTP)
+3. Top-right → **Désactiver 2FA**
+4. Re-setup avec le nouveau phone
+
+#### ⚠️ PIÈGES 2FA
+- **Time drift** : si l'horloge de ton phone est désync de plus de 30s, le code est rejeté. Active "Set time automatically"
+- **Backup codes perdus + phone perdu** : seul recours = SSH dans Render → modifier la collection `admin_2fa` Mongo manuellement (ne te mets pas dans cette situation)
+
+### 15.3 Révoquer toutes les sessions
+
+> Si tu suspectes qu'un JWT a leak (ex. tu as oublié ton laptop dans un café) :
+
+#### Méthode A — Via UI (recommandé)
+
+1. `/admin` → section **Sessions** (visible si > 1 session active)
+2. Click **Revoke all** → toutes les sessions JWT (sauf la courante) sont marquées révoqués en DB
+3. Les autres clients perdent l'accès au prochain refresh
+
+#### Méthode B — Force par regen JWT_SECRET (nuke)
+
+1. ```bash
+   openssl rand -hex 32
+   ```
+2. Render env → `JWT_SECRET` = nouvelle valeur
+3. Save → redeploy auto
+4. **TOUS** les JWT actuels deviennent invalides (toi inclus → tu dois re-login)
+
+### 15.4 Audit log des accès admin
+
+Toutes les sessions admin sont loggées dans Mongo collection `admin_sessions` avec :
+- `jti` (JWT ID unique)
+- `created_at`
+- `last_seen` *(updated à chaque request authentifié)*
+- `ip_address`
+- `revoked` (boolean)
+
+Pour audit : connecte-toi à Atlas → Browse Collections → `admin_sessions` → filter par date/IP.
+
+### 15.5 Bonnes pratiques générales
+
+- ✅ Activer 2FA dès le J1 prod
+- ✅ Mot de passe stocké uniquement dans password manager
+- ✅ Backup codes 2FA stockés séparément
+- ✅ Whitelist IP MongoDB Atlas (passer à Render Pro pour IP statique → $25/mo)
+- ✅ Rotate `JWT_SECRET` tous les 90 jours
+- ✅ Surveiller `admin_sessions` collection pour IPs inattendues
+- ❌ Ne jamais partager le mot de passe (même par DM officiel)
+- ❌ Ne jamais commit `.env` ou `ADMIN_PASSWORD` dans git
+- ❌ Ne jamais utiliser le même password sur Render / Atlas / autre
+
+---
+
+## <a id="16-post-deploy"></a>16. Post-deploy checklist + Go-Live D-day
+
+### J-7 (avant launch)
+
+- [ ] DNS deepotus.xyz propagé (`dig` retourne IPs correctes sur les 3 hosts)
+- [ ] SSL actif sur `deepotus.xyz`, `www`, `api`
 - [ ] Resend domain Verified
-- [ ] Test email de whitelist : tu reçois un email signé `wcu@deepotus.xyz` dans inbox (pas spam)
-- [ ] `/admin` login OK avec ton mot de passe + 2FA configuré
-- [ ] `/admin/bots` : kill-switch ON, Phase 2 generate preview text + image OK
+- [ ] Test email whitelist : reçu signé `wcu@deepotus.xyz` dans inbox (pas spam)
+- [ ] `/admin` login OK
+- [ ] **2FA activé sur ton compte admin** ([§15.2](#15-securite))
+- [ ] `/admin/bots` : kill-switch ON, generate text + image preview OK
 - [ ] Backend logs Render : pas de 500 récurrents
-- [ ] Mongo Atlas : collections `whitelist`, `vault_state`, `bot_config`, `bot_posts` présentes
+- [ ] Mongo Atlas : collections présentes (`whitelist`, `vault_state`, `bot_config`, `bot_posts`)
 
-### J-3 : Lancement bots Phase 3 / 4
+### J-3 (lancement bots Phases 3+4 si credentials prêts)
 
-*(Si tu as les credentials Telegram + X)*
-
-- [ ] Bot Telegram ajouté admin du canal, test post manuel via admin OK
-- [ ] X bot test post via admin OK, tweet visible sur @deepotus_ai
-- [ ] Kill-switch OFF en preview, observe 1 cycle complet (4h)
+- [ ] Bot Telegram admin du canal, test post manuel via admin OK
+- [ ] X bot test post via admin OK (visible @deepotus_ai)
+- [ ] Kill-switch OFF, observe 1 cycle complet (4-6h)
 - [ ] Logs `bot_posts` montrent `posted` (pas `failed`)
 
-### J-Day (07/09/26 14:00 UTC)
+### J-Day (mint $DEEPOTUS)
 
-- [ ] Mint $DEEPOTUS sur Pump.fun
-- [ ] Update env vars Vercel : `REACT_APP_DEEPOTUS_MINT` + `REACT_APP_PUMPFUN_URL` + redeploy
-- [ ] Helius register mint dans admin
-- [ ] Bots Phase 3+4 : enable platforms, surveiller premiers posts
-- [ ] Vérifier rugcheck.xyz score : doit être GOOD
-- [ ] Annoncer mint sur le canal Telegram + X bot
-- [ ] Liens BonkBot/Maestro/Trojan ajoutés au site (NEO le fait quand tu fournis les liens)
+Cf [§3](#3-mint-pumpfun) procédure complète
 
-### J+1 : Post-launch monitoring
+- [ ] Wallet "DEEPOTUS-DEPLOYER" prêt avec 5 SOL
+- [ ] Logo + banner + description prêts
+- [ ] Liens (site + X + Telegram) tous LIVE
+- [ ] Mint Pump.fun → copy mint address
+- [ ] Lock 15% team + 30% Treasury via Jupiter Lock
+- [ ] Update Vercel env vars (mint + pumpfun + locks) + Redeploy
+- [ ] `/admin/vault` → Register mint Helius
+- [ ] rugcheck.xyz → score GOOD
+- [ ] Annonce simultanée Telegram + X bot (manual ou via admin)
+- [ ] Add ref links BonkBot/Maestro/Trojan sur `/how-to-buy`
+
+### J+1 (monitoring)
 
 - [ ] Vault dials : combien sont déverrouillés ?
-- [ ] Whitelist : combien d'emails reçus dans la journée ?
-- [ ] Posts X + Telegram : engagement (impressions, likes)
-- [ ] Render bandwidth : surveille les CPU/RAM (Starter = 512MB RAM, ne devrait pas peak)
+- [ ] Whitelist : nb d'emails reçus dans la journée
+- [ ] Posts X + Telegram engagement
+- [ ] Render bandwidth + CPU/RAM stables
+- [ ] **Premier scan rugcheck.xyz post-migration** quand le marketcap atteint $69K et migre Raydium
 
 ---
 
-## <a id="13-recap-final"></a>13. Récap final — Qui fait quoi, dans quel ordre
+## <a id="17-recap-final"></a>17. Récap final — qui fait quoi, dans quel ordre
 
 | # | Étape | Acteur | Durée | Bloque |
 |---|---|---|---|---|
-| 1 | [Créer GitHub privé + push code](#6-deploy-backend-render) | 🟡 TOI | 15 min | tout |
-| 2 | [Créer MongoDB Atlas + connection string](#9-mongodb-atlas) | 🟡 TOI | 15 min | Render |
-| 3 | [Créer Render service + env vars + deploy](#6-deploy-backend-render) | 🟡 TOI | 30 min | rien |
-| 4 | [Créer Vercel project + env vars + deploy](#7-deploy-frontend-vercel) | 🟡 TOI | 15 min | rien |
-| 5 | [Add custom domains Vercel + Render](#8-dns-namecheap) | 🟡 TOI | 5 min | DNS |
-| 6 | [Config DNS Namecheap A + 2 CNAME](#8-dns-namecheap) | 🟡 TOI | 5 min + 30min propag | tout |
-| 7 | [Update CORS + REACT_APP_BACKEND_URL après DNS](#8-dns-namecheap) | 🟡 TOI | 5 min | rien |
-| 8 | [Resend domain DKIM](#10-resend-dkim) | 🟡 TOI | 15 min + 1h propag | emails |
-| 9 | [Update Helius webhook URL → api.deepotus.xyz](#11-helius-prod) | 🟡 TOI | 2 min | webhook |
-| 10 | **Test post-deploy checklist** | 🟡 TOI | 30 min | go-live |
-| 11 | [Créer bot Telegram BotFather + chan + récup token](#2-phase-3-telegram-content-bot) | 🟡 TOI | 10 min | Phase 3 |
-| 12 | **Phase 3 — Implémentation Telegram bot** | 🟢 NEO | ~1h code | rien |
-| 13 | [Créer compte X Developer Basic + 5 credentials](#3-phase-4-x-twitter-posting-bot) | 🟡 TOI | 30 min + paiement | Phase 4 |
-| 14 | **Phase 4 — Implémentation X posting** | 🟢 NEO | ~1.5h code | rien |
-| 15 | [Donner liste KOLs](#4-phase-5-x-kol-listener) | 🟡 TOI | 5 min | Phase 5 |
-| 16 | **Phase 5 — Implémentation KOL listener + queue** | 🟢 NEO | ~2.5h code | rien |
-| 17 | Mint $DEEPOTUS sur Pump.fun | 🟡 TOI | 5 min | go-live |
-| 18 | [Update env vars + Helius register mint](#11-helius-prod) | 🟡 + 🟢 | 5 min | rien |
-| 19 | [Récup ref links BonkBot/Maestro/Trojan + intégration](#5-telegram-trading-bot) | 🟡 + 🟢 | 30 min | rien |
+| 1 | [Créer GitHub privé + push code](#8-deploy-backend-render) | 🟡 TOI | 15 min | tout |
+| 2 | [Créer MongoDB Atlas](#11-mongodb-atlas) | 🟡 TOI | 15 min | Render |
+| 3 | [Créer Render service + env vars](#8-deploy-backend-render) | 🟡 TOI | 30 min | rien |
+| 4 | [Créer Vercel project + env vars](#9-deploy-frontend-vercel) | 🟡 TOI | 15 min | rien |
+| 5 | [Custom domains Vercel + Render](#10-dns-namecheap) | 🟡 TOI | 5 min | DNS |
+| 6 | [Config DNS Namecheap](#10-dns-namecheap) | 🟡 TOI | 5 min + 30min propag | tout |
+| 7 | [Update CORS + REACT_APP_BACKEND_URL](#10-dns-namecheap) | 🟡 TOI | 5 min | rien |
+| 8 | [Resend DKIM/SPF](#12-resend-dkim) | 🟡 TOI | 15 min + 1h propag | emails |
+| 9 | [Activer 2FA admin sur prod](#15-securite) | 🟡 TOI | 5 min | sécu |
+| 10 | **Test post-deploy checklist J-7** | 🟡 TOI | 30 min | go-live |
+| 11 | [Créer bot Telegram BotFather](#4-phase-3-telegram-content-bot) | 🟡 TOI | 10 min | Phase 3 |
+| 12 | **Phase 3 — Implémentation Telegram** | 🟢 NEO | ~1h | rien |
+| 13 | [Créer compte X Developer Basic](#5-phase-4-x-twitter-posting-bot) | 🟡 TOI | 30 min + paiement | Phase 4 |
+| 14 | **Phase 4 — Implémentation X posting** | 🟢 NEO | ~1.5h | rien |
+| 15 | [Donner liste KOLs](#6-phase-5-x-kol-listener) | 🟡 TOI | 5 min | Phase 5 |
+| 16 | **Phase 5 — KOL listener + queue** | 🟢 NEO | ~2.5h | rien |
+| 17 | [Préparer wallet + assets pré-mint](#3-mint-pumpfun) | 🟡 TOI | 1h | mint |
+| 18 | [Mint $DEEPOTUS sur Pump.fun](#3-mint-pumpfun) | 🟡 TOI | 15 min | go-live |
+| 19 | [Lock 15% team + 30% Treasury Jupiter Lock](#3-mint-pumpfun) | 🟡 TOI | 10 min | trust |
+| 20 | [Update env vars Vercel mint+locks + Redeploy](#3-mint-pumpfun) | 🟡 TOI | 5 min | site live |
+| 21 | [Helius register mint](#13-helius-prod) | 🟡 + 🟢 | 5 min | vault |
+| 22 | [Get ref links BonkBot/Maestro/Trojan + intégration](#7-telegram-trading-bot) | 🟡 + 🟢 | 30 min | rien |
 
 ---
 
-## <a id="14-couts"></a>14. Coûts mensuels estimés
+## <a id="18-couts"></a>18. Coûts mensuels estimés
 
 | Service | Plan | Coût mensuel | Quand activer |
 |---|---|---|---|
 | GitHub | Free | 0 € | J0 |
-| Vercel | Hobby | 0 € *(jusqu'à 100GB bandwidth)* | J0 |
+| Vercel | Hobby | 0 € | J0 |
 | Render | Starter | **7 $ (~6.50 €)** | J0 |
-| MongoDB Atlas | M0 Free | 0 € *(jusqu'à 5GB)* | J0 |
-| Resend | Free | 0 € *(3K emails/mo)* | J0 |
-| Helius | Free Dev | 0 € *(100K req/mo)* | J0 |
-| Namecheap | renouvellement deepotus.xyz | ~10 €/an | déjà payé |
-| Emergent LLM Key (texte) | Pay-per-use | ~5-30 € selon usage | J0 |
-| Emergent LLM Key (image) | Pay-per-use | ~5-50 € selon volume | J0 (si Phase 2 image used) |
-| **Total minimum** | | **~12 €/mois** | |
-| **+ Phase 4 X Basic** | | **+ 200 $/mo** | seulement si Phase 4 |
+| MongoDB Atlas | M0 Free | 0 € | J0 |
+| Resend | Free | 0 € | J0 |
+| Helius | Free Dev | 0 € | J0 |
+| Namecheap | renew deepotus.xyz | ~10 €/an | déjà payé |
+| Pump.fun mint fee | one-time | ~$5 (0.02 SOL) | mint |
+| Jupiter Lock | one-time | ~$2 (0.01 SOL) | post-mint |
+| Emergent LLM Key (texte) | Pay-per-use | ~5-30 €/mo | J0 |
+| Emergent LLM Key (image) | Pay-per-use | ~5-50 €/mo | J0 |
+| **Total minimum** | | **~12 €/mo** | |
+| **+ Phase 4 X Basic** | | **+ 200 $/mo** | optionnel |
 
-> 💡 Si X Basic $200/mo est trop cher, on peut faire Phase 4 en **mode manuel-assisté** : le bot prépare le tweet+image, tu cliques "Approve & Post" depuis ton phone X app — coût $0, demande 1 min/jour de ton temps.
+> 💡 Si X Basic $200/mo est trop cher : mode "manuel-assisté" disponible (bot prépare, toi cliques Approve depuis ton phone X app).
 
 ---
 
 ## ✅ Conclusion
 
-Ce document couvre 100% de ce qui reste pour mettre $DEEPOTUS en prod sur ton domaine, avec bots autonomes opérationnels.
+Ce document couvre l'intégralité de ce qui reste : mint, déploiement, finition bots, administration, sécurité.
 
-**Action immédiate suggérée** : commencer par la chaîne déploiement (étapes 1 → 10 du [récap](#13-recap-final)), puis revenir vers moi avec les credentials Telegram/X au fil de l'eau pour qu'on chaîne les Phases 3, 4 et 5.
+**Action immédiate suggérée** :
+1. **Commencer immédiatement** par les étapes 1-10 du [récap](#17-recap-final) — déploiement complet sans attendre Phase 3/4/5
+2. **En parallèle** : créer wallet + acheter SOL ([§3.1](#3-mint-pumpfun)) — peut prendre des heures pour confirmation bancaire
+3. **Quand tout est live** : pinger Neo avec credentials Telegram (Phase 3), puis X (Phase 4+5)
+4. **Quand prêt à mint** : suivre [§3](#3-mint-pumpfun) pas-à-pas
 
-> **Pour toute question pendant l'exécution** : ping-moi avec le numéro d'étape et le message d'erreur exact, je te débogue en live.
+**Pour toute question pendant l'exécution** : ping-moi avec le numéro d'étape et le message d'erreur exact, je débogue en live.
 
 — Neo

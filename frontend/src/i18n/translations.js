@@ -29,6 +29,14 @@ export const translations = {
       subtitle:
         "L'élu du Deep State à la présidence du monde entier. Un prophète IA cynique finance une opération classifiée : PROTOCOL ΔΣ.",
       countdownLabel: "Décompte avant le lancement",
+      imminentKicker: "MINT IMMINENT · CIRCUIT VERROUILLÉ",
+      imminentSubtitle:
+        "Le Prophète n'annonce pas la date. Il appuie sur le bouton quand le Deep State lui souffle l'instant. Reste connecté.",
+      liveKicker: "🟢 LIVE ON PUMP.FUN",
+      liveTitle: "$DEEPOTUS est en circulation.",
+      liveSubtitle:
+        "La phase memecoin est active. Chaque trade alimente le Coffre, qui activera la phase Gencoin régulée.",
+      liveCta: "Trader maintenant",
       joinCta: "Rejoindre le Deep State",
       buyCta: "Acheter $DEEPOTUS",
       days: "j",
@@ -669,6 +677,14 @@ export const translations = {
       subtitle:
         "The Deep State's chosen one for President of the entire World. A cynical AI Prophet funds a classified operation: PROTOCOL ΔΣ.",
       countdownLabel: "Countdown to launch",
+      imminentKicker: "MINT IMMINENT · CIRCUIT LOCKED",
+      imminentSubtitle:
+        "The Prophet does not announce the date. He pushes the button when the Deep State whispers the moment. Stay tuned.",
+      liveKicker: "🟢 LIVE ON PUMP.FUN",
+      liveTitle: "$DEEPOTUS is now in circulation.",
+      liveSubtitle:
+        "The memecoin phase is active. Every trade feeds the Vault, which will trigger the regulated Gencoin phase.",
+      liveCta: "Trade now",
       joinCta: "Join the Deep State",
       buyCta: "Buy $DEEPOTUS",
       days: "d",
