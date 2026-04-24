@@ -1,26 +1,26 @@
 [
   {
-    "content": "Inspect current Hero countdown logic",
+    "content": "Backend: ACCRED_TTL = 24h, refresh expires_at on every request",
     "status": "completed"
   },
   {
-    "content": "Refactor Hero countdown into dual-state component (Imminent / Live)",
+    "content": "Backend: QR code encodes /classified-vault?code=X URL (not plain number)",
     "status": "completed"
   },
   {
-    "content": "Add FR/EN translations for new countdown copy",
+    "content": "Backend: Public response strips accreditation_number from terminal API",
     "status": "completed"
   },
   {
-    "content": "Verify Gencoin Lore page countdown remains independent",
+    "content": "Frontend: TerminalPopup hides accred number, CTA → /classified-vault (no prefilled code)",
     "status": "completed"
   },
   {
-    "content": "Visual test (FR + EN, both states)",
+    "content": "i18n: update terminal copy to focus on 'check your inbox'",
     "status": "completed"
   },
   {
-    "content": "Regenerate DEPLOYMENT_AND_PHASES_GUIDE.md with full mint procedure + admin docs",
-    "status": "in_progress"
+    "content": "Test full flow: submit email → terminal hides number → email arrives → 24h TTL → QR/link works",
+    "status": "completed"
   }
 ]

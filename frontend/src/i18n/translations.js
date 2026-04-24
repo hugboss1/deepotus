@@ -171,9 +171,13 @@ export const translations = {
       back: "Retour",
       successTitle: "TRANSMISSION REÇUE. DOSSIER ARCHIVÉ.",
       successInbox:
-        "Votre carte d'accès est en route vers __EMAIL__ — délai typique : quelques secondes.",
-      successNext: "Prochaine étape — ouvrir le véritable coffre",
-      openVault: "Ouvrir le véritable coffre",
+        "Votre carte d'accréditation a été chiffrée et expédiée vers __EMAIL__ — délai typique : quelques secondes. Cherchez l'email signé par le Prophète. Vérifiez les spams.",
+      successNext:
+        "Le numéro d'accréditation n'apparaît PAS sur ce terminal. Vous le trouverez uniquement dans le mail. Le bouton ci-dessous vous mène à la porte blindée — vous y entrerez le code reçu.",
+      openVault: "Aller à la porte blindée",
+      accredHidden: "transmis par voie chiffrée",
+      shortcutHint:
+        "Astuce : le QR code de votre carte d'accréditation ouvre directement la porte. Le lien dans l'email aussi. Validité : 24 h.",
       close: "Fermer le terminal",
       retry: "Réessayer",
     },
@@ -813,9 +817,13 @@ export const translations = {
       back: "Back",
       successTitle: "TRANSMISSION RECEIVED. RECORD ARCHIVED.",
       successInbox:
-        "Your access card is en route to __EMAIL__ — usual delay: a few seconds.",
-      successNext: "Next step — open the real vault",
-      openVault: "Open the real vault",
+        "Your accreditation card has been encrypted and dispatched to __EMAIL__ — usual delay: a few seconds. Look for the email signed by the Prophet. Check your spam folder.",
+      successNext:
+        "Your accreditation number does NOT appear on this terminal. You will only find it in the email. The button below leads you to the armored door — you will enter the code there.",
+      openVault: "Go to the armored door",
+      accredHidden: "transmitted via encrypted channel",
+      shortcutHint:
+        "Tip: the QR code on your accreditation card opens the door directly. So does the link in the email. Validity: 24h.",
       close: "Close terminal",
       retry: "Retry",
     },

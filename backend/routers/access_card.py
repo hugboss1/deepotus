@@ -65,12 +65,14 @@ async def access_card_request(
         email=email,
         display_name=display_name,
         whitelisted=whitelisted,
+        base_url=PUBLIC_BASE_URL,
     )
 
     # Send the email in the background
     accred = card_doc["accreditation_number"]
     dn = card_doc["display_name"]
     card_path = card_doc["card_path"]
+    expires_at_iso = card_doc.get("expires_at")
 
     async def _send_email(lang: str = "fr"):
         if not RESEND_API_KEY:
@@ -137,10 +139,15 @@ async def access_card_request(
     return access_card_mod.AccessCardResponse(
         ok=True,
         email=email,
-        accreditation_number=accred,
+        # SECURITY: never leak the accreditation number to the public terminal
+        # response — the visitor must read their email to obtain it. This is
+        # the whole point of the email-gated flow.
+        accreditation_number=None,
         display_name=dn,
-        message="Access card generated. Check your inbox.",
-        card_url=f"/api/access-card/image/{accred}",
+        message="Access card dispatched. Check your inbox to retrieve the credentials.",
+        card_url=None,
+        requires_email_step=True,
+        expires_at=expires_at_iso,
     )
 
 

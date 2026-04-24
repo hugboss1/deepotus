@@ -55,8 +55,10 @@ ZONES = {
     "microtext_strip": {"left": 0.27, "top": 0.79, "w": 0.41, "h": 0.07},
 }
 
-# Accreditation lifetime
-ACCRED_TTL_DAYS = 365
+# Accreditation lifetime — 24h sliding window: every fresh request bumps
+# expires_at to now+24h, so the visitor who reads their email within 24h
+# can use the card; if they ignore it, they must re-request.
+ACCRED_TTL_HOURS = 24
 # Session (after verify) lifetime
 SESSION_TTL_HOURS = 24
 
@@ -84,11 +86,19 @@ class AccessCardRequest(BaseModel):
 class AccessCardResponse(BaseModel):
     ok: bool
     email: EmailStr
-    accreditation_number: str
+    # accreditation_number is INTENTIONALLY OPTIONAL — we never echo it back to
+    # the public terminal so a visitor cannot bypass the email step and walk
+    # straight into the vault. The number is only revealed inside the email
+    # (text + image card + QR code). Internal callers (admin) may still set it.
+    accreditation_number: Optional[str] = None
     display_name: str
     message: str
     # Where the card image is accessible (relative URL)
     card_url: Optional[str] = None
+    # Hint to the front-end that the visitor must now check their inbox
+    requires_email_step: bool = True
+    # ISO timestamp at which the access card expires (so the UI can display "valid until")
+    expires_at: Optional[str] = None
 
 
 class AccessCardVerifyRequest(BaseModel):
@@ -203,8 +213,16 @@ def render_card(
     issued_at: datetime,
     expires_at: datetime,
     output_path: Path,
+    qr_payload: Optional[str] = None,
 ) -> Path:
-    """Render a personalized access card on top of the pre-generated template."""
+    """Render a personalized access card on top of the pre-generated template.
+
+    qr_payload: optional string to encode in the QR code. When provided, the QR
+    encodes a clickable URL (typically `https://deepotus.xyz/classified-vault?code=ACCRED`)
+    so scanning the printed card opens the digicode page in the user's browser
+    and auto-verifies the accreditation. If omitted, falls back to the bare
+    accreditation number for backward compatibility.
+    """
     if not TEMPLATE_PATH.exists():
         raise FileNotFoundError(
             f"Access card template missing at {TEMPLATE_PATH}. "
@@ -307,10 +325,14 @@ def render_card(
     )
 
     # --- 6) QR code ---
+    # Encode the FULL deep-link URL (e.g. https://deepotus.xyz/classified-vault?code=AGENT-XXXX)
+    # so a phone camera scan opens the digicode page directly. The fallback to
+    # bare accreditation_number keeps unit tests / dev backward compat.
+    qr_data = qr_payload if qr_payload else accreditation_number
     qr_w = qr_box[2] - qr_box[0]
     qr_h = qr_box[3] - qr_box[1]
     qr_img = qrcode.make(
-        accreditation_number,
+        qr_data,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=10,
         border=1,
@@ -367,33 +389,51 @@ async def create_or_refresh_card(
     email: str,
     display_name: Optional[str] = None,
     whitelisted: bool = False,
+    base_url: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Idempotent-ish: if a card already exists for the email, refresh its image
-    using the stored accreditation number (so the user always gets the same code
-    even if they request twice)."""
+    """Create or refresh a card for the given email.
+
+    The accreditation number is sticky: a returning visitor keeps the same
+    code so they can re-receive the email without confusion.
+
+    The expiration window however is **always reset to now + ACCRED_TTL_HOURS**
+    (24 h sliding window). Rationale: the visitor proved ownership of the
+    inbox at the moment of the request, so the 24 h timer should start now,
+    not from the first historical request.
+
+    base_url: optional base URL (e.g. `https://deepotus.xyz`). When provided,
+    the QR code on the card encodes
+    `{base_url}/classified-vault?code={accreditation_number}` so scanning
+    opens the digicode page in the visitor's browser and auto-verifies.
+    """
     email = email.lower().strip()
     existing = await find_card_by_email(db, email)
+
+    issued_at = _now()
+    expires_at = issued_at + timedelta(hours=ACCRED_TTL_HOURS)
 
     if existing:
         accreditation = existing["accreditation_number"]
         display_name = existing.get("display_name") or display_name or _derive_display_name(email)
-        issued_at = datetime.fromisoformat(existing["issued_at"].replace("Z", "+00:00"))
-        expires_at = datetime.fromisoformat(existing["expires_at"].replace("Z", "+00:00"))
         doc_id = existing["_id"]
     else:
         accreditation = generate_accreditation_number()
         display_name = display_name or _derive_display_name(email)
-        issued_at = _now()
-        expires_at = issued_at + timedelta(days=ACCRED_TTL_DAYS)
         doc_id = str(uuid.uuid4())
 
     output_path = CARDS_DIR / f"{accreditation}.png"
+    qr_payload = (
+        f"{base_url.rstrip('/')}/classified-vault?code={accreditation}"
+        if base_url
+        else None
+    )
     render_card(
         display_name=display_name,
         accreditation_number=accreditation,
         issued_at=issued_at,
         expires_at=expires_at,
         output_path=output_path,
+        qr_payload=qr_payload,
     )
 
     # Upsert

@@ -300,18 +300,22 @@ export default function TerminalPopup({ open, onClose }) {
                     <div>
                       &gt; agent: <span className="text-[#F59E0B]">{result.display_name}</span>
                     </div>
+                    {/* SECURITY: accreditation number is intentionally NOT displayed
+                        here. The visitor must read it from the email we just sent,
+                        or scan the QR code on their access card. */}
                     <div>
-                      &gt; accred: <span className="text-[#F59E0B] tracking-widest">{result.accreditation_number}</span>
+                      &gt; accred: <span className="text-[#F59E0B]/60 tracking-widest">●●●● ●●●●</span>
+                      <span className="ml-2 text-[#18C964]/50 text-[10px]">{t("terminal.accredHidden")}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Mail size={14} />
+                    <div className="flex items-start gap-2 mt-3">
+                      <Mail size={14} className="mt-0.5 shrink-0" />
                       <span className="text-[#18C964]/80">
                         {t("terminal.successInbox").replace("__EMAIL__", result.email)}
                       </span>
                     </div>
                   </div>
                   <div className="mt-5 border-t border-[#18C964]/30 pt-4">
-                    <div className="text-[#18C964]/70 text-[11px] mb-2">
+                    <div className="text-[#18C964]/70 text-[11px] mb-3 leading-relaxed">
                       &gt; {t("terminal.successNext")}
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
@@ -320,16 +324,20 @@ export default function TerminalPopup({ open, onClose }) {
                         className="rounded-md bg-[#18C964] hover:bg-[#18C964]/90 text-black font-mono font-semibold"
                         data-testid="terminal-go-vault"
                       >
-                        <a href={`/classified-vault?code=${result.accreditation_number}`}>
+                        <a href="/classified-vault">
                           {t("terminal.openVault")} →
                         </a>
                       </Button>
                       <button
                         onClick={onClose}
                         className="text-[#18C964]/60 hover:text-[#18C964] font-mono text-xs"
+                        data-testid="terminal-close-button"
                       >
                         {t("terminal.close")}
                       </button>
+                    </div>
+                    <div className="mt-4 text-[10px] text-[#18C964]/50 leading-relaxed">
+                      {t("terminal.shortcutHint")}
                     </div>
                   </div>
                 </div>
