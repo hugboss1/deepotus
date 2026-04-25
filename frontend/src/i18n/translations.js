@@ -357,7 +357,7 @@ export const translations = {
           bullets: [
             "Pump.fun brûle la LP initiale et la migre vers Raydium (≈ 12k$)",
             "Renfort chirurgical de la LP pour stabiliser le prix cible ≈ 0,0005€",
-            "Apport externe (2–4k€) + ventes contrôlées du trésor annoncées à l'avance",
+            "Apport externe + ventes contrôlées du trésor annoncées à l'avance",
             "Audit sécurité publié + vérification on-chain ouverte à tous",
           ],
         },
@@ -375,6 +375,9 @@ export const translations = {
       proofTitle: "Pourquoi c'est du sérieux assumé",
       proof:
         "0% Tax signifie un coffre qui se remplit uniquement par la croissance. Chaque action du trésor est annoncée avant exécution, la communauté vérifie on-chain, et le Prophète se moque pendant ce temps. Les règles tiennent — même quand le narratif est cynique.",
+      scrollHint: "FAITES DÉFILER LES DOSSIERS CLASSÉS",
+      signedBy: "Signé · COMITÉ DEEP STATE",
+      classified: "CLASSIFIÉ",
     },
 
     // ---- ROI simulator ----
@@ -1014,7 +1017,7 @@ export const translations = {
           bullets: [
             "Pump.fun burns the initial LP and migrates to Raydium (≈ $12k)",
             "Surgical LP reinforcement to stabilize target price ≈ €0.0005",
-            "External top-up (€2–4k) + controlled treasury sales pre-announced",
+            "External top-up + controlled treasury sales pre-announced",
             "Security audit published + on-chain verification open to everyone",
           ],
         },
@@ -1032,6 +1035,9 @@ export const translations = {
       proofTitle: "Why this is genuinely serious",
       proof:
         "0% Tax means a vault that fills only through growth. Every treasury action is announced before execution, the community verifies on-chain, and the Prophet mocks everyone in the meantime. The rules hold — even when the narrative is cynical.",
+      scrollHint: "SCROLL THROUGH THE CLASSIFIED DOSSIERS",
+      signedBy: "Signed · DEEP STATE COMMITTEE",
+      classified: "CLASSIFIED",
     },
 
     roi: {
