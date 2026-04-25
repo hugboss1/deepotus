@@ -1,34 +1,34 @@
 [
   {
-    "content": "Backend feedparser + core/news_feed.py (RSS curated 7 sources, keyword filter, dedup, 7-day TTL) ✅",
+    "content": "Backend secrets_vault.py (Fernet AES-128-GCM, KEK env, mask, fingerprint, provider detection) ✅",
     "status": "completed"
   },
   {
-    "content": "Backend bot_config schema étendu avec news_feed (enabled_for, interval, feeds, keywords, headlines_per_post, last_refresh_*) ✅",
+    "content": "Backend SDKs natifs installés : openai 1.99.9 + anthropic 0.42 + google-generativeai 0.8.3 ✅",
     "status": "completed"
   },
   {
-    "content": "Backend bot_scheduler : cron job 4×/jour news_refresh enregistré ✅",
+    "content": "Backend llm_router.py (custom key SDK natif vs Emergent fallback, decrypt-on-read) ✅",
     "status": "completed"
   },
   {
-    "content": "Backend prophet_studio + bots router : preview accepte keywords[] + use_news_context, news_block injecté en extra_context ✅",
+    "content": "Backend prophet_studio passe par llm_router ✅",
     "status": "completed"
   },
   {
-    "content": "Backend endpoints GET /admin/bots/news + POST /admin/bots/news/refresh ✅",
+    "content": "Backend endpoints PUT /admin/bots/llm-secrets + DELETE /admin/bots/llm-secrets/{provider} ✅",
     "status": "completed"
   },
   {
-    "content": "Frontend AdminBots Config : section News Feed complète (toggles X/TG, interval, headlines, RSS editor, keywords editor, refresh, preview list) ✅",
+    "content": "Frontend AdminBots Config — bloc Custom LLM keys (3 cards, dialog set/rotate, eye-toggle, revoke) ✅",
     "status": "completed"
   },
   {
-    "content": "Frontend AdminBots Preview : Prophet inspiration block (keywords input + use-news-context toggle) ✅",
+    "content": "Test E2E ✅ · set OpenAI key (sk-proj-...) → mask sk-...klmn affiché → revoke → NOT SET",
     "status": "completed"
   },
   {
-    "content": "Test E2E ✅ · Prophet génère tweet avec keywords + news context (FR 160/270 + EN 150/270 sous budget, hashtags auto)",
+    "content": "DEPLOYMENT_AND_PHASES_GUIDE.md — SECRETS_KEK_KEY documenté avec génération + warning éphéméral ✅",
     "status": "completed"
   }
 ]

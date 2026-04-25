@@ -13,6 +13,7 @@ All endpoints are JWT-protected via `require_admin`. No public access.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -27,6 +28,10 @@ from core.bot_scheduler import (
     update_bot_config,
 )
 from core.config import db
+from core.llm_router import (
+    SUPPORTED_PROVIDERS,
+    load_custom_keys_status,
+)
 from core.news_feed import (
     DEFAULT_NEWS_FEEDS,
     DEFAULT_NEWS_KEYWORDS,
@@ -40,6 +45,12 @@ from core.prophet_studio import (
     generate_image,
     generate_post,
     list_content_types,
+)
+from core.secrets_vault import (
+    assert_provider_match,
+    encrypt as encrypt_secret,
+    is_kek_configured,
+    mask_for_display,
 )
 from core.security import require_admin
 
@@ -145,6 +156,7 @@ class BotConfigResponse(BaseModel):
     content_modes: Dict[str, bool]
     llm: Dict[str, Any]
     news_feed: Dict[str, Any]
+    custom_llm_keys: Dict[str, Any]
     heartbeat_interval_minutes: int
     max_posts_per_day: int
     last_updated_at: Optional[str] = None
@@ -184,7 +196,12 @@ class PaginatedBotPosts(BaseModel):
 # Shaping helpers
 # ---------------------------------------------------------------------
 def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
-    """Strip Mongo-internal fields and ensure all expected keys exist."""
+    """Strip Mongo-internal fields and ensure all expected keys exist.
+
+    NOTE: never echoes encrypted secrets — only masks/labels are surfaced.
+    The actual `custom_llm_keys` block is read separately via
+    `load_custom_keys_status` to keep the no-leak invariant explicit.
+    """
     nf_raw = doc.get("news_feed") or {}
     news_feed = {
         "enabled_for": nf_raw.get("enabled_for")
@@ -235,7 +252,12 @@ def _merge_platform_patch(
 @router.get("/config", response_model=BotConfigResponse)
 async def get_config(_p: dict = Depends(require_admin)):
     doc = await get_bot_config()
-    return _shape_config(doc)
+    shaped = _shape_config(doc)
+    # The shape function deliberately omits any encrypted material.
+    # Custom-LLM-key status is loaded separately so it's obvious in the
+    # call graph that no plaintext can ever leak through this endpoint.
+    shaped["custom_llm_keys"] = await load_custom_keys_status()
+    return shaped
 
 
 @router.put("/config", response_model=BotConfigResponse)
@@ -295,7 +317,9 @@ async def put_config(
 
     updated_by = (_p or {}).get("jti") or "admin"
     doc = await update_bot_config(patch_dict, updated_by=updated_by)
-    return _shape_config(doc)
+    shaped = _shape_config(doc)
+    shaped["custom_llm_keys"] = await load_custom_keys_status()
+    return shaped
 
 
 @router.post("/kill-switch", response_model=BotConfigResponse)
@@ -309,7 +333,9 @@ async def toggle_kill_switch(
         {"kill_switch_active": bool(payload.active)},
         updated_by=updated_by,
     )
-    return _shape_config(doc)
+    shaped = _shape_config(doc)
+    shaped["custom_llm_keys"] = await load_custom_keys_status()
+    return shaped
 
 
 @router.get("/jobs", response_model=List[BotJobItem])
@@ -569,8 +595,6 @@ async def trigger_news_refresh(_p: dict = Depends(require_admin)):
     keywords = nf.get("keywords") or None
     stats = await refresh_all(urls=feeds, keywords=keywords)
 
-    from datetime import datetime, timezone
-
     now_iso = datetime.now(timezone.utc).isoformat()
     await db["bot_config"].update_one(
         {"_id": "bot_config_singleton"},
@@ -582,3 +606,116 @@ async def trigger_news_refresh(_p: dict = Depends(require_admin)):
         },
     )
     return NewsRefreshResponse(**stats)
+
+
+# ---------------------------------------------------------------------
+# Custom LLM key vault — store admin-supplied OpenAI / Anthropic / Gemini
+# keys encrypted at rest. The plaintext is NEVER returned by any GET.
+# ---------------------------------------------------------------------
+class LlmSecretSetRequest(BaseModel):
+    provider: str = Field(..., description="openai | anthropic | gemini")
+    api_key: str = Field(..., min_length=8, max_length=400)
+    label: Optional[str] = Field(default=None, max_length=80)
+
+
+class LlmSecretStatusResponse(BaseModel):
+    custom_llm_keys: Dict[str, Any]
+
+
+@router.put("/llm-secrets", response_model=LlmSecretStatusResponse)
+async def set_llm_secret(
+    payload: LlmSecretSetRequest,
+    _p: dict = Depends(require_admin),
+):
+    """Persist an admin-supplied LLM API key, encrypted with the KEK.
+
+    Refuses to write if:
+        - the KEK env var is not set (we'd lose the secret on restart)
+        - the provider slot is unsupported
+        - the key shape doesn't match the claimed provider
+        - the key looks already-stored and equal (avoids accidental no-op
+          rotations that reset the `set_at` timestamp)
+    """
+    provider = payload.provider.lower().strip()
+    if provider not in SUPPORTED_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unsupported_provider:{provider} "
+            f"(allowed: {', '.join(SUPPORTED_PROVIDERS)})",
+        )
+    if not is_kek_configured():
+        raise HTTPException(
+            status_code=412,  # Precondition Failed
+            detail=(
+                "SECRETS_KEK_KEY env var is not set. The server is running "
+                "with an EPHEMERAL key — secrets stored now would be lost "
+                "on the next restart. Please configure the env var first."
+            ),
+        )
+
+    # Validate format vs claimed provider; raises ValueError on mismatch.
+    try:
+        assert_provider_match(provider, payload.api_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+
+    ciphertext = encrypt_secret(payload.api_key)
+    mask = mask_for_display(payload.api_key)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    label = (payload.label or provider).strip()
+
+    # Detect rotate-vs-first-set so the timeline is honest
+    existing = await db["bot_config"].find_one(
+        {"_id": "bot_config_singleton"},
+        {f"custom_llm_keys.{provider}": 1, "_id": 0},
+    )
+    is_rotation = bool(
+        ((existing or {}).get("custom_llm_keys") or {})
+        .get(provider, {})
+        .get("ciphertext")
+    )
+
+    update_set = {
+        f"custom_llm_keys.{provider}.ciphertext": ciphertext,
+        f"custom_llm_keys.{provider}.mask": mask,
+        f"custom_llm_keys.{provider}.label": label,
+        f"custom_llm_keys.{provider}.rotated_at": now_iso,
+    }
+    if not is_rotation:
+        update_set[f"custom_llm_keys.{provider}.set_at"] = now_iso
+
+    await db["bot_config"].update_one(
+        {"_id": "bot_config_singleton"},
+        {"$set": update_set},
+        upsert=True,
+    )
+    return LlmSecretStatusResponse(
+        custom_llm_keys=await load_custom_keys_status()
+    )
+
+
+@router.delete(
+    "/llm-secrets/{provider}", response_model=LlmSecretStatusResponse
+)
+async def revoke_llm_secret(
+    provider: str,
+    _p: dict = Depends(require_admin),
+):
+    """Wipe the encrypted key + metadata for a given provider slot.
+
+    After revocation, the LLM router automatically falls back to the
+    Emergent universal key for that provider on the next call.
+    """
+    provider = provider.lower().strip()
+    if provider not in SUPPORTED_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unsupported_provider:{provider}",
+        )
+    await db["bot_config"].update_one(
+        {"_id": "bot_config_singleton"},
+        {"$unset": {f"custom_llm_keys.{provider}": ""}},
+    )
+    return LlmSecretStatusResponse(
+        custom_llm_keys=await load_custom_keys_status()
+    )

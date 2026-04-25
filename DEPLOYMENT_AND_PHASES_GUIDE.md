@@ -527,6 +527,18 @@ CORS_ORIGINS=https://deepotus.xyz,https://www.deepotus.xyz
 EMERGENT_LLM_KEY=<ta_clé_actuelle>
 EMERGENT_IMAGE_LLM_KEY=<ta_DEUXIÈME_clé_pour_les_images>  # optionnel mais recommandé
 
+# === Custom LLM Keys vault (BYO OpenAI/Anthropic/Gemini) ===
+# CRITIQUE — masterkey de chiffrement pour les clés API utilisateur stockées
+# en DB. Sans elle, les clés utilisateur restent en mode éphémère et seront
+# perdues au prochain redeploy. Génère-la UNE SEULE FOIS et garde-la
+# précieusement (perdre cette clé = perte totale des secrets stockés).
+#
+# Génération :
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+#
+# Format attendu : 44 chars URL-safe base64 finissant par "="
+SECRETS_KEK_KEY=<générer_avec_la_commande_ci-dessus>
+
 # === Admin auth ===
 ADMIN_PASSWORD=<MOTDEPASSE_LONG_ET_ALEATOIRE_CHANGE_LE>
 JWT_SECRET=<openssl rand -hex 32 — généré localement>

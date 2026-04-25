@@ -254,7 +254,10 @@ async def _call_llm(
     content_type: str,
     user_prompt: str,
 ) -> str:
-    """Issue the chat call. Raises RuntimeError on transport failure."""
+    """Issue the chat call. Routes through `llm_router` so admin-supplied
+    custom keys (OpenAI / Anthropic / Gemini) take priority over the
+    Emergent universal key. Raises RuntimeError on transport failure.
+    """
     system_message = (
         BASE_PERSONA
         + "\n\n"
@@ -262,12 +265,15 @@ async def _call_llm(
         "strict JSON. Follow the schema or the output is rejected."
     )
     try:
-        chat_client = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"prophet-studio-{content_type}",
+        # Local import — the router pulls in heavy SDKs lazily.
+        from core.llm_router import resolve_llm_call
+
+        raw = await resolve_llm_call(
+            provider=provider,
+            model=model,
             system_message=system_message,
-        ).with_model(provider, model)
-        raw = await chat_client.send_message(UserMessage(text=user_prompt))
+            user_prompt=user_prompt,
+        )
     except Exception as exc:
         logging.exception("[prophet_studio] LLM call failed")
         raise RuntimeError(f"llm_failure: {exc}") from exc

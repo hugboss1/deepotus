@@ -25,6 +25,11 @@ import {
   RefreshCw,
   Newspaper,
   ExternalLink,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Trash2,
+  Lock as LockIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +40,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -92,6 +105,16 @@ export default function AdminBots() {
   const [newsBusy, setNewsBusy] = useState(false);
   const [newsFeedsDraft, setNewsFeedsDraft] = useState("");
   const [newsKeywordsDraft, setNewsKeywordsDraft] = useState("");
+
+  // ---- Custom LLM keys vault (Config tab "Custom LLM keys" section) ----
+  // The dialog is shared across the 3 providers — only one can be open at a time.
+  const [llmSecretDialogOpen, setLlmSecretDialogOpen] = useState(false);
+  const [llmSecretProvider, setLlmSecretProvider] = useState("openai");
+  const [llmSecretInput, setLlmSecretInput] = useState("");
+  const [llmSecretLabel, setLlmSecretLabel] = useState("");
+  const [llmSecretReveal, setLlmSecretReveal] = useState(false);
+  const [llmSecretBusy, setLlmSecretBusy] = useState(false);
+  const [llmSecretError, setLlmSecretError] = useState(null);
 
   // Filters for post log
   const [platformFilter, setPlatformFilter] = useState("all");
@@ -223,6 +246,69 @@ export default function AdminBots() {
       toast.error(err?.response?.data?.detail || "News refresh failed");
     } finally {
       setNewsBusy(false);
+    }
+  }
+
+  function openLlmSecretDialog(provider) {
+    setLlmSecretProvider(provider);
+    setLlmSecretInput("");
+    setLlmSecretLabel("");
+    setLlmSecretReveal(false);
+    setLlmSecretError(null);
+    setLlmSecretDialogOpen(true);
+  }
+
+  async function submitLlmSecret() {
+    setLlmSecretError(null);
+    const key = (llmSecretInput || "").trim();
+    if (key.length < 8) {
+      setLlmSecretError("Key looks too short — paste the full key.");
+      return;
+    }
+    setLlmSecretBusy(true);
+    try {
+      await axios.put(
+        `${API}/api/admin/bots/llm-secrets`,
+        {
+          provider: llmSecretProvider,
+          api_key: key,
+          label: (llmSecretLabel || "").trim() || undefined,
+        },
+        { headers },
+      );
+      toast.success(`${llmSecretProvider.toUpperCase()} key saved (encrypted)`);
+      setLlmSecretDialogOpen(false);
+      setLlmSecretInput("");
+      setLlmSecretLabel("");
+      // Refetch config so the masked status updates instantly.
+      await loadConfig();
+    } catch (err) {
+      logger.error(err);
+      const msg = err?.response?.data?.detail || "Failed to save key";
+      setLlmSecretError(msg);
+      toast.error(msg);
+    } finally {
+      setLlmSecretBusy(false);
+    }
+  }
+
+  async function revokeLlmSecret(provider) {
+    if (
+      !window.confirm(
+        `Revoke the stored ${provider.toUpperCase()} key? The bot will fall back to the Emergent universal key on the next call.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await axios.delete(`${API}/api/admin/bots/llm-secrets/${provider}`, {
+        headers,
+      });
+      toast.success(`${provider.toUpperCase()} key revoked`);
+      await loadConfig();
+    } catch (err) {
+      logger.error(err);
+      toast.error(err?.response?.data?.detail || "Revoke failed");
     }
   }
 
@@ -680,6 +766,120 @@ export default function AdminBots() {
                   </Select>
                   <div className="mt-2 font-mono text-[10px] text-muted-foreground">
                     provider={config?.llm?.provider} · model={config?.llm?.model}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* ============== CUSTOM LLM KEYS · BYO API ============== */}
+                <div
+                  className="rounded-xl border border-border bg-card p-5 space-y-3"
+                  data-testid="custom-llm-keys-section"
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <KeyRound size={16} className="text-[#F59E0B]" />
+                      <div className="font-display font-semibold">
+                        Custom LLM keys
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="font-mono text-[10px] uppercase tracking-widest"
+                      >
+                        BYO · encrypted
+                      </Badge>
+                    </div>
+                    {config?.custom_llm_keys?._meta?.kek_configured ? (
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-[#18C964]">
+                        ✓ vault armed
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-[#E11D48]">
+                        ⚠ KEK not configured (ephemeral)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Bring your own OpenAI / Anthropic / Gemini API key. Keys
+                    are encrypted at rest with AES-128-GCM (Fernet) using a
+                    server-only KEK and never returned in plaintext. When
+                    set, the bot uses your key directly for that provider —
+                    no silent fallback to Emergent.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {["openai", "anthropic", "gemini"].map((prov) => {
+                      const slot =
+                        config?.custom_llm_keys?.[prov] || {};
+                      const active = Boolean(slot.active);
+                      return (
+                        <div
+                          key={prov}
+                          className={`rounded-lg border p-3 flex flex-col gap-2 ${
+                            active
+                              ? "border-[#18C964]/40 bg-[#18C964]/5"
+                              : "border-border bg-background/40"
+                          }`}
+                          data-testid={`custom-llm-card-${prov}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                              {prov}
+                            </span>
+                            <span
+                              className={`font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                                active
+                                  ? "border-[#18C964]/50 bg-[#18C964]/10 text-[#18C964]"
+                                  : "border-border bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {active ? "ACTIVE" : "NOT SET"}
+                            </span>
+                          </div>
+                          <div className="font-mono text-xs text-foreground/85 truncate">
+                            {active ? slot.mask || "***" : "—"}
+                          </div>
+                          {active && slot.label && (
+                            <div className="text-[11px] text-muted-foreground truncate">
+                              {slot.label}
+                            </div>
+                          )}
+                          {active && (slot.set_at || slot.rotated_at) && (
+                            <div className="font-mono text-[10px] text-muted-foreground">
+                              rotated{" "}
+                              {new Date(
+                                slot.rotated_at || slot.set_at,
+                              ).toLocaleDateString()}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 pt-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-[var(--btn-radius)] flex-1"
+                              onClick={() => openLlmSecretDialog(prov)}
+                              data-testid={`custom-llm-set-${prov}`}
+                            >
+                              <KeyRound size={12} className="mr-1" />
+                              {active ? "Rotate" : "Set key"}
+                            </Button>
+                            {active && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="rounded-[var(--btn-radius)] text-[#E11D48] hover:text-[#E11D48]/90 hover:bg-[#E11D48]/5"
+                                onClick={() => revokeLlmSecret(prov)}
+                                data-testid={`custom-llm-revoke-${prov}`}
+                              >
+                                <Trash2 size={12} />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1574,6 +1774,124 @@ export default function AdminBots() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Dialog: set / rotate a custom LLM API key */}
+      <Dialog
+        open={llmSecretDialogOpen}
+        onOpenChange={(open) => {
+          if (!llmSecretBusy) setLlmSecretDialogOpen(open);
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          data-testid="custom-llm-dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LockIcon size={14} className="text-[#F59E0B]" />
+              Set {llmSecretProvider.toUpperCase()} API key
+            </DialogTitle>
+            <DialogDescription>
+              The key is encrypted at rest with AES-128-GCM and never
+              returned by any GET endpoint. Only a masked fingerprint
+              (e.g. <code>sk-...A1B2</code>) is shown in the UI after
+              save.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                API key
+              </Label>
+              <div className="relative mt-2">
+                <Input
+                  type={llmSecretReveal ? "text" : "password"}
+                  value={llmSecretInput}
+                  onChange={(e) => setLlmSecretInput(e.target.value)}
+                  placeholder={
+                    llmSecretProvider === "openai"
+                      ? "sk-proj-..."
+                      : llmSecretProvider === "anthropic"
+                        ? "sk-ant-..."
+                        : "AIzaSy..."
+                  }
+                  spellCheck={false}
+                  autoComplete="off"
+                  className="font-mono text-xs pr-10"
+                  data-testid="custom-llm-key-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLlmSecretReveal((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={
+                    llmSecretReveal ? "Hide key" : "Reveal key"
+                  }
+                  data-testid="custom-llm-reveal-toggle"
+                >
+                  {llmSecretReveal ? (
+                    <EyeOff size={14} />
+                  ) : (
+                    <Eye size={14} />
+                  )}
+                </button>
+              </div>
+              <p className="mt-1 text-[10.5px] text-muted-foreground leading-relaxed">
+                Format check: must start with{" "}
+                <code>
+                  {llmSecretProvider === "openai"
+                    ? "sk-"
+                    : llmSecretProvider === "anthropic"
+                      ? "sk-ant-"
+                      : "AIza"}
+                </code>
+                . The server validates the shape before storing.
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                Label (optional)
+              </Label>
+              <Input
+                value={llmSecretLabel}
+                onChange={(e) => setLlmSecretLabel(e.target.value)}
+                placeholder={`e.g. "Personal ${llmSecretProvider} account"`}
+                className="mt-2 font-mono text-xs"
+                data-testid="custom-llm-label-input"
+              />
+            </div>
+
+            {llmSecretError && (
+              <div className="text-xs text-[#E11D48] font-mono leading-relaxed">
+                {llmSecretError}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={llmSecretBusy}
+              onClick={() => setLlmSecretDialogOpen(false)}
+              className="rounded-[var(--btn-radius)]"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={submitLlmSecret}
+              disabled={llmSecretBusy || llmSecretInput.length < 8}
+              className="rounded-[var(--btn-radius)]"
+              data-testid="custom-llm-submit"
+            >
+              {llmSecretBusy ? "Encrypting…" : "Save securely"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
