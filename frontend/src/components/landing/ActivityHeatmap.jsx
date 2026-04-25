@@ -43,7 +43,7 @@ export default function ActivityHeatmap({ data, lang = "en" }) {
               <th className="w-10"></th>
               {Array.from({ length: 24 }).map((_, h) => (
                 <th
-                  key={h}
+                  key={`heatmap-hour-${h}`}
                   className="font-mono text-[9px] text-muted-foreground text-center font-normal"
                 >
                   {h % 3 === 0 ? String(h).padStart(2, "0") : ""}
@@ -53,7 +53,7 @@ export default function ActivityHeatmap({ data, lang = "en" }) {
           </thead>
           <tbody>
             {data.map((row, d) => (
-              <tr key={d}>
+              <tr key={`heatmap-day-${d}-${labels[d] || "row"}`}>
                 <td className="font-mono text-[10px] text-muted-foreground pr-2 text-right align-middle">
                   {labels[d]}
                 </td>
@@ -61,7 +61,7 @@ export default function ActivityHeatmap({ data, lang = "en" }) {
                   const intensity = max > 0 ? v / max : 0;
                   return (
                     <td
-                      key={h}
+                      key={`heatmap-cell-${d}-${h}`}
                       title={`${labels[d]} ${String(h).padStart(2, "0")}h UTC · ${v} msg`}
                       data-testid={`heatmap-cell-${d}-${h}`}
                       className="h-5 rounded-[3px] transition-colors"
@@ -86,11 +86,11 @@ export default function ActivityHeatmap({ data, lang = "en" }) {
         </span>
         <div className="flex items-center gap-2">
           <span>{lang === "fr" ? "Moins" : "Less"}</span>
-          {[0.15, 0.35, 0.6, 0.85, 1.0].map((i) => (
+          {[0.15, 0.35, 0.6, 0.85, 1.0].map((intensity) => (
             <span
-              key={i}
+              key={`heatmap-legend-${intensity}`}
               className="inline-block w-3 h-3 rounded-[3px]"
-              style={{ background: rgb(i) }}
+              style={{ background: rgb(intensity) }}
             />
           ))}
           <span>{lang === "fr" ? "Plus" : "More"}</span>

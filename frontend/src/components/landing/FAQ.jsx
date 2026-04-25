@@ -29,7 +29,7 @@ export default function FAQ() {
           <Accordion type="single" collapsible className="w-full">
             {items.map((it, i) => (
               <AccordionItem
-                key={i}
+                key={`faq-${i}-${(it?.q || "").slice(0, 24)}`}
                 value={`item-${i}`}
                 data-testid={`faq-item-${i}`}
                 className="border-border"

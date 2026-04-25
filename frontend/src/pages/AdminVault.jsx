@@ -385,7 +385,7 @@ export default function AdminVault() {
               const isLocked = i < (state?.digits_locked ?? 0);
               return (
                 <div
-                  key={i}
+                  key={`admin-vault-target-dial-${i}`}
                   className={`rounded-lg border p-3 text-center ${isLocked ? "border-[#18C964]/50 bg-[#18C964]/10" : "border-border bg-background"}`}
                   data-testid={`admin-vault-target-${i}`}
                 >

@@ -6,21 +6,21 @@
  *   whitelist section (#whitelist) so we never ship a broken link.
  */
 
-export const PUMPFUN_URL = (
+export const PUMPFUN_URL: string = (
   process.env.REACT_APP_PUMPFUN_URL || ""
 ).trim();
 
-export const RAYDIUM_URL = (
+export const RAYDIUM_URL: string = (
   process.env.REACT_APP_RAYDIUM_URL || ""
 ).trim();
 
 // Public Jupiter Lock / Streamflow URLs that prove team & treasury tokens
 // are time-locked. Shown as verified badges once configured.
-export const TEAM_LOCK_URL = (
+export const TEAM_LOCK_URL: string = (
   process.env.REACT_APP_TEAM_LOCK_URL || ""
 ).trim();
 
-export const TREASURY_LOCK_URL = (
+export const TREASURY_LOCK_URL: string = (
   process.env.REACT_APP_TREASURY_LOCK_URL || ""
 ).trim();
 
@@ -33,22 +33,22 @@ export const TREASURY_LOCK_URL = (
  *   The placeholder is NOT a live token — it is visually-valid base58 used to
  *   preview the layout and copy-to-clipboard UX before launch.
  */
-export const DEEPOTUS_MINT = (
+export const DEEPOTUS_MINT: string = (
   process.env.REACT_APP_DEEPOTUS_MINT ||
   "7bQQbXz6pKqHzVJEJxVHTDLqAUkBYt3hM8Jd3vKRYQPv"
 ).trim();
 
-export function isMintConfigured() {
+export function isMintConfigured(): boolean {
   return Boolean(process.env.REACT_APP_DEEPOTUS_MINT);
 }
 
-export function hasTeamLock() {
+export function hasTeamLock(): boolean {
   return Boolean(TEAM_LOCK_URL);
 }
-export function hasTreasuryLock() {
+export function hasTreasuryLock(): boolean {
   return Boolean(TREASURY_LOCK_URL);
 }
-export function hasAnyLock() {
+export function hasAnyLock(): boolean {
   return hasTeamLock() || hasTreasuryLock();
 }
 
@@ -59,12 +59,12 @@ export function hasAnyLock() {
  *
  * Opens in a new tab when external.
  */
-export function getBuyUrl() {
+export function getBuyUrl(): string {
   if (PUMPFUN_URL) return PUMPFUN_URL;
   if (RAYDIUM_URL) return RAYDIUM_URL;
   return "#whitelist";
 }
 
-export function isBuyUrlExternal() {
+export function isBuyUrlExternal(): boolean {
   return Boolean(PUMPFUN_URL || RAYDIUM_URL);
 }

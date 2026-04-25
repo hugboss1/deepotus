@@ -10,7 +10,7 @@ the top-level `vault`, `dexscreener`, and `helius` modules.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field

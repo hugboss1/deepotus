@@ -10,11 +10,20 @@
  * via reporting tools, but info/warn traces stay silent.
  */
 
+type LogFn = (...args: unknown[]) => void;
+
 const IS_PROD = process.env.NODE_ENV === "production";
 
-function noop() {}
+const noop: LogFn = () => {};
 
-export const logger = {
+export interface Logger {
+  info: LogFn;
+  warn: LogFn;
+  error: LogFn;
+  debug: LogFn;
+}
+
+export const logger: Logger = {
   info: IS_PROD ? noop : (...args) => console.info(...args),
   warn: IS_PROD ? noop : (...args) => console.warn(...args),
   // eslint-disable-next-line no-console

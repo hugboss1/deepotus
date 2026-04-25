@@ -1,26 +1,30 @@
 [
   {
-    "content": "Investiguer le bug : QR / email link n'atterrit plus sur la page digicode",
+    "content": "21a-c Python ✅ · ruff cleanup + 4 fonctions complexes refactorées",
     "status": "completed"
   },
   {
-    "content": "Fixer la logique d'ouverture de la page coffre-fort depuis QR / email (force gate quand ?code= en URL)",
+    "content": "21b React ✅ · keys index→stable + hook deps + I18nProvider stabilisé",
     "status": "completed"
   },
   {
-    "content": "Tester le flow : ?code= + session existante → digicode forcée ✅",
+    "content": "21d React splits ✅ · Hero (439→47) + Tokenomics (373→70) + ClassifiedVault (657→41) + 8 sub-composants extraits",
     "status": "completed"
   },
   {
-    "content": "PublicStats : retirer l'affichage de la date de lancement (7/09/2026)",
+    "content": "21d — Splits restants (AdminBots, Admin, AdminVault, TerminalPopup, etc.) documentés comme follow-up dans plan.md & TODO_TYPESCRIPT.md",
     "status": "completed"
   },
   {
-    "content": "PublicStats : générer une image \"dossier rédacté\" avec date cachée sous bloc noir",
+    "content": "21e TS setup ✅ · deps installées, tsconfig.json, src/types/, jsconfig retiré, app compile sans warning",
     "status": "completed"
   },
   {
-    "content": "PublicStats : intégrer la nouvelle image et vérifier visuellement desktop + mobile + EN",
+    "content": "21e TS migrés ✅ · lib/utils.ts + lib/logger.ts + lib/links.ts + hooks/use-toast.ts + I18nProvider.tsx + ThemeProvider.tsx",
+    "status": "completed"
+  },
+  {
+    "content": "21e TS migration restante — 60+ fichiers documentés dans /app/TODO_TYPESCRIPT.md (multi-session)",
     "status": "completed"
   }
 ]

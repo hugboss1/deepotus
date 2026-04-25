@@ -65,7 +65,7 @@ export default function VaultChassis({
       >
         {combo.map((digit, i) => (
           <div
-            key={i}
+            key={`vault-dial-${i}`}
             className="flex-1 h-full"
             style={{ minWidth: 0 }}
           >

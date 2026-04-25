@@ -17,8 +17,6 @@ Zones (% of card width/height) used for overlay come from analyzing the template
 
 from __future__ import annotations
 
-import io
-import os
 import re
 import uuid
 import base64
@@ -204,131 +202,93 @@ def _mask_zone(
 
 
 # ---------------------------------------------------------------------
-# Card rendering
+# Card rendering — split into small helpers for readability.
 # ---------------------------------------------------------------------
-def render_card(
+def _mask_card_zones(base: Image.Image) -> dict:
+    """Black out all placeholder zones on the template; return their boxes."""
+    return {
+        "name": _mask_zone(
+            base, "name_banner", pad_x=4, pad_y=4, fill=COLOR_CARD_MATTE_DARK
+        ),
+        "accred": _mask_zone(
+            base, "accred_banner", pad_x=4, pad_y=4, fill=COLOR_CARD_MATTE_DARK
+        ),
+        "issue": _mask_zone(
+            base, "issue_date", pad_x=2, pad_y=2, fill=COLOR_CARD_MATTE_DARK
+        ),
+        "expire": _mask_zone(
+            base, "expire_date", pad_x=2, pad_y=2, fill=COLOR_CARD_MATTE_DARK
+        ),
+        "qr": _mask_zone(
+            base, "qr_slot", pad_x=0, pad_y=0, fill=COLOR_CARD_MATTE_DARK
+        ),
+        "_microtext_unused": _mask_zone(
+            base,
+            "microtext_strip",
+            pad_x=2,
+            pad_y=2,
+            fill=(18, 18, 20, 255),
+        ),
+    }
+
+
+def _draw_centered_in_box(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    box: tuple,
     *,
-    display_name: str,
-    accreditation_number: str,
+    max_size: int,
+    min_size: int,
+    font_path: str,
+    color,
+    h_pad: int,
+) -> None:
+    """Auto-fit `text` and draw it centered inside `box`."""
+    x0, y0, x1, y1 = box
+    avail_w = (x1 - x0) - h_pad * 2
+    box_h = y1 - y0
+    font, _ = _fit_text_in_box(
+        draw,
+        text,
+        avail_w,
+        max_size=max_size,
+        min_size=min_size,
+        font_path=font_path,
+    )
+    bb = draw.textbbox((0, 0), text, font=font)
+    tw = bb[2] - bb[0]
+    th = bb[3] - bb[1]
+    draw.text(
+        (x0 + (x1 - x0 - tw) // 2, y0 + (box_h - th) // 2 - 4),
+        text,
+        font=font,
+        fill=color,
+    )
+
+
+def _render_dates(
+    draw: ImageDraw.ImageDraw,
     issued_at: datetime,
     expires_at: datetime,
-    output_path: Path,
-    qr_payload: Optional[str] = None,
-) -> Path:
-    """Render a personalized access card on top of the pre-generated template.
-
-    qr_payload: optional string to encode in the QR code. When provided, the QR
-    encodes a clickable URL (typically `https://deepotus.xyz/classified-vault?code=ACCRED`)
-    so scanning the printed card opens the digicode page in the user's browser
-    and auto-verifies the accreditation. If omitted, falls back to the bare
-    accreditation number for backward compatibility.
-    """
-    if not TEMPLATE_PATH.exists():
-        raise FileNotFoundError(
-            f"Access card template missing at {TEMPLATE_PATH}. "
-            "Run tests/generate_access_card_template.py first."
-        )
-
-    base = Image.open(TEMPLATE_PATH).convert("RGBA")
-    W, H = base.size
-    draw = ImageDraw.Draw(base)
-
-    # --- 1) Mask all placeholder text in the template ---
-    name_box = _mask_zone(
-        base, "name_banner", pad_x=4, pad_y=4, fill=COLOR_CARD_MATTE_DARK
-    )
-    accred_box = _mask_zone(
-        base, "accred_banner", pad_x=4, pad_y=4, fill=COLOR_CARD_MATTE_DARK
-    )
-    issue_box = _mask_zone(
-        base, "issue_date", pad_x=2, pad_y=2, fill=COLOR_CARD_MATTE_DARK
-    )
-    expire_box = _mask_zone(
-        base, "expire_date", pad_x=2, pad_y=2, fill=COLOR_CARD_MATTE_DARK
-    )
-    qr_box = _mask_zone(
-        base, "qr_slot", pad_x=0, pad_y=0, fill=COLOR_CARD_MATTE_DARK
-    )
-    _mask_zone(
-        base,
-        "microtext_strip",
-        pad_x=2,
-        pad_y=2,
-        fill=(18, 18, 20, 255),
-    )
-
-    # --- 2) Redraw a thin cyan underline on the name banner (signature line) ---
-    nx0, ny0, nx1, ny1 = name_box
-    draw.line([(nx0 + 10, ny1 - 4), (nx1 - 10, ny1 - 4)], fill=COLOR_CYAN, width=2)
-    # And a thin amber underline on accreditation banner
-    ax0, ay0, ax1, ay1 = accred_box
-    draw.line([(ax0 + 10, ay1 - 4), (ax1 - 10, ay1 - 4)], fill=COLOR_AMBER, width=2)
-
-    # --- 3) Write the NAME ---
-    name_w = nx1 - nx0 - 24
-    name_h = ny1 - ny0
-    name_font, name_size = _fit_text_in_box(
-        draw,
-        display_name.upper(),
-        name_w,
-        max_size=54,
-        min_size=18,
-        font_path=FONT_SANS_BOLD,
-    )
-    nb = draw.textbbox((0, 0), display_name.upper(), font=name_font)
-    nw = nb[2] - nb[0]
-    nh = nb[3] - nb[1]
-    draw.text(
-        (nx0 + (nx1 - nx0 - nw) // 2, ny0 + (name_h - nh) // 2 - 4),
-        display_name.upper(),
-        font=name_font,
-        fill=COLOR_WHITE_SOFT,
-    )
-
-    # --- 4) Write the ACCREDITATION NUMBER ---
-    accred_w = ax1 - ax0 - 20
-    accred_h = ay1 - ay0
-    accred_font, _ = _fit_text_in_box(
-        draw,
-        accreditation_number,
-        accred_w,
-        max_size=46,
-        min_size=16,
-        font_path=FONT_MONO_BOLD,
-    )
-    ab = draw.textbbox((0, 0), accreditation_number, font=accred_font)
-    aw = ab[2] - ab[0]
-    ah = ab[3] - ab[1]
-    draw.text(
-        (ax0 + (ax1 - ax0 - aw) // 2, ay0 + (accred_h - ah) // 2 - 4),
-        accreditation_number,
-        font=accred_font,
-        fill=COLOR_AMBER,
-    )
-
-    # --- 5) Dates ---
-    def _format_date(dt: datetime) -> str:
-        return dt.strftime("%Y-%m-%d")
-
+    issue_box: tuple,
+    expire_box: tuple,
+) -> None:
     small_font = _try_load_font(FONT_MONO_BOLD, 18)
     draw.text(
         (issue_box[0] + 8, issue_box[1] + 6),
-        _format_date(issued_at),
+        issued_at.strftime("%Y-%m-%d"),
         font=small_font,
         fill=COLOR_CYAN,
     )
     draw.text(
         (expire_box[0] + 8, expire_box[1] + 6),
-        _format_date(expires_at),
+        expires_at.strftime("%Y-%m-%d"),
         font=small_font,
         fill=COLOR_AMBER,
     )
 
-    # --- 6) QR code ---
-    # Encode the FULL deep-link URL (e.g. https://deepotus.xyz/classified-vault?code=AGENT-XXXX)
-    # so a phone camera scan opens the digicode page directly. The fallback to
-    # bare accreditation_number keeps unit tests / dev backward compat.
-    qr_data = qr_payload if qr_payload else accreditation_number
+
+def _render_qr(base: Image.Image, qr_box: tuple, qr_data: str) -> None:
     qr_w = qr_box[2] - qr_box[0]
     qr_h = qr_box[3] - qr_box[1]
     qr_img = qrcode.make(
@@ -337,18 +297,22 @@ def render_card(
         box_size=10,
         border=1,
     )
-    # Convert to RGBA and resize
     qr_img = qr_img.convert("RGBA")
     qr_side = min(qr_w, qr_h) - 12
     qr_img = qr_img.resize((qr_side, qr_side), Image.LANCZOS)
-    # Place centered within the slot
     qx = qr_box[0] + (qr_w - qr_side) // 2
     qy = qr_box[1] + (qr_h - qr_side) // 2
     base.paste(qr_img, (qx, qy), qr_img)
 
-    # --- 7) Discreet microtext over the bottom strip ---
+
+def _render_microtext(
+    draw: ImageDraw.ImageDraw,
+    accreditation_number: str,
+    image_size: tuple,
+) -> None:
     micro_font = _try_load_font(FONT_MONO, 13)
     micro = f"// CLEARANCE LEVEL 02 · PROTOCOL ΔΣ · {accreditation_number} //"
+    W, H = image_size
     mz = ZONES["microtext_strip"]
     mx = int(mz["left"] * W)
     my = int(mz["top"] * H)
@@ -364,7 +328,77 @@ def render_card(
         fill=COLOR_DIM,
     )
 
-    # Save
+
+def render_card(
+    *,
+    display_name: str,
+    accreditation_number: str,
+    issued_at: datetime,
+    expires_at: datetime,
+    output_path: Path,
+    qr_payload: Optional[str] = None,
+) -> Path:
+    """Render a personalized access card on top of the pre-generated template.
+
+    Pipeline:
+        1. Open the template + mask placeholder zones (`_mask_card_zones`).
+        2. Draw thin coloured underlines on the name and accred banners.
+        3. Auto-fit + centre the agent NAME (`_draw_centered_in_box`).
+        4. Auto-fit + centre the ACCREDITATION NUMBER.
+        5. Render the two dates (`_render_dates`).
+        6. Generate + paste the QR code (`_render_qr`).
+        7. Stamp the microtext strip (`_render_microtext`).
+
+    qr_payload: optional URL to encode in the QR code (typically
+    `<base>/classified-vault?code=ACCRED`). Falls back to the bare
+    accreditation number for backward compatibility.
+    """
+    if not TEMPLATE_PATH.exists():
+        raise FileNotFoundError(
+            f"Access card template missing at {TEMPLATE_PATH}. "
+            "Run tests/generate_access_card_template.py first."
+        )
+
+    base = Image.open(TEMPLATE_PATH).convert("RGBA")
+    draw = ImageDraw.Draw(base)
+
+    boxes = _mask_card_zones(base)
+    name_box = boxes["name"]
+    accred_box = boxes["accred"]
+    issue_box = boxes["issue"]
+    expire_box = boxes["expire"]
+    qr_box = boxes["qr"]
+
+    # Decorative underlines on the name + accreditation banners.
+    nx0, _, nx1, ny1 = name_box
+    draw.line([(nx0 + 10, ny1 - 4), (nx1 - 10, ny1 - 4)], fill=COLOR_CYAN, width=2)
+    ax0, _, ax1, ay1 = accred_box
+    draw.line([(ax0 + 10, ay1 - 4), (ax1 - 10, ay1 - 4)], fill=COLOR_AMBER, width=2)
+
+    _draw_centered_in_box(
+        draw,
+        display_name.upper(),
+        name_box,
+        max_size=54,
+        min_size=18,
+        font_path=FONT_SANS_BOLD,
+        color=COLOR_WHITE_SOFT,
+        h_pad=12,
+    )
+    _draw_centered_in_box(
+        draw,
+        accreditation_number,
+        accred_box,
+        max_size=46,
+        min_size=16,
+        font_path=FONT_MONO_BOLD,
+        color=COLOR_AMBER,
+        h_pad=10,
+    )
+    _render_dates(draw, issued_at, expires_at, issue_box, expire_box)
+    _render_qr(base, qr_box, qr_payload or accreditation_number)
+    _render_microtext(draw, accreditation_number, base.size)
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     base.convert("RGB").save(output_path, format="PNG", optimize=True)
     return output_path

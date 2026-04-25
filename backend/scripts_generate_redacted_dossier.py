@@ -127,7 +127,7 @@ def main():
     # Office line
     f_office = _try_font(FONT_SERIF_BOLD, 30)
     f_office_sub = _try_font(FONT_SERIF, 22)
-    f_mono_h = _try_font(FONT_MONO_BOLD, 18)
+    _try_font(FONT_MONO_BOLD, 18)
     f_mono = _try_font(FONT_MONO, 22)
     f_mono_label = _try_font(FONT_MONO_BOLD, 22)
     f_mono_small = _try_font(FONT_MONO, 16)
@@ -170,7 +170,6 @@ def main():
 
     # --- Body fields (label + redaction bar) ---
     # Each line: label (in bold mono) + ":" + redacted bar
-    field_x = 90
     label_x = 90
     bar_x_start = 90 + 360  # labels are reserved 360px
     line_h = 54

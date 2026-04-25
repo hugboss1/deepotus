@@ -19,14 +19,13 @@ from typing import Dict, List, Optional
 import jwt
 import pyotp
 import qrcode
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Header, HTTPException, Request
 
 from core.config import (
     JWT_ALGO,
     JWT_TTL_HOURS,
     ROTATION_GRACE_HOURS,
     db,
-    logger,
 )
 
 # ---------------------------------------------------------------------
@@ -162,34 +161,54 @@ async def issue_admin_jwt(
     return token, jti, exp
 
 
+async def _previous_grace_active() -> bool:
+    """Check the DB-stored expiry for the previous JWT secret.
+
+    Returns True iff the previous secret has not exceeded its rotation
+    grace window. Any malformed/missing date is treated as "still valid"
+    so legacy data does not lock admins out unexpectedly.
+    """
+    doc = await db.config.find_one({"_id": "jwt_secrets"})
+    piva = (doc or {}).get("previous_invalid_after")
+    if not piva:
+        return True
+    try:
+        expiry = datetime.fromisoformat(piva.replace("Z", "+00:00"))
+    except ValueError:
+        return True  # corrupt timestamp → don't pre-emptively reject
+    return datetime.now(timezone.utc) <= expiry
+
+
+def _try_decode(token: str, secret: str) -> dict:
+    """Decode the JWT against `secret`. Raises on failure."""
+    return jwt.decode(token, secret, algorithms=[JWT_ALGO])
+
+
 async def verify_admin_jwt(token: str) -> dict:
+    """Verify a JWT against the active and (if any) previous secret.
+
+    Loop is flat with early returns — no nested conditionals — and
+    surfaces ExpiredSignatureError specifically so callers can map it
+    to the right HTTP status.
+    """
     await ensure_jwt_secrets()
     last_err: Optional[Exception] = None
 
-    for label in ("current", "previous"):
-        sec = _JWT_CACHE.get(label)
-        if not sec:
-            continue
+    # Try the current secret first.
+    current = _JWT_CACHE.get("current")
+    if current:
         try:
-            payload = jwt.decode(token, sec, algorithms=[JWT_ALGO])
-            if label == "previous":
-                doc = await db.config.find_one({"_id": "jwt_secrets"})
-                piva = (doc or {}).get("previous_invalid_after")
-                if piva:
-                    try:
-                        expiry = datetime.fromisoformat(
-                            piva.replace("Z", "+00:00")
-                        )
-                        if datetime.now(timezone.utc) > expiry:
-                            raise jwt.InvalidTokenError(
-                                "Previous secret grace expired"
-                            )
-                    except ValueError:
-                        pass
-            return payload
+            return _try_decode(token, current)
         except Exception as e:  # noqa: BLE001
             last_err = e
-            continue
+
+    # Fall back to the previous secret if it is still inside its grace window.
+    previous = _JWT_CACHE.get("previous")
+    if previous and await _previous_grace_active():
+        try:
+            return _try_decode(token, previous)
+        except Exception as e:  # noqa: BLE001
+            last_err = e
 
     if isinstance(last_err, jwt.ExpiredSignatureError):
         raise last_err

@@ -307,7 +307,7 @@ export default function HowToBuy() {
                     {Array.isArray(s.actions) &&
                       s.actions.map((a, i) => (
                         <li
-                          key={i}
+                          key={`htb-${s.id || idx}-action-${i}-${(a || "").slice(0, 16)}`}
                           className="flex items-start gap-3 text-sm text-foreground/90"
                         >
                           <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full border border-border bg-background/60 font-mono text-[10px] flex items-center justify-center tabular text-foreground/80">

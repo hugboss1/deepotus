@@ -5,13 +5,36 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
 } from "react";
 
-const ThemeContext = createContext(null);
+/**
+ * Theme provider — light/dark colour scheme.
+ *
+ * Initial value resolution order:
+ *   1. localStorage (deepotus_theme)
+ *   2. `prefers-color-scheme` media query
+ *   3. fallback to "light"
+ *
+ * Mirrors the choice on `<html class="dark">` so Tailwind's `dark:`
+ * utilities pick it up.
+ */
+
+export type Theme = "light" | "dark";
+
+interface ThemeValue {
+  theme: Theme;
+  setTheme: Dispatch<SetStateAction<Theme>>;
+  toggle: () => void;
+}
+
+const ThemeContext = createContext<ThemeValue | null>(null);
 const STORAGE_KEY = "deepotus_theme";
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "dark" || stored === "light") return stored;
@@ -36,7 +59,7 @@ export function ThemeProvider({ children }) {
     [],
   );
 
-  const value = useMemo(
+  const value = useMemo<ThemeValue>(
     () => ({ theme, setTheme, toggle }),
     [theme, toggle],
   );
@@ -46,7 +69,7 @@ export function ThemeProvider({ children }) {
   );
 }
 
-export function useTheme() {
+export function useTheme(): ThemeValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;

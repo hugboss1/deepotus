@@ -174,7 +174,7 @@ export default function VaultSection() {
                 <div className="flex h-full">
                   {Array.from({ length: 10 }).map((_, i) => (
                     <div
-                      key={i}
+                      key={`vault-bucket-${i}`}
                       className={`flex-1 mx-px rounded-sm transition-colors duration-300 ${
                         i < redactedBuckets
                           ? stage === "DECLASSIFIED"

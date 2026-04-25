@@ -34,7 +34,10 @@ export default function Manifesto() {
             <div className="mt-6 space-y-5 text-foreground/80 max-w-prose">
               {Array.isArray(body) &&
                 body.map((p, i) => (
-                  <p key={i} className="leading-relaxed text-base md:text-[17px]">
+                  <p
+                    key={`manifesto-${i}-${(p || "").slice(0, 16)}`}
+                    className="leading-relaxed text-base md:text-[17px]"
+                  >
                     {p}
                   </p>
                 ))}

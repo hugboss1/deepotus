@@ -238,7 +238,10 @@ export default function TerminalPopup({ open, onClose }) {
                     &gt; BOOT · handshake OK · verifying clearance…
                   </div>
                   {typedLines.map((line, i) => (
-                    <div key={i} className="whitespace-pre-wrap mb-1">
+                    <div
+                      key={`tty-${i}-${(line || "").slice(0, 16)}`}
+                      className="whitespace-pre-wrap mb-1"
+                    >
                       {line}
                     </div>
                   ))}

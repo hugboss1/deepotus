@@ -52,7 +52,10 @@ export default function Mission() {
               </div>
               <ul className="space-y-4">
                 {items.map((it, i) => (
-                  <li key={i} className="flex items-start gap-3">
+                  <li
+                    key={`mission-${i}-${(it?.label || "").slice(0, 20)}`}
+                    className="flex items-start gap-3"
+                  >
                     <span className="mt-0.5 flex-none w-5 h-5 rounded-full bg-[#18C964]/15 text-[#18C964] flex items-center justify-center">
                       <Check size={12} />
                     </span>

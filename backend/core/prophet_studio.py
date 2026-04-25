@@ -205,36 +205,12 @@ def list_content_types() -> List[Dict[str, Any]]:
     ]
 
 
-async def generate_post(
+def _validate_generate_inputs(
     content_type: str,
-    platform: str = "x",
-    *,
-    kol_post: Optional[str] = None,
-    extra_context: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Generate one bilingual memetic post via the Emergent LLM layer.
-
-    Args:
-        content_type: one of VALID_CONTENT_TYPES
-        platform:    "x" | "telegram" (drives the char budget)
-        kol_post:    required when content_type == "kol_reply"
-        extra_context: optional freeform context snippet (vault metrics, etc.)
-
-    Returns:
-        {
-            "content_type": str,
-            "platform": str,
-            "char_budget": int,
-            "provider": str,
-            "model": str,
-            "content_fr": str,
-            "content_en": str,
-            "hashtags": List[str],
-            "primary_emoji": str,
-        }
-    Raises:
-        ValueError on invalid input, RuntimeError on LLM failure.
-    """
+    platform: str,
+    kol_post: Optional[str],
+) -> None:
+    """Raise ValueError on bad input combinations."""
     if content_type not in VALID_CONTENT_TYPES:
         raise ValueError(f"unknown content_type={content_type}")
     if platform not in PLATFORM_CHAR_BUDGETS:
@@ -244,14 +220,17 @@ async def generate_post(
     if not EMERGENT_LLM_KEY:
         raise RuntimeError("EMERGENT_LLM_KEY not configured")
 
-    brief = CONTENT_BRIEFS[content_type]
-    char_budget = PLATFORM_CHAR_BUDGETS[platform]
 
-    llm_cfg = await _resolve_llm_config()
-    provider, model = llm_cfg["provider"], llm_cfg["model"]
-
-    # ---- Compose user prompt ----
-    user_prompt_parts = [
+def _build_user_prompt(
+    content_type: str,
+    platform: str,
+    char_budget: int,
+    brief: Dict[str, Any],
+    kol_post: Optional[str],
+    extra_context: Optional[str],
+) -> str:
+    """Compose the user-facing prompt sent alongside the system message."""
+    parts: List[str] = [
         f"content_type = {content_type}",
         f"platform = {platform}",
         f"char_budget per language = {char_budget}",
@@ -261,24 +240,27 @@ async def generate_post(
         brief["brief"],
     ]
     if extra_context:
-        user_prompt_parts.append("")
-        user_prompt_parts.append(f"Extra context:\n{extra_context}")
+        parts.extend(["", f"Extra context:\n{extra_context}"])
     if kol_post:
         safe_kol = kol_post.strip()[:600]
-        user_prompt_parts.append("")
-        user_prompt_parts.append(f"<kol_post>\n{safe_kol}\n</kol_post>")
-    user_prompt_parts.append("")
-    user_prompt_parts.append(OUTPUT_SCHEMA_INSTRUCTIONS)
-    user_prompt = "\n".join(user_prompt_parts)
+        parts.extend(["", f"<kol_post>\n{safe_kol}\n</kol_post>"])
+    parts.extend(["", OUTPUT_SCHEMA_INSTRUCTIONS])
+    return "\n".join(parts)
 
+
+async def _call_llm(
+    provider: str,
+    model: str,
+    content_type: str,
+    user_prompt: str,
+) -> str:
+    """Issue the chat call. Raises RuntimeError on transport failure."""
     system_message = (
         BASE_PERSONA
         + "\n\n"
         + "You will produce EXACTLY ONE social-media post per request, in "
         "strict JSON. Follow the schema or the output is rejected."
     )
-
-    # ---- Call LLM ----
     try:
         chat_client = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -289,39 +271,88 @@ async def generate_post(
     except Exception as exc:
         logging.exception("[prophet_studio] LLM call failed")
         raise RuntimeError(f"llm_failure: {exc}") from exc
+    return raw or ""
 
-    # ---- Parse JSON ----
-    cleaned = _strip_code_fence(raw or "")
+
+def _parse_llm_json(raw: str) -> Dict[str, Any]:
+    """Robustly parse the LLM JSON output, tolerating fenced output and trailing prose."""
+    cleaned = _strip_code_fence(raw)
     try:
-        data = json.loads(cleaned)
+        return json.loads(cleaned)
     except json.JSONDecodeError as exc:
-        # Last-resort regex fallback: capture the first JSON object
+        # Fallback: capture the first JSON object found in the response.
         match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
         if match:
             try:
-                data = json.loads(match.group(0))
+                return json.loads(match.group(0))
             except json.JSONDecodeError:
-                raise RuntimeError(f"llm_non_json_output: {cleaned[:200]}") from exc
-        else:
-            raise RuntimeError(f"llm_non_json_output: {cleaned[:200]}") from exc
+                pass
+        raise RuntimeError(f"llm_non_json_output: {cleaned[:200]}") from exc
+
+
+def _normalize_hashtags(raw_tags: Any) -> List[str]:
+    """Sanitise hashtag list: dedup, strip leading '#', cap to 4."""
+    if isinstance(raw_tags, str):
+        raw_tags = [raw_tags]
+    if not isinstance(raw_tags, list):
+        return []
+    out: List[str] = []
+    for tag in raw_tags:
+        cleaned = re.sub(r"\s+", "", str(tag).strip().lstrip("#"))
+        if cleaned and cleaned not in out:
+            out.append(cleaned)
+        if len(out) >= 4:
+            break
+    return out
+
+
+async def generate_post(
+    content_type: str,
+    platform: str = "x",
+    *,
+    kol_post: Optional[str] = None,
+    extra_context: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Generate one bilingual memetic post via the Emergent LLM layer.
+
+    Pipeline:
+        1. _validate_generate_inputs   — fail fast on bad arguments.
+        2. _resolve_llm_config         — pick provider / model from DB.
+        3. _build_user_prompt          — compose schema-driven prompt.
+        4. _call_llm                   — run the request.
+        5. _parse_llm_json             — tolerantly parse JSON output.
+        6. _normalize_hashtags         — clean hashtag list.
+        7. _truncate + final assembly  — enforce char budget.
+
+    Raises ValueError on invalid input, RuntimeError on LLM/parse failure.
+    """
+    _validate_generate_inputs(content_type, platform, kol_post)
+
+    brief = CONTENT_BRIEFS[content_type]
+    char_budget = PLATFORM_CHAR_BUDGETS[platform]
+
+    llm_cfg = await _resolve_llm_config()
+    provider, model = llm_cfg["provider"], llm_cfg["model"]
+
+    user_prompt = _build_user_prompt(
+        content_type=content_type,
+        platform=platform,
+        char_budget=char_budget,
+        brief=brief,
+        kol_post=kol_post,
+        extra_context=extra_context,
+    )
+    raw = await _call_llm(provider, model, content_type, user_prompt)
+
+    data = _parse_llm_json(raw)
 
     content_fr = _truncate(str(data.get("content_fr", "")).strip(), char_budget)
     content_en = _truncate(str(data.get("content_en", "")).strip(), char_budget)
-    raw_tags = data.get("hashtags") or []
-    if isinstance(raw_tags, str):
-        raw_tags = [raw_tags]
-    hashtags: List[str] = []
-    for tag in raw_tags:
-        tag = str(tag).strip().lstrip("#")
-        tag = re.sub(r"\s+", "", tag)
-        if tag and tag not in hashtags:
-            hashtags.append(tag)
-        if len(hashtags) >= 4:
-            break
-    primary_emoji = str(data.get("primary_emoji", "")).strip()
-
     if not content_fr or not content_en:
         raise RuntimeError("llm_empty_content")
+
+    hashtags = _normalize_hashtags(data.get("hashtags") or [])
+    primary_emoji = str(data.get("primary_emoji", "")).strip()
 
     result = {
         "content_type": content_type,

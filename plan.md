@@ -166,6 +166,8 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 32. **Mode démo**: avant lancement, tracker BONK sans casser la progression du coffre
 33. **Carrousel Transparence**: backgrounds IA propres + tampon CSS “CONFIDENTIEL” sans texte halluciné
 34. **SEO/OG**: site partageable (aperçus X/Telegram/Discord) et indexable correctement
+35. **Accès NIVEAU 02**: lien email/QR doit forcer l’atterrissage sur la page digicode
+36. **Public Stats**: ne jamais exposer la date de lancement, remplacée par un dossier “REDACTED”
 
 ---
 
@@ -183,6 +185,14 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
   - 4 images: `phase_01_launch.png` → `phase_04_anti_dump.png`
   - suppression des artefacts texte IA (“UNMDED/INK”) confirmée via captures
   - suppression du “(€2-4k)” confirmée (reste “≈ 12k$”)
+- **SEO/OG pack ✅** (OG image + twitter card + robots/sitemap/manifest + JSON-LD + sync FR/EN)
+- **Roadmap “dossier classifié” ✅** (badges status + connector multicolore + mobile vertical)
+- **Fix coffre NIVEAU 02 ✅**
+  - `?code=` force désormais la page digicode (même si une session est en cache)
+  - après vérification, l’URL est nettoyée (remove `?code=`)
+- **Public Stats: date de lancement masquée ✅**
+  - suppression de la card “Launch date”
+  - ajout bannière `redacted_dossier.png` + rail explicatif FR/EN
 
 ---
 
@@ -365,79 +375,101 @@ Préparer le site pour partage public et campagne de lancement (Pump.fun mint im
 - **performance** (CLS + lazy loading + preload)
 
 ### Sous-Phase 20a — SEO/OG Foundation — **COMPLETED ✅**
-**Constat initial**: aucun `robots.txt`, `sitemap.xml`, `manifest.json`, favicon set, ni meta OG complets dans `public/`.
-
-**Implémenté**
-- ✅ `frontend/public/index.html` réécrit avec full SEO stack:
-  - `title` + `meta description` + `canonical` + `robots` + `theme-color` (light + dark)
-  - `hreflang` fr/en/x-default
-  - Open Graph FR + EN (og:title, og:description, og:image 1200x630, og:url, og:type, og:site_name, og:locale, og:image:alt)
-  - Twitter Card `summary_large_image` + image dédiée
-  - 3× JSON-LD: `Organization`, `WebSite`, `FAQPage`
-- ✅ OG image 1200×630 générée via PIL composite (`backend/scripts_generate_og_image.py`):
-  - base = `deepotus_hero_serious.jpg`
-  - overlays branding ($DEEPOTUS, sub-line, tag-line, CONFIDENTIEL stamp, glitch chips, footer)
-  - `frontend/public/og_image.png` + `frontend/public/twitter_card.png`
-- ✅ `frontend/public/favicon.svg` (monogramme ΔΣ avec gradient teal→amber)
-- ✅ `frontend/public/apple-touch-icon.png` (180×180, généré depuis `gold_coin_front.png`)
-- ✅ `frontend/public/icon-512.png` (512×512, manifest icon)
-- ✅ `frontend/public/manifest.json` (PWA-ready, theme color, icons)
-- ✅ `frontend/public/robots.txt` (Allow public surfaces, **Disallow /admin et /api**, sitemap pointer)
-- ✅ `frontend/public/sitemap.xml` (URLs publiques + xhtml:link hreflang fr/en/x-default)
-- ✅ Sync dynamique `<title>` + `meta description` + `og:title` + `og:description` + `og:locale` + `twitter:title` + `twitter:description` à chaque switch FR↔EN (centralisé dans `I18nProvider.jsx`)
-- ✅ `App.js` nettoyé — suppression du `document.title` hardcoded EN
-
-**Validation**
-- ✅ `curl` HTTP 200 sur `robots.txt`, `sitemap.xml`, `manifest.json`, `og_image.png`, `favicon.svg`, `apple-touch-icon.png`
-- ✅ Switch lang FR→EN met à jour: `document.title`, `html.lang`, `meta description`, `og:title`, `og:description`, `og:locale`, `twitter:title`, `twitter:description`
+- ✅ OG image 1200×630 via PIL (`backend/scripts_generate_og_image.py`) + `og_image.png`/`twitter_card.png`
+- ✅ `index.html` complet (SEO + OG + Twitter + JSON-LD) + sync FR/EN via `I18nProvider`
+- ✅ `robots.txt`, `sitemap.xml`, `manifest.json`, favicon + apple-touch-icon + icon-512
 
 ### Sous-Phase 20b — Roadmap Visual Upgrade — **COMPLETED ✅**
-
-**Implémenté**
-- ✅ Translations FR/EN enrichies par phase: `code` (ΔΣ-NN), `status`, `subtitle` + `legend.{next,queued,encrypted,classified}` + `stamps.{signed,opened,sealed}` + `subtitle` global
-- ✅ `Roadmap.jsx` réécrit:
-  - **Mobile**: timeline verticale avec connector multicolore vertical (vert→teal→amber→rouge) + nodes circulaires colorés à gauche
-  - **Desktop**: 4 colonnes avec connector horizontal multicolore en haut + icon nodes
-  - Status badges colorées (PROCHAINE / EN ATTENTE / CHIFFRÉ / CLASSIFIÉ) avec pulse pour `next`
-  - Code dossier (ΔΣ-NN) au-dessus de chaque carte
-  - Subtitle one-liner par phase
-  - Footer stamp adaptatif: DOSSIER OUVERT (next), SIGNÉ COMITÉ DEEP STATE (queued/encrypted), DOSSIER SCELLÉ (classified)
-  - Glow / shadow par carte matching status color
-  - Header right: stamp "DOCTRINE OPÉRATIONNELLE · ΔΣ"
-- ✅ `data-testid` complets: `roadmap-section`, `roadmap-list`, `roadmap-phase-${i}`, `roadmap-code-${i}`, `roadmap-status-${status}`, `roadmap-doctrine-stamp`
+- ✅ Refonte `Roadmap.jsx` style dossier classifié + translations enrichies
 
 ### Sous-Phase 20c — UI Polish Audit — **COMPLETED ✅**
-
-**Audit effectué** (screenshots desktop 1440×900, mobile 390×844, dark mode):
-- Hero, Manifesto, Vault, Prophet, Prophecies, Mission, Tokenomics, Transparency, ROI, Roadmap, Truth, FAQ, Whitelist, Socials, Footer
-
-**Bug critique corrigé**
-- ✅ **CSS bug `.glitch-stamp { position: relative }` overridait Tailwind `absolute`** → labels variant (SERIOUS, MENTOR MODE) flottaient hors du poster card.
-  - Fix: wrappé chaque `.glitch-stamp` dans un wrapper `absolute` dédié (Hero.jsx + HowToBuy.jsx)
-  - Nouveau placement: AI-GENERATED top-left de l'image, SERIOUS top-right de l'image (cohérence visuelle)
-- ✅ Hero stamps validés desktop + mobile + dark mode
-
-**Aucun autre bug bloquant identifié** — l'ensemble des sections rend correctement sur les 3 contextes.
+- ✅ Fix CSS `.glitch-stamp` (wrapper absolute) + validations desktop/mobile/dark
 
 ### Sous-Phase 20d — Performance & Polish Final — **COMPLETED ✅**
+- ✅ Lazy load images sous le fold + font preconnect
 
-**Implémenté**
-- ✅ Polices Google Fonts critiques préchargées (Space Grotesk, IBM Plex Sans, IBM Plex Mono) via `<link href="...&display=swap">` + `preconnect` + `dns-prefetch`
-- ✅ `loading="lazy" decoding="async"` ajoutés sur images sous le fold:
-  - `ROISimulator.jsx` (gold_coin_3d.png backdrop)
-  - `Tokenomics.jsx` (gold_coin_front.png centre du donut)
-  - `VaultChassis.jsx` (vault_frame.png)
-- ✅ Carrousel transparence: backgrounds large via `background-image` (chargés à l'entrée en viewport par Embla — pas d'impact LCP initial)
-- ✅ Console: warning Recharts `width(-1)` documenté comme bénin (1er render avant layout, n'impacte pas l'UX)
-- ✅ Aucun runtime error console
+---
 
-### Phase 20 Status: ✅ COMPLETED
-- ✅ Site **partageable** : preview OG correcte sur X, Telegram, Discord, Slack, etc.
-- ✅ Site **indexable** : robots.txt + sitemap.xml + JSON-LD complet
-- ✅ Site **PWA-ready** : manifest + icons + theme-color
-- ✅ Roadmap **on-brand** : dossier classifié, status badges, connector multicolore
-- ✅ UI **polish** : bug critique CSS fixé, hero stamps repositionnés, dark mode validé
-- ✅ Performance **optimisée** : lazy-loading images sous le fold, fonts preconnect
+## Phase 21 — Code Quality Pack (Tier 1 + Tier 3 + Tier 4) — **IN PROGRESS**
+
+### Objectif
+Appliquer les recommandations code review **Tier 1 + Tier 3 + Tier 4**.
+- **Tier 2 (sécurité auth: localStorage → cookies httpOnly)** reste volontairement **différé** (déjà loggé dans `TODO_POST_LAUNCH.md`), car plus risqué en période pré-launch.
+
+### Sous-Phase 21a — Tier 1 Python Quick Wins (qualité + stabilité)
+- [ ] Exécuter ruff/pyflakes pour lister exactement :
+  - `is` utilisé à tort sur littéraux (préserver `is None` / `is not None`)
+  - variables non définies (ruff `F821`)
+- [ ] Appliquer `is` → `==` (34 occurrences) sur :
+  - `vault.py`, `routers/vault.py`, `routers/bots.py`, `routers/public_stats.py`
+  - `helius.py`, `core/bot_scheduler.py`
+- [ ] Corriger **3 variables non définies** (identifier les fonctions puis patch minimal)
+- Validation:
+  - ruff clean sur fichiers touchés
+  - smoke test backend (boot + endpoints principaux non-auth)
+
+### Sous-Phase 21b — Tier 1 React Quick Wins (correctness)
+- [ ] Remplacer `key={index}` par des keys stables (13 instances) :
+  - `Operation.jsx`, `AdminVault.jsx`, `VaultSection.jsx`
+  - `ActivityHeatmap.jsx`, `Mission.jsx`, `FAQ.jsx`
+- [ ] Corriger hooks avec dépendances manquantes (38 instances)
+  - Décider pour chaque cas :
+    - (1) ajouter deps correctement, ou
+    - (2) stabiliser via `useCallback`/`useMemo`, ou
+    - (3) utiliser `useRef` pour éviter re-triggers, ou
+    - (4) conserver mount-only avec `eslint-disable` + commentaire justifiant
+  - Fichiers prioritaires signalés :
+    - `ThemeProvider.jsx`, `ClassifiedVault.jsx`, `AdminBots.jsx`, `Admin.jsx`, `I18nProvider.jsx`
+- Validation:
+  - eslint clean (ou warnings documentés)
+  - smoke test visuel (Landing, Admin, ClassifiedVault, Stats)
+
+### Sous-Phase 21c — Tier 3 Python Complex Function Refactor (maintenabilité)
+Priorité (du plus risqué au plus critique) :
+- [ ] `core/security.py:verify_admin_jwt` — réduire l’imbrication via **early returns**
+- [ ] `dexscreener.py:dex_poll_once` — extraire logique de processing token/pool
+- [ ] `core/prophet_studio.py:generate_post` — séparer validation / fetch / génération LLM / persistance
+- [ ] `email_templates.py:render_welcome_email` — découper sections template
+- [ ] `access_card.py:render_card` — extraire helpers (layout, QR, typography, overlays)
+Validation:
+- tests existants + smoke tests manuels des endpoints affectés
+- vérification non-régression sur emails (welcome + access card)
+
+### Sous-Phase 21d — Tier 3 React Large Component Splits (maintenabilité)
+Approche: refactor **structure-only** (pas de changement UI/UX), extraction progressive.
+- [ ] `AdminBots.jsx` → `BotsList` + `BotEditor` + `JobsPanel` + `LLMConfig`
+- [ ] `Admin.jsx` → `WhitelistManagement` + `ChatLogPanel` + `StatsDisplay` + `SettingsPanel`
+- [ ] `AdminVault.jsx` → `VaultPresetEditor` + `VaultPlanList` + `VaultDevTools`
+- [ ] `ClassifiedVault.jsx` → `GateView` + `AuthedVaultView` + `useClassifiedSession` hook
+- [ ] `TerminalPopup.jsx` → `TerminalHistory` + `CommandParser`
+- [ ] `Hero.jsx` → `HeroPoster` + `HeroHeadline` + `HeroCountdown`
+- [ ] `Tokenomics.jsx` → `TokenomicsCoinDonut` + `TokenomicsStats`
+- [ ] `HowToBuy.jsx` → `HowToBuyHero` + `StepCards`
+- [ ] `PublicStats.jsx` → `StatsBento` + `StatsChart` + `StatsDistribution`
+- [ ] `Operation.jsx` → `OperationStages` + `OperationHero`
+Validation:
+- capture screenshots avant/après pour diff visuel
+- smoke test navigation + interactions (Admin, Vault, Terminal, Stats)
+
+### Sous-Phase 21e — Tier 4 TypeScript Migration (multi-session)
+Stratégie: progressive et compatible CRA via `allowJs`. Le but de cette phase est de **mettre en place TS** et convertir d’abord le socle.
+- [ ] Installer deps TS: `typescript`, `@types/react`, `@types/react-dom`, `@types/node` (+ types libs si nécessaires)
+- [ ] Ajouter `tsconfig.json` :
+  - `allowJs: true`
+  - `checkJs: false`
+  - `strict: false` (au début)
+  - `noEmit: true`
+- [ ] Ajouter `src/types/` : types API (vault, bots, stats, access card, admin)
+- [ ] Convertir en priorité : `src/lib/` + hooks utilitaires + petites UI components
+- [ ] Convertir pages ensuite (itératif, multi-sessions)
+- [ ] Une fois couverture suffisante : relever progressivement `strictness` (future)
+Validation:
+- build front OK
+- navigation smoke
+
+### Phase 21 Status
+- **IN PROGRESS**
+- Ordre recommandé : **21a → 21b → 21c → 21d → 21e** (TS setup peut commencer tôt mais conversion pages diffère)
 
 ---
 
@@ -475,15 +507,17 @@ Préparer le site pour partage public et campagne de lancement (Pump.fun mint im
 
 ---
 
-## Testing strategy (Phase 20)
-- Après **20a**:
-  - Vérification visuelle (screenshot tool) + inspection head (meta OG/Twitter)
-  - `curl` sur `/robots.txt` et `/sitemap.xml`
-  - Vérifier que l’OG image est accessible (HTTP 200) et correctement référencée
-- Après **20b**:
-  - Captures du `#roadmap` desktop + mobile
-- Après **20c**:
-  - Suite de captures consolidées toutes sections desktop + mobile
-- Après **20d**:
-  - Captures finales consolidées + scan console errors
-- Backend tests: **non requis** sauf si endpoints touchés (non prévu pour Phase 20)
+## Testing strategy (Phase 21)
+- Après **21a (Python quick wins)**:
+  - ruff/pyflakes clean
+  - smoke test backend (boot + endpoints non-auth)
+- Après **21b (React quick wins)**:
+  - eslint clean
+  - screenshots Landing + ClassifiedVault + PublicStats + Admin
+- Après **21c (Python refactors)**:
+  - tests emails + bots preview + verify_admin_jwt (admin login)
+  - non-régression vault polling + dex poll
+- Après **21d (React splits)**:
+  - screenshot diff avant/après sur pages touchées
+- Après **21e (TypeScript setup)**:
+  - build CRA OK + navigation smoke

@@ -109,7 +109,7 @@ export default function Operation() {
                   <div className="flex h-full">
                     {Array.from({ length: 10 }).map((_, i) => (
                       <div
-                        key={i}
+                        key={`operation-bucket-${i}`}
                         className={`flex-1 mx-px rounded-sm transition-colors duration-300 ${
                           i < progressBuckets
                             ? "bg-red-500/80"

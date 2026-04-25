@@ -32,7 +32,7 @@ export default function BrutalTruth() {
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-5">
           {stats.map((s, i) => (
             <motion.div
-              key={i}
+              key={`brutal-${i}-${(s?.label || "").slice(0, 16)}`}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
