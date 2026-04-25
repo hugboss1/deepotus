@@ -50,6 +50,19 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
+// ---------------------------------------------------------------------
+// Static chart configuration — declared at module scope so they keep a
+// stable reference across renders and don't trigger re-renders of the
+// recharts subtree on every parent state change.
+// ---------------------------------------------------------------------
+const CHART_MARGIN = { top: 8, right: 12, left: -18, bottom: 0 };
+const AXIS_TICK_STYLE = {
+  fontFamily: "IBM Plex Mono",
+  fontSize: 11,
+  fill: "hsl(var(--muted-foreground))",
+};
+const AXIS_LINE_STYLE = { stroke: "hsl(var(--border))" };
+
 function Stat({ icon: Icon, label, value, accent = "#2DD4BF" }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -285,7 +298,7 @@ export default function PublicStats() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={chartData}
-                  margin={{ top: 8, right: 12, left: -18, bottom: 0 }}
+                  margin={CHART_MARGIN}
                 >
                   <defs>
                     <linearGradient id="pgWhite" x1="0" y1="0" x2="0" y2="1">
@@ -300,22 +313,14 @@ export default function PublicStats() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
-                    tick={{
-                      fontFamily: "IBM Plex Mono",
-                      fontSize: 11,
-                      fill: "hsl(var(--muted-foreground))",
-                    }}
+                    tick={AXIS_TICK_STYLE}
                     tickLine={false}
-                    axisLine={{ stroke: "hsl(var(--border))" }}
+                    axisLine={AXIS_LINE_STYLE}
                   />
                   <YAxis
-                    tick={{
-                      fontFamily: "IBM Plex Mono",
-                      fontSize: 11,
-                      fill: "hsl(var(--muted-foreground))",
-                    }}
+                    tick={AXIS_TICK_STYLE}
                     tickLine={false}
-                    axisLine={{ stroke: "hsl(var(--border))" }}
+                    axisLine={AXIS_LINE_STYLE}
                     allowDecimals={false}
                   />
                   <RTooltip content={<ChartTooltip />} />

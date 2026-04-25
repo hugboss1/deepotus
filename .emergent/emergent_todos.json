@@ -1,26 +1,30 @@
 [
   {
-    "content": "Backend: ACCRED_TTL = 24h, refresh expires_at on every request",
+    "content": "Python: is → == sweep → FALSE POSITIVE (all are correct `is None`)",
     "status": "completed"
   },
   {
-    "content": "Backend: QR code encodes /classified-vault?code=X URL (not plain number)",
+    "content": "React: Hook deps audit → FALSE POSITIVE (all are deliberate eslint-disable)",
     "status": "completed"
   },
   {
-    "content": "Backend: Public response strips accreditation_number from terminal API",
+    "content": "React: Array index as key audit → FALSE POSITIVE (all structural lists)",
     "status": "completed"
   },
   {
-    "content": "Frontend: TerminalPopup hides accred number, CTA → /classified-vault (no prefilled code)",
+    "content": "React: ThemeProvider useMemo + useCallback (real perf win)",
     "status": "completed"
   },
   {
-    "content": "i18n: update terminal copy to focus on 'check your inbox'",
+    "content": "React: PublicStats chart config constants (real perf win)",
     "status": "completed"
   },
   {
-    "content": "Test full flow: submit email → terminal hides number → email arrives → 24h TTL → QR/link works",
+    "content": "Lint + smoke test (frontend esbuild, backend supervisorctl)",
+    "status": "completed"
+  },
+  {
+    "content": "Document Tier 3 deferred items in TODO_POST_LAUNCH.md",
     "status": "completed"
   }
 ]
