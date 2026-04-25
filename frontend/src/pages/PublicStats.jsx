@@ -212,7 +212,7 @@ export default function PublicStats() {
 
         {/* Stats cards */}
         <div
-          className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
+          className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4"
           data-testid="public-stats-bento"
         >
           <Stat
@@ -233,20 +233,61 @@ export default function PublicStats() {
             value={data?.prophecies_served ?? "—"}
             accent="#E11D48"
           />
-          <Stat
-            icon={ShieldCheck}
-            label={lang === "fr" ? "Lancement" : "Launch"}
-            value={
-              data?.launch_timestamp
-                ? new Date(data.launch_timestamp).toLocaleDateString(
-                    undefined,
-                    { month: "short", day: "numeric", year: "numeric" },
-                  )
-                : "—"
-            }
-            accent="#16A34A"
-          />
         </div>
+
+        {/* Redacted dossier banner — replaces the launch date stat with a
+            cinematic "Deep State memo" image. The actual launch date is kept
+            classified deliberately (matches the satirical narrative). */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mt-6 rounded-xl border border-border bg-card overflow-hidden"
+          data-testid="public-stats-launch-redacted"
+        >
+          <div className="flex flex-col md:flex-row md:items-stretch">
+            {/* Image */}
+            <div className="md:flex-1 min-w-0 bg-[#0B0D10]">
+              <img
+                src="/redacted_dossier.png"
+                alt={
+                  lang === "fr"
+                    ? "Dossier classifié — date de lancement rédactée"
+                    : "Classified dossier — launch date redacted"
+                }
+                className="block w-full h-auto select-none"
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+                data-testid="public-stats-launch-image"
+              />
+            </div>
+            {/* Caption rail (right column on desktop, below on mobile) */}
+            <div className="md:w-[280px] flex-none border-t md:border-t-0 md:border-l border-border bg-card p-5 flex flex-col justify-between gap-4">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E11D48]">
+                  {lang === "fr"
+                    ? "DOSSIER · NIVEAU 04"
+                    : "DOSSIER · LEVEL 04"}
+                </div>
+                <div className="mt-2 font-display font-semibold text-lg leading-tight">
+                  {lang === "fr"
+                    ? "Date de lancement"
+                    : "Launch date"}
+                </div>
+                <p className="mt-2 text-sm text-foreground/75 leading-snug">
+                  {lang === "fr"
+                    ? "Classifiée jusqu'à nouvel ordre du Bureau. Toute communication d'une fenêtre précise est interdite."
+                    : "Classified until further notice from the Bureau. Disclosing a specific window is prohibited."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+                <ShieldCheck size={12} className="text-[#E11D48]" />
+                {lang === "fr" ? "MENTION REDACTED" : "MENTION REDACTED"}
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Chart */}
         <div

@@ -40,7 +40,19 @@ export default function ClassifiedVault() {
   const [params] = useSearchParams();
 
   const [session, setSession] = useState(() => {
+    // If a `?code=` is present in the URL, the visitor is arriving from the
+    // email CTA or scanning the QR on their physical access card. In that
+    // case we ALWAYS force the digicode gate — even when an old session is
+    // still cached in localStorage — so the entry through the door is
+    // explicit, conscious, and matches the original UX promise.
     try {
+      if (typeof window !== "undefined") {
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get("code")) {
+          localStorage.removeItem(SESSION_KEY);
+          return null;
+        }
+      }
       const raw = localStorage.getItem(SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
@@ -59,7 +71,7 @@ export default function ClassifiedVault() {
   // page consciously — even when arriving from a one-click email or QR scan.
   useEffect(() => {
     const code = params.get("code");
-    if (code && !session) {
+    if (code) {
       setCodeInput(code.trim().toUpperCase());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,6 +145,12 @@ export default function ClassifiedVault() {
       localStorage.setItem(SESSION_KEY, JSON.stringify(data));
       setSession(data);
       setVerifying(false);
+      // Clean the `?code=` query so refreshing the page (or sharing the URL)
+      // does not re-trigger the digicode gate. The valid session in
+      // localStorage now governs access.
+      if (params.get("code")) {
+        navigate("/classified-vault", { replace: true });
+      }
     } catch (e) {
       setGateError(String(e?.message || e));
       setVerifying(false);

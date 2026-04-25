@@ -1,50 +1,26 @@
 [
   {
-    "content": "Sub-phase 20a · Generate OG image 1200x630 via PIL composite (deepotus_hero_serious + branding)",
+    "content": "Investiguer le bug : QR / email link n'atterrit plus sur la page digicode",
     "status": "completed"
   },
   {
-    "content": "Sub-phase 20a · Create favicon.svg (ΔΣ monogram) + manifest.json + robots.txt + sitemap.xml",
+    "content": "Fixer la logique d'ouverture de la page coffre-fort depuis QR / email (force gate quand ?code= en URL)",
     "status": "completed"
   },
   {
-    "content": "Sub-phase 20a · Rewrite public/index.html with full SEO/OG/Twitter/JSON-LD stack (FR primary)",
+    "content": "Tester le flow : ?code= + session existante → digicode forcée ✅",
     "status": "completed"
   },
   {
-    "content": "Sub-phase 20a · Sync html lang attribute on FR/EN switch + dynamic document.title",
+    "content": "PublicStats : retirer l'affichage de la date de lancement (7/09/2026)",
     "status": "completed"
   },
   {
-    "content": "Sub-phase 20a · Verify SEO artifacts (curl robots/sitemap, screenshot meta inspection)",
+    "content": "PublicStats : générer une image \"dossier rédacté\" avec date cachée sous bloc noir",
     "status": "completed"
   },
   {
-    "content": "Sub-phase 20b · Add roadmap status translations FR/EN + new fields",
-    "status": "completed"
-  },
-  {
-    "content": "Sub-phase 20b · Refonte Roadmap visuel (status badges, glitch stamps, mobile vertical timeline, connector progress)",
-    "status": "completed"
-  },
-  {
-    "content": "Sub-phase 20b · Visual verification roadmap desktop + mobile",
-    "status": "completed"
-  },
-  {
-    "content": "Sub-phase 20c · Full UI audit screenshots desktop + mobile + dark mode",
-    "status": "completed"
-  },
-  {
-    "content": "Sub-phase 20c · Fix critical CSS bug — .glitch-stamp position:relative was overriding absolute Tailwind",
-    "status": "completed"
-  },
-  {
-    "content": "Sub-phase 20d · Performance: lazy-load non-critical images, image dimensions, console cleanup",
-    "status": "completed"
-  },
-  {
-    "content": "Sub-phase 20d · Final consolidated screenshots + plan.md update",
+    "content": "PublicStats : intégrer la nouvelle image et vérifier visuellement desktop + mobile + EN",
     "status": "completed"
   }
 ]
