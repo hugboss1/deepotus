@@ -1,43 +1,173 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
     <head>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="description" content="A product of emergent.sh" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+        <!-- =====================================================
+             $DEEPOTUS · PROTOCOL ΔΣ — bilingual landing page
+             ===================================================== -->
+
+        <!-- ---------- Primary SEO ---------- -->
+        <title>$DEEPOTUS — Candidat IA Deep State · PROTOCOL ΔΣ</title>
+        <meta
+            name="description"
+            content="$DEEPOTUS — Memecoin Solana de l'IA Prophète, candidat Deep State à la présidence du Monde. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → Raydium."
+        />
+        <meta
+            name="keywords"
+            content="DEEPOTUS, deep state, memecoin, Solana, Pump.fun, Raydium, MiCA, AI Prophet, PROTOCOL ΔΣ, candidat IA, crypto"
+        />
+        <meta name="author" content="DEEPOTUS Operations" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <link rel="canonical" href="https://prophet-ai-memecoin.preview.emergentagent.com/" />
+
+        <!-- ---------- Localisation ---------- -->
+        <link rel="alternate" hreflang="fr" href="https://prophet-ai-memecoin.preview.emergentagent.com/?lang=fr" />
+        <link rel="alternate" hreflang="en" href="https://prophet-ai-memecoin.preview.emergentagent.com/?lang=en" />
+        <link rel="alternate" hreflang="x-default" href="https://prophet-ai-memecoin.preview.emergentagent.com/" />
+
+        <!-- ---------- Theme & PWA ---------- -->
+        <meta name="theme-color" content="#0B0D10" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#F6F2EA" media="(prefers-color-scheme: light)" />
+        <meta name="color-scheme" content="dark light" />
+        <meta name="application-name" content="$DEEPOTUS" />
+        <meta name="apple-mobile-web-app-title" content="$DEEPOTUS" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="manifest" href="/manifest.json" />
+
+        <!-- ---------- Favicons ---------- -->
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="alternate icon" type="image/png" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="mask-icon" href="/favicon.svg" color="#2DD4BF" />
+
+        <!-- ---------- Open Graph ---------- -->
+        <meta property="og:site_name" content="$DEEPOTUS" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="fr_FR" />
+        <meta property="og:locale:alternate" content="en_US" />
+        <meta property="og:url" content="https://prophet-ai-memecoin.preview.emergentagent.com/" />
+        <meta
+            property="og:title"
+            content="$DEEPOTUS — Candidat IA Deep State · PROTOCOL ΔΣ"
+        />
+        <meta
+            property="og:description"
+            content="Memecoin Solana de l'IA Prophète, candidat Deep State à la présidence du Monde. MiCA-aware · 0% Tax · PROTOCOL ΔΣ. Pump.fun → Raydium."
+        />
+        <meta property="og:image" content="https://prophet-ai-memecoin.preview.emergentagent.com/og_image.png" />
+        <meta property="og:image:secure_url" content="https://prophet-ai-memecoin.preview.emergentagent.com/og_image.png" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="$DEEPOTUS — Candidat IA Deep State · PROTOCOL ΔΣ" />
+
+        <!-- ---------- Twitter Card ---------- -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="$DEEPOTUS — Candidat IA Deep State · PROTOCOL ΔΣ" />
+        <meta
+            name="twitter:description"
+            content="Memecoin Solana · IA Prophète · MiCA-aware · 0% Tax · PROTOCOL ΔΣ. Pump.fun → Raydium."
+        />
+        <meta name="twitter:image" content="https://prophet-ai-memecoin.preview.emergentagent.com/twitter_card.png" />
+        <meta name="twitter:image:alt" content="$DEEPOTUS — Candidat IA Deep State" />
+        <!-- twitter:site / twitter:creator → ajoutés dès que le handle X officiel est confirmé -->
+
+        <!-- ---------- Performance · preconnect & font preload ---------- -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
-        <!--
-        manifest.json provides metadata used when your web app is installed on a
-        user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-        -->
-        <!--
-        Notice the use of %PUBLIC_URL% in the tags above.
-        It will be replaced with the URL of the `public` folder during the build.
-        Only files inside the `public` folder can be referenced from the HTML.
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
 
-        Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-        work correctly both with client-side routing and a non-root public URL.
-        Learn how to configure a non-root public URL by running `npm run build`.
-        -->
-        <title>Emergent | Fullstack App</title>
+        <!-- ---------- Structured Data · Organization + WebSite + FAQ ---------- -->
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "$DEEPOTUS",
+                "alternateName": "DEEPOTUS · PROTOCOL ΔΣ",
+                "url": "https://prophet-ai-memecoin.preview.emergentagent.com/",
+                "logo": "https://prophet-ai-memecoin.preview.emergentagent.com/icon-512.png",
+                "description": "Memecoin Solana de l'IA Prophète, candidat Deep State à la présidence du Monde. MiCA-aware. PROTOCOL ΔΣ. Lancement Pump.fun puis migration Raydium.",
+                "foundingDate": "2026",
+                "sameAs": []
+            }
+        </script>
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "$DEEPOTUS",
+                "url": "https://prophet-ai-memecoin.preview.emergentagent.com/",
+                "inLanguage": ["fr-FR", "en-US"],
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://prophet-ai-memecoin.preview.emergentagent.com/?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                }
+            }
+        </script>
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "Qu'est-ce que $DEEPOTUS ?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "$DEEPOTUS est un memecoin Solana porté par une IA Prophète, candidate satirique du Deep State à la présidence du Monde. Il fonctionne comme un véhicule de trésorerie transparent, conforme à l'esprit MiCA, lancé sur Pump.fun puis migré vers Raydium."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Quel est le plan de liquidité ?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "À J0, mint 1B tokens sur Pump.fun avec 0% de taxe. À l'atteinte de 100% de la bonding curve (≈60k$ MC), la liquidité initiale est automatiquement migrée vers Raydium par Pump.fun (≈12k$ de LP brûlée), puis renforcée chirurgicalement par le Trésor pour stabiliser le prix cible ≈0,0005€."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Quels sont les risques ?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Token hautement spéculatif. Aucune promesse de rendement. Ce n'est ni un stablecoin ni un titre financier. La probabilité réaliste d'atteindre les objectifs sur la fenêtre de lancement est de l'ordre de 1%. N'investissez que ce que vous pouvez perdre entièrement."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Qu'est-ce que PROTOCOL ΔΣ ?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "PROTOCOL ΔΣ est le coffre électronique gamifié à 6 molettes du projet. Chaque molette se déverrouille au fil du volume on-chain. La déclassification complète révèle la mission Deep State et donne accès au coffre Niveau 02 via une carte d'accès envoyée par e-mail."
+                        }
+                    }
+                ]
+            }
+        </script>
+
+        <!-- ---------- Filters error noise (PerformanceServerTiming clone bug) ---------- -->
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+
+        <!-- ---------- Emergent platform script (preserved) ---------- -->
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>
     <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <noscript>
+            JavaScript est requis pour exécuter $DEEPOTUS.
+            JavaScript is required to run $DEEPOTUS.
+        </noscript>
         <div id="root"></div>
-        <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
         <a
             id="emergent-badge"
             target="_blank"
@@ -147,7 +277,7 @@
             })(document, window.posthog || []);
             posthog.init("phc_xAvL2Iq4tFmANRE7kzbKwaSqp1HJjN7x48s3vr0CMjs", {
                 api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well,
+                person_profiles: "identified_only",
                 session_recording: {
                     recordCrossOriginIframes: true,
                     capturePerformance: false,

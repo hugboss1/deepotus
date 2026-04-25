@@ -290,20 +290,6 @@ export default function Hero() {
               onMouseLeave={() => setPaused(false)}
               data-testid="hero-poster"
             >
-              <div
-                className="absolute top-3 left-3 z-10 glitch-stamp"
-                data-text={"AI-GENERATED"}
-              >
-                AI-GENERATED
-              </div>
-              <div
-                className="absolute bottom-3 right-3 z-10 glitch-stamp"
-                data-text={currentVariant.label}
-                data-testid="hero-variant-label"
-              >
-                {currentVariant.label}
-              </div>
-
               <div className="relative aspect-[4/5] w-full bg-[#0b1117]">
                 <AnimatePresence mode="sync">
                   <motion.img
@@ -322,6 +308,24 @@ export default function Hero() {
                     }}
                   />
                 </AnimatePresence>
+                {/* Stamps overlayed on the image only (top corners) */}
+                <div className="absolute top-3 left-3 z-10">
+                  <div
+                    className="glitch-stamp"
+                    data-text={"AI-GENERATED"}
+                  >
+                    AI-GENERATED
+                  </div>
+                </div>
+                <div className="absolute top-3 right-3 z-10">
+                  <div
+                    className="glitch-stamp"
+                    data-text={currentVariant.label}
+                    data-testid="hero-variant-label"
+                  >
+                    {currentVariant.label}
+                  </div>
+                </div>
                 <div
                   aria-hidden
                   className="absolute inset-0 pointer-events-none"

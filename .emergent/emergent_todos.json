@@ -1,30 +1,50 @@
 [
   {
-    "content": "Python: is → == sweep → FALSE POSITIVE (all are correct `is None`)",
+    "content": "Sub-phase 20a · Generate OG image 1200x630 via PIL composite (deepotus_hero_serious + branding)",
     "status": "completed"
   },
   {
-    "content": "React: Hook deps audit → FALSE POSITIVE (all are deliberate eslint-disable)",
+    "content": "Sub-phase 20a · Create favicon.svg (ΔΣ monogram) + manifest.json + robots.txt + sitemap.xml",
     "status": "completed"
   },
   {
-    "content": "React: Array index as key audit → FALSE POSITIVE (all structural lists)",
+    "content": "Sub-phase 20a · Rewrite public/index.html with full SEO/OG/Twitter/JSON-LD stack (FR primary)",
     "status": "completed"
   },
   {
-    "content": "React: ThemeProvider useMemo + useCallback (real perf win)",
+    "content": "Sub-phase 20a · Sync html lang attribute on FR/EN switch + dynamic document.title",
     "status": "completed"
   },
   {
-    "content": "React: PublicStats chart config constants (real perf win)",
+    "content": "Sub-phase 20a · Verify SEO artifacts (curl robots/sitemap, screenshot meta inspection)",
     "status": "completed"
   },
   {
-    "content": "Lint + smoke test (frontend esbuild, backend supervisorctl)",
+    "content": "Sub-phase 20b · Add roadmap status translations FR/EN + new fields",
     "status": "completed"
   },
   {
-    "content": "Document Tier 3 deferred items in TODO_POST_LAUNCH.md",
+    "content": "Sub-phase 20b · Refonte Roadmap visuel (status badges, glitch stamps, mobile vertical timeline, connector progress)",
+    "status": "completed"
+  },
+  {
+    "content": "Sub-phase 20b · Visual verification roadmap desktop + mobile",
+    "status": "completed"
+  },
+  {
+    "content": "Sub-phase 20c · Full UI audit screenshots desktop + mobile + dark mode",
+    "status": "completed"
+  },
+  {
+    "content": "Sub-phase 20c · Fix critical CSS bug — .glitch-stamp position:relative was overriding absolute Tailwind",
+    "status": "completed"
+  },
+  {
+    "content": "Sub-phase 20d · Performance: lazy-load non-critical images, image dimensions, console cleanup",
+    "status": "completed"
+  },
+  {
+    "content": "Sub-phase 20d · Final consolidated screenshots + plan.md update",
     "status": "completed"
   }
 ]

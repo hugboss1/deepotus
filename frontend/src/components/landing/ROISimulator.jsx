@@ -85,6 +85,8 @@ export default function ROISimulator() {
           alt=""
           className="h-full w-full object-cover object-center opacity-70 md:opacity-80 select-none"
           draggable={false}
+          loading="lazy"
+          decoding="async"
         />
         {/* Very light tint just to keep text contrast */}
         <div className="absolute inset-0 bg-background/25 dark:bg-background/35" />

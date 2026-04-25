@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -15,9 +14,8 @@ import PublicStats from "@/pages/PublicStats";
 import HowToBuy from "@/pages/HowToBuy";
 
 function App() {
-  useEffect(() => {
-    document.title = "$DEEPOTUS — The Deep State's AI Prophet Candidate";
-  }, []);
+  // document.title and SEO meta tags are now synced dynamically by I18nProvider
+  // based on the active language (FR / EN) — see /src/i18n/I18nProvider.jsx.
 
   return (
     <ThemeProvider>

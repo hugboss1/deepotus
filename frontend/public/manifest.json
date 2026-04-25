@@ -1,0 +1,32 @@
+{
+  "name": "$DEEPOTUS — The Deep State's AI Prophet Candidate",
+  "short_name": "$DEEPOTUS",
+  "description": "Solana memecoin · MiCA-aware · PROTOCOL ΔΣ. Candidat IA Deep State à la présidence du Monde.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B0D10",
+  "theme_color": "#0B0D10",
+  "lang": "fr",
+  "categories": ["finance", "social", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

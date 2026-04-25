@@ -1,0 +1,19 @@
+# robots.txt — $DEEPOTUS · PROTOCOL ΔΣ
+# Public landing — full indexation allowed.
+# Admin & classified surfaces are deliberately excluded.
+
+User-agent: *
+Allow: /
+Allow: /how-to-buy
+Allow: /classified-vault
+Allow: /operation
+Allow: /stats
+
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/emails
+Disallow: /admin/vault
+Disallow: /admin/bots
+Disallow: /api/
+
+Sitemap: https://prophet-ai-memecoin.preview.emergentagent.com/sitemap.xml

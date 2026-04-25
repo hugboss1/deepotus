@@ -210,19 +210,6 @@ export default function HowToBuy() {
                 className="relative bg-card border border-border rounded-xl shadow-[var(--shadow-elev-2)] overflow-hidden scanlines noise"
                 data-testid="how-to-buy-hero-image"
               >
-                <div
-                  className="absolute top-3 left-3 z-10 glitch-stamp"
-                  data-text={"AI-GENERATED"}
-                >
-                  AI-GENERATED
-                </div>
-                <div
-                  className="absolute bottom-3 right-3 z-10 glitch-stamp"
-                  data-text={"MENTOR MODE"}
-                >
-                  MENTOR MODE
-                </div>
-
                 <div className="relative aspect-[4/5] w-full bg-[#0b1117]">
                   <img
                     src="/prophet_guide.png"
@@ -234,6 +221,22 @@ export default function HowToBuy() {
                       e.currentTarget.src = "/logo_v4_matrix_face.png";
                     }}
                   />
+                  <div className="absolute top-3 left-3 z-10">
+                    <div
+                      className="glitch-stamp"
+                      data-text={"AI-GENERATED"}
+                    >
+                      AI-GENERATED
+                    </div>
+                  </div>
+                  <div className="absolute top-3 right-3 z-10">
+                    <div
+                      className="glitch-stamp"
+                      data-text={"MENTOR MODE"}
+                    >
+                      MENTOR MODE
+                    </div>
+                  </div>
                   <div
                     aria-hidden
                     className="absolute inset-0 pointer-events-none"

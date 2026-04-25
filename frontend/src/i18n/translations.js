@@ -20,6 +20,13 @@ export const translations = {
       buy: "Acheter $DEEPOTUS",
     },
 
+    // ---- SEO (document.title + meta description, synced on lang switch) ----
+    seo: {
+      title: "$DEEPOTUS — Candidat IA Deep State · PROTOCOL ΔΣ",
+      description:
+        "Memecoin Solana de l'IA Prophète, candidat Deep State à la présidence du Monde. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → Raydium.",
+    },
+
     // ---- Hero ----
     hero: {
       stamp: "GÉNÉRÉ PAR IA — CECI EST UNE SIMULATION",
@@ -415,10 +422,26 @@ export const translations = {
     roadmap: {
       kicker: "— FEUILLE DE ROUTE",
       title: "Campagne du Candidat IA",
+      subtitle:
+        "Quatre dossiers opérationnels. Aucune date promise. Le Prophète déclassifie au rythme du circuit.",
+      legend: {
+        next: "PROCHAINE",
+        queued: "EN ATTENTE",
+        encrypted: "CHIFFRÉ",
+        classified: "CLASSIFIÉ",
+      },
+      stamps: {
+        signed: "SIGNÉ · COMITÉ DEEP STATE",
+        opened: "DOSSIER OUVERT",
+        sealed: "DOSSIER SCELLÉ",
+      },
       phases: [
         {
           tag: "Phase 01",
+          code: "ΔΣ-01",
+          status: "next",
           title: "The Bonding Curve Trial — Lancement Pump.fun",
+          subtitle: "Premier test de foi sur la courbe.",
           bullets: [
             "Mint 1B tokens sur Pump.fun · 0% Tax Protocol",
             "Le Prophète teste la foi de ses disciples sur la Bonding Curve",
@@ -427,7 +450,10 @@ export const translations = {
         },
         {
           tag: "Phase 02",
+          code: "ΔΣ-02",
+          status: "queued",
           title: "Raydium Ascension — Migration automatique",
+          subtitle: "La LP brûle, le marché ouvre.",
           bullets: [
             "LP automatiquement brûlée et migrée vers Raydium par Pump.fun",
             "Renforcement stratégique de la LP pour stabiliser le prix cible ≈ 0,0005€",
@@ -436,7 +462,10 @@ export const translations = {
         },
         {
           tag: "Phase 03",
+          code: "ΔΣ-03",
+          status: "encrypted",
           title: "PROTOCOL ΔΣ · premières molettes",
+          subtitle: "Les cadrans tournent. Le Coffre écoute.",
           bullets: [
             "Premières molettes verrouillées au fil des achats",
             "Allocations Trésor vers préparation du projet MiCA-compliant",
@@ -445,7 +474,10 @@ export const translations = {
         },
         {
           tag: "Phase 04",
+          code: "ΔΣ-04",
+          status: "classified",
           title: "Déclassification",
+          subtitle: "La Black Op s'ouvre. Le Prophète parle clair.",
           bullets: [
             "Six molettes verrouillées · Coffre ouvert",
             "Audit sécurité publié",
@@ -690,6 +722,13 @@ export const translations = {
       faq: "FAQ",
       join: "Join the Deep State",
       buy: "Buy $DEEPOTUS",
+    },
+
+    // ---- SEO (document.title + meta description, synced on lang switch) ----
+    seo: {
+      title: "$DEEPOTUS — The Deep State's AI Prophet · PROTOCOL ΔΣ",
+      description:
+        "Solana memecoin powered by an AI Prophet, the Deep State's candidate for World President. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → Raydium.",
     },
 
     hero: {
@@ -1073,10 +1112,26 @@ export const translations = {
     roadmap: {
       kicker: "— ROADMAP",
       title: "The AI Candidate Campaign",
+      subtitle:
+        "Four operational dossiers. No date promised. The Prophet declassifies on the circuit's tempo.",
+      legend: {
+        next: "NEXT",
+        queued: "QUEUED",
+        encrypted: "ENCRYPTED",
+        classified: "CLASSIFIED",
+      },
+      stamps: {
+        signed: "SIGNED · DEEP STATE COMMITTEE",
+        opened: "DOSSIER OPEN",
+        sealed: "DOSSIER SEALED",
+      },
       phases: [
         {
           tag: "Phase 01",
+          code: "ΔΣ-01",
+          status: "next",
           title: "The Bonding Curve Trial — Pump.fun Launch",
+          subtitle: "First test of faith on the curve.",
           bullets: [
             "Mint 1B tokens on Pump.fun · 0% Tax Protocol",
             "The Prophet tests his disciples' faith on the Bonding Curve",
@@ -1085,7 +1140,10 @@ export const translations = {
         },
         {
           tag: "Phase 02",
+          code: "ΔΣ-02",
+          status: "queued",
           title: "Raydium Ascension — Automatic Migration",
+          subtitle: "LP burns, the market opens.",
           bullets: [
             "LP auto-burned and migrated to Raydium by Pump.fun",
             "Strategic LP reinforcement to stabilize target price ≈ €0.0005",
@@ -1094,7 +1152,10 @@ export const translations = {
         },
         {
           tag: "Phase 03",
+          code: "ΔΣ-03",
+          status: "encrypted",
           title: "PROTOCOL ΔΣ · first dials",
+          subtitle: "Dials turn. The Vault listens.",
           bullets: [
             "First dials lock as buys accumulate",
             "Treasury allocations towards MiCA-compliant project prep",
@@ -1103,7 +1164,10 @@ export const translations = {
         },
         {
           tag: "Phase 04",
+          code: "ΔΣ-04",
+          status: "classified",
           title: "Declassification",
+          subtitle: "The Black Op opens. The Prophet speaks plainly.",
           bullets: [
             "Six dials locked · Vault open",
             "Security audit published",

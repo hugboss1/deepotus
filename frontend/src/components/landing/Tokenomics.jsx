@@ -139,6 +139,8 @@ export default function Tokenomics() {
                   className="h-[55%] w-[55%] object-contain drop-shadow-[0_10px_28px_rgba(212,175,55,0.35)] select-none"
                   data-testid="tokenomics-coin-center"
                   draggable={false}
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>

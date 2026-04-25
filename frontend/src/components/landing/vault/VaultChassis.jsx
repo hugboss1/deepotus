@@ -39,6 +39,8 @@ export default function VaultChassis({
         alt="PROTOCOL ΔΣ electronic vault"
         className="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
         draggable={false}
+        loading="lazy"
+        decoding="async"
       />
 
       {/* Pulse halo behind the central panel (breathes with the stage) */}

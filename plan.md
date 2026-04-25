@@ -7,6 +7,7 @@
 - **LLM**: Emergent LLM key (validé)
 - **Fonctionnalités interactives**: chat, prophéties, tokenomics interactifs, simulateur ROI, countdown, roadmap, FAQ, whitelist, social mockups
 - **Narratif**: PROTOCOL ΔΣ (Black Op) + coffre électronique gamifié ; **GENCOIN** n’apparaît qu’au twist `/operation`
+- **Go-to-market**: lancement sur **Pump.fun**, puis migration automatique vers **Raydium**
 
 ---
 
@@ -84,7 +85,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 4. **Prophecies Feed** — punchlines auto-refresh
 5. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
 6. **Interactive Tokenomics** — pie chart (Recharts)
-7. **Liquidity & Treasury Transparency** — timeline J0→J+2 + anti-dump
+7. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
 8. **ROI Simulator** — avertissement risque
 9. **Roadmap** — timeline
 10. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
@@ -94,6 +95,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 14. **Language Switcher** — FR ↔ EN
 15. **Operation Reveal Page (`/operation`)** — unlock quand DECLASSIFIED
 16. **Classified Vault (`/classified-vault`)** — gate Niveau 02 + session token + “true vault”
+17. **Admin Dashboard** — JWT/2FA + gestion vault presets/emails + scheduler bots (Phases 1/2/6)
 
 ---
 
@@ -103,9 +105,10 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - i18n: Context FR/EN
 - Email: Resend + webhooks (Svix)
 - **On-chain feed (authoritative)**: **Helius Enhanced Transactions (webhooks + catch-up polling)**
-- Dex feed (fallback): DexScreener polling (off/demo/custom) — **bypass automatique quand dex_mode=helius**
+- Dex feed (fallback): DexScreener polling (off/demo/custom) — **bypass automatique quand `dex_mode=helius`**
 - Images: Gemini Nano Banana (gemini-3.1-flash-image-preview)
 - Image processing: Pillow (PIL) + qrcode
+- Automation: APScheduler (backend) + Admin UI
 
 ---
 
@@ -161,6 +164,8 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 30. Micro-rotations (10K tokens) + locks majeurs (100M tokens)
 31. **Per-trade on-chain indexer**: activité reflétée par swaps réels (webhooks) + dédup
 32. **Mode démo**: avant lancement, tracker BONK sans casser la progression du coffre
+33. **Carrousel Transparence**: backgrounds IA propres + tampon CSS “CONFIDENTIEL” sans texte halluciné
+34. **SEO/OG**: site partageable (aperçus X/Telegram/Discord) et indexable correctement
 
 ---
 
@@ -174,6 +179,10 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - **Hardening code quality ✅ (Phase 17 terminée)**
 - **Indexer Solana per-trade via Helius ✅ (Phase 18 terminée, LIVE)**
 - **Brand assets V4 + coin ΔΣ ✅ (Phase 19 terminée)**
+- **Transparence On-chain carrousel full-width + images régénérées ✅ + VALIDATION VISUELLE ✅**
+  - 4 images: `phase_01_launch.png` → `phase_04_anti_dump.png`
+  - suppression des artefacts texte IA (“UNMDED/INK”) confirmée via captures
+  - suppression du “(€2-4k)” confirmée (reste “≈ 12k$”)
 
 ---
 
@@ -256,13 +265,14 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
   - `vault.py` (public + `/api/admin/vault/*`)
   - `access_card.py` (`/api/access-card/*`)
   - `operation.py` (`/api/operation/reveal`)
+  - `bots.py` (admin bots)
 
 **Entrypoint minimal**
 - ✅ `server.py` réécrit : **2221 → 106 lignes**
   - Factory FastAPI + CORS
   - `include_router()`
   - startup/shutdown
-  - lancement des boucles `hourly_tick_loop` + `dex_loop` (+ wiring Helius ensuite)
+  - wiring boucles (hourly tick, dex loop, scheduler bots)
 
 ### Compatibilité
 - ✅ URLs, payloads, codes HTTP, auth flows préservés **1:1**
@@ -297,48 +307,39 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ### Résultat (implémentation)
 **Backend core**
 - ✅ `/app/backend/helius.py`
-  - Parsing **primary** via `events.swap.tokenInputs/tokenOutputs` (fiable sans pool)
-  - Fallback `tokenTransfers + pool` si nécessaire
+  - Parsing **primary** via `events.swap.tokenInputs/tokenOutputs`
+  - Fallback `tokenTransfers + pool`
   - `ingest_enhanced_transactions()` avec **dédup** (signature) + `demo_tokens_per_buy`
-  - `fetch_recent_swaps()` + `catch_up_from_helius()` (cold-start)
+  - `fetch_recent_swaps()` + `catch_up_from_helius()`
   - `register_webhook()` / `list_webhooks()` / `delete_webhook()`
 
 **Config**
 - ✅ `core/config.py` : `HELIUS_API_KEY`, `HELIUS_WEBHOOK_AUTH`
-- ✅ `.env` : placeholders + injection réelle en env preview
 
 **Webhooks**
-- ✅ `POST /api/webhooks/helius`
-  - Vérifie `Authorization` == `HELIUS_WEBHOOK_AUTH`
-  - 401 si absent/mauvais (quand secret défini)
-  - Audit trail : `helius_webhook_events`
-  - Dédup : `helius_ingested` (TTL 30 jours)
+- ✅ `POST /api/webhooks/helius` (authHeader + audit trail + dédup TTL 30j)
 
 **Admin endpoints**
 - ✅ `/api/admin/vault/helius-status`
 - ✅ `/api/admin/vault/helius-config`
-- ✅ `/api/admin/vault/helius-register` (active `dex_mode=helius`, auto demo si BONK)
+- ✅ `/api/admin/vault/helius-register`
 - ✅ `/api/admin/vault/helius-catchup`
-- ✅ `/api/admin/vault/helius-webhook/{id}` (delete)
+- ✅ `/api/admin/vault/helius-webhook/{id}`
 
 **DexScreener coexistence**
-- ✅ `dexscreener.dex_poll_once()` skip si `dex_mode in (off, helius)` → évite double-count
+- ✅ `dex_poll_once()` skip si `dex_mode in (off, helius)`
 
 **Startup**
-- ✅ `server.py` : catch-up opportuniste au boot (propage clamp demo si `helius_demo_mode=true`)
+- ✅ catch-up opportuniste au boot
 
 ### Garde-fou demo (critique)
 - ✅ Si mint = BONK (`DEMO_TOKEN_ADDRESS`) → `helius_demo_mode=true`
-- ✅ Chaque BUY applique exactement `tokens_per_micro` (actuel: 100) **au lieu** du montant réel on-chain
-- ✅ Objectif : 1 buy = 1 micro-tick, pas de crack massif en démo
+- ✅ Chaque BUY applique `tokens_per_micro` (actuel: 100)
 
 ### Validation (live preview)
-- ✅ Webhook Helius enregistré (enhanced/SWAP) avec authHeader actif
-- ✅ Webhook signé : ingested + buy OK
-- ✅ Replays : dédup OK
-- ✅ Sans/ mauvais auth : 401
-- ✅ Catch-up : ingère buys/sells; certaines transactions multi-hop restent “skipped” (attendu)
-- ✅ UI admin : section Helius complète
+- ✅ Webhook Helius enregistré (enhanced/SWAP)
+- ✅ Dédup OK
+- ✅ 401 sans auth
 
 ---
 
@@ -348,13 +349,95 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Stabiliser une identité visuelle moderne et mémétique cohérente avec le lore.
 
 ### Assets livrés (public)
-- ✅ Logo officiel V4 (monochrome Matrix-face, visage générique)
-  - `/app/frontend/public/logo_v4_matrix_face.png`
-- ✅ Pièce en or frappée ΔΣ
-  - Flat studio : `/app/frontend/public/gold_coin_front.png`
-  - 3D hero shot : `/app/frontend/public/gold_coin_3d.png`
-- ✅ Page de preview
-  - `/app/frontend/public/logo-preview.html`
+- ✅ Logo officiel V4 : `/app/frontend/public/logo_v4_matrix_face.png`
+- ✅ Pièce en or ΔΣ : `gold_coin_front.png`, `gold_coin_3d.png`
+- ✅ Preview : `/app/frontend/public/logo-preview.html`
+
+---
+
+## Phase 20 — Pré-lancement Polish Pack (UI + Roadmap + SEO/OG) — **COMPLETED ✅**
+
+### Objectif
+Préparer le site pour partage public et campagne de lancement (Pump.fun mint imminent) :
+- **site partageable** (preview OG/Twitter correct)
+- **roadmap** alignée au thème "dossier classifié"
+- **polish UI** (desktop + mobile)
+- **performance** (CLS + lazy loading + preload)
+
+### Sous-Phase 20a — SEO/OG Foundation — **COMPLETED ✅**
+**Constat initial**: aucun `robots.txt`, `sitemap.xml`, `manifest.json`, favicon set, ni meta OG complets dans `public/`.
+
+**Implémenté**
+- ✅ `frontend/public/index.html` réécrit avec full SEO stack:
+  - `title` + `meta description` + `canonical` + `robots` + `theme-color` (light + dark)
+  - `hreflang` fr/en/x-default
+  - Open Graph FR + EN (og:title, og:description, og:image 1200x630, og:url, og:type, og:site_name, og:locale, og:image:alt)
+  - Twitter Card `summary_large_image` + image dédiée
+  - 3× JSON-LD: `Organization`, `WebSite`, `FAQPage`
+- ✅ OG image 1200×630 générée via PIL composite (`backend/scripts_generate_og_image.py`):
+  - base = `deepotus_hero_serious.jpg`
+  - overlays branding ($DEEPOTUS, sub-line, tag-line, CONFIDENTIEL stamp, glitch chips, footer)
+  - `frontend/public/og_image.png` + `frontend/public/twitter_card.png`
+- ✅ `frontend/public/favicon.svg` (monogramme ΔΣ avec gradient teal→amber)
+- ✅ `frontend/public/apple-touch-icon.png` (180×180, généré depuis `gold_coin_front.png`)
+- ✅ `frontend/public/icon-512.png` (512×512, manifest icon)
+- ✅ `frontend/public/manifest.json` (PWA-ready, theme color, icons)
+- ✅ `frontend/public/robots.txt` (Allow public surfaces, **Disallow /admin et /api**, sitemap pointer)
+- ✅ `frontend/public/sitemap.xml` (URLs publiques + xhtml:link hreflang fr/en/x-default)
+- ✅ Sync dynamique `<title>` + `meta description` + `og:title` + `og:description` + `og:locale` + `twitter:title` + `twitter:description` à chaque switch FR↔EN (centralisé dans `I18nProvider.jsx`)
+- ✅ `App.js` nettoyé — suppression du `document.title` hardcoded EN
+
+**Validation**
+- ✅ `curl` HTTP 200 sur `robots.txt`, `sitemap.xml`, `manifest.json`, `og_image.png`, `favicon.svg`, `apple-touch-icon.png`
+- ✅ Switch lang FR→EN met à jour: `document.title`, `html.lang`, `meta description`, `og:title`, `og:description`, `og:locale`, `twitter:title`, `twitter:description`
+
+### Sous-Phase 20b — Roadmap Visual Upgrade — **COMPLETED ✅**
+
+**Implémenté**
+- ✅ Translations FR/EN enrichies par phase: `code` (ΔΣ-NN), `status`, `subtitle` + `legend.{next,queued,encrypted,classified}` + `stamps.{signed,opened,sealed}` + `subtitle` global
+- ✅ `Roadmap.jsx` réécrit:
+  - **Mobile**: timeline verticale avec connector multicolore vertical (vert→teal→amber→rouge) + nodes circulaires colorés à gauche
+  - **Desktop**: 4 colonnes avec connector horizontal multicolore en haut + icon nodes
+  - Status badges colorées (PROCHAINE / EN ATTENTE / CHIFFRÉ / CLASSIFIÉ) avec pulse pour `next`
+  - Code dossier (ΔΣ-NN) au-dessus de chaque carte
+  - Subtitle one-liner par phase
+  - Footer stamp adaptatif: DOSSIER OUVERT (next), SIGNÉ COMITÉ DEEP STATE (queued/encrypted), DOSSIER SCELLÉ (classified)
+  - Glow / shadow par carte matching status color
+  - Header right: stamp "DOCTRINE OPÉRATIONNELLE · ΔΣ"
+- ✅ `data-testid` complets: `roadmap-section`, `roadmap-list`, `roadmap-phase-${i}`, `roadmap-code-${i}`, `roadmap-status-${status}`, `roadmap-doctrine-stamp`
+
+### Sous-Phase 20c — UI Polish Audit — **COMPLETED ✅**
+
+**Audit effectué** (screenshots desktop 1440×900, mobile 390×844, dark mode):
+- Hero, Manifesto, Vault, Prophet, Prophecies, Mission, Tokenomics, Transparency, ROI, Roadmap, Truth, FAQ, Whitelist, Socials, Footer
+
+**Bug critique corrigé**
+- ✅ **CSS bug `.glitch-stamp { position: relative }` overridait Tailwind `absolute`** → labels variant (SERIOUS, MENTOR MODE) flottaient hors du poster card.
+  - Fix: wrappé chaque `.glitch-stamp` dans un wrapper `absolute` dédié (Hero.jsx + HowToBuy.jsx)
+  - Nouveau placement: AI-GENERATED top-left de l'image, SERIOUS top-right de l'image (cohérence visuelle)
+- ✅ Hero stamps validés desktop + mobile + dark mode
+
+**Aucun autre bug bloquant identifié** — l'ensemble des sections rend correctement sur les 3 contextes.
+
+### Sous-Phase 20d — Performance & Polish Final — **COMPLETED ✅**
+
+**Implémenté**
+- ✅ Polices Google Fonts critiques préchargées (Space Grotesk, IBM Plex Sans, IBM Plex Mono) via `<link href="...&display=swap">` + `preconnect` + `dns-prefetch`
+- ✅ `loading="lazy" decoding="async"` ajoutés sur images sous le fold:
+  - `ROISimulator.jsx` (gold_coin_3d.png backdrop)
+  - `Tokenomics.jsx` (gold_coin_front.png centre du donut)
+  - `VaultChassis.jsx` (vault_frame.png)
+- ✅ Carrousel transparence: backgrounds large via `background-image` (chargés à l'entrée en viewport par Embla — pas d'impact LCP initial)
+- ✅ Console: warning Recharts `width(-1)` documenté comme bénin (1er render avant layout, n'impacte pas l'UX)
+- ✅ Aucun runtime error console
+
+### Phase 20 Status: ✅ COMPLETED
+- ✅ Site **partageable** : preview OG correcte sur X, Telegram, Discord, Slack, etc.
+- ✅ Site **indexable** : robots.txt + sitemap.xml + JSON-LD complet
+- ✅ Site **PWA-ready** : manifest + icons + theme-color
+- ✅ Roadmap **on-brand** : dossier classifié, status badges, connector multicolore
+- ✅ UI **polish** : bug critique CSS fixé, hero stamps repositionnés, dark mode validé
+- ✅ Performance **optimisée** : lazy-loading images sous le fold, fonts preconnect
 
 ---
 
@@ -364,17 +447,23 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - ⏳ Une fois le token déployé sur Solana :
   - `POST /api/admin/vault/helius-register` avec le vrai mint
   - `helius_demo_mode` s’éteint automatiquement
-  - (optionnel) renseigner le pool LP address pour encore plus de précision
+  - (optionnel) renseigner le pool LP address
+
+### Bots — phases bloquées (attente credentials)
+- ⏳ Phase 3: Telegram Bot API (token + chat_id)
+- ⏳ Phase 4/5: X API v2 (OAuth2) + KOL list
+- ⏳ Trading bot refs: liens BonkBot/Maestro/Trojan
 
 ### Intégration branding dans le front (en attente du feu vert)
 - ⏳ Remplacer l’avatar/visuel hero par `logo_v4_matrix_face.png`
-- ⏳ Ajouter les rendus `gold_coin_front.png` / `gold_coin_3d.png` au hero / press-kit / sections marketing
+- ⏳ Ajouter `gold_coin_front.png` / `gold_coin_3d.png` dans hero/press-kit
 
 ---
 
 ## Future (P2+)
 - (Option) Ajouter un parseur Raydium/Orca plus profond pour réduire les “skipped” sur swaps multi-hop
 - (Option) Persister des métriques agrégées Helius (buys/sells/volume) pour un dashboard public plus précis
+- (Post-launch) Refactors loggés dans `TODO_POST_LAUNCH.md` (cookies httpOnly, split components, type hints)
 
 ---
 
@@ -383,3 +472,18 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
 - ✅ **(C) On-chain accuracy upgrade**: TERMINÉ — indexer Solana per-trade via Helius (webhooks + catch-up)
 - ⏳ **(A) Switch à $DEEPOTUS réel**: à faire dès que le mint Solana est connu
+
+---
+
+## Testing strategy (Phase 20)
+- Après **20a**:
+  - Vérification visuelle (screenshot tool) + inspection head (meta OG/Twitter)
+  - `curl` sur `/robots.txt` et `/sitemap.xml`
+  - Vérifier que l’OG image est accessible (HTTP 200) et correctement référencée
+- Après **20b**:
+  - Captures du `#roadmap` desktop + mobile
+- Après **20c**:
+  - Suite de captures consolidées toutes sections desktop + mobile
+- Après **20d**:
+  - Captures finales consolidées + scan console errors
+- Backend tests: **non requis** sauf si endpoints touchés (non prévu pour Phase 20)

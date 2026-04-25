@@ -15,6 +15,41 @@ export function I18nProvider({ children }) {
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, lang);
       document.documentElement.lang = lang;
+
+      // ---- Sync SEO meta tags with the active language ----
+      const dictForLang = translations[lang] || translations.fr;
+      const seoTitle = dictForLang?.seo?.title;
+      const seoDesc = dictForLang?.seo?.description;
+
+      if (seoTitle) {
+        document.title = seoTitle;
+      }
+
+      const setMeta = (selector, attrName, value) => {
+        if (!value) return;
+        const el = document.head.querySelector(selector);
+        if (el) {
+          el.setAttribute(attrName, value);
+        }
+      };
+      // Standard description
+      setMeta('meta[name="description"]', "content", seoDesc);
+      // Open Graph
+      setMeta('meta[property="og:title"]', "content", seoTitle);
+      setMeta('meta[property="og:description"]', "content", seoDesc);
+      setMeta(
+        'meta[property="og:locale"]',
+        "content",
+        lang === "fr" ? "fr_FR" : "en_US",
+      );
+      setMeta(
+        'meta[property="og:locale:alternate"]',
+        "content",
+        lang === "fr" ? "en_US" : "fr_FR",
+      );
+      // Twitter
+      setMeta('meta[name="twitter:title"]', "content", seoTitle);
+      setMeta('meta[name="twitter:description"]', "content", seoDesc);
     }
   }, [lang]);
 
