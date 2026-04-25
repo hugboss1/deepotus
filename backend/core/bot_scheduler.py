@@ -55,6 +55,19 @@ DEFAULT_BOT_CONFIG: Dict[str, Any] = {
         "provider": "anthropic",
         "model": "claude-sonnet-4-5-20250929",
     },
+    # ---- News feed (Phase X · 4×/day RSS aggregator) ----
+    # When `enabled_for.<platform>` is True and the kill switch is OFF,
+    # the scheduled bot job for that platform will inject the freshest
+    # geopolitics/macro headlines into the LLM prompt as inspiration.
+    "news_feed": {
+        "enabled_for": {"x": True, "telegram": False},
+        "fetch_interval_hours": 6,  # 4×/jour (00, 06, 12, 18 UTC)
+        "feeds": [],   # falls back to DEFAULT_NEWS_FEEDS when empty
+        "keywords": [],  # falls back to DEFAULT_NEWS_KEYWORDS when empty
+        "headlines_per_post": 5,
+        "last_refresh_at": None,
+        "last_refresh_stats": None,
+    },
     "heartbeat_interval_minutes": 5,
     "max_posts_per_day": 12,
     "last_updated_at": None,
@@ -93,6 +106,7 @@ async def update_bot_config(patch: Dict[str, Any], updated_by: str = "admin") ->
         "platforms",
         "content_modes",
         "llm",
+        "news_feed",
         "heartbeat_interval_minutes",
         "max_posts_per_day",
     }
@@ -217,15 +231,51 @@ async def _heartbeat_job() -> None:
     await _run_guarded(platform="system", content_type="heartbeat", fn=_work)
 
 
+async def _news_refresh_job() -> None:
+    """Refresh the geopolitics / macro RSS aggregator on a cron schedule.
+
+    Runs unconditionally (i.e. NOT gated by the kill-switch) — we want
+    the feed corpus to keep being maintained even when the bot is
+    paused, so that the admin can trigger a Preview at any time and
+    have fresh inspiration ready. The kill-switch only stops *posts*.
+    """
+    # Local import — avoids creating a hard import-time dependency on
+    # feedparser when the scheduler module is imported in tests.
+    from core.news_feed import refresh_all  # noqa: WPS433
+
+    cfg = await get_bot_config()
+    nf = cfg.get("news_feed") or {}
+    feeds = nf.get("feeds") or None  # None → use DEFAULT_NEWS_FEEDS
+    keywords = nf.get("keywords") or None  # None → use DEFAULT_NEWS_KEYWORDS
+
+    try:
+        stats = await refresh_all(urls=feeds, keywords=keywords)
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("[bot_scheduler] news refresh failed")
+        stats = {"error": str(exc)[:300]}
+
+    await db[CONFIG_COLLECTION].update_one(
+        {"_id": CONFIG_SINGLETON_ID},
+        {
+            "$set": {
+                "news_feed.last_refresh_at": datetime.now(
+                    timezone.utc
+                ).isoformat(),
+                "news_feed.last_refresh_stats": stats,
+            }
+        },
+    )
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
 async def sync_jobs_from_config() -> None:
     """Reconcile APScheduler jobs with the current config doc.
 
-    Phase 1: we only register the heartbeat — platform jobs come later.
-    The function is designed to be called on startup AND whenever config
-    is mutated by the admin endpoint.
+    Registers the heartbeat plus the news-feed refresh cron. Platform
+    posting jobs are still done elsewhere; this function is the single
+    source of truth for *system-level* jobs.
     """
     if _scheduler is None:
         return
@@ -243,6 +293,26 @@ async def sync_jobs_from_config() -> None:
             _heartbeat_job,
             trigger=IntervalTrigger(minutes=hb_minutes),
             id="heartbeat",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+    # ---- News-feed refresh job (4×/day by default) ----
+    nf_hours = max(
+        1,
+        int(((cfg.get("news_feed") or {}).get("fetch_interval_hours")) or 6),
+    )
+    if _scheduler.get_job("news_refresh"):
+        _scheduler.reschedule_job(
+            "news_refresh",
+            trigger=IntervalTrigger(hours=nf_hours),
+        )
+    else:
+        _scheduler.add_job(
+            _news_refresh_job,
+            trigger=IntervalTrigger(hours=nf_hours),
+            id="news_refresh",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

@@ -27,6 +27,13 @@ from core.bot_scheduler import (
     update_bot_config,
 )
 from core.config import db
+from core.news_feed import (
+    DEFAULT_NEWS_FEEDS,
+    DEFAULT_NEWS_KEYWORDS,
+    build_news_context_block,
+    get_recent_items,
+    refresh_all,
+)
 from core.prophet_studio import (
     PLATFORM_CHAR_BUDGETS,
     VALID_CONTENT_TYPES,
@@ -52,11 +59,27 @@ class LlmPatch(BaseModel):
     model: Optional[str] = Field(default=None, max_length=80)
 
 
+class NewsFeedPatch(BaseModel):
+    """Partial patch for the news_feed sub-document.
+
+    Each field is optional so the admin can update one knob at a time.
+    Lists are REPLACE semantics (passing [] resets to the defaults at
+    runtime; passing None leaves them untouched).
+    """
+
+    enabled_for: Optional[Dict[str, bool]] = None
+    fetch_interval_hours: Optional[int] = Field(default=None, ge=1, le=24)
+    feeds: Optional[List[str]] = None
+    keywords: Optional[List[str]] = None
+    headlines_per_post: Optional[int] = Field(default=None, ge=0, le=10)
+
+
 class BotConfigPatch(BaseModel):
     kill_switch_active: Optional[bool] = None
     platforms: Optional[Dict[str, PlatformPatch]] = None
     content_modes: Optional[Dict[str, bool]] = None
     llm: Optional[LlmPatch] = None
+    news_feed: Optional[NewsFeedPatch] = None
     heartbeat_interval_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
     max_posts_per_day: Optional[int] = Field(default=None, ge=0, le=500)
 
@@ -72,6 +95,15 @@ class GeneratePreviewRequest(BaseModel):
     extra_context: Optional[str] = Field(default=None, max_length=1000)
     include_image: bool = Field(default=False, description="Also generate an X illustration via Nano Banana")
     image_aspect_ratio: str = Field(default="16:9", description="16:9 | 3:4 | 1:1")
+    keywords: Optional[List[str]] = Field(
+        default=None,
+        description="Optional list of admin-supplied keywords / topics. The Prophet uses them as the spark of the post.",
+        max_length=12,
+    )
+    use_news_context: bool = Field(
+        default=False,
+        description="When true, inject the freshest geopolitics/macro headlines (top N from the RSS aggregator) into extra_context.",
+    )
 
 
 class GeneratedImage(BaseModel):
@@ -112,6 +144,7 @@ class BotConfigResponse(BaseModel):
     platforms: Dict[str, Dict[str, Any]]
     content_modes: Dict[str, bool]
     llm: Dict[str, Any]
+    news_feed: Dict[str, Any]
     heartbeat_interval_minutes: int
     max_posts_per_day: int
     last_updated_at: Optional[str] = None
@@ -152,12 +185,27 @@ class PaginatedBotPosts(BaseModel):
 # ---------------------------------------------------------------------
 def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
     """Strip Mongo-internal fields and ensure all expected keys exist."""
+    nf_raw = doc.get("news_feed") or {}
+    news_feed = {
+        "enabled_for": nf_raw.get("enabled_for")
+        or {"x": True, "telegram": False},
+        "fetch_interval_hours": int(nf_raw.get("fetch_interval_hours") or 6),
+        "feeds": list(nf_raw.get("feeds") or []),
+        "keywords": list(nf_raw.get("keywords") or []),
+        "headlines_per_post": int(nf_raw.get("headlines_per_post") or 5),
+        "last_refresh_at": nf_raw.get("last_refresh_at"),
+        "last_refresh_stats": nf_raw.get("last_refresh_stats"),
+        # Surface the curated defaults so the UI can offer "Reset to default"
+        "default_feeds": DEFAULT_NEWS_FEEDS,
+        "default_keywords": DEFAULT_NEWS_KEYWORDS,
+    }
     return {
         "kill_switch_active": bool(doc.get("kill_switch_active", True)),
         "platforms": doc.get("platforms") or {},
         "content_modes": doc.get("content_modes") or {},
         "llm": doc.get("llm")
         or {"provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
+        "news_feed": news_feed,
         "heartbeat_interval_minutes": int(doc.get("heartbeat_interval_minutes") or 5),
         "max_posts_per_day": int(doc.get("max_posts_per_day") or 12),
         "last_updated_at": doc.get("last_updated_at"),
@@ -217,6 +265,26 @@ async def put_config(
         if payload.llm.model is not None:
             merged_llm["model"] = payload.llm.model
         patch_dict["llm"] = merged_llm
+    if payload.news_feed is not None:
+        merged_nf = dict(current.get("news_feed") or {})
+        nf = payload.news_feed
+        if nf.enabled_for is not None:
+            merged_enabled = dict(merged_nf.get("enabled_for") or {})
+            for plat, val in nf.enabled_for.items():
+                merged_enabled[plat] = bool(val)
+            merged_nf["enabled_for"] = merged_enabled
+        if nf.fetch_interval_hours is not None:
+            merged_nf["fetch_interval_hours"] = int(nf.fetch_interval_hours)
+        if nf.feeds is not None:
+            # `[]` → reset to defaults (user clicked "Reset to default")
+            merged_nf["feeds"] = [u.strip() for u in nf.feeds if (u or "").strip()]
+        if nf.keywords is not None:
+            merged_nf["keywords"] = [
+                k.strip() for k in nf.keywords if (k or "").strip()
+            ]
+        if nf.headlines_per_post is not None:
+            merged_nf["headlines_per_post"] = int(nf.headlines_per_post)
+        patch_dict["news_feed"] = merged_nf
     if payload.heartbeat_interval_minutes is not None:
         patch_dict["heartbeat_interval_minutes"] = payload.heartbeat_interval_minutes
     if payload.max_posts_per_day is not None:
@@ -371,11 +439,37 @@ async def generate_preview(
             detail="kol_reply requires a non-empty 'kol_post' field",
         )
     try:
+        # Compose `extra_context` from 3 optional sources (in priority order):
+        #   1. The admin's manual `keywords` (always wins — explicit signal)
+        #   2. The admin's free-form `extra_context` text
+        #   3. The freshest geopolitics/macro headlines (when use_news_context=True)
+        composed_context_parts: List[str] = []
+        if payload.keywords:
+            cleaned_kw = [k.strip() for k in payload.keywords if (k or "").strip()]
+            if cleaned_kw:
+                composed_context_parts.append(
+                    "Spark inspiration KEYWORDS — riff loosely on at least one of these "
+                    "(do not list them verbatim, weave them into the post): "
+                    + ", ".join(cleaned_kw)
+                )
+        if payload.extra_context:
+            composed_context_parts.append(payload.extra_context.strip())
+        if payload.use_news_context:
+            news_block = await build_news_context_block(n=5)
+            if news_block:
+                composed_context_parts.append(news_block)
+
+        composed_context = (
+            "\n\n".join(composed_context_parts)
+            if composed_context_parts
+            else None
+        )
+
         result = await generate_post(
             content_type=payload.content_type,
             platform=payload.platform,
             kol_post=payload.kol_post,
-            extra_context=payload.extra_context,
+            extra_context=composed_context,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -411,3 +505,80 @@ async def generate_preview(
         image=image_payload,
         image_error=image_error,
     )
+
+
+# ---------------------------------------------------------------------
+# News feed — geopolitics / macro RSS aggregator (for X bot inspiration)
+# ---------------------------------------------------------------------
+class NewsItemModel(BaseModel):
+    id: str
+    title: str
+    summary: str
+    url: str
+    source: str
+    published_raw: str
+    fetched_at: str
+
+
+class NewsListResponse(BaseModel):
+    items: List[NewsItemModel]
+    last_refresh_at: Optional[str] = None
+    last_refresh_stats: Optional[Dict[str, Any]] = None
+
+
+class NewsRefreshResponse(BaseModel):
+    fetched: int
+    kept: int
+    added: int
+    feeds: int
+    ts: str
+
+
+@router.get("/news", response_model=NewsListResponse)
+async def list_news_items(
+    hours: int = Query(default=48, ge=1, le=168),
+    limit: int = Query(default=30, ge=1, le=100),
+    _p: dict = Depends(require_admin),
+):
+    """Return the most recent kept geopolitics / macro headlines.
+
+    Used by the AdminBots dashboard to preview what the Prophet would
+    have access to as inspiration for its next post.
+    """
+    items = await get_recent_items(hours=hours, limit=limit)
+    cfg = await get_bot_config()
+    nf = cfg.get("news_feed") or {}
+    return NewsListResponse(
+        items=[NewsItemModel(**it) for it in items],
+        last_refresh_at=nf.get("last_refresh_at"),
+        last_refresh_stats=nf.get("last_refresh_stats"),
+    )
+
+
+@router.post("/news/refresh", response_model=NewsRefreshResponse)
+async def trigger_news_refresh(_p: dict = Depends(require_admin)):
+    """Manually trigger an immediate RSS refresh.
+
+    Uses the configured feeds + keywords (or curated defaults when
+    those are empty). Updates `news_feed.last_refresh_*` on the
+    bot_config doc so the UI can show the fresh stats.
+    """
+    cfg = await get_bot_config()
+    nf = cfg.get("news_feed") or {}
+    feeds = nf.get("feeds") or None
+    keywords = nf.get("keywords") or None
+    stats = await refresh_all(urls=feeds, keywords=keywords)
+
+    from datetime import datetime, timezone
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db["bot_config"].update_one(
+        {"_id": "bot_config_singleton"},
+        {
+            "$set": {
+                "news_feed.last_refresh_at": now_iso,
+                "news_feed.last_refresh_stats": stats,
+            }
+        },
+    )
+    return NewsRefreshResponse(**stats)

@@ -1,30 +1,34 @@
 [
   {
-    "content": "21a-c Python ✅ · ruff cleanup + 4 fonctions complexes refactorées",
+    "content": "Backend feedparser + core/news_feed.py (RSS curated 7 sources, keyword filter, dedup, 7-day TTL) ✅",
     "status": "completed"
   },
   {
-    "content": "21b React ✅ · keys index→stable + hook deps + I18nProvider stabilisé",
+    "content": "Backend bot_config schema étendu avec news_feed (enabled_for, interval, feeds, keywords, headlines_per_post, last_refresh_*) ✅",
     "status": "completed"
   },
   {
-    "content": "21d React splits ✅ · Hero (439→47) + Tokenomics (373→70) + ClassifiedVault (657→41) + 8 sub-composants extraits",
+    "content": "Backend bot_scheduler : cron job 4×/jour news_refresh enregistré ✅",
     "status": "completed"
   },
   {
-    "content": "21d — Splits restants (AdminBots, Admin, AdminVault, TerminalPopup, etc.) documentés comme follow-up dans plan.md & TODO_TYPESCRIPT.md",
+    "content": "Backend prophet_studio + bots router : preview accepte keywords[] + use_news_context, news_block injecté en extra_context ✅",
     "status": "completed"
   },
   {
-    "content": "21e TS setup ✅ · deps installées, tsconfig.json, src/types/, jsconfig retiré, app compile sans warning",
+    "content": "Backend endpoints GET /admin/bots/news + POST /admin/bots/news/refresh ✅",
     "status": "completed"
   },
   {
-    "content": "21e TS migrés ✅ · lib/utils.ts + lib/logger.ts + lib/links.ts + hooks/use-toast.ts + I18nProvider.tsx + ThemeProvider.tsx",
+    "content": "Frontend AdminBots Config : section News Feed complète (toggles X/TG, interval, headlines, RSS editor, keywords editor, refresh, preview list) ✅",
     "status": "completed"
   },
   {
-    "content": "21e TS migration restante — 60+ fichiers documentés dans /app/TODO_TYPESCRIPT.md (multi-session)",
+    "content": "Frontend AdminBots Preview : Prophet inspiration block (keywords input + use-news-context toggle) ✅",
+    "status": "completed"
+  },
+  {
+    "content": "Test E2E ✅ · Prophet génère tweet avec keywords + news context (FR 160/270 + EN 150/270 sous budget, hashtags auto)",
     "status": "completed"
   }
 ]

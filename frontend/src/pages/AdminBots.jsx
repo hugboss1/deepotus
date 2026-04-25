@@ -21,6 +21,10 @@ import {
   Languages,
   Image as ImageIcon,
   Download,
+  Rss,
+  RefreshCw,
+  Newspaper,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +81,18 @@ export default function AdminBots() {
   const [includeImage, setIncludeImage] = useState(false);
   const [imageAspect, setImageAspect] = useState("16:9");
 
+  // ---- Manual Prophet inspiration ----
+  // `previewKeywords` is a comma-separated string in the input; we split + trim
+  // before sending so admins can type "powell, china tariffs, opec" naturally.
+  const [previewKeywords, setPreviewKeywords] = useState("");
+  const [useNewsContext, setUseNewsContext] = useState(false);
+
+  // ---- News-feed aggregator state (Config tab "News Feed" section) ----
+  const [news, setNews] = useState(null); // { items, last_refresh_at, last_refresh_stats }
+  const [newsBusy, setNewsBusy] = useState(false);
+  const [newsFeedsDraft, setNewsFeedsDraft] = useState("");
+  const [newsKeywordsDraft, setNewsKeywordsDraft] = useState("");
+
   // Filters for post log
   const [platformFilter, setPlatformFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -102,9 +118,33 @@ export default function AdminBots() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platformFilter, statusFilter]);
 
+  // Sync the news-feed text-area drafts with whatever is currently saved.
+  // When `feeds` / `keywords` are empty in config, the backend treats them
+  // as "use curated defaults" — we mirror that by pre-filling the input
+  // with the defaults so admins always see *something* to work from.
+  useEffect(() => {
+    const nf = config?.news_feed;
+    if (!nf) return;
+    const feedsList =
+      nf.feeds && nf.feeds.length > 0 ? nf.feeds : nf.default_feeds || [];
+    const kwList =
+      nf.keywords && nf.keywords.length > 0
+        ? nf.keywords
+        : nf.default_keywords || [];
+    setNewsFeedsDraft(feedsList.join("\n"));
+    setNewsKeywordsDraft(kwList.join(", "));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config?.news_feed?.feeds, config?.news_feed?.keywords]);
+
   async function bootstrap() {
     try {
-      await Promise.all([loadConfig(), loadJobs(), loadPosts(), loadContentTypes()]);
+      await Promise.all([
+        loadConfig(),
+        loadJobs(),
+        loadPosts(),
+        loadContentTypes(),
+        loadNews(),
+      ]);
     } finally {
       setLoading(false);
     }
@@ -152,6 +192,37 @@ export default function AdminBots() {
       setContentTypes(Array.isArray(data) ? data : []);
     } catch (err) {
       logger.error(err);
+    }
+  }
+
+  async function loadNews() {
+    try {
+      const { data } = await axios.get(`${API}/api/admin/bots/news`, { headers });
+      setNews(data);
+    } catch (err) {
+      logger.error(err);
+    }
+  }
+
+  async function refreshNewsNow() {
+    setNewsBusy(true);
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/bots/news/refresh`,
+        {},
+        { headers },
+      );
+      toast.success(
+        `News refreshed — ${data.added} new / ${data.kept} kept / ${data.fetched} fetched`,
+      );
+      await loadNews();
+      // Also re-pull the config so the "last refresh" pill updates
+      await bootstrap();
+    } catch (err) {
+      logger.error(err);
+      toast.error(err?.response?.data?.detail || "News refresh failed");
+    } finally {
+      setNewsBusy(false);
     }
   }
 
@@ -215,16 +286,31 @@ export default function AdminBots() {
         platform: previewPlatform,
         include_image: includeImage,
         image_aspect_ratio: imageAspect,
+        use_news_context: useNewsContext,
       };
       if (previewType === "kol_reply") body.kol_post = kolPost.trim();
-      const { data } = await axios.post(`${API}/api/admin/bots/generate-preview`, body, { headers });
+      const cleanedKw = (previewKeywords || "")
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean);
+      if (cleanedKw.length) body.keywords = cleanedKw;
+
+      const { data } = await axios.post(
+        `${API}/api/admin/bots/generate-preview`,
+        body,
+        { headers },
+      );
       setPreview(data);
+      const sparkParts = [];
+      if (cleanedKw.length) sparkParts.push(`${cleanedKw.length} keyword(s)`);
+      if (useNewsContext) sparkParts.push("latest news");
+      const spark = sparkParts.length ? ` (spark: ${sparkParts.join(" + ")})` : "";
       if (data.image_error) {
-        toast.warning(`Image failed: ${data.image_error}`);
+        toast.warning(`Image failed${spark}: ${data.image_error}`);
       } else if (data.image) {
-        toast.success(`Prophet generated ${previewType} + Nano Banana illustration`);
+        toast.success(`Prophet generated ${previewType} + Nano Banana${spark}`);
       } else {
-        toast.success(`Prophet generated a ${previewType} preview`);
+        toast.success(`Prophet generated a ${previewType} preview${spark}`);
       }
     } catch (err) {
       logger.error(err);
@@ -672,6 +758,326 @@ export default function AdminBots() {
                 by {config?.updated_by || "—"}
               </div>
             </div>
+
+            {/* ============== NEWS FEED · GEOPOLITICS / MACRO ============== */}
+            <Separator className="my-2" />
+            <div
+              className="rounded-xl border border-border bg-card p-5 space-y-4"
+              data-testid="news-feed-section"
+            >
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Rss size={16} className="text-[#F59E0B]" />
+                  <div className="font-display font-semibold">
+                    News feed · geopolitics + macro
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="font-mono text-[10px] uppercase tracking-widest"
+                  >
+                    inspiration source
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    last refresh:{" "}
+                    {config?.news_feed?.last_refresh_at
+                      ? new Date(
+                          config.news_feed.last_refresh_at,
+                        ).toLocaleString()
+                      : "—"}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshNewsNow}
+                    disabled={newsBusy}
+                    className="rounded-[var(--btn-radius)]"
+                    data-testid="news-feed-refresh-btn"
+                  >
+                    <RefreshCw
+                      size={13}
+                      className={`mr-1 ${newsBusy ? "animate-spin" : ""}`}
+                    />
+                    Refresh now
+                  </Button>
+                </div>
+              </div>
+
+              {config?.news_feed?.last_refresh_stats && (
+                <div className="font-mono text-[11px] text-muted-foreground">
+                  fetched={" "}
+                  <span className="text-foreground/80">
+                    {config.news_feed.last_refresh_stats.fetched ?? "?"}
+                  </span>
+                  {" · "}kept{" "}
+                  <span className="text-foreground/80">
+                    {config.news_feed.last_refresh_stats.kept ?? "?"}
+                  </span>
+                  {" · "}new{" "}
+                  <span className="text-[#F59E0B]">
+                    {config.news_feed.last_refresh_stats.added ?? "?"}
+                  </span>
+                  {" · "}feeds{" "}
+                  <span className="text-foreground/80">
+                    {config.news_feed.last_refresh_stats.feeds ?? "?"}
+                  </span>
+                </div>
+              )}
+
+              {/* Per-platform toggles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {["x", "telegram"].map((plat) => (
+                  <div
+                    key={plat}
+                    className="flex items-center justify-between rounded-lg border border-border bg-background/40 p-3"
+                  >
+                    <div>
+                      <div className="font-display font-semibold capitalize">
+                        {plat}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Inject latest headlines as Prophet inspiration
+                      </div>
+                    </div>
+                    <Switch
+                      checked={Boolean(
+                        config?.news_feed?.enabled_for?.[plat],
+                      )}
+                      onCheckedChange={(checked) =>
+                        patchConfig(
+                          {
+                            news_feed: {
+                              enabled_for: {
+                                ...(config?.news_feed?.enabled_for || {}),
+                                [plat]: checked,
+                              },
+                            },
+                          },
+                          `News feed for ${plat} ${checked ? "enabled" : "disabled"}`,
+                        )
+                      }
+                      data-testid={`news-feed-toggle-${plat}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Interval + headlines per post */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Refresh interval (h)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={config?.news_feed?.fetch_interval_hours ?? 6}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        news_feed: {
+                          ...config.news_feed,
+                          fetch_interval_hours: Number(e.target.value),
+                        },
+                      })
+                    }
+                    onBlur={(e) =>
+                      patchConfig(
+                        {
+                          news_feed: {
+                            fetch_interval_hours: Number(e.target.value),
+                          },
+                        },
+                        "News refresh interval saved",
+                      )
+                    }
+                    className="mt-2 font-mono"
+                    data-testid="news-feed-interval"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Headlines per post
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={config?.news_feed?.headlines_per_post ?? 5}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        news_feed: {
+                          ...config.news_feed,
+                          headlines_per_post: Number(e.target.value),
+                        },
+                      })
+                    }
+                    onBlur={(e) =>
+                      patchConfig(
+                        {
+                          news_feed: {
+                            headlines_per_post: Number(e.target.value),
+                          },
+                        },
+                        "Headlines per post saved",
+                      )
+                    }
+                    className="mt-2 font-mono"
+                    data-testid="news-feed-headlines"
+                  />
+                </div>
+              </div>
+
+              {/* RSS feeds editor */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                    RSS feeds (one per line)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const defaults =
+                        config?.news_feed?.default_feeds || [];
+                      setNewsFeedsDraft(defaults.join("\n"));
+                      patchConfig(
+                        { news_feed: { feeds: [] } },
+                        "Reset to default feeds",
+                      );
+                    }}
+                    data-testid="news-feed-feeds-reset"
+                  >
+                    Reset to default
+                  </Button>
+                </div>
+                <textarea
+                  value={newsFeedsDraft}
+                  onChange={(e) => setNewsFeedsDraft(e.target.value)}
+                  onBlur={() =>
+                    patchConfig(
+                      {
+                        news_feed: {
+                          feeds: newsFeedsDraft
+                            .split(/\r?\n/)
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        },
+                      },
+                      "RSS feeds saved",
+                    )
+                  }
+                  rows={6}
+                  className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-[11px] text-foreground/85 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#F59E0B]/40"
+                  spellCheck={false}
+                  placeholder="https://feeds.bbci.co.uk/news/world/rss.xml"
+                  data-testid="news-feed-urls"
+                />
+              </div>
+
+              {/* Keywords editor */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Filter keywords (comma separated)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const defaults =
+                        config?.news_feed?.default_keywords || [];
+                      setNewsKeywordsDraft(defaults.join(", "));
+                      patchConfig(
+                        { news_feed: { keywords: [] } },
+                        "Reset to default keywords",
+                      );
+                    }}
+                    data-testid="news-feed-keywords-reset"
+                  >
+                    Reset to default
+                  </Button>
+                </div>
+                <textarea
+                  value={newsKeywordsDraft}
+                  onChange={(e) => setNewsKeywordsDraft(e.target.value)}
+                  onBlur={() =>
+                    patchConfig(
+                      {
+                        news_feed: {
+                          keywords: newsKeywordsDraft
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
+                        },
+                      },
+                      "Keywords saved",
+                    )
+                  }
+                  rows={3}
+                  className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-[11px] text-foreground/85 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#F59E0B]/40"
+                  spellCheck={false}
+                  placeholder="war, ukraine, fed, ECB, inflation, ..."
+                  data-testid="news-feed-keywords"
+                />
+              </div>
+
+              {/* Headlines preview */}
+              <div className="rounded-lg border border-border bg-background/40 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Newspaper size={13} className="text-[#2DD4BF]" />
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Latest kept headlines (top 5)
+                    </div>
+                  </div>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {news?.items?.length ?? 0} item(s) buffered
+                  </span>
+                </div>
+                {news?.items && news.items.length > 0 ? (
+                  <ul
+                    className="space-y-1.5 text-xs leading-relaxed"
+                    data-testid="news-feed-preview-list"
+                  >
+                    {news.items.slice(0, 5).map((it) => (
+                      <li
+                        key={it.id}
+                        className="flex items-start gap-2"
+                        data-testid={`news-feed-item-${it.id}`}
+                      >
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#F59E0B] flex-none">
+                          {(it.source || "?").slice(0, 18)}
+                        </span>
+                        <a
+                          href={it.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-foreground/85 hover:underline inline-flex items-baseline gap-1 min-w-0"
+                        >
+                          <span className="truncate">{it.title}</span>
+                          <ExternalLink
+                            size={10}
+                            className="flex-none text-muted-foreground"
+                          />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-xs text-muted-foreground italic">
+                    No items yet — click "Refresh now" to fetch the feeds.
+                  </div>
+                )}
+              </div>
+            </div>
           </TabsContent>
 
           {/* -------------------- PREVIEW TAB -------------------- */}
@@ -736,6 +1142,56 @@ export default function AdminBots() {
                     />
                   </div>
                 )}
+
+                {/* ============== INSPIRATION SOURCES ==============
+                    Two manual ways for the admin to seed the Prophet:
+                    1) `keywords` — a comma-separated list weaved into the post
+                    2) `use_news_context` — inject the freshest geopolitics/macro
+                       headlines (top 5) from the RSS aggregator. */}
+                <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={14} className="text-[#2DD4BF]" />
+                    <Label className="font-medium text-sm">
+                      Prophet inspiration
+                    </Label>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                      Keywords (comma separated)
+                    </Label>
+                    <Input
+                      value={previewKeywords}
+                      onChange={(e) => setPreviewKeywords(e.target.value)}
+                      placeholder="e.g. powell, tariffs, OPEC squeeze"
+                      className="mt-2 font-mono text-xs"
+                      data-testid="preview-keywords-input"
+                    />
+                    <p className="mt-1 text-[10.5px] text-muted-foreground leading-relaxed">
+                      The Prophet weaves at least one of these into its
+                      cynical commentary — without quoting them verbatim.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-2">
+                      <Newspaper size={14} className="text-[#F59E0B]" />
+                      <Label className="text-sm">
+                        Use latest news headlines
+                      </Label>
+                    </div>
+                    <Switch
+                      checked={useNewsContext}
+                      onCheckedChange={setUseNewsContext}
+                      data-testid="preview-news-toggle"
+                    />
+                  </div>
+                  {useNewsContext && (
+                    <p className="text-[10.5px] text-muted-foreground leading-relaxed">
+                      Top 5 geopolitics/macro headlines from the RSS
+                      aggregator are injected as inspiration. Configure
+                      feeds + keywords in the Config tab.
+                    </p>
+                  )}
+                </div>
 
                 <Separator />
 
