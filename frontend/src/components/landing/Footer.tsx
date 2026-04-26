@@ -1,4 +1,10 @@
-import React from "react";
+/**
+ * Footer — bottom of every landing page.
+ *
+ * Migrated from .jsx → .tsx (Sprint 5 TS migration).
+ * Pure presentational, no state — relies on the i18n provider for
+ * copy.
+ */
 import { LanguageToggle } from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "@/i18n/I18nProvider";

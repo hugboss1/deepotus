@@ -24,8 +24,18 @@ import type { Lang } from "@/types";
 interface I18nValue {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (path: string, fallback?: unknown) => unknown;
-  dict: Record<string, unknown>;
+  /**
+   * Translation lookup — the return type is intentionally `any` because:
+   *   - translation values can be strings, arrays, or nested objects,
+   *   - paths are dynamic, so static narrowing is impossible,
+   *   - call-sites would otherwise need a `String(...)` wrap on every
+   *     usage which is the worst kind of TS noise.
+   * Treat the return as ReactNode-compatible at the call-site.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: (path: string, fallback?: any) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dict: Record<string, any>;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -92,21 +102,25 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // `dict` is purely derived from `lang` and the static `translations` import.
-  const dict = useMemo<Record<string, unknown>>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dict = useMemo<Record<string, any>>(
     () =>
-      (translations as Record<string, Record<string, unknown>>)[lang] ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (translations as Record<string, Record<string, any>>)[lang] ||
       translations.fr,
     [lang],
   );
 
   // t("path.to.key", fallback) — returns the string (or object/array) from dict
   const t = useCallback(
-    (path: string, fallback?: unknown): unknown => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (path: string, fallback?: any): any => {
       const parts = path.split(".");
-      let cur: unknown = dict;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let cur: any = dict;
       for (const p of parts) {
         if (cur == null) return fallback ?? path;
-        cur = (cur as Record<string, unknown>)[p];
+        cur = cur[p];
       }
       return cur ?? fallback ?? path;
     },

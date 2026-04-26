@@ -1,38 +1,30 @@
 [
   {
-    "content": "[Critical] Fix circular import bot_scheduler ↔ loyalty_email ↔ news_repost (extract get_bot_config to shared repo)",
+    "content": "Audit current TS state — 7/112 files migrated",
     "status": "completed"
   },
   {
-    "content": "[Critical] Replace `random` with `secrets` in scripts_generate_redacted_dossier.py",
-    "status": "completed"
+    "content": "Extract LoyaltySection from AdminBots into TSX (own data fetching, ~280 lines)",
+    "status": "in_progress"
   },
   {
-    "content": "[Critical] Fix `is` literal comparisons in vault.py / routers/* (ruff F632) — 0 real violations found",
-    "status": "completed"
+    "content": "Extract NewsRepostSection from AdminBots into TSX (own data fetching, ~340 lines)",
+    "status": "pending"
   },
   {
-    "content": "[Critical] Fix array-index-as-key in TerminalWindow.jsx",
-    "status": "completed"
+    "content": "Wire new sections into AdminBots, remove inline code",
+    "status": "pending"
   },
   {
-    "content": "[Critical] Audit localStorage usage — swap admin auth token to sessionStorage + eager legacy cleanup at module load",
-    "status": "completed"
+    "content": "Quick wins: convert Footer/LanguageToggle/HeroHeadline/HeroPoster/HeroCountdown to .tsx",
+    "status": "pending"
   },
   {
-    "content": "[Important] Fix missing hook deps in NEW code (DeepStateIntro — useMemo→useCallback)",
-    "status": "completed"
+    "content": "Verify: eslint + screenshot Bots Control + landing",
+    "status": "pending"
   },
   {
-    "content": "[Important] Refactor large functions (news_repost_tick + _send_one + loyalty_email._send_one) into helpers",
-    "status": "completed"
-  },
-  {
-    "content": "[Nice-to-have] Wrap remaining console statement in TerminalPopup",
-    "status": "completed"
-  },
-  {
-    "content": "Regression test all touched APIs + admin login flow with sessionStorage — 100% backend, 95% frontend, 1 LOW-priority cosmetic finding fixed",
-    "status": "completed"
+    "content": "Update TODO_TYPESCRIPT.md with progress",
+    "status": "pending"
   }
 ]

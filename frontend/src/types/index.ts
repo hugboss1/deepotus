@@ -77,6 +77,81 @@ export interface BotConfig {
   enabled_types: ContentType[];
 }
 
+// ---- Loyalty engine (Sprints 3 + 4) ---------------------------------------
+export interface LoyaltyTier {
+  tier: string;
+  lower_pct: number;
+  upper_pct: number;
+  hints_fr: string[];
+  hints_en: string[];
+}
+
+export interface LoyaltyStatus {
+  hints_enabled: boolean;
+  email_enabled: boolean;
+  email_delay_hours: number;
+  progress_percent: number;
+  current_tier: string;
+  sample_hint_fr: string | null;
+  sample_hint_en: string | null;
+  tiers: LoyaltyTier[];
+}
+
+export interface LoyaltyEmailStats {
+  total_sent: number;
+  last_sent_at: string | null;
+  last_recipient: string | null;
+  pending_now: number;
+}
+
+export interface LoyaltyTestSendResult {
+  status: string;
+  email: string;
+  accred?: string | null;
+  lang?: string | null;
+  email_id?: string | null;
+  error?: string | null;
+  prophet_message?: string | null;
+}
+
+// ---- News repost (auto-relay top RSS headlines) ---------------------------
+export interface NewsRepostQueueItem {
+  title: string;
+  source: string | null;
+  url: string;
+  preview_text: string;
+}
+
+export interface NewsRepostConfig {
+  enabled_for: { x: boolean; telegram: boolean };
+  interval_minutes: number;
+  delay_after_refresh_minutes: number;
+  wait_after_prophet_post_minutes: number;
+  daily_cap: number;
+  prefix_fr: string;
+  prefix_en: string;
+}
+
+export interface NewsRepostStatus {
+  config: NewsRepostConfig;
+  credentials_present: { x: boolean; telegram: boolean };
+  today_per_platform: { x: number; telegram: number };
+  last_per_platform: { x: string | null; telegram: string | null };
+  queue_preview: { x: NewsRepostQueueItem[]; telegram: NewsRepostQueueItem[] };
+}
+
+export interface NewsRepostTestResult {
+  status: string;
+  platform: string;
+  post_id?: string | null;
+  preview_text?: string | null;
+  title?: string | null;
+  link?: string | null;
+  error?: string | null;
+  hint?: string | null;
+}
+
+
 // ---- Public stats ---------------------------------------------------------
 export interface PublicStats {
   whitelist_count: number;

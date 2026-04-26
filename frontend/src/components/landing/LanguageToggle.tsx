@@ -1,9 +1,22 @@
-import React from "react";
+/**
+ * LanguageToggle — segmented FR/EN toggle.
+ *
+ * Migrated from .jsx → .tsx (Sprint 5 TS migration).
+ * Uses the i18n hook to flip the active locale and animates the
+ * background "pill" with framer-motion's `layoutId` for smooth
+ * transitions.
+ */
 import { useI18n } from "@/i18n/I18nProvider";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import type { Lang } from "@/types";
 
-export function LanguageToggle({ className = "" }) {
+interface Props {
+  className?: string;
+}
+
+const LANGS: Lang[] = ["fr", "en"];
+
+export function LanguageToggle({ className = "" }: Props) {
   const { lang, setLang } = useI18n();
   return (
     <div
@@ -12,11 +25,12 @@ export function LanguageToggle({ className = "" }) {
       role="tablist"
       aria-label="Language"
     >
-      {["fr", "en"].map((l) => {
+      {LANGS.map((l) => {
         const active = lang === l;
         return (
           <button
             key={l}
+            type="button"
             role="tab"
             aria-selected={active}
             data-testid={`lang-${l}`}

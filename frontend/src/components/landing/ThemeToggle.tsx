@@ -1,8 +1,16 @@
-import React from "react";
+/**
+ * ThemeToggle — small icon button to flip dark / light mode.
+ *
+ * Migrated from .jsx → .tsx (Sprint 5 TS migration).
+ */
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/theme/ThemeProvider";
 
-export default function ThemeToggle({ className = "" }) {
+interface Props {
+  className?: string;
+}
+
+export default function ThemeToggle({ className = "" }: Props) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
   return (

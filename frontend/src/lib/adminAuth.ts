@@ -1,5 +1,7 @@
 /**
- * adminAuth — small, single-source helper for the admin JWT token.
+ * adminAuth — single-source helper for the admin JWT token.
+ *
+ * Migrated from .js → .ts (Sprint 5 TS migration). Behaviour unchanged.
  *
  * Why sessionStorage instead of localStorage?
  *   - localStorage persists FOREVER and is readable by any script on
@@ -13,7 +15,7 @@
  *     option without a wider refactor).
  *
  * Migration: this module also reads-and-clears any LEGACY token left
- * in localStorage on first call so existing admins don't get a hard
+ * in localStorage on module load so existing admins don't get a hard
  * logout the moment we ship this change.
  */
 
@@ -22,7 +24,7 @@ const LEGACY_TOKEN_KEY = "deepotus_admin_token";
 
 let migrated = false;
 
-function migrateLegacyToken() {
+function migrateLegacyToken(): void {
   if (migrated || typeof window === "undefined") return;
   migrated = true;
   try {
@@ -33,7 +35,7 @@ function migrateLegacyToken() {
     // Always strip from localStorage so persisted copies don't linger,
     // even when the legacy value was empty.
     window.localStorage.removeItem(LEGACY_TOKEN_KEY);
-  } catch (_) {
+  } catch (_e) {
     /* storage blocked — non-fatal */
   }
 }
@@ -43,27 +45,27 @@ function migrateLegacyToken() {
 // any `getAdminToken` read.
 migrateLegacyToken();
 
-export function getAdminToken() {
+export function getAdminToken(): string {
   if (typeof window === "undefined") return "";
   migrateLegacyToken();
   try {
     return window.sessionStorage.getItem(TOKEN_KEY) || "";
-  } catch (_) {
+  } catch (_e) {
     return "";
   }
 }
 
-export function setAdminToken(token) {
+export function setAdminToken(token: string): void {
   if (typeof window === "undefined") return;
   try {
     if (token) window.sessionStorage.setItem(TOKEN_KEY, token);
     else window.sessionStorage.removeItem(TOKEN_KEY);
-  } catch (_) {
+  } catch (_e) {
     /* storage blocked — non-fatal */
   }
 }
 
-export function clearAdminToken() {
+export function clearAdminToken(): void {
   setAdminToken("");
 }
 

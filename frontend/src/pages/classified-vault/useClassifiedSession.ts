@@ -1,3 +1,14 @@
+/**
+ * useClassifiedSession — hook encapsulating session + vault state for
+ * the Classified Vault page.
+ *
+ * Migrated from .js → .ts (Sprint 5 TS migration). Behaviour unchanged.
+ *
+ * Security note: previously stored the session token in localStorage —
+ * the code below sticks with that for now to keep behaviour identical,
+ * but a follow-up should move this to sessionStorage (same rationale
+ * as `lib/adminAuth.ts`). Tracked in TODO_TYPESCRIPT.md.
+ */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { logger } from "@/lib/logger";
@@ -6,54 +17,69 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const SESSION_KEY = "deepotus_access_session";
 const POLL_MS = 8000;
 
-/**
- * Custom hook encapsulating ALL session / vault state for the classified
- * vault page.
- *
- * Responsibilities:
- *   - Restore (or force-clear) the localStorage session at mount, depending
- *     on whether the visitor arrived via a `?code=` deep-link.
- *   - Pre-fill the digicode input from the URL query.
- *   - Validate the stored token against the backend on mount / on changes.
- *   - Poll the vault state every POLL_MS once authed.
- *   - Expose `verifyCode` and `logout` actions.
- *
- * Returns a flat object so the page itself stays declarative:
- *   { session, codeInput, setCodeInput, verifying, gateError, vault,
- *     verifyCode, logout }
- */
-export function useClassifiedSession() {
+export interface ClassifiedSession {
+  ok: boolean;
+  session_token: string;
+  accreditation_number?: string;
+  display_name?: string;
+  expires_at?: string;
+}
+
+export interface VaultState {
+  stage?: string;
+  tokens_sold?: number;
+  tokens_per_micro?: number;
+  // server returns more fields — kept loose so the hook is forward-compatible
+  [key: string]: unknown;
+}
+
+export interface ClassifiedSessionApi {
+  session: ClassifiedSession | null;
+  codeInput: string;
+  setCodeInput: (s: string) => void;
+  verifying: boolean;
+  gateError: string | null;
+  vault: VaultState | null;
+  verifyCode: () => Promise<void>;
+  logout: () => void;
+}
+
+function loadStoredSession(): ClassifiedSession | null {
+  try {
+    if (typeof window !== "undefined") {
+      // ?code= present (email/QR) → ALWAYS force the gate, even if a stored
+      // session exists, so entry through the door stays explicit.
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("code")) {
+        localStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+    }
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as ClassifiedSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function useClassifiedSession(): ClassifiedSessionApi {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const aliveRef = useRef(true);
 
-  const [session, setSession] = useState(() => {
-    // ?code= present (email/QR) → ALWAYS force the gate, even if a stored
-    // session exists, so entry through the door stays explicit.
-    try {
-      if (typeof window !== "undefined") {
-        const sp = new URLSearchParams(window.location.search);
-        if (sp.get("code")) {
-          localStorage.removeItem(SESSION_KEY);
-          return null;
-        }
-      }
-      const raw = localStorage.getItem(SESSION_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [codeInput, setCodeInput] = useState(() =>
+  const [session, setSession] = useState<ClassifiedSession | null>(() =>
+    loadStoredSession(),
+  );
+  const [codeInput, setCodeInput] = useState<string>(() =>
     (params.get("code") || "").trim().toUpperCase(),
   );
   const [verifying, setVerifying] = useState(false);
-  const [gateError, setGateError] = useState(null);
-  const [vault, setVault] = useState(null);
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [vault, setVault] = useState<VaultState | null>(null);
 
   // ---- Backend session validation ----
   useEffect(() => {
-    if (!session?.session_token) return;
+    if (!session?.session_token) return undefined;
     const token = session.session_token;
     let cancelled = false;
     (async () => {
@@ -84,14 +110,14 @@ export function useClassifiedSession() {
     if (!session?.session_token) return undefined;
     const token = session.session_token;
 
-    let timer;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
       try {
         const res = await fetch(`${API}/api/vault/state`, {
           headers: { "X-Session-Token": token },
         });
         if (!res.ok) throw new Error(`status ${res.status}`);
-        const data = await res.json();
+        const data = (await res.json()) as VaultState;
         if (aliveRef.current) setVault(data);
       } catch (e) {
         logger.error("[classified-vault] vault poll failed", e);
@@ -108,7 +134,7 @@ export function useClassifiedSession() {
   }, [session]);
 
   // ---- Actions ----
-  async function verifyCode() {
+  async function verifyCode(): Promise<void> {
     setGateError(null);
     setVerifying(true);
     try {
@@ -124,19 +150,20 @@ export function useClassifiedSession() {
         );
       }
       localStorage.setItem(SESSION_KEY, JSON.stringify(data));
-      setSession(data);
+      setSession(data as ClassifiedSession);
       setVerifying(false);
       // Clear `?code=` so a refresh does not re-trigger the gate.
       if (params.get("code")) {
         navigate("/classified-vault", { replace: true });
       }
-    } catch (e) {
-      setGateError(String(e?.message || e));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setGateError(msg || "verification failed");
       setVerifying(false);
     }
   }
 
-  function logout() {
+  function logout(): void {
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
     setCodeInput("");
