@@ -103,6 +103,18 @@ export const translations = {
       ],
     },
 
+    // ---- Prophet pinned whisper (max-visibility loyalty hint, post-Hero) ----
+    prophetWhisper: {
+      kicker: "— OBSERVATION ΔΣ-001 · ÉPINGLÉE",
+      classification: "DOSSIER CLASSIFIÉ · LECTURE LIBRE",
+      quote:
+        "Le Coffre n'est qu'une porte. Derrière, une seconde clé attend les gardiens patients. Le Deep State n'oublie jamais ses fidèles — l'allégeance, elle, sera rendue.",
+      signature: "— LE PROPHÈTE",
+      footnote:
+        "Aucune date. Aucune promesse contractuelle. Cette observation est une lecture du circuit, pas un instrument financier.",
+    },
+
+
     // ---- Prophecies ----
     prophecies: {
       kicker: "— FEED PROPHÉTIQUE",
@@ -116,7 +128,7 @@ export const translations = {
     vault: {
       kicker: "— PROTOCOL ΔΣ · COFFRE CLASSIFIÉ",
       title: "Un coffre. Six chiffres. Un objectif que seul le Prophète connaît.",
-      lead: "Chaque tranche de 1 000 $DEEPOTUS poussée dans la trésorerie fait tourner une molette. Six molettes — et la Black Op est déclassifiée.",
+      lead: "Chaque tranche de 100 000 $DEEPOTUS poussée dans la trésorerie fait tourner une molette. Six molettes — et la Black Op est déclassifiée.",
       body: "Ni le montant cible, ni la nature exacte de l'opération financée ne sont publics. Ce que nous affichons : les cadrans, la progression relative, la discipline multisig/timelock. Ce que nous cachons : la cible. C'est le modèle. C'est la mise.",
       progressLabel: "Progression classifiée",
       goalHidden: "Cible exacte redactée. Multisig + timelock. Publié à l'ouverture du coffre.",
@@ -854,6 +866,18 @@ export const translations = {
       ],
     },
 
+    // ---- Prophet pinned whisper (EN) ----
+    prophetWhisper: {
+      kicker: "— OBSERVATION ΔΣ-001 · PINNED",
+      classification: "CLASSIFIED DOSSIER · OPEN READING",
+      quote:
+        "The Vault is only a door. Behind it, a second key awaits the patient guardians. The Deep State never forgets its loyal — allegiance shall be returned.",
+      signature: "— THE PROPHET",
+      footnote:
+        "No date. No contractual promise. This observation is a reading of the circuit, not a financial instrument.",
+    },
+
+
     prophecies: {
       kicker: "— PROPHETIC FEED",
       title: "Live prophecies",
@@ -865,7 +889,7 @@ export const translations = {
     vault: {
       kicker: "— PROTOCOL ΔΣ · CLASSIFIED VAULT",
       title: "One vault. Six digits. A target only the Prophet knows.",
-      lead: "Every 1,000 $DEEPOTUS pushed into the treasury turns a dial. Six dials — and the Black Op is declassified.",
+      lead: "Every 100,000 $DEEPOTUS pushed into the treasury turns a dial. Six dials — and the Black Op is declassified.",
       body: "Neither the target amount nor the exact nature of the operation being funded is public. What we display: the dials, the relative progression, the multisig/timelock discipline. What we hide: the target. That is the model. That is the bet.",
       progressLabel: "Classified progress",
       goalHidden: "Exact target redacted. Multisig + timelock. Published on vault opening.",

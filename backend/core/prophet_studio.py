@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -32,6 +33,7 @@ from core.config import (
     EMERGENT_LLM_KEY,
     IMAGE_LLM_MODEL,
     IMAGE_LLM_PROVIDER,
+    db,
     logger,
 )
 
@@ -340,6 +342,39 @@ async def generate_post(
     llm_cfg = await _resolve_llm_config()
     provider, model = llm_cfg["provider"], llm_cfg["model"]
 
+    # ---- Loyalty hint injection (vault-progress aware) ----
+    # When enabled in bot_config, prepend a tier-appropriate hint to the
+    # extra_context. We re-skin it through the LLM so each post stays
+    # natural-sounding rather than dropping the hint verbatim.
+    loyalty_meta: Optional[Dict[str, Any]] = None
+    try:
+        from core.loyalty import get_loyalty_context
+
+        bot_cfg = await get_bot_config()
+        vault_doc = await db["vault_state"].find_one({"_id": "protocol_delta_sigma"}) or {}
+        loyalty_meta = await get_loyalty_context(
+            bot_config=bot_cfg,
+            vault_state=vault_doc,
+            seed=int(datetime.now(timezone.utc).timestamp()) // 60,
+            lang="fr",
+        )
+        if loyalty_meta and loyalty_meta.get("active_hint"):
+            loyalty_directive = (
+                "LOYALTY DIRECTIVE (Vault progress = "
+                f"{loyalty_meta['progress_percent']}% · tier="
+                f"{loyalty_meta['tier']}): subtly weave the spirit of this "
+                "hint into the post WITHOUT naming any future token, "
+                "WITHOUT promising amounts or dates. Reskin in the "
+                "Prophet's voice — never paste verbatim. "
+                f'Hint FR: "{loyalty_meta.get("hint_fr") or "—"}". '
+                f'Hint EN: "{loyalty_meta.get("hint_en") or "—"}".'
+            )
+            extra_context = (extra_context or "") + "\n\n" + loyalty_directive
+    except Exception:
+        # Loyalty injection is non-critical — never block a post on it.
+        logging.exception("[prophet_studio] loyalty hint injection failed (non-fatal)")
+        loyalty_meta = None
+
     user_prompt = _build_user_prompt(
         content_type=content_type,
         platform=platform,
@@ -370,6 +405,7 @@ async def generate_post(
         "content_en": content_en,
         "hashtags": hashtags,
         "primary_emoji": primary_emoji,
+        "loyalty": loyalty_meta,
     }
     logger.info(
         "[prophet_studio] generated type=%s platform=%s model=%s fr_len=%d en_len=%d",

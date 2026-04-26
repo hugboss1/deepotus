@@ -1,0 +1,56 @@
+{
+  "summary": "Completed comprehensive testing of Sprint 2-4 loyalty system integration: Prophet pinned whisper, vault-aware loyalty hints, and loyalty email #3 functionality. Most features working correctly with minor backend config update issues.",
+  "backend_issues": {
+    "critical_bugs": [
+      {
+        "endpoint": "PUT /api/admin/bots/config",
+        "issue": "Loyalty config updates return 'empty_patch' error when trying to update loyalty.hints_enabled or loyalty.email_delay_hours",
+        "impact": "Admin cannot toggle loyalty settings via API, though UI displays correctly",
+        "fix_priority": "MEDIUM"
+      }
+    ],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AdminBots loyalty toggles",
+        "issue": "Loyalty hints and email toggles don't persist state changes due to backend config update failure",
+        "selector": "[data-testid='loyalty-hints-toggle'], [data-testid='loyalty-email-toggle']",
+        "fix_priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Loyalty config updates",
+        "issue": "Frontend shows 'Could not update loyalty config' error when toggling settings",
+        "affected_selectors": ["[data-testid='loyalty-section']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "GET /api/admin/bots/loyalty returns proper structure with 5 tiers",
+    "GET /api/admin/bots/loyalty/email-stats returns total_sent, pending_now, last_sent_at",
+    "GET /api/admin/bots/jobs includes loyalty_email job running every 30 minutes",
+    "POST /api/admin/bots/loyalty/test-send works with valid email (status: sent)",
+    "Email delay validation properly rejects out-of-range values (0, 169)",
+    "Vault state regression: tokens_per_micro=100000 maintained",
+    "ProphetPinnedWhisper component renders correctly on landing page",
+    "Language toggle (FR/EN) changes quote text in ProphetPinnedWhisper",
+    "All required data-testid attributes present: prophet-pinned-quote, prophet-pinned-signature, prophet-pinned-classification, prophet-pinned-footnote",
+    "Admin loyalty section UI displays correctly with all components",
+    "Loyalty active preview shows correct tier-based hints (silent tier shows '— silent —')",
+    "Loyalty email dispatch stats display correctly (sent=1, pending=1)",
+    "Test-send functionality UI components present and functional"
+  ],
+  "test_report_links": ["/app/backend_test.py"],
+  "success_percentage": {
+    "backend": "89% (28/31 tests passed)",
+    "frontend": "95% (ProphetPinnedWhisper fully working, admin UI mostly working)"
+  },
+  "updated_files": ["/app/backend_test.py"],
+  "action_item_for_main_agent": "Fix the loyalty config update issue in PUT /api/admin/bots/config endpoint. The endpoint returns 'empty_patch' error when trying to update loyalty settings, preventing admin toggles from persisting. The loyalty field is properly defined in models and allowed_top list, but the update logic may have a validation issue.",
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}

@@ -85,12 +85,21 @@ class NewsFeedPatch(BaseModel):
     headlines_per_post: Optional[int] = Field(default=None, ge=0, le=10)
 
 
+class LoyaltyPatch(BaseModel):
+    """Partial patch for the loyalty sub-document (Sprints 3 & 4)."""
+
+    hints_enabled: Optional[bool] = None
+    email_enabled: Optional[bool] = None
+    email_delay_hours: Optional[int] = Field(default=None, ge=1, le=168)
+
+
 class BotConfigPatch(BaseModel):
     kill_switch_active: Optional[bool] = None
     platforms: Optional[Dict[str, PlatformPatch]] = None
     content_modes: Optional[Dict[str, bool]] = None
     llm: Optional[LlmPatch] = None
     news_feed: Optional[NewsFeedPatch] = None
+    loyalty: Optional[LoyaltyPatch] = None
     heartbeat_interval_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
     max_posts_per_day: Optional[int] = Field(default=None, ge=0, le=500)
 
@@ -718,4 +727,135 @@ async def revoke_llm_secret(
     )
     return LlmSecretStatusResponse(
         custom_llm_keys=await load_custom_keys_status()
+    )
+
+
+
+# ---------------------------------------------------------------------
+# LOYALTY — Sprints 3 & 4 (vault-aware hint engine + email #3)
+# ---------------------------------------------------------------------
+class LoyaltyTierItem(BaseModel):
+    tier: str
+    lower_pct: float
+    upper_pct: float
+    hints_fr: List[str]
+    hints_en: List[str]
+
+
+class LoyaltyStatusResponse(BaseModel):
+    """Snapshot of the loyalty engine for the admin dashboard."""
+
+    hints_enabled: bool
+    email_enabled: bool
+    email_delay_hours: int
+    progress_percent: float
+    current_tier: str
+    sample_hint_fr: Optional[str] = None
+    sample_hint_en: Optional[str] = None
+    tiers: List[LoyaltyTierItem]
+
+
+@router.get("/loyalty", response_model=LoyaltyStatusResponse)
+async def get_loyalty_status(_: Dict[str, Any] = Depends(require_admin)):
+    """Return the loyalty engine state (config + live tier preview)."""
+    from core.loyalty import (
+        compute_progress_percent,
+        get_loyalty_context,
+        preview_all_tiers,
+        resolve_tier,
+    )
+
+    cfg = await get_bot_config()
+    loyalty_cfg = (cfg.get("loyalty") or {})
+    vault_doc = (
+        await db["vault_state"].find_one({"_id": "protocol_delta_sigma"}) or {}
+    )
+    progress = compute_progress_percent(vault_doc)
+    current_tier_label, _, _ = resolve_tier(progress)
+
+    # Force-evaluate the active hint regardless of toggle so the admin
+    # always sees what *would* fire if hints were turned on.
+    ctx = await get_loyalty_context(
+        bot_config={"loyalty": {"hints_enabled": True}},
+        vault_state=vault_doc,
+        seed=0,
+        force=True,
+    )
+
+    return LoyaltyStatusResponse(
+        hints_enabled=bool(loyalty_cfg.get("hints_enabled", False)),
+        email_enabled=bool(loyalty_cfg.get("email_enabled", False)),
+        email_delay_hours=int(loyalty_cfg.get("email_delay_hours", 12)),
+        progress_percent=round(progress, 2),
+        current_tier=current_tier_label,
+        sample_hint_fr=(ctx or {}).get("hint_fr"),
+        sample_hint_en=(ctx or {}).get("hint_en"),
+        tiers=[LoyaltyTierItem(**t) for t in preview_all_tiers()],
+    )
+
+
+
+class LoyaltyEmailStats(BaseModel):
+    total_sent: int
+    last_sent_at: Optional[str] = None
+    last_recipient: Optional[str] = None
+    pending_now: int
+
+
+class LoyaltyTestSendRequest(BaseModel):
+    email: str = Field(..., max_length=200)
+    accreditation_number: Optional[str] = Field(default=None, max_length=40)
+
+
+class LoyaltyTestSendResponse(BaseModel):
+    status: str
+    email: str
+    accred: Optional[str] = None
+    lang: Optional[str] = None
+    email_id: Optional[str] = None
+    error: Optional[str] = None
+    prophet_message: Optional[str] = None
+
+
+@router.get("/loyalty/email-stats", response_model=LoyaltyEmailStats)
+async def get_loyalty_email_stats_endpoint(
+    _: Dict[str, Any] = Depends(require_admin),
+):
+    """Snapshot of loyalty-email dispatch stats for the admin dashboard."""
+    from core.loyalty_email import get_loyalty_email_stats
+
+    stats = await get_loyalty_email_stats()
+    return LoyaltyEmailStats(
+        total_sent=int(stats.get("total_sent", 0)),
+        last_sent_at=stats.get("last_sent_at"),
+        last_recipient=stats.get("last_recipient"),
+        pending_now=int(stats.get("pending_now", 0)),
+    )
+
+
+@router.post("/loyalty/test-send", response_model=LoyaltyTestSendResponse)
+async def loyalty_test_send(
+    payload: LoyaltyTestSendRequest,
+    _: Dict[str, Any] = Depends(require_admin),
+):
+    """Force-send the loyalty email to a single recipient now (debug/test).
+
+    Bypasses the delay + dedup checks. If a matching access_card exists,
+    it is used; otherwise a synthetic minimal card is built so the admin
+    can preview the rendered email on their own address.
+    """
+    from core.loyalty_email import force_send_loyalty
+
+    result = await force_send_loyalty(
+        target_email=payload.email,
+        target_accred=payload.accreditation_number,
+    )
+    return LoyaltyTestSendResponse(
+        status=str(result.get("status", "unknown")),
+        email=str(result.get("email", payload.email)),
+        accred=result.get("accred"),
+        lang=result.get("lang"),
+        email_id=result.get("email_id"),
+        error=result.get("error"),
+        prophet_message=result.get("prophet_message"),
     )

@@ -1,22 +1,38 @@
 [
   {
-    "content": "Générer les courbes synthétiques (RNG seedable + ease-out + bruit memecoin) dans un module utils",
+    "content": "Sprint 2 — Créer ProphetPinnedWhisper.jsx + i18n + insertion après Hero",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 2 — Vérifier visuellement (FR/EN, desktop/mobile)",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 3 — Backend: ajouter loyalty hints dans prophet_studio.generate_post() avec lecture vault progress",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 3 — Backend: ajouter toggle bot_config.loyalty_hints_enabled + endpoint admin",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 3 — Frontend: ajouter UI toggle + preview hints dans AdminBots",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 4 — Backend: créer render_loyalty_email template + champ MongoDB access_cards.loyalty_email_sent_at",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 4 — Backend: scheduler APScheduler job 30min + endpoint POST /api/admin/loyalty/test-send + toggle",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 4 — Frontend: UI toggle + bouton force send + status display",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 4 — Test end-to-end avec testing agent (backend only)",
     "status": "in_progress"
-  },
-  {
-    "content": "Refondre ROISimulator avec chart Recharts interactif + tabs synchronisés + portfolio overlay",
-    "status": "pending"
-  },
-  {
-    "content": "Custom Tooltip Recharts (jour, prix, MC, portfolio)",
-    "status": "pending"
-  },
-  {
-    "content": "Bandeau marquee disclaimer + CSS @keyframes + traductions FR/EN",
-    "status": "pending"
-  },
-  {
-    "content": "Vérifications visuelles desktop + mobile + dark mode",
-    "status": "pending"
   }
 ]

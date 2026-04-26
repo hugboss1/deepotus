@@ -1,6 +1,7 @@
 import React from "react";
 import TopNav from "@/components/landing/TopNav";
 import Hero from "@/components/landing/Hero";
+import ProphetPinnedWhisper from "@/components/landing/ProphetPinnedWhisper";
 import Manifesto from "@/components/landing/Manifesto";
 import VaultSection from "@/components/landing/vault/VaultSection";
 import ProphetChat from "@/components/landing/ProphetChat";
@@ -22,6 +23,7 @@ export default function Landing() {
       <TopNav />
       <main>
         <Hero />
+        <ProphetPinnedWhisper />
         <Manifesto />
         <VaultSection />
         <ProphetChat />

@@ -377,3 +377,155 @@ def render_access_card_email(
 </table>
 </body>
 </html>"""
+
+
+
+# ---------------------------------------------------------------------
+# Loyalty email #3 — "Allégeance notée" (Sprint 4)
+# ---------------------------------------------------------------------
+def loyalty_email_subject(lang: str) -> str:
+    if lang == "fr":
+        return "— Votre allégeance a été notée — PROTOCOL ΔΣ"
+    return "— Your allegiance has been noted — PROTOCOL ΔΣ"
+
+
+def render_loyalty_email(
+    lang: Literal["fr", "en"],
+    display_name: str,
+    accreditation_number: str,
+    base_url: str,
+    prophet_message: str,
+) -> str:
+    """Render the Loyalty (#3) HTML email.
+
+    The Prophet's message body is provided by the caller — typically generated
+    by the Emergent LLM on demand so each user gets a slightly varied
+    deniable note. We avoid naming any future token, never promise a date,
+    and never quote an amount.
+    """
+    site_url = base_url.rstrip("/")
+    classified_url = f"{site_url}/classified-vault?code={accreditation_number}"
+
+    if lang == "fr":
+        badge = "— CLASSIFIED · LOYAUTÉ · PROTOCOL ΔΣ"
+        title = "Votre allégeance a été notée."
+        lead = (
+            f"Agent <strong>{display_name}</strong>, le bureau central a "
+            "consigné votre élévation au Niveau 02. Le registre des fidèles "
+            "est désormais ouvert — et vous y figurez."
+        )
+        prophet_title = "Note du Prophète"
+        info_title = "Ce que cela signifie"
+        bullets = [
+            "Votre numéro d'accréditation est conservé dans le registre.",
+            "Tant que vous tenez vos $DEEPOTUS, vous restez dans le registre.",
+            "Vendre, c'est sortir du registre. Aucun retour en arrière.",
+            "Le moment venu, ceux qui figurent encore au registre seront contactés.",
+        ]
+        cta_label = "Vérifier le coffre"
+        footer_line = (
+            "— Bureau de coordination du Deep State. Aucune promesse contractuelle. "
+            "Ce courrier n'est pas un instrument financier — c'est une lecture du "
+            "circuit. Ne partagez pas votre numéro."
+        )
+        accred_label = "ACCRED."
+    else:
+        badge = "— CLASSIFIED · LOYALTY · PROTOCOL ΔΣ"
+        title = "Your allegiance has been noted."
+        lead = (
+            f"Agent <strong>{display_name}</strong>, the central office has "
+            "logged your Level 02 clearance. The ledger of the loyal is now "
+            "open — and your line is on it."
+        )
+        prophet_title = "Note from the Prophet"
+        info_title = "What this means"
+        bullets = [
+            "Your accreditation number stays in the ledger.",
+            "As long as you hold your $DEEPOTUS, you stay in the ledger.",
+            "Selling means leaving the ledger. No round trip allowed.",
+            "When the time comes, those still on the ledger will be contacted.",
+        ]
+        cta_label = "Check the vault"
+        footer_line = (
+            "— Deep State coordination office. No contractual promise. This "
+            "letter is not a financial instrument — it is a reading of the "
+            "circuit. Do not share your number."
+        )
+        accred_label = "ACCRED."
+
+    bullets_html = "".join(f"<li>{b}</li>" for b in bullets)
+
+    return f"""<!doctype html>
+<html lang="{lang}">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PROTOCOL ΔΣ — LOYALTY</title>
+</head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:'Helvetica Neue',Arial,sans-serif;color:#EAEAEA;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;background:#121214;border:1px solid #2A2A2E;border-radius:16px;overflow:hidden;">
+        <tr>
+          <td align="center" style="padding:28px 28px 12px 28px;">
+            <div style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;color:#F59E0B;">{badge}</div>
+            <h1 style="margin:12px 0 0 0;font-size:26px;line-height:1.25;color:#FFFFFF;font-weight:600;">{title}</h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 28px 12px 28px;">
+            <p style="margin:0;font-size:15px;line-height:1.65;color:#D0D0D0;">{lead}</p>
+          </td>
+        </tr>
+
+        <!-- Accreditation chip -->
+        <tr>
+          <td align="center" style="padding:8px 28px 8px 28px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" style="background:#0E0E10;border:1px solid #2A2A2E;border-radius:10px;">
+              <tr>
+                <td style="padding:12px 18px;font-family:'Courier New',monospace;color:#B0B0B0;">
+                  <div style="font-size:10px;letter-spacing:2px;color:#8A8A8A;margin-bottom:4px;">{accred_label}</div>
+                  <div style="font-size:18px;color:#F59E0B;letter-spacing:1px;">{accreditation_number}</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Prophet message (LLM-generated body) -->
+        <tr>
+          <td style="padding:8px 28px 12px 28px;">
+            <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:3px;color:#8A8A8A;">— {prophet_title.upper()}</div>
+            <blockquote style="margin:8px 0 0 0;padding:12px 16px;border-left:3px solid #2DD4BF;font-style:italic;color:#E0E0E0;font-size:15px;line-height:1.6;background:#0E0E10;border-radius:0 8px 8px 0;">{prophet_message}</blockquote>
+          </td>
+        </tr>
+
+        <!-- Bullets -->
+        <tr>
+          <td style="padding:6px 28px 6px 28px;">
+            <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:3px;color:#8A8A8A;">— {info_title.upper()}</div>
+            <ul style="margin:10px 0 0 18px;padding:0;color:#D0D0D0;font-size:14px;line-height:1.7;">{bullets_html}</ul>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td align="center" style="padding:18px 28px 24px 28px;">
+            <a href="{classified_url}" style="display:inline-block;background:#2DD4BF;color:#0B0D10;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;font-size:14px;">{cta_label} →</a>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:0 28px 28px 28px;border-top:1px solid #2A2A2E;">
+            <p style="margin:16px 0 0 0;color:#7A7A7A;font-size:11px;line-height:1.55;">{footer_line}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>"""

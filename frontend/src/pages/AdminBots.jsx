@@ -30,6 +30,7 @@ import {
   EyeOff,
   Trash2,
   Lock as LockIcon,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,6 +107,15 @@ export default function AdminBots() {
   const [newsFeedsDraft, setNewsFeedsDraft] = useState("");
   const [newsKeywordsDraft, setNewsKeywordsDraft] = useState("");
 
+  // ---- Loyalty engine state (Sprint 3 + 4: vault-aware hints + email #3) ----
+  const [loyalty, setLoyalty] = useState(null);
+  const [loyaltyBusy, setLoyaltyBusy] = useState(false);
+  const [loyaltyEmailStats, setLoyaltyEmailStats] = useState(null);
+  const [loyaltyTestEmail, setLoyaltyTestEmail] = useState("");
+  const [loyaltyTestAccred, setLoyaltyTestAccred] = useState("");
+  const [loyaltyTestBusy, setLoyaltyTestBusy] = useState(false);
+  const [loyaltyTestResult, setLoyaltyTestResult] = useState(null);
+
   // ---- Custom LLM keys vault (Config tab "Custom LLM keys" section) ----
   // The dialog is shared across the 3 providers — only one can be open at a time.
   const [llmSecretDialogOpen, setLlmSecretDialogOpen] = useState(false);
@@ -167,6 +177,7 @@ export default function AdminBots() {
         loadPosts(),
         loadContentTypes(),
         loadNews(),
+        loadLoyalty(),
       ]);
     } finally {
       setLoading(false);
@@ -215,6 +226,71 @@ export default function AdminBots() {
       setContentTypes(Array.isArray(data) ? data : []);
     } catch (err) {
       logger.error(err);
+    }
+  }
+
+  async function loadLoyalty() {
+    try {
+      const [{ data: l }, statsRes] = await Promise.all([
+        axios.get(`${API}/api/admin/bots/loyalty`, { headers }),
+        axios
+          .get(`${API}/api/admin/bots/loyalty/email-stats`, { headers })
+          .catch(() => ({ data: null })),
+      ]);
+      setLoyalty(l);
+      setLoyaltyEmailStats(statsRes?.data || null);
+    } catch (err) {
+      logger.error(err);
+    }
+  }
+
+  async function patchLoyalty(patch) {
+    setLoyaltyBusy(true);
+    try {
+      await axios.put(
+        `${API}/api/admin/bots/config`,
+        { loyalty: patch },
+        { headers },
+      );
+      await Promise.all([loadConfig(), loadLoyalty()]);
+      toast.success("Loyalty config updated");
+    } catch (err) {
+      logger.error(err);
+      toast.error("Could not update loyalty config");
+    } finally {
+      setLoyaltyBusy(false);
+    }
+  }
+
+  async function sendLoyaltyTest() {
+    const email = (loyaltyTestEmail || "").trim();
+    if (!email) {
+      toast.error("Email required for force-send");
+      return;
+    }
+    setLoyaltyTestBusy(true);
+    setLoyaltyTestResult(null);
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/bots/loyalty/test-send`,
+        {
+          email,
+          accreditation_number: (loyaltyTestAccred || "").trim() || undefined,
+        },
+        { headers },
+      );
+      setLoyaltyTestResult(data);
+      if (data?.status === "sent") {
+        toast.success(`Loyalty email sent to ${email}`);
+        await loadLoyalty();
+      } else {
+        toast.error(`Send status: ${data?.status || "unknown"}`);
+      }
+    } catch (err) {
+      logger.error(err);
+      toast.error("Force-send failed");
+    } finally {
+      setLoyaltyTestBusy(false);
     }
   }
 
@@ -1277,6 +1353,304 @@ export default function AdminBots() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* -------------------- LOYALTY ENGINE -------------------- */}
+            <Separator className="my-2" />
+            <div
+              className="rounded-xl border border-border bg-card p-5 space-y-4"
+              data-testid="loyalty-section"
+            >
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-[#2DD4BF]" />
+                  <div className="font-display font-semibold">
+                    Loyalty engine · vault-aware hints
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="font-mono text-[10px] uppercase tracking-widest"
+                    data-testid="loyalty-current-tier"
+                  >
+                    {loyalty?.current_tier || "—"} ·{" "}
+                    {loyalty?.progress_percent != null
+                      ? `${loyalty.progress_percent}%`
+                      : "—"}
+                  </Badge>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadLoyalty}
+                  disabled={loyaltyBusy}
+                  data-testid="loyalty-refresh-btn"
+                >
+                  <RefreshCw size={14} className="mr-1.5" /> Refresh
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When enabled, the Prophet bot studio will inject a tier-aware
+                "stay-loyal" hint into every LLM prompt — escalating the signal
+                as the Vault fills (5 tiers · 0-25 silent · 25-50 subtle ·
+                50-75 explicit · 75-90 loud · 90+ reward). Hints never name a
+                future token and never promise a date or amount.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border bg-secondary/30 p-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-medium">Inject in bot posts</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+                      hints_enabled
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!!loyalty?.hints_enabled}
+                    disabled={loyaltyBusy}
+                    onCheckedChange={(v) =>
+                      patchLoyalty({ hints_enabled: !!v })
+                    }
+                    data-testid="loyalty-hints-toggle"
+                  />
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-medium">Loyalty email #3</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+                      email_enabled
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!!loyalty?.email_enabled}
+                    disabled={loyaltyBusy}
+                    onCheckedChange={(v) =>
+                      patchLoyalty({ email_enabled: !!v })
+                    }
+                    data-testid="loyalty-email-toggle"
+                  />
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-medium">Email delay</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+                      hours after Niveau 02
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="168"
+                    step="1"
+                    value={loyalty?.email_delay_hours ?? 12}
+                    onChange={(e) =>
+                      setLoyalty((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              email_delay_hours: Number(e.target.value || 12),
+                            }
+                          : prev,
+                      )
+                    }
+                    onBlur={(e) =>
+                      patchLoyalty({
+                        email_delay_hours: Math.max(
+                          1,
+                          Math.min(168, Number(e.target.value || 12)),
+                        ),
+                      })
+                    }
+                    className="w-20 text-right font-mono text-sm"
+                    data-testid="loyalty-email-delay-input"
+                  />
+                </div>
+              </div>
+
+              {/* Active tier preview */}
+              <div
+                className="rounded-lg border border-border bg-[#0B0D10]/85 text-white p-3"
+                data-testid="loyalty-active-preview"
+              >
+                <div className="font-mono text-[10px] uppercase tracking-widest text-white/60 mb-1.5">
+                  Active hint at {loyalty?.progress_percent ?? 0}% (tier ={" "}
+                  <span className="text-[#2DD4BF]">
+                    {loyalty?.current_tier || "—"}
+                  </span>
+                  )
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="rounded-md border border-white/10 px-2 py-1.5">
+                    <div className="text-[9px] text-white/50 font-mono uppercase tracking-widest">
+                      FR
+                    </div>
+                    <div className="text-xs text-white/90 italic">
+                      “{loyalty?.sample_hint_fr || "— silent —"}”
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-white/10 px-2 py-1.5">
+                    <div className="text-[9px] text-white/50 font-mono uppercase tracking-widest">
+                      EN
+                    </div>
+                    <div className="text-xs text-white/90 italic">
+                      “{loyalty?.sample_hint_en || "— silent —"}”
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loyalty email stats + test-send */}
+              <div
+                className="rounded-lg border border-border bg-secondary/30 p-3 space-y-3"
+                data-testid="loyalty-email-panel"
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Newspaper size={14} className="text-[#F59E0B]" />
+                    <span className="text-xs font-medium">
+                      Loyalty email · dispatch stats
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <span data-testid="loyalty-email-total-sent">
+                      sent={loyaltyEmailStats?.total_sent ?? 0}
+                    </span>
+                    <span>·</span>
+                    <span data-testid="loyalty-email-pending-now">
+                      pending={loyaltyEmailStats?.pending_now ?? 0}
+                    </span>
+                    {loyaltyEmailStats?.last_sent_at && (
+                      <>
+                        <span>·</span>
+                        <span data-testid="loyalty-email-last-sent">
+                          last={loyaltyEmailStats.last_sent_at.slice(0, 16)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={loyaltyTestEmail}
+                    onChange={(e) => setLoyaltyTestEmail(e.target.value)}
+                    className="text-sm"
+                    data-testid="loyalty-test-email-input"
+                  />
+                  <Input
+                    type="text"
+                    placeholder="ACCRED-XXXX (optional)"
+                    value={loyaltyTestAccred}
+                    onChange={(e) => setLoyaltyTestAccred(e.target.value)}
+                    className="text-sm font-mono"
+                    data-testid="loyalty-test-accred-input"
+                  />
+                  <Button
+                    onClick={sendLoyaltyTest}
+                    disabled={loyaltyTestBusy || !loyaltyTestEmail}
+                    data-testid="loyalty-test-send-btn"
+                    className="font-mono uppercase tracking-widest text-xs"
+                  >
+                    {loyaltyTestBusy ? "Sending…" : "Force-send now"}
+                  </Button>
+                </div>
+
+                {loyaltyTestResult && (
+                  <div
+                    className="rounded-md border border-border bg-card p-2.5 font-mono text-[11px] space-y-1"
+                    data-testid="loyalty-test-result"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="uppercase tracking-widest text-muted-foreground">
+                        status
+                      </span>
+                      <Badge
+                        variant={
+                          loyaltyTestResult.status === "sent"
+                            ? "default"
+                            : "outline"
+                        }
+                        className="text-[10px] uppercase"
+                      >
+                        {loyaltyTestResult.status}
+                      </Badge>
+                    </div>
+                    {loyaltyTestResult.email_id && (
+                      <div className="text-muted-foreground break-all">
+                        id: {loyaltyTestResult.email_id}
+                      </div>
+                    )}
+                    {loyaltyTestResult.error && (
+                      <div className="text-destructive">
+                        {loyaltyTestResult.error}
+                      </div>
+                    )}
+                    {loyaltyTestResult.prophet_message && (
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Prophet message preview
+                        </summary>
+                        <div className="mt-1 italic text-foreground/90 leading-relaxed">
+                          {loyaltyTestResult.prophet_message}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Full tiers list */}
+              <details
+                className="rounded-lg border border-border bg-secondary/30 p-3"
+                data-testid="loyalty-tiers-details"
+              >
+                <summary className="text-xs font-medium cursor-pointer">
+                  All tiers ({loyalty?.tiers?.length || 0})
+                </summary>
+                <div className="mt-3 space-y-2">
+                  {(loyalty?.tiers || []).map((tier) => (
+                    <div
+                      key={tier.tier}
+                      className="rounded-md border border-border bg-card p-2.5"
+                      data-testid={`loyalty-tier-${tier.tier}`}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge
+                          variant="outline"
+                          className="font-mono text-[10px] uppercase tracking-widest"
+                        >
+                          {tier.tier}
+                        </Badge>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {tier.lower_pct}% – {tier.upper_pct}%
+                        </span>
+                      </div>
+                      {tier.hints_fr.length > 0 && (
+                        <ul className="mt-1.5 ml-4 list-disc text-[11px] text-muted-foreground space-y-0.5">
+                          {tier.hints_fr.map((h, i) => (
+                            <li key={`fr-${i}`}>
+                              <span className="font-mono text-[9px] text-[#F59E0B] mr-1">
+                                FR
+                              </span>
+                              {h}
+                            </li>
+                          ))}
+                          {tier.hints_en.map((h, i) => (
+                            <li key={`en-${i}`}>
+                              <span className="font-mono text-[9px] text-[#2DD4BF] mr-1">
+                                EN
+                              </span>
+                              {h}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
             </div>
           </TabsContent>
 

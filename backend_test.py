@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-DEEPOTUS Backend API Testing - DexScreener Integration Features
-Testing DexScreener integration: vault state, dex-config, dex-poll, security, regression tests
+DEEPOTUS Backend API Testing - Loyalty System Integration (Sprint 2-4)
+Testing loyalty system: Prophet pinned whisper, vault-aware loyalty hints, loyalty email #3
+Also includes DexScreener integration and regression tests
 """
 
 import requests
@@ -422,19 +423,8 @@ class DexScreenerAPITester:
             self.log_result("Hourly Tick Enabled", False, f"Request failed: {response}")
         return False
 
-    def run_all_tests(self):
-        """Run all DexScreener integration tests"""
-        print("🚀 Starting DEEPOTUS DexScreener Integration Testing...")
-        print(f"Testing against: {self.base_url}")
-        print("=" * 60)
-        
-        # Initial admin login
-        if not self.admin_login():
-            print("❌ Failed to login as admin - stopping tests")
-            return False
-        
-        print("✅ Admin login successful")
-        
+    def run_dex_tests(self):
+        """Run existing DexScreener integration tests"""
         # Test vault state endpoints
         print("\n🏦 Testing Vault State Endpoints...")
         self.test_vault_state_public()
@@ -465,6 +455,22 @@ class DexScreenerAPITester:
         print("\n🔄 Testing Regression...")
         self.test_regression_existing_endpoints()
         self.test_hourly_tick_still_enabled()
+
+    def run_all_tests_original(self):
+        """Original run_all_tests method for DexScreener tests only"""
+        print("🚀 Starting DEEPOTUS DexScreener Integration Testing...")
+        print(f"Testing against: {self.base_url}")
+        print("=" * 60)
+        
+        # Initial admin login
+        if not self.admin_login():
+            print("❌ Failed to login as admin - stopping tests")
+            return False
+        
+        print("✅ Admin login successful")
+        
+        # Run DexScreener tests
+        self.run_dex_tests()
         
         # Print summary
         print("\n" + "=" * 60)
@@ -475,6 +481,268 @@ class DexScreenerAPITester:
         
         if self.errors:
             print(f"\n❌ FAILED TESTS:")
+            for error in self.errors:
+                print(f"  • {error}")
+        else:
+            print(f"\n✅ ALL TESTS PASSED!")
+        
+        return self.tests_passed == self.tests_run
+
+    # ============== LOYALTY SYSTEM TESTS (Sprint 2-4) ==============
+    
+    def test_loyalty_status_endpoint(self):
+        """Test GET /api/admin/bots/loyalty returns proper structure"""
+        response, data = self.make_request("GET", "/admin/bots/loyalty", headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Status Endpoint", False, "Request failed")
+            return
+        
+        required_fields = ["hints_enabled", "email_enabled", "email_delay_hours", "progress_percent", "current_tier", "tiers"]
+        missing_fields = [field for field in required_fields if field not in data]
+        
+        if missing_fields:
+            self.log_result("Loyalty Status Endpoint", False, f"Missing fields: {missing_fields}")
+            return
+        
+        # Check tiers structure
+        if not isinstance(data["tiers"], list) or len(data["tiers"]) != 5:
+            self.log_result("Loyalty Status Endpoint", False, f"Expected 5 tiers, got {len(data.get('tiers', []))}")
+            return
+        
+        # Check tier structure
+        tier = data["tiers"][0]
+        tier_fields = ["tier", "lower_pct", "upper_pct", "hints_fr", "hints_en"]
+        missing_tier_fields = [field for field in tier_fields if field not in tier]
+        
+        if missing_tier_fields:
+            self.log_result("Loyalty Status Endpoint", False, f"Missing tier fields: {missing_tier_fields}")
+            return
+        
+        self.log_result("Loyalty Status Endpoint", True, f"Progress: {data['progress_percent']}%, Tier: {data['current_tier']}")
+
+    def test_loyalty_email_stats_endpoint(self):
+        """Test GET /api/admin/bots/loyalty/email-stats"""
+        response, data = self.make_request("GET", "/admin/bots/loyalty/email-stats", headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Email Stats", False, "Request failed")
+            return
+        
+        required_fields = ["total_sent", "pending_now", "last_sent_at"]
+        missing_fields = [field for field in required_fields if field not in data]
+        
+        if missing_fields:
+            self.log_result("Loyalty Email Stats", False, f"Missing fields: {missing_fields}")
+            return
+        
+        # Check data types
+        if not isinstance(data["total_sent"], int) or not isinstance(data["pending_now"], int):
+            self.log_result("Loyalty Email Stats", False, "total_sent and pending_now should be integers")
+            return
+        
+        self.log_result("Loyalty Email Stats", True, f"Sent: {data['total_sent']}, Pending: {data['pending_now']}")
+
+    def test_loyalty_config_hints_enabled(self):
+        """Test PUT /api/admin/bots/config with loyalty.hints_enabled=true"""
+        # Enable hints
+        config_data = {"loyalty": {"hints_enabled": True}}
+        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Config (hints_enabled)", False, "Config update failed")
+            return
+        
+        # Verify persistence by checking loyalty status
+        response, loyalty_data = self.make_request("GET", "/admin/bots/loyalty", headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Config (hints_enabled)", False, "Failed to verify persistence")
+            return
+        
+        if loyalty_data.get("hints_enabled") != True:
+            self.log_result("Loyalty Config (hints_enabled)", False, "hints_enabled not persisted")
+            return
+        
+        # Check that sample hints are available when enabled
+        if not loyalty_data.get("sample_hint_fr") or not loyalty_data.get("sample_hint_en"):
+            self.log_result("Loyalty Config (hints_enabled)", False, "Sample hints not available when enabled")
+            return
+        
+        self.log_result("Loyalty Config (hints_enabled)", True, f"FR: '{loyalty_data['sample_hint_fr'][:30]}...'")
+
+    def test_loyalty_config_email_delay(self):
+        """Test PUT /api/admin/bots/config with loyalty.email_delay_hours"""
+        # Set valid delay
+        config_data = {"loyalty": {"email_delay_hours": 24}}
+        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Config (email_delay)", False, "Config update failed")
+            return
+        
+        # Verify persistence
+        response, loyalty_data = self.make_request("GET", "/admin/bots/loyalty", headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Config (email_delay)", False, "Failed to verify persistence")
+            return
+        
+        if loyalty_data.get("email_delay_hours") != 24:
+            self.log_result("Loyalty Config (email_delay)", False, f"Expected 24, got {loyalty_data.get('email_delay_hours')}")
+            return
+        
+        self.log_result("Loyalty Config (email_delay)", True, "24 hours delay persisted")
+
+    def test_loyalty_email_delay_validation(self):
+        """Test email_delay_hours validation (should reject 0 and 169)"""
+        # Test invalid value (0)
+        config_data = {"loyalty": {"email_delay_hours": 0}}
+        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers(), expected_status=400)
+        
+        if response and response.status_code == 200:
+            self.log_result("Loyalty Email Delay Validation (0)", False, "Should reject email_delay_hours=0")
+            return
+        
+        # Test invalid value (169)
+        config_data = {"loyalty": {"email_delay_hours": 169}}
+        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers(), expected_status=400)
+        
+        if response and response.status_code == 200:
+            self.log_result("Loyalty Email Delay Validation (169)", False, "Should reject email_delay_hours=169")
+            return
+        
+        self.log_result("Loyalty Email Delay Validation", True, "Properly rejects out-of-range values")
+
+    def test_bot_jobs_loyalty_email(self):
+        """Test GET /api/admin/bots/jobs includes loyalty_email job every 30 minutes"""
+        response, jobs = self.make_request("GET", "/admin/bots/jobs", headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Bot Jobs (loyalty_email)", False, "Request failed")
+            return
+        
+        # Look for loyalty_email job
+        loyalty_job = None
+        for job in jobs:
+            if job.get("id") == "loyalty_email":
+                loyalty_job = job
+                break
+        
+        if not loyalty_job:
+            self.log_result("Bot Jobs (loyalty_email)", False, "loyalty_email job not found")
+            return
+        
+        # Check if it runs every 30 minutes
+        trigger = loyalty_job.get("trigger", "")
+        if "0:30:00" not in trigger and "30 minutes" not in trigger.lower():
+            self.log_result("Bot Jobs (loyalty_email)", False, f"Expected 30-minute interval, got: {trigger}")
+            return
+        
+        self.log_result("Bot Jobs (loyalty_email)", True, f"Trigger: {trigger}")
+
+    def test_loyalty_test_send_valid(self):
+        """Test POST /api/admin/bots/loyalty/test-send with valid email"""
+        test_data = {"email": "loyalty-test@example.com"}
+        response, data = self.make_request("POST", "/admin/bots/loyalty/test-send", data=test_data, headers=self.get_auth_headers())
+        
+        if not response:
+            self.log_result("Loyalty Test Send (valid)", False, "Request failed")
+            return
+        
+        status = data.get("status")
+        
+        # Should be either 'sent' (with RESEND_API_KEY) or 'skipped_no_resend_key' (without)
+        if status not in ["sent", "skipped_no_resend_key", "failed"]:
+            self.log_result("Loyalty Test Send (valid)", False, f"Unexpected status: {status}")
+            return
+        
+        if status == "sent" and not data.get("email_id"):
+            self.log_result("Loyalty Test Send (valid)", False, "Status 'sent' but no email_id")
+            return
+        
+        self.log_result("Loyalty Test Send (valid)", True, f"Status: {status}")
+
+    def test_loyalty_test_send_invalid(self):
+        """Test POST /api/admin/bots/loyalty/test-send with empty email"""
+        test_data = {"email": ""}
+        response, data = self.make_request("POST", "/admin/bots/loyalty/test-send", data=test_data, headers=self.get_auth_headers(), expected_status=[200, 400])
+        
+        if not response:
+            self.log_result("Loyalty Test Send (invalid)", False, "Request failed")
+            return
+        
+        if response.status_code == 400:
+            self.log_result("Loyalty Test Send (invalid)", True, "Validation error as expected")
+            return
+        
+        # If 200, check for failed status
+        status = data.get("status")
+        if status != "failed":
+            self.log_result("Loyalty Test Send (invalid)", False, f"Expected 'failed' status, got: {status}")
+            return
+        
+        self.log_result("Loyalty Test Send (invalid)", True, "Returns failed status for empty email")
+
+    def test_vault_state_tokens_per_micro_regression(self):
+        """Test that /api/vault/state still returns tokens_per_micro=100000"""
+        response, data = self.make_request("GET", "/vault/state", expected_status=200)
+        
+        if not response:
+            self.log_result("Vault State Regression", False, "Request failed")
+            return
+        
+        tokens_per_micro = data.get("tokens_per_micro")
+        
+        if tokens_per_micro != 100000:
+            self.log_result("Vault State Regression", False, f"Expected tokens_per_micro=100000, got: {tokens_per_micro}")
+            return
+        
+        self.log_result("Vault State Regression", True, "tokens_per_micro=100000 maintained")
+
+    def run_loyalty_tests(self):
+        """Run all loyalty system tests"""
+        print("\n🔮 LOYALTY SYSTEM TESTS (Sprint 2-4)")
+        print("=" * 50)
+        
+        loyalty_tests = [
+            self.test_loyalty_status_endpoint,
+            self.test_loyalty_email_stats_endpoint,
+            self.test_loyalty_config_hints_enabled,
+            self.test_loyalty_config_email_delay,
+            self.test_loyalty_email_delay_validation,
+            self.test_bot_jobs_loyalty_email,
+            self.test_loyalty_test_send_valid,
+            self.test_loyalty_test_send_invalid,
+            self.test_vault_state_tokens_per_micro_regression,
+        ]
+        
+        for test in loyalty_tests:
+            test()
+
+    def run_all_tests(self):
+        """Run all tests including loyalty system"""
+        print(f"🚀 DEEPOTUS Backend API Testing")
+        print(f"Testing against: {self.base_url}")
+        print("=" * 60)
+        
+        # Admin login
+        if not self.admin_login():
+            print("❌ Cannot proceed without admin authentication")
+            return False
+        
+        # Run existing DexScreener tests
+        self.run_dex_tests()
+        
+        # Run new loyalty system tests
+        self.run_loyalty_tests()
+        
+        # Print final summary
+        print("\n" + "=" * 60)
+        print(f"📊 FINAL RESULTS: {self.tests_passed}/{self.tests_run} tests passed")
+        
+        if self.errors:
+            print(f"\n❌ FAILED TESTS ({len(self.errors)}):")
             for error in self.errors:
                 print(f"  • {error}")
         else:

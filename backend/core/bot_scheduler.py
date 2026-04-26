@@ -68,6 +68,15 @@ DEFAULT_BOT_CONFIG: Dict[str, Any] = {
         "last_refresh_at": None,
         "last_refresh_stats": None,
     },
+    # ---- Loyalty narrative (Sprint 3 + Sprint 4) ----
+    # When enabled, the prophet studio injects a tier-aware hint into the
+    # LLM prompt so social posts gradually escalate the "stay-loyal"
+    # signal as the Vault fills. Email-side toggle is wired in Sprint 4.
+    "loyalty": {
+        "hints_enabled": False,
+        "email_enabled": False,
+        "email_delay_hours": 12,
+    },
     "heartbeat_interval_minutes": 5,
     "max_posts_per_day": 12,
     "last_updated_at": None,
@@ -107,6 +116,7 @@ async def update_bot_config(patch: Dict[str, Any], updated_by: str = "admin") ->
         "content_modes",
         "llm",
         "news_feed",
+        "loyalty",
         "heartbeat_interval_minutes",
         "max_posts_per_day",
     }
@@ -267,6 +277,38 @@ async def _news_refresh_job() -> None:
     )
 
 
+async def _loyalty_email_job() -> None:
+    """Trigger the loyalty-email tick (Sprint 4).
+
+    Runs every 30 min. Internally checks `bot_config.loyalty.email_enabled`
+    and the `email_delay_hours` window before doing anything — so toggling
+    it off in the admin panel pauses dispatch within minutes.
+
+    NOT gated by the kill-switch: loyalty emails are transactional, not
+    promotional. The kill-switch stops bot *posts*, not user-bound emails.
+    """
+    from core.loyalty_email import loyalty_email_tick  # noqa: WPS433
+
+    try:
+        summary = await loyalty_email_tick()
+        if summary.get("sent") or summary.get("failed"):
+            await db[CONFIG_COLLECTION].update_one(
+                {"_id": CONFIG_SINGLETON_ID},
+                {
+                    "$set": {
+                        "loyalty.last_run_at": datetime.now(timezone.utc).isoformat(),
+                        "loyalty.last_run_summary": {
+                            "sent": summary.get("sent", 0),
+                            "skipped": summary.get("skipped", 0),
+                            "failed": summary.get("failed", 0),
+                        },
+                    }
+                },
+            )
+    except Exception:
+        logging.exception("[bot_scheduler] loyalty email tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -313,6 +355,22 @@ async def sync_jobs_from_config() -> None:
             _news_refresh_job,
             trigger=IntervalTrigger(hours=nf_hours),
             id="news_refresh",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+    # ---- Loyalty email tick (Sprint 4) — every 30 min ----
+    if _scheduler.get_job("loyalty_email"):
+        _scheduler.reschedule_job(
+            "loyalty_email",
+            trigger=IntervalTrigger(minutes=30),
+        )
+    else:
+        _scheduler.add_job(
+            _loyalty_email_job,
+            trigger=IntervalTrigger(minutes=30),
+            id="loyalty_email",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
