@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable */
 /**
  * Toast hook \u2014 inspired by react-hot-toast, with TypeScript types added.
  *

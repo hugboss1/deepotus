@@ -1,30 +1,26 @@
 [
   {
-    "content": "Audit current TS state — 7/112 files migrated",
+    "content": "Sprint 6.1 — Splitter Admin.jsx en sections TSX",
     "status": "completed"
   },
   {
-    "content": "Extract LoyaltySection from AdminBots into TSX (own data fetching, ~280 lines)",
-    "status": "in_progress"
+    "content": "Sprint 6.2 — Extraire NewsFeedSection.tsx d'AdminBots.jsx",
+    "status": "completed"
   },
   {
-    "content": "Extract NewsRepostSection from AdminBots into TSX (own data fetching, ~340 lines)",
-    "status": "pending"
+    "content": "Sprint 6.3 — Extraire HeliusSection.tsx d'AdminVault.jsx",
+    "status": "completed"
   },
   {
-    "content": "Wire new sections into AdminBots, remove inline code",
-    "status": "pending"
+    "content": "Sprint 6.4 — Migrer TerminalPopup.jsx → .tsx avec types stricts",
+    "status": "completed"
   },
   {
-    "content": "Quick wins: convert Footer/LanguageToggle/HeroHeadline/HeroPoster/HeroCountdown to .tsx",
-    "status": "pending"
+    "content": "Sprint 6.5 — Migrer AdminEmails.jsx → .tsx",
+    "status": "completed"
   },
   {
-    "content": "Verify: eslint + screenshot Bots Control + landing",
-    "status": "pending"
-  },
-  {
-    "content": "Update TODO_TYPESCRIPT.md with progress",
-    "status": "pending"
+    "content": "Sprint 6 Validation — tsc --noEmit + smoke test E2E pages admin",
+    "status": "completed"
   }
 ]

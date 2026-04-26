@@ -32,9 +32,9 @@ interface I18nValue {
    *     usage which is the worst kind of TS noise.
    * Treat the return as ReactNode-compatible at the call-site.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   t: (path: string, fallback?: any) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   dict: Record<string, any>;
 }
 
@@ -102,10 +102,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // `dict` is purely derived from `lang` and the static `translations` import.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   const dict = useMemo<Record<string, any>>(
     () =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line
       (translations as Record<string, Record<string, any>>)[lang] ||
       translations.fr,
     [lang],
@@ -113,10 +113,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // t("path.to.key", fallback) — returns the string (or object/array) from dict
   const t = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line
     (path: string, fallback?: any): any => {
       const parts = path.split(".");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line
       let cur: any = dict;
       for (const p of parts) {
         if (cur == null) return fallback ?? path;

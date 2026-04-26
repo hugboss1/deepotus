@@ -28,7 +28,27 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const PAGE_SIZE = 50;
 
-const TYPE_COLOR = {
+interface EmailEventEntry {
+  id?: string;
+  type: string;
+  recipient?: string | null;
+  subject?: string | null;
+  message_id?: string | null;
+  email_id?: string | null;
+  created_at?: string;
+  received_at?: string;
+  // eslint-disable-next-line
+  payload?: any;
+}
+
+interface EmailEventsState {
+  items: EmailEventEntry[];
+  total: number;
+  skip: number;
+  type_counts: Record<string, number>;
+}
+
+const TYPE_COLOR: Record<string, string> = {
   "email.sent": "#F59E0B",
   "email.delivered": "#16A34A",
   "email.delivery_delayed": "#CA8A04",
@@ -40,18 +60,16 @@ const TYPE_COLOR = {
 
 export default function AdminEmails() {
   const navigate = useNavigate();
-  const [token, setToken] = useState(() =>
-    getAdminToken(),
-  );
-  const [events, setEvents] = useState({
+  const [token, setToken] = useState<string>(() => getAdminToken() || "");
+  const [events, setEvents] = useState<EmailEventsState>({
     items: [],
     total: 0,
     skip: 0,
     type_counts: {},
   });
-  const [loading, setLoading] = useState(false);
-  const [typeFilter, setTypeFilter] = useState("");
-  const [recipientFilter, setRecipientFilter] = useState("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [recipientFilter, setRecipientFilter] = useState<string>("");
 
   useEffect(() => {
     document.title = "DEEPOTUS · Email Events";
@@ -82,8 +100,9 @@ export default function AdminEmails() {
         skip,
         type_counts: r.data.type_counts || {},
       });
-    } catch (err) {
-      if (err?.response?.status === 401) {
+    } catch (err: unknown) {
+      // eslint-disable-next-line
+      if ((err as any)?.response?.status === 401) {
         clearAdminToken();
         setToken("");
         navigate("/admin");
@@ -100,7 +119,7 @@ export default function AdminEmails() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, typeFilter]);
 
-  const applyRecipientFilter = (e) => {
+  const applyRecipientFilter = (e: React.FormEvent) => {
     e.preventDefault();
     load(0);
   };
@@ -109,7 +128,7 @@ export default function AdminEmails() {
   const totalPages = Math.max(1, Math.ceil((events.total || 0) / PAGE_SIZE));
 
   const typeChips = useMemo(() => {
-    const entries = Object.entries(events.type_counts || {});
+    const entries = Object.entries(events.type_counts || {}) as [string, number][];
     entries.sort((a, b) => b[1] - a[1]);
     return entries;
   }, [events.type_counts]);

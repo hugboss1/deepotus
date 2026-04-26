@@ -159,6 +159,18 @@ declare module "@/components/ui/skeleton" {
   export const Skeleton: React.FC<any>;
 }
 
+declare module "@/components/ui/table" {
+  import * as React from "react";
+  export const Table: React.ForwardRefExoticComponent<any>;
+  export const TableHeader: React.ForwardRefExoticComponent<any>;
+  export const TableBody: React.ForwardRefExoticComponent<any>;
+  export const TableFooter: React.ForwardRefExoticComponent<any>;
+  export const TableHead: React.ForwardRefExoticComponent<any>;
+  export const TableRow: React.ForwardRefExoticComponent<any>;
+  export const TableCell: React.ForwardRefExoticComponent<any>;
+  export const TableCaption: React.ForwardRefExoticComponent<any>;
+}
+
 declare module "@/components/ui/dropdown-menu" {
   import * as React from "react";
   export const DropdownMenu: React.FC<any>;

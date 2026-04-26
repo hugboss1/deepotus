@@ -1,13 +1,29 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, CheckCircle2, AlertTriangle, Mail, KeyRound, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 import { logger } from "@/lib/logger";
+import type { AccessSession } from "@/types";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const SESSION_KEY = "deepotus_access_session";
+
+type TerminalPhase =
+  | "denied"
+  | "form"
+  | "verify-existing"
+  | "sending"
+  | "verifying"
+  | "success"
+  | "verify-success"
+  | "error";
+
+interface TerminalPopupProps {
+  open: boolean;
+  onClose: () => void;
+}
 
 /**
  * TerminalPopup — a CRT-style terminal modal used as the GATE after the
@@ -16,33 +32,23 @@ const SESSION_KEY = "deepotus_access_session";
  *   1. Request a fresh Level-2 access card (email-gated).
  *   2. Verify an existing accreditation code (for visitors returning within
  *      the 24 h validity window — they go straight to the vault).
- *
- * Phases:
- *   "denied"            — typing-animated refusal + 2 CTAs
- *   "form"              — email + optional display name (request flow)
- *   "verify-existing"   — accred code input (returning-visitor flow)
- *   "sending"           — loading animation (request)
- *   "verifying"         — loading animation (verify-existing)
- *   "success"           — accreditation summary + "check your inbox"
- *   "verify-success"    — clearance confirmed + redirect to vault
- *   "error"             — technical failure
  */
-export default function TerminalPopup({ open, onClose }) {
+export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
   const { t, lang } = useI18n();
-  const [phase, setPhase] = useState("denied");
-  const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [existingCode, setExistingCode] = useState("");
-  const [result, setResult] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [typedLines, setTypedLines] = useState([]);
-  const [showCursor, setShowCursor] = useState(true);
+  const [phase, setPhase] = useState<TerminalPhase>("denied");
+  const [email, setEmail] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
+  const [existingCode, setExistingCode] = useState<string>("");
+  const [result, setResult] = useState<AccessSession | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [typedLines, setTypedLines] = useState<string[]>([]);
+  const [showCursor, setShowCursor] = useState<boolean>(true);
 
   // Typing animation for the "denied" intro
-  const deniedLines = useMemo(
-    () => t("terminal.deniedLines") || [],
+  const deniedLines: string[] = useMemo(
+    () => (t("terminal.deniedLines") as string[]) || [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lang]
+    [lang],
   );
 
   useEffect(() => {
@@ -58,7 +64,7 @@ export default function TerminalPopup({ open, onClose }) {
 
   // Animate typing of denied lines, one per ~700ms
   useEffect(() => {
-    if (!open || phase !== "denied") return;
+    if (!open || phase !== "denied") return undefined;
     let i = 0;
     setTypedLines([]);
     const id = setInterval(() => {
@@ -74,12 +80,12 @@ export default function TerminalPopup({ open, onClose }) {
 
   // Blinking cursor
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const id = setInterval(() => setShowCursor((c) => !c), 520);
     return () => clearInterval(id);
   }, [open]);
 
-  async function submitRequest(e) {
+  async function submitRequest(e: React.FormEvent) {
     e?.preventDefault();
     const trimmed = email.trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -107,13 +113,14 @@ export default function TerminalPopup({ open, onClose }) {
       const data = await res.json();
       setResult(data);
       setPhase("success");
-    } catch (err) {
-      setErrorMsg(String(err?.message || err));
+    } catch (err: unknown) {
+      // eslint-disable-next-line
+      setErrorMsg(String((err as any)?.message || err));
       setPhase("error");
     }
   }
 
-  async function submitVerifyExisting(e) {
+  async function submitVerifyExisting(e: React.FormEvent) {
     e?.preventDefault();
     // Sanitize: uppercase + only alnum and dashes
     const raw = (existingCode || "")
@@ -161,8 +168,9 @@ export default function TerminalPopup({ open, onClose }) {
       setTimeout(() => {
         window.location.href = "/classified-vault";
       }, 1500);
-    } catch (err) {
-      setErrorMsg(String(err?.message || err));
+    } catch (err: unknown) {
+      // eslint-disable-next-line
+      setErrorMsg(String((err as any)?.message || err));
       setPhase("error");
     }
   }
