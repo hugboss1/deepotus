@@ -12,7 +12,7 @@
  * Behaviour parity with the old inline section is preserved 1:1; the
  * data-testids are unchanged so existing E2E tests keep passing.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios, { AxiosRequestHeaders } from "axios";
 import { RefreshCw, Newspaper, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +49,7 @@ export default function LoyaltySection({ api, headers }: Props) {
     null,
   );
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const [{ data: l }, statsRes] = await Promise.all([
         axios.get<LoyaltyStatus>(`${api}/api/admin/bots/loyalty`, { headers }),
@@ -65,12 +65,11 @@ export default function LoyaltySection({ api, headers }: Props) {
     } catch (err) {
       logger.error(err);
     }
-  }
+  }, [api, headers]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   async function patch(body: LoyaltyPatchBody) {
     setBusy(true);

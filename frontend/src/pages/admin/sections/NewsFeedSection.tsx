@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -63,14 +63,14 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
 
   const newsFeedConfig: NewsFeedConfig = (config?.news_feed || {}) as NewsFeedConfig;
 
-  const loadNews = async () => {
+  const loadNews = useCallback(async () => {
     try {
       const { data } = await axios.get(`${api}/api/admin/bots/news`, { headers });
       setNews(data);
     } catch (err) {
       logger.error(err);
     }
-  };
+  }, [api, headers]);
 
   const refreshNewsNow = async () => {
     setNewsBusy(true);
@@ -95,12 +95,18 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
 
   useEffect(() => {
     loadNews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadNews]);
 
-  // Sync drafts with config
+  // Sync drafts with config. The keys below are JSON-stringified arrays so
+  // we get value-equality semantics (instead of new array refs every render).
+  // ESLint's exhaustive-deps can't trace that mapping; the stringified keys
+  // already reflect every meaningful change.
   const feedsKey = JSON.stringify(newsFeedConfig.feeds || []);
   const keywordsKey = JSON.stringify(newsFeedConfig.keywords || []);
+  const defaultFeedsKey = JSON.stringify(newsFeedConfig.default_feeds || []);
+  const defaultKeywordsKey = JSON.stringify(
+    newsFeedConfig.default_keywords || [],
+  );
   useEffect(() => {
     const nf = newsFeedConfig;
     if (!nf || Object.keys(nf).length === 0) return;
@@ -113,7 +119,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
     setNewsFeedsDraft(feedsList.join("\n"));
     setNewsKeywordsDraft(kwList.join(", "));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedsKey, keywordsKey]);
+  }, [feedsKey, keywordsKey, defaultFeedsKey, defaultKeywordsKey]);
 
   return (
     <div

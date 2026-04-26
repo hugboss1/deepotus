@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   AreaChart,
@@ -119,7 +119,7 @@ export default function PublicStats() {
     document.title = "$DEEPOTUS · Public Stats";
   }, []);
 
-  const fetchData = async (nextDays = days) => {
+  const fetchData = useCallback(async (nextDays = days) => {
     setLoading(true);
     try {
       const res = await axios.get(`${API}/public/stats?days=${nextDays}`);
@@ -129,12 +129,18 @@ export default function PublicStats() {
     } finally {
       setLoading(false);
     }
-  };
+    // We deliberately omit `days` from deps here: callers always pass
+    // `nextDays` explicitly when they want a different window, and we
+    // don't want this callback to re-create on every state change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchData(days);
+    // Initial fetch only — subsequent days changes go through changeDays()
+    // which calls fetchData(d) explicitly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchData]);
 
   const chartData = useMemo(
     () =>

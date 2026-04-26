@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getAdminToken, setAdminToken, clearAdminToken } from "@/lib/adminAuth";
@@ -42,7 +42,12 @@ export default function AdminVault() {
 
   // Helius state has moved to <HeliusSection /> (Sprint 6 split).
 
-  const headers = { Authorization: `Bearer ${token}` };
+  // Memoize headers so child sections don't re-fire effects every render
+  // when their parent re-renders (token rarely changes, headers stay stable).
+  const headers = useMemo(
+    () => ({ Authorization: `Bearer ${token}` }),
+    [token],
+  );
 
   useEffect(() => {
     if (!token) {

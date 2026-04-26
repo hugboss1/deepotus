@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export const SealStatusSection: React.FC<SealStatusSectionProps> = ({
   const [status, setStatus] = useState<SealStatusAdmin | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const { data } = await axios.get(
         `${api}/api/admin/vault/classified-status`,
@@ -53,7 +53,7 @@ export const SealStatusSection: React.FC<SealStatusSectionProps> = ({
     } catch (e) {
       logger.error(e);
     }
-  };
+  }, [api, headers]);
 
   const setOverride = async (val: ToggleValue) => {
     setBusy(true);
@@ -85,8 +85,7 @@ export const SealStatusSection: React.FC<SealStatusSectionProps> = ({
     load();
     const id = setInterval(load, 15_000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   const currentToggle = overrideToToggle(status?.override);
   const sealed = status?.sealed ?? true;

@@ -2,12 +2,18 @@
  * useClassifiedSession — hook encapsulating session + vault state for
  * the Classified Vault page.
  *
- * Migrated from .js → .ts (Sprint 5 TS migration). Behaviour unchanged.
+ * Migrated from .js → .ts (Sprint 5 TS migration).
  *
- * Security note: previously stored the session token in localStorage —
- * the code below sticks with that for now to keep behaviour identical,
- * but a follow-up should move this to sessionStorage (same rationale
- * as `lib/adminAuth.ts`). Tracked in TODO_TYPESCRIPT.md.
+ * Security:
+ *   - The session token is now stored in sessionStorage (NOT localStorage).
+ *     Same rationale as `lib/adminAuth.ts`:
+ *       • localStorage persists forever and is readable by any script on
+ *         the same origin → vulnerable to XSS pivoting.
+ *       • sessionStorage is scoped to the tab — closing it logs the
+ *         visitor out automatically. OWASP-recommended default for
+ *         short-lived auth tokens that can't be moved to httpOnly cookies.
+ *   - On module load we MIGRATE any legacy localStorage token to
+ *     sessionStorage so existing visitors aren't kicked out.
  */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -16,6 +22,23 @@ import { logger } from "@/lib/logger";
 const API = process.env.REACT_APP_BACKEND_URL;
 const SESSION_KEY = "deepotus_access_session";
 const POLL_MS = 8000;
+
+let _migrated = false;
+function migrateLegacyClassifiedSession(): void {
+  if (_migrated || typeof window === "undefined") return;
+  _migrated = true;
+  try {
+    const legacy = window.localStorage.getItem(SESSION_KEY);
+    if (legacy && !window.sessionStorage.getItem(SESSION_KEY)) {
+      window.sessionStorage.setItem(SESSION_KEY, legacy);
+    }
+    // Always strip the persisted copy regardless.
+    window.localStorage.removeItem(SESSION_KEY);
+  } catch (_e) {
+    /* storage blocked — non-fatal */
+  }
+}
+migrateLegacyClassifiedSession();
 
 export interface ClassifiedSession {
   ok: boolean;
@@ -51,11 +74,11 @@ function loadStoredSession(): ClassifiedSession | null {
       // session exists, so entry through the door stays explicit.
       const sp = new URLSearchParams(window.location.search);
       if (sp.get("code")) {
-        localStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(SESSION_KEY);
         return null;
       }
     }
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as ClassifiedSession) : null;
   } catch {
     return null;
@@ -90,7 +113,7 @@ export function useClassifiedSession(): ClassifiedSessionApi {
         const data = await res.json();
         if (cancelled) return;
         if (!data.ok) {
-          localStorage.removeItem(SESSION_KEY);
+          sessionStorage.removeItem(SESSION_KEY);
           setSession(null);
         }
       } catch (e) {
@@ -149,7 +172,7 @@ export function useClassifiedSession(): ClassifiedSessionApi {
           data.detail || data.message || "Invalid accreditation number",
         );
       }
-      localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
       setSession(data as ClassifiedSession);
       setVerifying(false);
       // Clear `?code=` so a refresh does not re-trigger the gate.
@@ -164,7 +187,7 @@ export function useClassifiedSession(): ClassifiedSessionApi {
   }
 
   function logout(): void {
-    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
     setSession(null);
     setCodeInput("");
     navigate("/classified-vault", { replace: true });

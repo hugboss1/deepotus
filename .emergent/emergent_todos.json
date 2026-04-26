@@ -1,22 +1,26 @@
 [
   {
-    "content": "Backend : retirer launch_eta de la réponse PUBLIQUE ✅ (admin garde l'info)",
+    "content": "CRITICAL — React Hook deps : 4 admin sections + PublicStats refondues avec useCallback ✅",
     "status": "completed"
   },
   {
-    "content": "Frontend : strip ETA en mode mystère 'TRANSMISSION SCHEDULE · CLASSIFIED' ✅",
+    "content": "CRITICAL — Security : useClassifiedSession + TerminalPopup → sessionStorage avec migration legacy ✅",
     "status": "completed"
   },
   {
-    "content": "i18n : Genesis broadcast → Allégeance / Allegiance partout (FR + EN) ✅",
+    "content": "CRITICAL — Python undefined : faux positifs (ruff = 0 erreurs)",
     "status": "completed"
   },
   {
-    "content": "Email Mail #1 : subject + body refondus en narratif Allégeance ✅ (date retirée du mail aussi)",
+    "content": "IMPORTANT — Python is vs == : faux positifs (is None est l'idiome PEP 8)",
     "status": "completed"
   },
   {
-    "content": "Validation E2E EN + FR ✅ captures parfaites + tous les checks passent",
+    "content": "IMPORTANT — Nested ternaries : 3 fichiers refactorés (Admin.tsx lookup table, AdminBots IIFE, VaultChassis STAGE_VISUALS) ✅",
+    "status": "completed"
+  },
+  {
+    "content": "Validation finale — tsc 0 errors + yarn build clean + smoke E2E 6/6 OK ✅",
     "status": "completed"
   }
 ]

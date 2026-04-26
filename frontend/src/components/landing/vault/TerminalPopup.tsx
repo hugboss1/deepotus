@@ -238,13 +238,14 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
       // Persist the session under the SAME key the /classified-vault page
       // reads — this lets the visitor land directly inside the vault when
       // we redirect, with no digicode prompt.
+      // Security: sessionStorage (NOT localStorage) — closing the tab
+      // logs the visitor out automatically. Same rationale as adminAuth
+      // and useClassifiedSession.
       try {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
       } catch (storageErr) {
-        // localStorage can throw in private mode — still proceed with the
+        // sessionStorage can throw in private mode — still proceed with the
         // redirect, the page will simply prompt for the code again.
-        // (logged via console for dev)
-        // eslint-disable-next-line no-console
         logger.warn("session persist failed", storageErr);
       }
       setResult(data);

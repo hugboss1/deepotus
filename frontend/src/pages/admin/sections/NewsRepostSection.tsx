@@ -12,7 +12,7 @@
  * Behaviour parity with the old inline section is preserved 1:1; the
  * data-testids are unchanged.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios, { AxiosRequestHeaders } from "axios";
 import { RefreshCw, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ export default function NewsRepostSection({ api, headers }: Props) {
     null,
   );
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const { data } = await axios.get<NewsRepostStatus>(
         `${api}/api/admin/bots/news-repost/status`,
@@ -62,12 +62,11 @@ export default function NewsRepostSection({ api, headers }: Props) {
     } catch (err) {
       logger.error(err);
     }
-  }
+  }, [api, headers]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   async function patch(body: RepostPatchBody) {
     setBusy(true);

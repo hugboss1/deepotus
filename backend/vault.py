@@ -33,19 +33,19 @@ import logging
 import secrets
 import uuid
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
+
+from pydantic import BaseModel, Field
 
 
 def _secure_digit() -> int:
     """Cryptographically-secure single decimal digit (0-9).
 
     Used for generating the hidden TARGET combination of the vault. Must be
-    unpredictable \u2014 an attacker able to guess the RNG seed could otherwise
+    unpredictable — an attacker able to guess the RNG seed could otherwise
     pre-compute the secret combination.
     """
     return secrets.randbelow(10)
-from typing import List, Optional, Tuple, Dict, Any
-
-from pydantic import BaseModel, Field
 
 
 # ---------------------------------------------------------------------

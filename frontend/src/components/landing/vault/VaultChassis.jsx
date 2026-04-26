@@ -20,12 +20,32 @@ export default function VaultChassis({
   stageLabel = "LOCKED",
   microTickVersion = 0,   // bumps when a new 10K-token purchase is detected
 }) {
-  const haloColor =
-    stage === "DECLASSIFIED"
-      ? "rgba(24,201,100,0.55)"
-      : stage === "UNLOCKING" || stage === "CRACKING"
-      ? "rgba(245,158,11,0.45)"
-      : "rgba(239,68,68,0.35)";
+  // Stage → visual hints lookup. Replaces 3 nested ternaries (halo, dot,
+  // text colour) with a single source of truth.
+  const STAGE_VISUALS = {
+    DECLASSIFIED: {
+      halo: "rgba(24,201,100,0.55)",
+      dotClass: "bg-[#18C964]",
+      textClass: "text-[#18C964]",
+    },
+    UNLOCKING: {
+      halo: "rgba(245,158,11,0.45)",
+      dotClass: "bg-[#F59E0B]",
+      textClass: "text-[#F59E0B]",
+    },
+    CRACKING: {
+      halo: "rgba(245,158,11,0.45)",
+      dotClass: "bg-[#F59E0B]",
+      textClass: "text-[#F59E0B]",
+    },
+    LOCKED: {
+      halo: "rgba(239,68,68,0.35)",
+      dotClass: "bg-red-500",
+      textClass: "text-red-400",
+    },
+  };
+  const visuals = STAGE_VISUALS[stage] || STAGE_VISUALS.LOCKED;
+  const haloColor = visuals.halo;
 
   return (
     <div
@@ -93,22 +113,10 @@ export default function VaultChassis({
           className="absolute top-[4%] left-[4%] flex items-center gap-2 px-2.5 py-1 rounded-md bg-black/60 border border-white/10 backdrop-blur-sm"
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              stage === "DECLASSIFIED"
-                ? "bg-[#18C964]"
-                : stage === "UNLOCKING" || stage === "CRACKING"
-                ? "bg-[#F59E0B]"
-                : "bg-red-500"
-            } animate-pulse`}
+            className={`w-1.5 h-1.5 rounded-full ${visuals.dotClass} animate-pulse`}
           />
           <span
-            className={`font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em] ${
-              stage === "DECLASSIFIED"
-                ? "text-[#18C964]"
-                : stage === "UNLOCKING" || stage === "CRACKING"
-                ? "text-[#F59E0B]"
-                : "text-red-400"
-            }`}
+            className={`font-mono text-[9px] md:text-[10px] uppercase tracking-[0.25em] ${visuals.textClass}`}
           >
             {stageLabel}
           </span>

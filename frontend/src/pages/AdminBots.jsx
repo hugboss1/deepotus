@@ -1461,49 +1461,55 @@ export default function AdminBots() {
                 API key
               </Label>
               <div className="relative mt-2">
-                <Input
-                  type={llmSecretReveal ? "text" : "password"}
-                  value={llmSecretInput}
-                  onChange={(e) => setLlmSecretInput(e.target.value)}
-                  placeholder={
-                    llmSecretProvider === "openai"
-                      ? "sk-proj-..."
-                      : llmSecretProvider === "anthropic"
-                        ? "sk-ant-..."
-                        : "AIzaSy..."
-                  }
-                  spellCheck={false}
-                  autoComplete="off"
-                  className="font-mono text-xs pr-10"
-                  data-testid="custom-llm-key-input"
-                />
-                <button
-                  type="button"
-                  onClick={() => setLlmSecretReveal((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label={
-                    llmSecretReveal ? "Hide key" : "Reveal key"
-                  }
-                  data-testid="custom-llm-reveal-toggle"
-                >
-                  {llmSecretReveal ? (
-                    <EyeOff size={14} />
-                  ) : (
-                    <Eye size={14} />
-                  )}
-                </button>
+                {(() => {
+                  // Provider → placeholder + format-prefix lookup. Cleaner
+                  // than the prior 2-level nested ternaries.
+                  const providerHints = {
+                    openai: { placeholder: "sk-proj-...", prefix: "sk-" },
+                    anthropic: { placeholder: "sk-ant-...", prefix: "sk-ant-" },
+                    gemini: { placeholder: "AIzaSy...", prefix: "AIza" },
+                  };
+                  const hint =
+                    providerHints[llmSecretProvider] || providerHints.gemini;
+                  return (
+                    <>
+                      <Input
+                        type={llmSecretReveal ? "text" : "password"}
+                        value={llmSecretInput}
+                        onChange={(e) => setLlmSecretInput(e.target.value)}
+                        placeholder={hint.placeholder}
+                        spellCheck={false}
+                        autoComplete="off"
+                        className="font-mono text-xs pr-10"
+                        data-testid="custom-llm-key-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setLlmSecretReveal((v) => !v)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={
+                          llmSecretReveal ? "Hide key" : "Reveal key"
+                        }
+                        data-testid="custom-llm-reveal-toggle"
+                      >
+                        {llmSecretReveal ? (
+                          <EyeOff size={14} />
+                        ) : (
+                          <Eye size={14} />
+                        )}
+                      </button>
+                      <p
+                        className="mt-1 text-[10.5px] text-muted-foreground leading-relaxed"
+                        data-format-hint
+                      >
+                        Format check: must start with{" "}
+                        <code>{hint.prefix}</code>. The server validates the
+                        shape before storing.
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
-              <p className="mt-1 text-[10.5px] text-muted-foreground leading-relaxed">
-                Format check: must start with{" "}
-                <code>
-                  {llmSecretProvider === "openai"
-                    ? "sk-"
-                    : llmSecretProvider === "anthropic"
-                      ? "sk-ant-"
-                      : "AIza"}
-                </code>
-                . The server validates the shape before storing.
-              </p>
             </div>
 
             <div>

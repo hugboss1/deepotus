@@ -535,54 +535,70 @@ export default function Admin() {
         </Tabs>
       </main>
 
-      <ConfirmDialog
-        open={confirmState.open}
-        onOpenChange={(v: boolean) => !v && setConfirmState({ ...confirmState, open: false })}
-        title={
-          confirmState.mode === "blacklist"
-            ? "Blacklist this email?"
-            : confirmState.mode === "unblock"
-            ? "Unblock this email?"
-            : confirmState.mode === "revokeSession"
-            ? "Revoke this session?"
-            : confirmState.mode === "revokeOthers"
-            ? "Revoke all other sessions?"
-            : confirmState.mode === "rotateSecret"
-            ? "Rotate JWT secret?"
-            : "Delete this entry?"
-        }
-        description={
-          confirmState.mode === "blacklist"
-            ? `${confirmState.entry?.email || ""} will be removed from the whitelist and added to the blacklist.`
-            : confirmState.mode === "unblock"
-            ? `${confirmState.entry?.email || ""} will be removed from the blacklist and can register again.`
-            : confirmState.mode === "revokeSession"
-            ? `Session ${confirmState.entry?.jti || ""} will be revoked immediately.${confirmState.entry?.is_current ? " This is YOUR current session — you will be logged out." : ""}`
-            : confirmState.mode === "revokeOthers"
-            ? "All other admin sessions (except this one) will be revoked immediately."
-            : confirmState.mode === "rotateSecret"
-            ? "The JWT signing secret will be rotated. ALL active sessions, including yours, will be revoked. You will be logged out and must re-enter the password."
-            : `${confirmState.entry?.email || ""} will be removed from the whitelist. It can still re-register later.`
-        }
-        confirmLabel={
-          confirmState.mode === "blacklist"
-            ? "Blacklist"
-            : confirmState.mode === "unblock"
-            ? "Unblock"
-            : confirmState.mode === "revokeSession"
-            ? "Revoke"
-            : confirmState.mode === "revokeOthers"
-            ? "Revoke others"
-            : confirmState.mode === "rotateSecret"
-            ? "Rotate secret"
-            : "Delete"
-        }
-        cancelLabel="Cancel"
-        destructive={confirmState.mode !== "unblock"}
-        onConfirm={doConfirmed}
-        testIdPrefix="admin-confirm"
-      />
-
+      {(() => {
+        // Confirm-dialog copy lookup — replaces a 6-level nested ternary.
+        // Each mode maps to {title, description, confirmLabel}. Falls back
+        // to the "delete" copy when the mode is unrecognised so the UI
+        // stays sensible during transitional states.
+        const entry = confirmState.entry;
+        const sessionDesc = `Session ${entry?.jti || ""} will be revoked immediately.${
+          entry?.is_current
+            ? " This is YOUR current session — you will be logged out."
+            : ""
+        }`;
+        const dict: Record<
+          ConfirmMode,
+          { title: string; description: string; confirmLabel: string }
+        > = {
+          blacklist: {
+            title: "Blacklist this email?",
+            description: `${entry?.email || ""} will be removed from the whitelist and added to the blacklist.`,
+            confirmLabel: "Blacklist",
+          },
+          unblock: {
+            title: "Unblock this email?",
+            description: `${entry?.email || ""} will be removed from the blacklist and can register again.`,
+            confirmLabel: "Unblock",
+          },
+          revokeSession: {
+            title: "Revoke this session?",
+            description: sessionDesc,
+            confirmLabel: "Revoke",
+          },
+          revokeOthers: {
+            title: "Revoke all other sessions?",
+            description: "All other admin sessions (except this one) will be revoked immediately.",
+            confirmLabel: "Revoke others",
+          },
+          rotateSecret: {
+            title: "Rotate JWT secret?",
+            description:
+              "The JWT signing secret will be rotated. ALL active sessions, including yours, will be revoked. You will be logged out and must re-enter the password.",
+            confirmLabel: "Rotate secret",
+          },
+          delete: {
+            title: "Delete this entry?",
+            description: `${entry?.email || ""} will be removed from the whitelist. It can still re-register later.`,
+            confirmLabel: "Delete",
+          },
+        };
+        const copy = dict[confirmState.mode] ?? dict.delete;
+        return (
+          <ConfirmDialog
+            open={confirmState.open}
+            onOpenChange={(v: boolean) =>
+              !v && setConfirmState({ ...confirmState, open: false })
+            }
+            title={copy.title}
+            description={copy.description}
+            confirmLabel={copy.confirmLabel}
+            cancelLabel="Cancel"
+            destructive={confirmState.mode !== "unblock"}
+            onConfirm={doConfirmed}
+            testIdPrefix="admin-confirm"
+          />
+        );
+      })()}
       <TwoFASetupDialog
         open={twofaDialogOpen}
         onOpenChange={setTwofaDialogOpen}

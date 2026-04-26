@@ -20,7 +20,6 @@ Compliance guardrails:
 from __future__ import annotations
 
 import asyncio
-import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -35,7 +34,7 @@ from core.config import (
     db,
     logger,
 )
-from core.loyalty import compute_progress_percent, get_loyalty_context
+from core.loyalty import get_loyalty_context
 from email_templates import (
     loyalty_email_subject,
     render_loyalty_email,
