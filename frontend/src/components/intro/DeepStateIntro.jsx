@@ -23,7 +23,7 @@
  *   - replay window: 24h
  *   - bypass via `?intro=force` query param
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import GlitchOverlay from "./GlitchOverlay";
 import MatrixRain from "./MatrixRain";
@@ -111,18 +111,18 @@ export default function DeepStateIntro() {
   const tickRef = useRef(0);
   const finishedRef = useRef(false);
 
-  const finish = useMemo(
-    () => () => {
-      if (finishedRef.current) return;
-      finishedRef.current = true;
-      cancelAnimationFrame(tickRef.current);
-      markIntroSeen();
-      setFading(true);
-      // Allow the fade to play before unmounting.
-      setTimeout(() => setVisible(false), 700);
-    },
-    [],
-  );
+  // `finish` is stable (useCallback with no deps) — state setters are
+  // already stable references in React, and we DO want a single shared
+  // function instance so the same identity flows into useEffect.
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    cancelAnimationFrame(tickRef.current);
+    markIntroSeen();
+    setFading(true);
+    // Allow the fade to play before unmounting.
+    setTimeout(() => setVisible(false), 700);
+  }, []);
 
   // Timeline driver — single requestAnimationFrame loop.
   useEffect(() => {

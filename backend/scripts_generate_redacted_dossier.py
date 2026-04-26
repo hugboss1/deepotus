@@ -11,10 +11,22 @@ Visual concept:
 - Bottom: "AUTHORIZED PERSONNEL ONLY" + sigil ΔΣ
 
 Output: /app/frontend/public/redacted_dossier.png  (1600x900)
+
+NOTE on randomness:
+    This script uses Python's `random` module (Mersenne Twister) on
+    purpose. Every call here generates COSMETIC image noise — paper
+    grain, ink blots, dust pixels — and is intentionally seeded for
+    reproducibility (`_rng = random.Random(2026)`) so the same dossier
+    image is byte-stable across rebuilds. We use a local Random
+    instance instead of the global state so a security linter (Bandit
+    B311 / Ruff S311) understands the use is scoped and not crypto.
 """
 import random
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+# Local PRNG: cosmetic-only, seeded for reproducible builds.
+_rng = random.Random(2026)  # noqa: S311 — image noise, not security
 
 PUBLIC_DIR = Path(__file__).resolve().parent.parent / "frontend" / "public"
 OUT = PUBLIC_DIR / "redacted_dossier.png"
@@ -26,7 +38,6 @@ INK = (24, 22, 18)
 RED_STAMP = (162, 30, 38)
 BLACK_BAR = (10, 10, 10)
 
-
 def _try_font(paths, size):
     for p in paths:
         try:
@@ -34,7 +45,6 @@ def _try_font(paths, size):
         except Exception:
             continue
     return ImageFont.load_default()
-
 
 FONT_MONO = [
     "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
@@ -49,7 +59,6 @@ FONT_SERIF_BOLD = [
     "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
 ]
 
-
 def make_paper_texture(size):
     """Create a subtle aged paper texture."""
     w, h = size
@@ -57,9 +66,9 @@ def make_paper_texture(size):
     px = img.load()
     # Add fine noise
     for _ in range(int(w * h * 0.04)):
-        x = random.randint(0, w - 1)
-        y = random.randint(0, h - 1)
-        v = random.randint(-12, 8)
+        x = _rng.randint(0, w - 1)
+        y = _rng.randint(0, h - 1)
+        v = _rng.randint(-12, 8)
         r, g, b = px[x, y]
         px[x, y] = (
             max(0, min(255, r + v)),
@@ -70,15 +79,14 @@ def make_paper_texture(size):
     overlay = Image.new("RGBA", size, (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
     for _ in range(6):
-        cx, cy = random.randint(80, w - 80), random.randint(80, h - 80)
-        r = random.randint(60, 160)
-        a = random.randint(8, 20)
+        cx, cy = _rng.randint(80, w - 80), _rng.randint(80, h - 80)
+        r = _rng.randint(60, 160)
+        a = _rng.randint(8, 20)
         col = (160, 110, 60, a)
         od.ellipse((cx - r, cy - r, cx + r, cy + r), fill=col)
     overlay = overlay.filter(ImageFilter.GaussianBlur(36))
     img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
     return img
-
 
 def draw_redaction_bar(d, x, y, w, h):
     """Draw a thick black redaction bar with subtle imperfections."""
@@ -95,7 +103,6 @@ def draw_redaction_bar(d, x, y, w, h):
             fill=(20, 20, 20),
             width=1,
         )
-
 
 def draw_stamp(d, x, y, label, color, font, pad=14, rotation_text=False):
     """Draw a rectangular red stamp with bold mono label and a subtle frame."""
@@ -115,10 +122,9 @@ def draw_stamp(d, x, y, label, color, font, pad=14, rotation_text=False):
     )
     d.text((x + pad, y + pad // 2 - 2), label, fill=color, font=font)
 
-
 def main():
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
-    random.seed(2026)
+    
 
     img = make_paper_texture((W, H))
     d = ImageDraw.Draw(img)
@@ -256,15 +262,14 @@ def main():
         od.rectangle([0, H - i, W, H], fill=(0, 0, 0, a // 2))
     # tiny ink dots
     for _ in range(140):
-        x = random.randint(0, W - 1)
-        y = random.randint(0, H - 1)
-        s = random.randint(1, 2)
+        x = _rng.randint(0, W - 1)
+        y = _rng.randint(0, H - 1)
+        s = _rng.randint(1, 2)
         od.ellipse((x, y, x + s, y + s), fill=(15, 12, 8, 180))
     img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
     img.save(OUT, format="PNG", optimize=True)
     print(f"OK :: wrote {OUT} ({img.size})")
-
 
 if __name__ == "__main__":
     main()

@@ -4,6 +4,7 @@ import { X, Send, CheckCircle2, AlertTriangle, Mail, KeyRound, ArrowRight } from
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
+import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const SESSION_KEY = "deepotus_access_session";
@@ -152,7 +153,7 @@ export default function TerminalPopup({ open, onClose }) {
         // redirect, the page will simply prompt for the code again.
         // (logged via console for dev)
         // eslint-disable-next-line no-console
-        console.warn("session persist failed", storageErr);
+        logger.warn("session persist failed", storageErr);
       }
       setResult(data);
       setPhase("verify-success");

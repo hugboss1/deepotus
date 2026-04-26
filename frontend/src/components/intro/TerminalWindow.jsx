@@ -96,22 +96,32 @@ export default function TerminalWindow({
 
       {/* Body */}
       <div className="px-3 py-2 max-h-[200px] sm:max-h-[240px] overflow-hidden">
-        {renderedLines.map((l, i) => (
-          <div
-            key={i}
-            className="whitespace-pre"
-            style={{ color: TONE_COLORS[l.tone] || TONE_COLORS.muted }}
-          >
-            {l.text}
-            {i === renderedLines.length - 1 && (
-              <span
-                aria-hidden
-                className="inline-block w-[7px] h-[12px] align-[-1px] ml-0.5 motion-safe:animate-pulse"
-                style={{ background: TONE_COLORS[l.tone] || "#9ca3af" }}
-              />
-            )}
-          </div>
-        ))}
+        {renderedLines.map((l, i) => {
+          // Stable key derived from the source line definition (its
+          // text + tone) so React doesn't recycle DOM nodes when the
+          // typewriter mutates a different row. Falls back to a
+          // pseudo-positional id when the source line is missing.
+          const src = lines[i];
+          const stableKey = src
+            ? `${i}-${src.tone || "muted"}-${(src.text || "").length}`
+            : `idx-${i}`;
+          return (
+            <div
+              key={stableKey}
+              className="whitespace-pre"
+              style={{ color: TONE_COLORS[l.tone] || TONE_COLORS.muted }}
+            >
+              {l.text}
+              {i === renderedLines.length - 1 && (
+                <span
+                  aria-hidden
+                  className="inline-block w-[7px] h-[12px] align-[-1px] ml-0.5 motion-safe:animate-pulse"
+                  style={{ background: TONE_COLORS[l.tone] || "#9ca3af" }}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

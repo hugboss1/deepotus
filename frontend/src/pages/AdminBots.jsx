@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getAdminToken, setAdminToken, clearAdminToken } from "@/lib/adminAuth";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -52,7 +53,6 @@ import {
 import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
-const TOKEN_KEY = "deepotus_admin_token";
 
 const CONTENT_TYPE_ICONS = {
   prophecy: "🔮",
@@ -78,7 +78,7 @@ const LLM_PRESETS = [
 
 export default function AdminBots() {
   const navigate = useNavigate();
-  const [token] = useState(() => localStorage.getItem(TOKEN_KEY) || "");
+  const [token] = useState(() => getAdminToken());
   const [config, setConfig] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [posts, setPosts] = useState(null);
@@ -197,7 +197,7 @@ export default function AdminBots() {
       setConfig(data);
     } catch (err) {
       if (err?.response?.status === 401) {
-        localStorage.removeItem(TOKEN_KEY);
+        clearAdminToken();
         navigate("/admin");
         return;
       }

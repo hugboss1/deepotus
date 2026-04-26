@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { getAdminToken, setAdminToken, clearAdminToken } from "@/lib/adminAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,6 @@ import ThemeToggle from "@/components/landing/ThemeToggle";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-const TOKEN_KEY = "deepotus_admin_token";
 const PAGE_SIZE = 50;
 
 const TYPE_COLOR = {
@@ -41,7 +41,7 @@ const TYPE_COLOR = {
 export default function AdminEmails() {
   const navigate = useNavigate();
   const [token, setToken] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) || "" : "",
+    getAdminToken(),
   );
   const [events, setEvents] = useState({
     items: [],
@@ -84,7 +84,7 @@ export default function AdminEmails() {
       });
     } catch (err) {
       if (err?.response?.status === 401) {
-        localStorage.removeItem(TOKEN_KEY);
+        clearAdminToken();
         setToken("");
         navigate("/admin");
       } else {

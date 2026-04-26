@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 
 import resend
 
-from core.bot_scheduler import get_bot_config
+from core.bot_config_repo import get_bot_config
 from core.config import (
     PUBLIC_BASE_URL,
     RESEND_API_KEY,
@@ -149,6 +149,84 @@ async def _generate_prophet_message(lang: str, display_name: str) -> str:
         return _pick_fallback(lang)
 
 
+def _normalize_card(card: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract & sanitise the user-facing fields from an access_card doc."""
+    email = (card.get("email") or "").strip().lower()
+    accred = card.get("accreditation_number") or "—"
+    display_name = card.get("display_name") or email.split("@")[0] or "Agent"
+    lang = card.get("lang") or card.get("language") or "fr"
+    if lang not in ("fr", "en"):
+        lang = "fr"
+    return {
+        "email": email,
+        "accred": accred,
+        "display_name": display_name,
+        "lang": lang,
+    }
+
+
+async def _dispatch_loyalty_email(
+    *,
+    email: str,
+    subject: str,
+    html: str,
+    lang: str,
+) -> Optional[str]:
+    """Hand off the rendered HTML to Resend. Returns the email_id or None."""
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [email],
+        "subject": subject,
+        "html": html,
+        "tags": [
+            {"name": "category", "value": "loyalty_email"},
+            {"name": "lang", "value": lang},
+        ],
+    }
+    res = await asyncio.to_thread(resend.Emails.send, params)
+    return (res or {}).get("id") if isinstance(res, dict) else None
+
+
+async def _stamp_card_and_audit(
+    *,
+    card_id: Any,
+    email: str,
+    accred: str,
+    display_name: str,
+    lang: str,
+    eid: Optional[str],
+    delay_hours: int,
+    prophet_message: str,
+) -> None:
+    """Persist dedup stamp on the access_card AND write the audit event."""
+    await db[ACCESS_CARDS_COLLECTION].update_one(
+        {"_id": card_id},
+        {
+            "$set": {
+                "loyalty_email_sent_at": _now_utc().isoformat(),
+                "loyalty_email_id": eid,
+                "loyalty_email_lang": lang,
+            }
+        },
+    )
+    await db[EMAIL_EVENTS_COLLECTION].insert_one(
+        {
+            "_id": str(uuid.uuid4()),
+            "type": "loyalty_email.sent",
+            "email_id": eid,
+            "recipient": email,
+            "received_at": _now_utc().isoformat(),
+            "raw": {
+                "accreditation_number": accred,
+                "display_name": display_name,
+                "lang": lang,
+                "delay_hours": delay_hours,
+                "prophet_message": prophet_message[:500],
+            },
+        }
+    )
+
+
 async def _send_one(card: Dict[str, Any], delay_hours: int) -> Dict[str, Any]:
     """Render + dispatch the loyalty email for one access_card doc.
 
@@ -156,12 +234,11 @@ async def _send_one(card: Dict[str, Any], delay_hours: int) -> Dict[str, Any]:
     failures are returned with status=='failed' so the scheduler can
     keep going on the next candidate.
     """
-    email = (card.get("email") or "").strip().lower()
-    accred = card.get("accreditation_number") or "—"
-    display_name = card.get("display_name") or email.split("@")[0] or "Agent"
-    lang = card.get("lang") or card.get("language") or "fr"
-    if lang not in ("fr", "en"):
-        lang = "fr"
+    fields = _normalize_card(card)
+    email = fields["email"]
+    accred = fields["accred"]
+    display_name = fields["display_name"]
+    lang = fields["lang"]
 
     out: Dict[str, Any] = {
         "card_id": card.get("_id"),
@@ -170,7 +247,6 @@ async def _send_one(card: Dict[str, Any], delay_hours: int) -> Dict[str, Any]:
         "lang": lang,
         "status": "pending",
     }
-
     if not email:
         out["status"] = "skipped_no_email"
         return out
@@ -187,53 +263,27 @@ async def _send_one(card: Dict[str, Any], delay_hours: int) -> Dict[str, Any]:
             base_url=PUBLIC_BASE_URL,
             prophet_message=prophet_message,
         )
-        subject = loyalty_email_subject(lang)
-        params = {
-            "from": SENDER_EMAIL,
-            "to": [email],
-            "subject": subject,
-            "html": html,
-            "tags": [
-                {"name": "category", "value": "loyalty_email"},
-                {"name": "lang", "value": lang},
-            ],
-        }
-        res = await asyncio.to_thread(resend.Emails.send, params)
-        eid = (res or {}).get("id") if isinstance(res, dict) else None
-
-        # Stamp the card so we don't re-send.
-        await db[ACCESS_CARDS_COLLECTION].update_one(
-            {"_id": card["_id"]},
-            {
-                "$set": {
-                    "loyalty_email_sent_at": _now_utc().isoformat(),
-                    "loyalty_email_id": eid,
-                    "loyalty_email_lang": lang,
-                }
-            },
+        eid = await _dispatch_loyalty_email(
+            email=email,
+            subject=loyalty_email_subject(lang),
+            html=html,
+            lang=lang,
         )
-        # Audit trail.
-        await db[EMAIL_EVENTS_COLLECTION].insert_one(
-            {
-                "_id": str(uuid.uuid4()),
-                "type": "loyalty_email.sent",
-                "email_id": eid,
-                "recipient": email,
-                "received_at": _now_utc().isoformat(),
-                "raw": {
-                    "accreditation_number": accred,
-                    "display_name": display_name,
-                    "lang": lang,
-                    "delay_hours": delay_hours,
-                    "prophet_message": prophet_message[:500],
-                },
-            }
+        await _stamp_card_and_audit(
+            card_id=card["_id"],
+            email=email,
+            accred=accred,
+            display_name=display_name,
+            lang=lang,
+            eid=eid,
+            delay_hours=delay_hours,
+            prophet_message=prophet_message,
         )
         out["status"] = "sent"
         out["email_id"] = eid
         out["prophet_message"] = prophet_message
         logger.info(f"[loyalty_email] sent to={email} accred={accred} id={eid}")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.exception(f"[loyalty_email] failed for {email}")
         out["status"] = "failed"
         out["error"] = str(exc)[:200]

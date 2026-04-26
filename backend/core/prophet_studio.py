@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
-from core.bot_scheduler import get_bot_config
+from core.bot_config_repo import get_bot_config
 from core.config import (
     EMERGENT_IMAGE_LLM_KEY,
     EMERGENT_LLM_KEY,

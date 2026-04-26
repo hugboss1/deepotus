@@ -24,130 +24,60 @@ from typing import Any, Dict, Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from core.bot_config_repo import (
+    ALLOWED_PATCH_KEYS,
+    CONFIG_COLLECTION,
+    CONFIG_SINGLETON_ID,
+    DEFAULT_BOT_CONFIG,
+    POSTS_COLLECTION,
+    ensure_bot_config,
+    get_bot_config,
+    persist_bot_config_patch,
+)
 from core.config import db, logger
 
-# ---------------------------------------------------------------------
-# Mongo collection names
-# ---------------------------------------------------------------------
-CONFIG_COLLECTION = "bot_config"
-POSTS_COLLECTION = "bot_posts"
-CONFIG_SINGLETON_ID = "singleton"
+# Re-export for backward compat — older callers may have imported these
+# names from this module before the bot_config_repo split.
+__all__ = [
+    "ALLOWED_PATCH_KEYS",
+    "CONFIG_COLLECTION",
+    "CONFIG_SINGLETON_ID",
+    "DEFAULT_BOT_CONFIG",
+    "POSTS_COLLECTION",
+    "ensure_bot_config",
+    "get_bot_config",
+    "update_bot_config",
+    "log_post_attempt",
+    "sync_jobs_from_config",
+    "start_scheduler",
+    "shutdown_scheduler",
+    "get_scheduler",
+    "describe_jobs",
+]
 
 # ---------------------------------------------------------------------
-# Default config — created on first boot if missing
+# Default config + read helpers + persist helper now live in
+# `core/bot_config_repo.py` (extracted to break the circular import
+# between this module and its consumers — loyalty_email, news_repost,
+# news_feed, prophet_studio).
+#
+# We keep `update_bot_config` here because it is the ONLY config-write
+# path that must trigger `sync_jobs_from_config()` afterwards (changing
+# news_feed.fetch_interval_hours, for instance, must reschedule the
+# corresponding APScheduler job). Routers should always call
+# `update_bot_config` rather than `persist_bot_config_patch` directly.
 # ---------------------------------------------------------------------
-DEFAULT_BOT_CONFIG: Dict[str, Any] = {
-    "_id": CONFIG_SINGLETON_ID,
-    "kill_switch_active": True,  # Fail safe: start paused until admin turns ON
-    "platforms": {
-        "x": {"enabled": False, "post_frequency_hours": 4},
-        "telegram": {"enabled": False, "post_frequency_hours": 6},
-    },
-    "content_modes": {
-        "prophecy": True,
-        "market_commentary": True,
-        "vault_update": True,
-        "kol_reply": False,
-    },
-    "llm": {
-        # Default: Claude Sonnet 4.5 — best satirical voice for the Prophet.
-        # Swap via PUT /api/admin/bots/config with {"llm": {...}}.
-        "provider": "anthropic",
-        "model": "claude-sonnet-4-5-20250929",
-    },
-    # ---- News feed (Phase X · 4×/day RSS aggregator) ----
-    # When `enabled_for.<platform>` is True and the kill switch is OFF,
-    # the scheduled bot job for that platform will inject the freshest
-    # geopolitics/macro headlines into the LLM prompt as inspiration.
-    "news_feed": {
-        "enabled_for": {"x": True, "telegram": False},
-        "fetch_interval_hours": 6,  # 4×/jour (00, 06, 12, 18 UTC)
-        "feeds": [],   # falls back to DEFAULT_NEWS_FEEDS when empty
-        "keywords": [],  # falls back to DEFAULT_NEWS_KEYWORDS when empty
-        "headlines_per_post": 5,
-        "last_refresh_at": None,
-        "last_refresh_stats": None,
-    },
-    # ---- Loyalty narrative (Sprint 3 + Sprint 4) ----
-    # When enabled, the prophet studio injects a tier-aware hint into the
-    # LLM prompt so social posts gradually escalate the "stay-loyal"
-    # signal as the Vault fills. Email-side toggle is wired in Sprint 4.
-    "loyalty": {
-        "hints_enabled": False,
-        "email_enabled": False,
-        "email_delay_hours": 12,
-    },
-    # ---- News repost (auto-relay top RSS headlines) ----
-    "news_repost": {
-        "enabled_for": {"x": False, "telegram": False},
-        "interval_minutes": 30,
-        "delay_after_refresh_minutes": 5,
-        "wait_after_prophet_post_minutes": 2,
-        "daily_cap": 10,
-        "prefix_fr": "⚡ INTERCEPTÉ ·",
-        "prefix_en": "⚡ INTERCEPT ·",
-    },
-    "heartbeat_interval_minutes": 5,
-    "max_posts_per_day": 12,
-    "last_updated_at": None,
-    "updated_by": None,
-    "created_at": datetime.now(timezone.utc).isoformat(),
-}
 
 # Singleton scheduler instance (created on startup)
 _scheduler: Optional[AsyncIOScheduler] = None
 
 
-# ---------------------------------------------------------------------
-# Config helpers
-# ---------------------------------------------------------------------
-async def ensure_bot_config() -> Dict[str, Any]:
-    """Return the bot config doc, creating it from defaults if absent."""
-    doc = await db[CONFIG_COLLECTION].find_one({"_id": CONFIG_SINGLETON_ID})
-    if doc is None:
-        doc = dict(DEFAULT_BOT_CONFIG)
-        await db[CONFIG_COLLECTION].insert_one(doc)
-        logger.info("[bot_scheduler] bot_config initialized with safe defaults (kill-switch ON).")
-    return doc
-
-
-async def get_bot_config() -> Dict[str, Any]:
-    """Fast read of current bot config (raises only if Mongo is down)."""
-    doc = await db[CONFIG_COLLECTION].find_one({"_id": CONFIG_SINGLETON_ID})
-    return doc or await ensure_bot_config()
-
-
-async def update_bot_config(patch: Dict[str, Any], updated_by: str = "admin") -> Dict[str, Any]:
-    """Shallow-merge patch into the config doc, stamp metadata, refresh jobs."""
-    # Whitelist of keys we allow to be updated via the admin endpoint.
-    allowed_top = {
-        "kill_switch_active",
-        "platforms",
-        "content_modes",
-        "llm",
-        "news_feed",
-        "loyalty",
-        "news_repost",
-        "heartbeat_interval_minutes",
-        "max_posts_per_day",
-    }
-    update: Dict[str, Any] = {}
-    for key, value in (patch or {}).items():
-        if key in allowed_top:
-            update[key] = value
-
-    if not update:
-        return await get_bot_config()
-
-    update["last_updated_at"] = datetime.now(timezone.utc).isoformat()
-    update["updated_by"] = updated_by
-
-    await db[CONFIG_COLLECTION].update_one(
-        {"_id": CONFIG_SINGLETON_ID},
-        {"$set": update},
-        upsert=True,
-    )
-
+async def update_bot_config(
+    patch: Dict[str, Any],
+    updated_by: str = "admin",
+) -> Dict[str, Any]:
+    """Persist a partial config patch *and* refresh live scheduler jobs."""
+    await persist_bot_config_patch(patch, updated_by=updated_by)
     # Reconfigure live jobs based on the new config.
     await sync_jobs_from_config()
     return await get_bot_config()

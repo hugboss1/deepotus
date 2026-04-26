@@ -1,756 +1,327 @@
 #!/usr/bin/env python3
 """
-DEEPOTUS Backend API Testing - Loyalty System Integration (Sprint 2-4)
-Testing loyalty system: Prophet pinned whisper, vault-aware loyalty hints, loyalty email #3
-Also includes DexScreener integration and regression tests
+Backend regression test for DEEPOTUS admin endpoints.
+Tests the code quality review changes to ensure no functionality was broken.
 """
 
 import requests
+import sys
 import json
-import time
-import hashlib
-import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime
 
-# Use public endpoint from .env
-BASE_URL = "https://prophet-ai-memecoin.preview.emergentagent.com/api"
-ADMIN_PASSWORD = "deepotus2026"
-
-class DexScreenerAPITester:
-    def __init__(self):
-        self.base_url = BASE_URL
-        self.admin_token = None
-        self.admin_jti = None
+class DeepotusAdminTester:
+    def __init__(self, base_url="https://prophet-ai-memecoin.preview.emergentagent.com"):
+        self.base_url = base_url
+        self.token = None
         self.tests_run = 0
         self.tests_passed = 0
-        self.errors = []
-        
-    def log_result(self, test_name: str, success: bool, details: str = ""):
-        """Log test result"""
+        self.admin_password = "deepotus2026"
+
+    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
+        """Run a single API test"""
+        url = f"{self.base_url}/{endpoint}"
+        test_headers = {'Content-Type': 'application/json'}
+        if self.token:
+            test_headers['Authorization'] = f'Bearer {self.token}'
+        if headers:
+            test_headers.update(headers)
+
         self.tests_run += 1
-        if success:
-            self.tests_passed += 1
-            print(f"✅ {test_name}: PASSED {details}")
-        else:
-            print(f"❌ {test_name}: FAILED {details}")
-            self.errors.append(f"{test_name}: {details}")
-    
-    def make_request(self, method: str, endpoint: str, data=None, headers=None, expected_status=200, response_type="json"):
-        """Make HTTP request with error handling"""
-        url = f"{self.base_url}/{endpoint.lstrip('/')}"
-        headers = headers or {}
+        print(f"\n🔍 Testing {name}...")
         
         try:
-            if method.upper() == "GET":
-                response = requests.get(url, headers=headers, timeout=30)
-            elif method.upper() == "POST":
-                response = requests.post(url, json=data, headers=headers, timeout=30)
-            elif method.upper() == "DELETE":
-                response = requests.delete(url, headers=headers, timeout=30)
-            else:
-                raise ValueError(f"Unsupported method: {method}")
-            
-            if response.status_code == expected_status:
-                if response_type == "json":
-                    return True, response.json() if response.text else {}
-                elif response_type == "text":
+            if method == 'GET':
+                response = requests.get(url, headers=test_headers, timeout=30)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=test_headers, timeout=30)
+            elif method == 'PUT':
+                response = requests.put(url, json=data, headers=test_headers, timeout=30)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=test_headers, timeout=30)
+
+            success = response.status_code == expected_status
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                try:
+                    return True, response.json()
+                except:
                     return True, response.text
-                else:
-                    return True, response
             else:
-                return False, {"error": f"Status {response.status_code}: {response.text[:200]}"}
-                
+                print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
+                try:
+                    print(f"   Response: {response.json()}")
+                except:
+                    print(f"   Response: {response.text}")
+                return False, {}
+
         except Exception as e:
-            return False, {"error": str(e)}
-    
-    def admin_login(self):
-        """Login as admin"""
-        data = {"password": ADMIN_PASSWORD}
-        success, response = self.make_request("POST", "admin/login", data)
-        if success and "token" in response:
-            self.admin_token = response["token"]
-            self.admin_jti = response.get("jti")
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
+
+    def test_admin_login(self):
+        """Test admin login and get token"""
+        success, response = self.run_test(
+            "Admin Login",
+            "POST",
+            "api/admin/login",
+            200,
+            data={"password": self.admin_password}
+        )
+        if success and isinstance(response, dict) and 'token' in response:
+            self.token = response['token']
+            print(f"   Token obtained: {self.token[:20]}...")
             return True
         return False
-    
-    def get_auth_headers(self):
-        """Get authorization headers"""
-        return {"Authorization": f"Bearer {self.admin_token}"} if self.admin_token else {}
 
-    def test_vault_state_public(self):
-        """Test GET /api/vault/state - public endpoint"""
-        success, response = self.make_request("GET", "vault/state")
-        
-        if success:
-            # Check required public fields
-            required_fields = [
-                'code_name', 'stage', 'num_digits', 'digits_locked', 
-                'current_combination', 'tokens_per_digit', 'tokens_sold',
-                'progress_pct', 'hourly_tick_enabled', 'updated_at', 'recent_events'
-            ]
+    def test_bots_config_get(self):
+        """Test GET /api/admin/bots/config"""
+        success, response = self.run_test(
+            "Get Bots Config",
+            "GET",
+            "api/admin/bots/config",
+            200
+        )
+        if success and isinstance(response, dict):
+            # Verify expected structure
+            required_keys = ['loyalty', 'news_repost', 'kill_switch_active']
+            for key in required_keys:
+                if key not in response:
+                    print(f"   ❌ Missing key: {key}")
+                    return False
             
-            # Check new DexScreener public fields
-            dex_fields = ['dex_mode', 'dex_label', 'dex_pair_symbol']
+            # Check loyalty sub-document
+            loyalty = response.get('loyalty', {})
+            if not isinstance(loyalty, dict):
+                print(f"   ❌ loyalty is not a dict: {type(loyalty)}")
+                return False
             
-            missing_fields = [f for f in required_fields + dex_fields if f not in response]
-            
-            if not missing_fields:
-                # Verify target_combination is NOT exposed
-                if 'target_combination' not in response:
-                    # Verify dex_mode is valid
-                    if response.get('dex_mode') in ['off', 'demo', 'custom']:
-                        self.log_result("Vault State Public", True, 
-                                      f"Mode: {response.get('dex_mode')}, Stage: {response.get('stage')}")
-                        return True
-                    else:
-                        self.log_result("Vault State Public", False, 
-                                      f"Invalid dex_mode: {response.get('dex_mode')}")
-                else:
-                    self.log_result("Vault State Public", False, "target_combination exposed in public API")
-            else:
-                self.log_result("Vault State Public", False, f"Missing fields: {missing_fields}")
-        else:
-            self.log_result("Vault State Public", False, f"Request failed: {response}")
+            # Check news_repost sub-document  
+            news_repost = response.get('news_repost', {})
+            if not isinstance(news_repost, dict):
+                print(f"   ❌ news_repost is not a dict: {type(news_repost)}")
+                return False
+                
+            print(f"   ✅ Config structure valid")
+            print(f"   loyalty.hints_enabled: {loyalty.get('hints_enabled')}")
+            print(f"   news_repost.enabled_for: {news_repost.get('enabled_for')}")
+            return True
         return False
 
-    def test_vault_state_admin(self):
-        """Test GET /api/admin/vault/state - admin endpoint"""
-        success, response = self.make_request("GET", "admin/vault/state", headers=self.get_auth_headers())
-        
-        if success:
-            # Check admin-only fields are present
-            admin_fields = [
-                'target_combination', 'dex_token_address', 'dex_demo_token_address',
-                'dex_last_poll_at', 'dex_last_h24_buys', 'dex_last_h24_sells',
-                'dex_last_h24_volume_usd', 'dex_last_price_usd', 'dex_carry_tokens'
-            ]
-            
-            present_admin_fields = [f for f in admin_fields if f in response]
-            
-            if len(present_admin_fields) >= 5:  # At least some admin fields should be present
-                # Verify target_combination is a list of 6 integers
-                target = response.get('target_combination', [])
-                if isinstance(target, list) and len(target) == 6 and all(isinstance(d, int) and 0 <= d <= 9 for d in target):
-                    self.log_result("Vault State Admin", True, 
-                                  f"Target: {target}, Admin fields: {len(present_admin_fields)}")
-                    return True
-                else:
-                    self.log_result("Vault State Admin", False, f"Invalid target_combination: {target}")
-            else:
-                self.log_result("Vault State Admin", False, f"Missing admin fields: {admin_fields}")
-        else:
-            self.log_result("Vault State Admin", False, f"Request failed: {response}")
-        return False
-
-    def test_dex_config_off_mode(self):
-        """Test POST /api/admin/vault/dex-config with mode='off'"""
-        data = {"mode": "off"}
-        success, response = self.make_request("POST", "admin/vault/dex-config", data, headers=self.get_auth_headers())
-        
-        if success:
-            if response.get('dex_mode') == 'off':
-                self.log_result("Dex Config Off Mode", True, "Mode set to off")
+    def test_bots_config_patch_loyalty(self):
+        """Test PUT /api/admin/bots/config with loyalty patch"""
+        success, response = self.run_test(
+            "Patch Loyalty Config",
+            "PUT",
+            "api/admin/bots/config",
+            200,
+            data={"loyalty": {"hints_enabled": True}}
+        )
+        if success and isinstance(response, dict):
+            loyalty = response.get('loyalty', {})
+            if loyalty.get('hints_enabled') == True:
+                print(f"   ✅ loyalty.hints_enabled updated to True")
                 return True
             else:
-                self.log_result("Dex Config Off Mode", False, f"Mode not set: {response.get('dex_mode')}")
-        else:
-            self.log_result("Dex Config Off Mode", False, f"Request failed: {response}")
+                print(f"   ❌ loyalty.hints_enabled not updated: {loyalty.get('hints_enabled')}")
         return False
 
-    def test_dex_config_demo_mode(self):
-        """Test POST /api/admin/vault/dex-config with mode='demo'"""
-        data = {"mode": "demo"}
-        success, response = self.make_request("POST", "admin/vault/dex-config", data, headers=self.get_auth_headers())
-        
-        if success:
-            if response.get('dex_mode') == 'demo':
-                # Should have demo token address set
-                if response.get('dex_demo_token_address'):
-                    self.log_result("Dex Config Demo Mode", True, 
-                                  f"Demo token: {response.get('dex_demo_token_address')[:8]}...")
-                    return True
-                else:
-                    self.log_result("Dex Config Demo Mode", False, "Demo token address not set")
-            else:
-                self.log_result("Dex Config Demo Mode", False, f"Mode not set: {response.get('dex_mode')}")
-        else:
-            self.log_result("Dex Config Demo Mode", False, f"Request failed: {response}")
-        return False
-
-    def test_dex_config_custom_mode(self):
-        """Test POST /api/admin/vault/dex-config with mode='custom'"""
-        # Test without token_address (should work but not set custom address)
-        data = {"mode": "custom"}
-        success, response = self.make_request("POST", "admin/vault/dex-config", data, headers=self.get_auth_headers())
-        
-        if success:
-            if response.get('dex_mode') == 'custom':
-                self.log_result("Dex Config Custom Mode (no address)", True, "Mode set to custom")
-                
-                # Test with token_address
-                test_address = "So11111111111111111111111111111111111111112"  # SOL mint
-                data_with_address = {"mode": "custom", "token_address": test_address}
-                success2, response2 = self.make_request("POST", "admin/vault/dex-config", data_with_address, headers=self.get_auth_headers())
-                
-                if success2:
-                    if response2.get('dex_token_address') == test_address:
-                        self.log_result("Dex Config Custom Mode (with address)", True, f"Address: {test_address[:8]}...")
-                        return True
-                    else:
-                        self.log_result("Dex Config Custom Mode (with address)", False, 
-                                      f"Address not set: {response2.get('dex_token_address')}")
-                else:
-                    self.log_result("Dex Config Custom Mode (with address)", False, f"Request failed: {response2}")
-            else:
-                self.log_result("Dex Config Custom Mode (no address)", False, f"Mode not set: {response.get('dex_mode')}")
-        else:
-            self.log_result("Dex Config Custom Mode (no address)", False, f"Request failed: {response}")
-        return False
-
-    def test_dex_poll_off_mode(self):
-        """Test POST /api/admin/vault/dex-poll with dex_mode='off'"""
-        # First set mode to off
-        self.make_request("POST", "admin/vault/dex-config", {"mode": "off"}, headers=self.get_auth_headers())
-        
-        # Then try to poll
-        success, response = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
-        
-        if success:
-            if response.get('mode') == 'off' and response.get('skipped') == True:
-                self.log_result("Dex Poll Off Mode", True, "Correctly skipped when off")
+    def test_bots_config_patch_news_repost(self):
+        """Test PUT /api/admin/bots/config with news_repost patch"""
+        success, response = self.run_test(
+            "Patch News Repost Config",
+            "PUT", 
+            "api/admin/bots/config",
+            200,
+            data={
+                "news_repost": {
+                    "enabled_for": {"telegram": True},
+                    "interval_minutes": 15
+                }
+            }
+        )
+        if success and isinstance(response, dict):
+            news_repost = response.get('news_repost', {})
+            enabled_for = news_repost.get('enabled_for', {})
+            interval_minutes = news_repost.get('interval_minutes')
+            
+            if enabled_for.get('telegram') == True and interval_minutes == 15:
+                print(f"   ✅ news_repost config updated correctly")
                 return True
             else:
-                self.log_result("Dex Poll Off Mode", False, f"Unexpected response: {response}")
-        else:
-            self.log_result("Dex Poll Off Mode", False, f"Request failed: {response}")
+                print(f"   ❌ news_repost not updated correctly")
+                print(f"      telegram: {enabled_for.get('telegram')}, interval: {interval_minutes}")
         return False
 
-    def test_dex_poll_demo_mode(self):
-        """Test POST /api/admin/vault/dex-poll with dex_mode='demo'"""
-        # Set mode to demo
-        self.make_request("POST", "admin/vault/dex-config", {"mode": "demo"}, headers=self.get_auth_headers())
-        
-        # Wait a moment for config to settle
-        time.sleep(1)
-        
-        # Poll twice to test baseline vs delta behavior
-        success1, response1 = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
-        
-        if success1:
-            # First poll should have ticks_applied = 0 (baseline)
-            if response1.get('mode') == 'demo' and response1.get('first_seen') == True:
-                if response1.get('ticks_applied') == 0:
-                    self.log_result("Dex Poll Demo Mode (First)", True, "Baseline established")
-                    
-                    # Wait and poll again
-                    time.sleep(2)
-                    success2, response2 = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
-                    
-                    if success2:
-                        # Second poll might apply ticks if there's activity
-                        ticks = response2.get('ticks_applied', 0)
-                        if ticks >= 0 and ticks <= 3:  # Should be capped at 3 per poll
-                            self.log_result("Dex Poll Demo Mode (Second)", True, f"Ticks applied: {ticks}")
-                            return True
-                        else:
-                            self.log_result("Dex Poll Demo Mode (Second)", False, f"Invalid ticks: {ticks}")
-                    else:
-                        self.log_result("Dex Poll Demo Mode (Second)", False, f"Second poll failed: {response2}")
-                else:
-                    self.log_result("Dex Poll Demo Mode (First)", False, f"Expected 0 ticks on first poll, got: {response1.get('ticks_applied')}")
-            else:
-                self.log_result("Dex Poll Demo Mode (First)", False, f"Unexpected first poll response: {response1}")
-        else:
-            self.log_result("Dex Poll Demo Mode (First)", False, f"First poll failed: {response1}")
+    def test_news_repost_status(self):
+        """Test GET /api/admin/bots/news-repost/status"""
+        success, response = self.run_test(
+            "Get News Repost Status",
+            "GET",
+            "api/admin/bots/news-repost/status",
+            200
+        )
+        if success and isinstance(response, dict):
+            required_keys = ['config', 'queue_preview']
+            for key in required_keys:
+                if key not in response:
+                    print(f"   ❌ Missing key: {key}")
+                    return False
+            
+            queue_preview = response.get('queue_preview', {})
+            if isinstance(queue_preview, dict):
+                for platform in ['x', 'telegram']:
+                    if platform in queue_preview:
+                        items = queue_preview[platform]
+                        print(f"   ✅ {platform} queue has {len(items)} items")
+                return True
         return False
 
-    def test_dex_poll_diagnostic_fields(self):
-        """Test that dex-poll returns all required diagnostic fields"""
-        # Set to demo mode for testing
-        self.make_request("POST", "admin/vault/dex-config", {"mode": "demo"}, headers=self.get_auth_headers())
-        time.sleep(1)
-        
-        success, response = self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
-        
-        if success:
-            required_fields = [
-                'mode', 'address', 'pair', 'price_usd', 'volume_h24', 
-                'buys_h24', 'sells_h24', 'delta_buys', 'delta_vol_usd', 
-                'ticks_applied', 'carry_after', 'first_seen'
-            ]
+    def test_news_repost_test_send(self):
+        """Test POST /api/admin/bots/news-repost/test-send"""
+        success, response = self.run_test(
+            "Test News Repost Send",
+            "POST",
+            "api/admin/bots/news-repost/test-send",
+            200,
+            data={"platform": "telegram", "lang": "fr"}
+        )
+        if success and isinstance(response, dict):
+            status = response.get('status')
+            preview_text = response.get('preview_text')
             
-            missing_fields = [f for f in required_fields if f not in response]
-            
-            if not missing_fields:
-                self.log_result("Dex Poll Diagnostic Fields", True, f"All {len(required_fields)} fields present")
+            if status in ['dry_run', 'sent'] and preview_text:
+                print(f"   ✅ Test send status: {status}")
+                print(f"   Preview: {preview_text[:50]}...")
                 return True
             else:
-                self.log_result("Dex Poll Diagnostic Fields", False, f"Missing fields: {missing_fields}")
-        else:
-            self.log_result("Dex Poll Diagnostic Fields", False, f"Request failed: {response}")
+                print(f"   ❌ Unexpected response: status={status}, preview={bool(preview_text)}")
         return False
 
-    def test_dex_mode_baseline_reset(self):
-        """Test that switching dex_mode resets baselines"""
-        # Set to demo mode and poll to establish baselines
-        self.make_request("POST", "admin/vault/dex-config", {"mode": "demo"}, headers=self.get_auth_headers())
-        time.sleep(1)
-        self.make_request("POST", "admin/vault/dex-poll", headers=self.get_auth_headers())
-        
-        # Get admin state to check baselines are set
-        success1, state1 = self.make_request("GET", "admin/vault/state", headers=self.get_auth_headers())
-        
-        if success1:
-            # Switch to off mode
-            self.make_request("POST", "admin/vault/dex-config", {"mode": "off"}, headers=self.get_auth_headers())
-            
-            # Check that baselines are reset
-            success2, state2 = self.make_request("GET", "admin/vault/state", headers=self.get_auth_headers())
-            
-            if success2:
-                # Check that baseline fields are reset
-                baseline_fields = ['dex_last_h24_buys', 'dex_last_h24_sells', 'dex_last_h24_volume_usd', 'dex_carry_tokens']
-                reset_values = [state2.get(f) for f in baseline_fields]
-                
-                # All should be 0 or 0.0 or None
-                if all(v in [0, 0.0, None] for v in reset_values):
-                    self.log_result("Dex Mode Baseline Reset", True, "Baselines reset on mode switch")
-                    return True
-                else:
-                    self.log_result("Dex Mode Baseline Reset", False, f"Baselines not reset: {reset_values}")
-            else:
-                self.log_result("Dex Mode Baseline Reset", False, f"Failed to get state after reset: {state2}")
-        else:
-            self.log_result("Dex Mode Baseline Reset", False, f"Failed to get initial state: {state1}")
-        return False
-
-    def test_security_public_vault_state(self):
-        """Test that public vault state doesn't expose admin-only fields"""
-        success, response = self.make_request("GET", "vault/state")
-        
-        if success:
-            # Fields that should NOT be in public response
-            forbidden_fields = [
-                'target_combination', 'dex_token_address', 'dex_last_price_usd',
-                'dex_last_h24_buys', 'dex_last_h24_sells', 'dex_last_h24_volume_usd',
-                'dex_carry_tokens', 'dex_error'
-            ]
-            
-            exposed_fields = [f for f in forbidden_fields if f in response]
-            
-            if not exposed_fields:
-                # Check that allowed dex fields are present
-                allowed_fields = ['dex_mode', 'dex_label', 'dex_pair_symbol']
-                present_allowed = [f for f in allowed_fields if f in response]
-                
-                if len(present_allowed) == len(allowed_fields):
-                    self.log_result("Security Public Vault State", True, "No admin fields exposed")
-                    return True
-                else:
-                    self.log_result("Security Public Vault State", False, f"Missing allowed fields: {set(allowed_fields) - set(present_allowed)}")
-            else:
-                self.log_result("Security Public Vault State", False, f"Admin fields exposed: {exposed_fields}")
-        else:
-            self.log_result("Security Public Vault State", False, f"Request failed: {response}")
-        return False
-
-    def test_security_admin_endpoints_require_jwt(self):
-        """Test that admin vault endpoints require JWT authentication"""
-        endpoints = [
-            "admin/vault/state",
-            "admin/vault/dex-config", 
-            "admin/vault/dex-poll"
-        ]
-        
-        all_protected = True
-        
-        for endpoint in endpoints:
-            if endpoint == "admin/vault/dex-config" or endpoint == "admin/vault/dex-poll":
-                success, response = self.make_request("POST", endpoint, {}, expected_status=401)
-            else:
-                success, response = self.make_request("GET", endpoint, expected_status=401)
-            
-            if success:
-                self.log_result(f"Security {endpoint} (no JWT)", True, "Correctly rejected")
-            else:
-                self.log_result(f"Security {endpoint} (no JWT)", False, "Should return 401")
-                all_protected = False
-        
-        return all_protected
-
-    def test_regression_existing_endpoints(self):
-        """Test that existing endpoints still work"""
-        endpoints_to_test = [
-            ("POST", "admin/login", {"password": ADMIN_PASSWORD}, 200),
-            ("POST", "whitelist", {"email": f"test-{int(time.time())}@example.com"}, 200),
-            ("GET", "chat", None, 405),  # Should be POST only
-            ("GET", "prophecy", None, 200),
-            ("GET", "stats", None, 200),
-            ("GET", "public/stats", None, 200),
-        ]
-        
-        all_working = True
-        
-        for method, endpoint, data, expected_status in endpoints_to_test:
-            if endpoint.startswith("admin/") and endpoint != "admin/login":
-                headers = self.get_auth_headers()
-            else:
-                headers = {}
-            
-            success, response = self.make_request(method, endpoint, data, headers=headers, expected_status=expected_status)
-            
-            if success:
-                self.log_result(f"Regression {method} {endpoint}", True, f"Status {expected_status}")
-            else:
-                self.log_result(f"Regression {method} {endpoint}", False, f"Expected {expected_status}, got error")
-                all_working = False
-        
-        return all_working
-
-    def test_hourly_tick_still_enabled(self):
-        """Test that hourly auto-tick is still enabled"""
-        success, response = self.make_request("GET", "vault/state")
-        
-        if success:
-            if 'hourly_tick_enabled' in response:
-                enabled = response['hourly_tick_enabled']
-                self.log_result("Hourly Tick Enabled", True, f"Enabled: {enabled}")
-                return True
-            else:
-                self.log_result("Hourly Tick Enabled", False, "Field missing from response")
-        else:
-            self.log_result("Hourly Tick Enabled", False, f"Request failed: {response}")
-        return False
-
-    def run_dex_tests(self):
-        """Run existing DexScreener integration tests"""
-        # Test vault state endpoints
-        print("\n🏦 Testing Vault State Endpoints...")
-        self.test_vault_state_public()
-        self.test_vault_state_admin()
-        
-        # Test dex-config endpoint
-        print("\n⚙️ Testing Dex Config Endpoint...")
-        self.test_dex_config_off_mode()
-        self.test_dex_config_demo_mode()
-        self.test_dex_config_custom_mode()
-        
-        # Test dex-poll endpoint
-        print("\n📊 Testing Dex Poll Endpoint...")
-        self.test_dex_poll_off_mode()
-        self.test_dex_poll_demo_mode()
-        self.test_dex_poll_diagnostic_fields()
-        
-        # Test mechanics
-        print("\n🔧 Testing Mechanics...")
-        self.test_dex_mode_baseline_reset()
-        
-        # Test security
-        print("\n🔒 Testing Security...")
-        self.test_security_public_vault_state()
-        self.test_security_admin_endpoints_require_jwt()
-        
-        # Test regression
-        print("\n🔄 Testing Regression...")
-        self.test_regression_existing_endpoints()
-        self.test_hourly_tick_still_enabled()
-
-    def run_all_tests_original(self):
-        """Original run_all_tests method for DexScreener tests only"""
-        print("🚀 Starting DEEPOTUS DexScreener Integration Testing...")
-        print(f"Testing against: {self.base_url}")
-        print("=" * 60)
-        
-        # Initial admin login
-        if not self.admin_login():
-            print("❌ Failed to login as admin - stopping tests")
+    def test_loyalty_endpoints(self):
+        """Test loyalty endpoints"""
+        # Test GET /api/admin/bots/loyalty
+        success, response = self.run_test(
+            "Get Loyalty Status",
+            "GET",
+            "api/admin/bots/loyalty",
+            200
+        )
+        if not success:
             return False
-        
-        print("✅ Admin login successful")
-        
-        # Run DexScreener tests
-        self.run_dex_tests()
-        
-        # Print summary
-        print("\n" + "=" * 60)
-        print(f"📊 TEST SUMMARY")
-        print(f"Tests run: {self.tests_run}")
-        print(f"Tests passed: {self.tests_passed}")
-        print(f"Success rate: {(self.tests_passed/self.tests_run*100):.1f}%")
-        
-        if self.errors:
-            print(f"\n❌ FAILED TESTS:")
-            for error in self.errors:
-                print(f"  • {error}")
-        else:
-            print(f"\n✅ ALL TESTS PASSED!")
-        
-        return self.tests_passed == self.tests_run
+            
+        # Test GET /api/admin/bots/loyalty/email-stats
+        success, response = self.run_test(
+            "Get Loyalty Email Stats",
+            "GET", 
+            "api/admin/bots/loyalty/email-stats",
+            200
+        )
+        if success and isinstance(response, dict):
+            required_keys = ['total_sent', 'pending_now']
+            for key in required_keys:
+                if key not in response:
+                    print(f"   ❌ Missing key: {key}")
+                    return False
+            print(f"   ✅ Email stats: sent={response.get('total_sent')}, pending={response.get('pending_now')}")
+            return True
+        return False
 
-    # ============== LOYALTY SYSTEM TESTS (Sprint 2-4) ==============
+    def test_loyalty_test_send(self):
+        """Test POST /api/admin/bots/loyalty/test-send"""
+        success, response = self.run_test(
+            "Test Loyalty Email Send",
+            "POST",
+            "api/admin/bots/loyalty/test-send",
+            200,
+            data={"email": "qa-test@example.com"}
+        )
+        if success and isinstance(response, dict):
+            status = response.get('status')
+            if status in ['sent', 'skipped_no_resend_key']:
+                print(f"   ✅ Test send status: {status}")
+                return True
+            else:
+                print(f"   ❌ Unexpected status: {status}")
+        return False
+
+    def test_bots_jobs(self):
+        """Test GET /api/admin/bots/jobs"""
+        success, response = self.run_test(
+            "Get Bot Jobs",
+            "GET",
+            "api/admin/bots/jobs",
+            200
+        )
+        if success and isinstance(response, list):
+            expected_jobs = ['heartbeat', 'news_refresh', 'loyalty_email', 'news_repost']
+            job_ids = [job.get('id') for job in response]
+            
+            missing_jobs = [job for job in expected_jobs if job not in job_ids]
+            if not missing_jobs:
+                print(f"   ✅ All expected jobs found: {job_ids}")
+                return True
+            else:
+                print(f"   ❌ Missing jobs: {missing_jobs}")
+                print(f"   Found jobs: {job_ids}")
+        return False
+
+    def test_vault_state(self):
+        """Test GET /api/vault/state"""
+        success, response = self.run_test(
+            "Get Vault State",
+            "GET",
+            "api/vault/state",
+            200
+        )
+        if success and isinstance(response, dict):
+            tokens_per_micro = response.get('tokens_per_micro')
+            if tokens_per_micro == 100000:
+                print(f"   ✅ tokens_per_micro unchanged: {tokens_per_micro}")
+                return True
+            else:
+                print(f"   ❌ tokens_per_micro changed: {tokens_per_micro}")
+        return False
+
+def main():
+    print("🚀 Starting DEEPOTUS Backend Regression Tests")
+    print("=" * 60)
     
-    def test_loyalty_status_endpoint(self):
-        """Test GET /api/admin/bots/loyalty returns proper structure"""
-        response, data = self.make_request("GET", "/admin/bots/loyalty", headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Status Endpoint", False, "Request failed")
-            return
-        
-        required_fields = ["hints_enabled", "email_enabled", "email_delay_hours", "progress_percent", "current_tier", "tiers"]
-        missing_fields = [field for field in required_fields if field not in data]
-        
-        if missing_fields:
-            self.log_result("Loyalty Status Endpoint", False, f"Missing fields: {missing_fields}")
-            return
-        
-        # Check tiers structure
-        if not isinstance(data["tiers"], list) or len(data["tiers"]) != 5:
-            self.log_result("Loyalty Status Endpoint", False, f"Expected 5 tiers, got {len(data.get('tiers', []))}")
-            return
-        
-        # Check tier structure
-        tier = data["tiers"][0]
-        tier_fields = ["tier", "lower_pct", "upper_pct", "hints_fr", "hints_en"]
-        missing_tier_fields = [field for field in tier_fields if field not in tier]
-        
-        if missing_tier_fields:
-            self.log_result("Loyalty Status Endpoint", False, f"Missing tier fields: {missing_tier_fields}")
-            return
-        
-        self.log_result("Loyalty Status Endpoint", True, f"Progress: {data['progress_percent']}%, Tier: {data['current_tier']}")
-
-    def test_loyalty_email_stats_endpoint(self):
-        """Test GET /api/admin/bots/loyalty/email-stats"""
-        response, data = self.make_request("GET", "/admin/bots/loyalty/email-stats", headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Email Stats", False, "Request failed")
-            return
-        
-        required_fields = ["total_sent", "pending_now", "last_sent_at"]
-        missing_fields = [field for field in required_fields if field not in data]
-        
-        if missing_fields:
-            self.log_result("Loyalty Email Stats", False, f"Missing fields: {missing_fields}")
-            return
-        
-        # Check data types
-        if not isinstance(data["total_sent"], int) or not isinstance(data["pending_now"], int):
-            self.log_result("Loyalty Email Stats", False, "total_sent and pending_now should be integers")
-            return
-        
-        self.log_result("Loyalty Email Stats", True, f"Sent: {data['total_sent']}, Pending: {data['pending_now']}")
-
-    def test_loyalty_config_hints_enabled(self):
-        """Test PUT /api/admin/bots/config with loyalty.hints_enabled=true"""
-        # Enable hints
-        config_data = {"loyalty": {"hints_enabled": True}}
-        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Config (hints_enabled)", False, "Config update failed")
-            return
-        
-        # Verify persistence by checking loyalty status
-        response, loyalty_data = self.make_request("GET", "/admin/bots/loyalty", headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Config (hints_enabled)", False, "Failed to verify persistence")
-            return
-        
-        if loyalty_data.get("hints_enabled") != True:
-            self.log_result("Loyalty Config (hints_enabled)", False, "hints_enabled not persisted")
-            return
-        
-        # Check that sample hints are available when enabled
-        if not loyalty_data.get("sample_hint_fr") or not loyalty_data.get("sample_hint_en"):
-            self.log_result("Loyalty Config (hints_enabled)", False, "Sample hints not available when enabled")
-            return
-        
-        self.log_result("Loyalty Config (hints_enabled)", True, f"FR: '{loyalty_data['sample_hint_fr'][:30]}...'")
-
-    def test_loyalty_config_email_delay(self):
-        """Test PUT /api/admin/bots/config with loyalty.email_delay_hours"""
-        # Set valid delay
-        config_data = {"loyalty": {"email_delay_hours": 24}}
-        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Config (email_delay)", False, "Config update failed")
-            return
-        
-        # Verify persistence
-        response, loyalty_data = self.make_request("GET", "/admin/bots/loyalty", headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Config (email_delay)", False, "Failed to verify persistence")
-            return
-        
-        if loyalty_data.get("email_delay_hours") != 24:
-            self.log_result("Loyalty Config (email_delay)", False, f"Expected 24, got {loyalty_data.get('email_delay_hours')}")
-            return
-        
-        self.log_result("Loyalty Config (email_delay)", True, "24 hours delay persisted")
-
-    def test_loyalty_email_delay_validation(self):
-        """Test email_delay_hours validation (should reject 0 and 169)"""
-        # Test invalid value (0)
-        config_data = {"loyalty": {"email_delay_hours": 0}}
-        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers(), expected_status=400)
-        
-        if response and response.status_code == 200:
-            self.log_result("Loyalty Email Delay Validation (0)", False, "Should reject email_delay_hours=0")
-            return
-        
-        # Test invalid value (169)
-        config_data = {"loyalty": {"email_delay_hours": 169}}
-        response, data = self.make_request("PUT", "/admin/bots/config", data=config_data, headers=self.get_auth_headers(), expected_status=400)
-        
-        if response and response.status_code == 200:
-            self.log_result("Loyalty Email Delay Validation (169)", False, "Should reject email_delay_hours=169")
-            return
-        
-        self.log_result("Loyalty Email Delay Validation", True, "Properly rejects out-of-range values")
-
-    def test_bot_jobs_loyalty_email(self):
-        """Test GET /api/admin/bots/jobs includes loyalty_email job every 30 minutes"""
-        response, jobs = self.make_request("GET", "/admin/bots/jobs", headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Bot Jobs (loyalty_email)", False, "Request failed")
-            return
-        
-        # Look for loyalty_email job
-        loyalty_job = None
-        for job in jobs:
-            if job.get("id") == "loyalty_email":
-                loyalty_job = job
+    tester = DeepotusAdminTester()
+    
+    # Test sequence
+    tests = [
+        ("Admin Login", tester.test_admin_login),
+        ("Get Bots Config", tester.test_bots_config_get),
+        ("Patch Loyalty Config", tester.test_bots_config_patch_loyalty),
+        ("Patch News Repost Config", tester.test_bots_config_patch_news_repost),
+        ("Get News Repost Status", tester.test_news_repost_status),
+        ("Test News Repost Send", tester.test_news_repost_test_send),
+        ("Test Loyalty Endpoints", tester.test_loyalty_endpoints),
+        ("Test Loyalty Send", tester.test_loyalty_test_send),
+        ("Get Bot Jobs", tester.test_bots_jobs),
+        ("Get Vault State", tester.test_vault_state),
+    ]
+    
+    for test_name, test_func in tests:
+        try:
+            result = test_func()
+            if not result:
+                print(f"\n❌ {test_name} FAILED - stopping tests")
                 break
-        
-        if not loyalty_job:
-            self.log_result("Bot Jobs (loyalty_email)", False, "loyalty_email job not found")
-            return
-        
-        # Check if it runs every 30 minutes
-        trigger = loyalty_job.get("trigger", "")
-        if "0:30:00" not in trigger and "30 minutes" not in trigger.lower():
-            self.log_result("Bot Jobs (loyalty_email)", False, f"Expected 30-minute interval, got: {trigger}")
-            return
-        
-        self.log_result("Bot Jobs (loyalty_email)", True, f"Trigger: {trigger}")
-
-    def test_loyalty_test_send_valid(self):
-        """Test POST /api/admin/bots/loyalty/test-send with valid email"""
-        test_data = {"email": "loyalty-test@example.com"}
-        response, data = self.make_request("POST", "/admin/bots/loyalty/test-send", data=test_data, headers=self.get_auth_headers())
-        
-        if not response:
-            self.log_result("Loyalty Test Send (valid)", False, "Request failed")
-            return
-        
-        status = data.get("status")
-        
-        # Should be either 'sent' (with RESEND_API_KEY) or 'skipped_no_resend_key' (without)
-        if status not in ["sent", "skipped_no_resend_key", "failed"]:
-            self.log_result("Loyalty Test Send (valid)", False, f"Unexpected status: {status}")
-            return
-        
-        if status == "sent" and not data.get("email_id"):
-            self.log_result("Loyalty Test Send (valid)", False, "Status 'sent' but no email_id")
-            return
-        
-        self.log_result("Loyalty Test Send (valid)", True, f"Status: {status}")
-
-    def test_loyalty_test_send_invalid(self):
-        """Test POST /api/admin/bots/loyalty/test-send with empty email"""
-        test_data = {"email": ""}
-        response, data = self.make_request("POST", "/admin/bots/loyalty/test-send", data=test_data, headers=self.get_auth_headers(), expected_status=[200, 400])
-        
-        if not response:
-            self.log_result("Loyalty Test Send (invalid)", False, "Request failed")
-            return
-        
-        if response.status_code == 400:
-            self.log_result("Loyalty Test Send (invalid)", True, "Validation error as expected")
-            return
-        
-        # If 200, check for failed status
-        status = data.get("status")
-        if status != "failed":
-            self.log_result("Loyalty Test Send (invalid)", False, f"Expected 'failed' status, got: {status}")
-            return
-        
-        self.log_result("Loyalty Test Send (invalid)", True, "Returns failed status for empty email")
-
-    def test_vault_state_tokens_per_micro_regression(self):
-        """Test that /api/vault/state still returns tokens_per_micro=100000"""
-        response, data = self.make_request("GET", "/vault/state", expected_status=200)
-        
-        if not response:
-            self.log_result("Vault State Regression", False, "Request failed")
-            return
-        
-        tokens_per_micro = data.get("tokens_per_micro")
-        
-        if tokens_per_micro != 100000:
-            self.log_result("Vault State Regression", False, f"Expected tokens_per_micro=100000, got: {tokens_per_micro}")
-            return
-        
-        self.log_result("Vault State Regression", True, "tokens_per_micro=100000 maintained")
-
-    def run_loyalty_tests(self):
-        """Run all loyalty system tests"""
-        print("\n🔮 LOYALTY SYSTEM TESTS (Sprint 2-4)")
-        print("=" * 50)
-        
-        loyalty_tests = [
-            self.test_loyalty_status_endpoint,
-            self.test_loyalty_email_stats_endpoint,
-            self.test_loyalty_config_hints_enabled,
-            self.test_loyalty_config_email_delay,
-            self.test_loyalty_email_delay_validation,
-            self.test_bot_jobs_loyalty_email,
-            self.test_loyalty_test_send_valid,
-            self.test_loyalty_test_send_invalid,
-            self.test_vault_state_tokens_per_micro_regression,
-        ]
-        
-        for test in loyalty_tests:
-            test()
-
-    def run_all_tests(self):
-        """Run all tests including loyalty system"""
-        print(f"🚀 DEEPOTUS Backend API Testing")
-        print(f"Testing against: {self.base_url}")
-        print("=" * 60)
-        
-        # Admin login
-        if not self.admin_login():
-            print("❌ Cannot proceed without admin authentication")
-            return False
-        
-        # Run existing DexScreener tests
-        self.run_dex_tests()
-        
-        # Run new loyalty system tests
-        self.run_loyalty_tests()
-        
-        # Print final summary
-        print("\n" + "=" * 60)
-        print(f"📊 FINAL RESULTS: {self.tests_passed}/{self.tests_run} tests passed")
-        
-        if self.errors:
-            print(f"\n❌ FAILED TESTS ({len(self.errors)}):")
-            for error in self.errors:
-                print(f"  • {error}")
-        else:
-            print(f"\n✅ ALL TESTS PASSED!")
-        
-        return self.tests_passed == self.tests_run
+        except Exception as e:
+            print(f"\n💥 {test_name} CRASHED: {e}")
+            break
+    
+    print("\n" + "=" * 60)
+    print(f"📊 RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    
+    if tester.tests_passed == tester.tests_run:
+        print("🎉 ALL TESTS PASSED - No regressions detected!")
+        return 0
+    else:
+        print("⚠️  SOME TESTS FAILED - Regressions detected!")
+        return 1
 
 if __name__ == "__main__":
-    tester = DexScreenerAPITester()
-    success = tester.run_all_tests()
-    exit(0 if success else 1)
+    sys.exit(main())

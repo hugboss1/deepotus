@@ -7,6 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  getAdminToken,
+  setAdminToken,
+  clearAdminToken,
+} from "@/lib/adminAuth";
+import {
   Table,
   TableBody,
   TableCell,
@@ -54,7 +59,6 @@ import TwoFASetupDialog from "@/components/admin/TwoFASetupDialog";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-const TOKEN_KEY = "deepotus_admin_token";
 const PAGE_SIZE = 25;
 
 function formatDateShort(iso) {
@@ -174,9 +178,7 @@ function EmailStatusBadge({ sent, status }) {
 }
 
 export default function Admin() {
-  const [token, setToken] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) || "" : "",
-  );
+  const [token, setToken] = useState(() => getAdminToken());
   const [pwd, setPwd] = useState("");
   const [loading, setLoading] = useState(false);
   const [rateLimitError, setRateLimitError] = useState(null);
@@ -226,7 +228,7 @@ export default function Admin() {
       const body = { password: pwd.trim() };
       if (totpCode.trim()) body.totp_code = totpCode.trim();
       const res = await axios.post(`${API}/admin/login`, body);
-      localStorage.setItem(TOKEN_KEY, res.data.token);
+      setAdminToken(res.data.token);
       setToken(res.data.token);
       setPwd("");
       setTotpCode("");
@@ -250,7 +252,7 @@ export default function Admin() {
   };
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
+    clearAdminToken();
     setToken("");
     setWhitelist({ items: [], total: 0, skip: 0 });
     setChatLogs({ items: [], total: 0, skip: 0 });

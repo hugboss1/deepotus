@@ -28,7 +28,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from core.bot_scheduler import get_bot_config
+from core.bot_config_repo import get_bot_config
 from core.config import db, logger
 
 REPOSTS_COLLECTION = "news_reposts"
@@ -258,21 +258,16 @@ async def _dispatch_x(text: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------
-# Send-one + tick
+# Send-one + tick — broken into small helpers for testability
 # ---------------------------------------------------------------------
-async def _send_one(
+async def _check_pre_send_gates(
     *,
     item: Dict[str, Any],
     platform: str,
     cfg: Dict[str, Any],
-    lang: str = "fr",
-    force: bool = False,
-) -> Dict[str, Any]:
-    """Format + dispatch (or dry_run) one repost.
-
-    `force=True` bypasses cap + interval for admin "Test repost now".
-    Dedup is ALWAYS enforced unless the same item is missing from history.
-    """
+    force: bool,
+) -> Optional[Dict[str, Any]]:
+    """Return a skip-status dict if the candidate must NOT be sent, else None."""
     link = (item.get("url") or "").strip()
     if not link:
         return {"status": "skipped_no_link", "platform": platform}
@@ -291,26 +286,53 @@ async def _send_one(
     if await _was_already_reposted(link, platform):
         return {"status": "skipped_already_reposted", "platform": platform}
 
-    prefix = cfg.get(f"prefix_{lang}") or cfg.get("prefix_fr") or "⚡"
-    text = format_repost(item=item, platform=platform, prefix=prefix)
+    return None
 
-    real_creds = _platform_creds_present(platform)
-    dispatch_id: Optional[str] = None
-    error: Optional[str] = None
-    if real_creds:
-        try:
-            res = (
-                await _dispatch_telegram(text)
-                if platform == "telegram"
-                else await _dispatch_x(text)
-            )
-            dispatch_id = (res or {}).get("id")
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("[news_repost] dispatch failed")
-            error = str(exc)[:250]
 
-    status = "sent" if dispatch_id else ("failed" if error else "dry_run")
+async def _do_dispatch(
+    *,
+    text: str,
+    platform: str,
+) -> Dict[str, Optional[str]]:
+    """Call the platform-specific dispatcher (or no-op if no creds).
 
+    Returns {"id": <post_id_or_None>, "error": <err_or_None>}.
+    """
+    if not _platform_creds_present(platform):
+        return {"id": None, "error": None}
+
+    try:
+        res = (
+            await _dispatch_telegram(text)
+            if platform == "telegram"
+            else await _dispatch_x(text)
+        )
+        return {"id": (res or {}).get("id"), "error": None}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("[news_repost] dispatch failed")
+        return {"id": None, "error": str(exc)[:250]}
+
+
+def _classify_status(*, dispatch_id: Optional[str], error: Optional[str]) -> str:
+    if dispatch_id:
+        return "sent"
+    if error:
+        return "failed"
+    return "dry_run"
+
+
+async def _persist_repost(
+    *,
+    link: str,
+    platform: str,
+    text: str,
+    dispatch_id: Optional[str],
+    error: Optional[str],
+    item: Dict[str, Any],
+    lang: str,
+    status: str,
+) -> None:
+    """Insert the dedup + audit record into the news_reposts collection."""
     doc = {
         "_id": str(uuid.uuid4()),
         "link": link,
@@ -326,27 +348,128 @@ async def _send_one(
         "error": error,
     }
     await db[REPOSTS_COLLECTION].insert_one(doc)
+
+
+async def _send_one(
+    *,
+    item: Dict[str, Any],
+    platform: str,
+    cfg: Dict[str, Any],
+    lang: str = "fr",
+    force: bool = False,
+) -> Dict[str, Any]:
+    """Format + dispatch (or dry_run) one repost.
+
+    `force=True` bypasses cap + interval for admin "Test repost now".
+    Dedup is ALWAYS enforced — an item already in news_reposts is never
+    re-sent on the same platform.
+    """
+    skip = await _check_pre_send_gates(
+        item=item, platform=platform, cfg=cfg, force=force,
+    )
+    if skip is not None:
+        return skip
+
+    link = (item.get("url") or "").strip()
+    prefix = cfg.get(f"prefix_{lang}") or cfg.get("prefix_fr") or "⚡"
+    text = format_repost(item=item, platform=platform, prefix=prefix)
+
+    dispatch = await _do_dispatch(text=text, platform=platform)
+    status = _classify_status(
+        dispatch_id=dispatch["id"], error=dispatch["error"],
+    )
+
+    await _persist_repost(
+        link=link,
+        platform=platform,
+        text=text,
+        dispatch_id=dispatch["id"],
+        error=dispatch["error"],
+        item=item,
+        lang=lang,
+        status=status,
+    )
+
     return {
         "status": status,
         "platform": platform,
-        "post_id": dispatch_id,
+        "post_id": dispatch["id"],
         "preview_text": text,
         "link": link,
         "title": item.get("title", ""),
-        "error": error,
+        "error": dispatch["error"],
     }
+
+
+# ---------------------------------------------------------------------
+# Tick + per-platform helpers
+# ---------------------------------------------------------------------
+async def _wait_for_prophet_skip_reason(cfg: Dict[str, Any]) -> Optional[str]:
+    """Return a skip-reason string if the Prophet just posted, else None."""
+    wait_min = int(cfg.get("wait_after_prophet_post_minutes", 2) or 0)
+    if wait_min <= 0:
+        return None
+    last_prophet = await _last_prophet_post_at()
+    if not last_prophet:
+        return None
+    elapsed_min = (_now_utc() - last_prophet).total_seconds() / 60.0
+    if elapsed_min < wait_min:
+        return f"prophet_just_posted ({elapsed_min:.1f}<{wait_min}min)"
+    return None
+
+
+async def _interval_skip_reason(
+    *,
+    platform: str,
+    interval_min: int,
+) -> Optional[Dict[str, Any]]:
+    """Return a skip-result dict if it's too soon to post on this platform."""
+    last_at = await _last_repost_at(platform)
+    if not last_at:
+        return None
+    elapsed_min = (_now_utc() - last_at).total_seconds() / 60.0
+    if elapsed_min < interval_min:
+        return {
+            "platform": platform,
+            "status": "skipped_interval",
+            "elapsed_min": round(elapsed_min, 1),
+            "interval_min": interval_min,
+        }
+    return None
+
+
+async def _process_platform(
+    *,
+    platform: str,
+    cfg: Dict[str, Any],
+    interval_min: int,
+) -> Dict[str, Any]:
+    """Decide whether to post on `platform` and act on it. Always returns a
+    result dict suitable for inclusion in the tick summary.
+    """
+    if not cfg["enabled_for"].get(platform):
+        return {"platform": platform, "status": "disabled"}
+
+    interval_skip = await _interval_skip_reason(
+        platform=platform, interval_min=interval_min,
+    )
+    if interval_skip:
+        return interval_skip
+
+    item = await _pick_candidate(platform)
+    if not item:
+        return {"platform": platform, "status": "skipped_no_candidate"}
+
+    return await _send_one(
+        item=item, platform=platform, cfg=cfg, lang="fr",
+    )
 
 
 async def news_repost_tick() -> Dict[str, Any]:
     """Entry point called every 5 min by APScheduler.
 
-    Walks each enabled platform, applying:
-      - kill_switch gate
-      - per-platform enabled toggle
-      - "wait after Prophet" guard
-      - "interval_minutes" rate limit (only one repost per platform per tick)
-      - daily cap
-      - dedup
+    Applies (in order): kill_switch gate, wait-after-Prophet guard, then
+    walks each platform applying interval gate, dedup, daily cap, dispatch.
     """
     cfg_top = await get_bot_config()
     if cfg_top.get("kill_switch_active", True):
@@ -362,62 +485,24 @@ async def news_repost_tick() -> Dict[str, Any]:
         "results": [],
     }
 
-    # Wait-for-Prophet guard
-    wait_min = int(cfg.get("wait_after_prophet_post_minutes", 2) or 0)
-    if wait_min > 0:
-        last_prophet = await _last_prophet_post_at()
-        if last_prophet:
-            elapsed_min = (_now_utc() - last_prophet).total_seconds() / 60.0
-            if elapsed_min < wait_min:
-                summary["skipped"] = (
-                    f"prophet_just_posted ({elapsed_min:.1f}<{wait_min}min)"
-                )
-                return summary
+    prophet_skip = await _wait_for_prophet_skip_reason(cfg)
+    if prophet_skip:
+        summary["skipped"] = prophet_skip
+        return summary
 
     interval_min = int(cfg.get("interval_minutes") or 30)
-
     for platform in ("x", "telegram"):
-        if not cfg["enabled_for"].get(platform):
-            summary["results"].append(
-                {"platform": platform, "status": "disabled"}
-            )
-            continue
-
-        # Interval gate — last repost on THIS platform must be older than
-        # the configured interval.
-        last_at = await _last_repost_at(platform)
-        if last_at:
-            elapsed_min = (_now_utc() - last_at).total_seconds() / 60.0
-            if elapsed_min < interval_min:
-                summary["results"].append(
-                    {
-                        "platform": platform,
-                        "status": "skipped_interval",
-                        "elapsed_min": round(elapsed_min, 1),
-                        "interval_min": interval_min,
-                    }
-                )
-                continue
-
-        item = await _pick_candidate(platform)
-        if not item:
-            summary["results"].append(
-                {"platform": platform, "status": "skipped_no_candidate"}
-            )
-            continue
-
-        result = await _send_one(
-            item=item, platform=platform, cfg=cfg, lang="fr"
+        result = await _process_platform(
+            platform=platform, cfg=cfg, interval_min=interval_min,
         )
         summary["results"].append(result)
-        if result["status"] in ("sent", "dry_run"):
+        if result.get("status") in ("sent", "dry_run"):
             logger.info(
                 "[news_repost] %s status=%s title=%s…",
                 platform,
                 result["status"],
-                (item.get("title") or "")[:60],
+                (result.get("title") or "")[:60],
             )
-
     return summary
 
 

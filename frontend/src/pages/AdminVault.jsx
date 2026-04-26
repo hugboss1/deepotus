@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getAdminToken, setAdminToken, clearAdminToken } from "@/lib/adminAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +23,10 @@ import {
 import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
-const TOKEN_KEY = "deepotus_admin_token";
 
 export default function AdminVault() {
   const navigate = useNavigate();
-  const [token] = useState(() => localStorage.getItem(TOKEN_KEY) || "");
+  const [token] = useState(() => getAdminToken());
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [crackTokens, setCrackTokens] = useState("1000");
@@ -69,7 +69,7 @@ export default function AdminVault() {
       if (dexCustomAddr === "" && data.dex_token_address) setDexCustomAddr(data.dex_token_address);
     } catch (e) {
       if (e?.response?.status === 401) {
-        localStorage.removeItem(TOKEN_KEY);
+        clearAdminToken();
         navigate("/admin");
         return;
       }

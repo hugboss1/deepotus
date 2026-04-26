@@ -1,22 +1,38 @@
 [
   {
-    "content": "Backend: créer core/news_repost.py (formatters, dedup, dry_run, tick)",
+    "content": "[Critical] Fix circular import bot_scheduler ↔ loyalty_email ↔ news_repost (extract get_bot_config to shared repo)",
     "status": "completed"
   },
   {
-    "content": "Backend: ajouter news_repost à DEFAULT_BOT_CONFIG + allowed_top + scheduler job",
+    "content": "[Critical] Replace `random` with `secrets` in scripts_generate_redacted_dossier.py",
     "status": "completed"
   },
   {
-    "content": "Backend: pydantic NewsRepostPatch + endpoints status/test-send + merge dans PUT /config + _shape_config",
+    "content": "[Critical] Fix `is` literal comparisons in vault.py / routers/* (ruff F632) — 0 real violations found",
     "status": "completed"
   },
   {
-    "content": "Frontend: section AdminBots News-repost (toggles, inputs, stats, preview, test-send)",
+    "content": "[Critical] Fix array-index-as-key in TerminalWindow.jsx",
     "status": "completed"
   },
   {
-    "content": "Vérification: lint, restart, screenshot, curl /news-repost/status",
+    "content": "[Critical] Audit localStorage usage — swap admin auth token to sessionStorage",
     "status": "completed"
+  },
+  {
+    "content": "[Important] Fix missing hook deps in NEW code (DeepStateIntro — useMemo→useCallback)",
+    "status": "completed"
+  },
+  {
+    "content": "[Important] Refactor large functions (news_repost_tick + _send_one + loyalty_email._send_one) into helpers",
+    "status": "completed"
+  },
+  {
+    "content": "[Nice-to-have] Wrap remaining console statement in TerminalPopup",
+    "status": "completed"
+  },
+  {
+    "content": "Regression test all touched APIs + admin login flow with sessionStorage",
+    "status": "in_progress"
   }
 ]
