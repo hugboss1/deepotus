@@ -165,7 +165,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 27. Gate door keypad immersif (desktop/mobile)
 28. Reuse VaultChassis sur true vault
 29. Animation CTA DECLASSIFIED identique + lien `/operation`
-30. **Micro-rotations (100K tokens) + locks majeurs (100M tokens)**
+30. **Micro-rotations (100K tokens) + locks majeurs (100M tokens) — production tuned**
 31. **Per-trade on-chain indexer**: activité reflétée par swaps réels (webhooks) + dédup
 32. **Mode démo**: avant lancement, tracker BONK sans casser la progression du coffre
 33. **Carrousel Transparence**: backgrounds IA propres + tampon CSS “CONFIDENTIEL” sans texte halluciné
@@ -175,6 +175,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 37. **Loyalty narrative**: citation Prophète ultra visible + bots hints progressifs + email #3 post-N2 (sans nommer GENCOIN)
 38. **DeepStateIntro**: écran noir + fenêtres terminal + glitch + fade vers landing en ≤15s, show-once/24h, skip + reduced-motion
 39. **News repost**: repost automatique top-5 headlines RSS vers X + Telegram (sans LLM), cadence admin, cap/jour, dedup, wait-after-Prophet
+40. **Code Quality Hardening**: circular imports cassés + auth token sessionStorage + refactors complexité + keys stables React
 
 ---
 
@@ -185,7 +186,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Testing ✅
 - **Delivery ✅**
 - **Architecture backend modulaire ✅ (Opération B terminée)**
-- **Hardening code quality ✅ (Phase 17 terminée)**
+- **Hardening code quality ✅ (Phase 17 terminée + Sprint Quality terminé)**
 - **Indexer Solana per-trade via Helius ✅ (Phase 18 terminée, LIVE)**
 - **Brand assets V4 + coin ΔΣ ✅ (Phase 19 terminée)**
 - **Transparence On-chain carrousel full-width + images régénérées ✅ + VALIDATION VISUELLE ✅**
@@ -232,220 +233,86 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
   - `get_loyalty_context()` (+ `force=True` pour preview admin)
 - Hook dans `core/prophet_studio.py:generate_post()`:
   - Injection d’une **directive de loyauté** dans `extra_context` (try/except, non bloquant)
-  - Jamais de nom de token futur, jamais de date/montant, jamais d’incitation à acheter
 - Toggle: `bot_config.loyalty.hints_enabled` (default false)
 - Admin endpoints:
   - `GET /api/admin/bots/loyalty` (status + tiers + sample)
-- Admin UI (`AdminBots.jsx` → Config tab):
-  - Section “Loyalty engine · vault-aware hints” + preview + liste tiers + toggles
+- Admin UI (`AdminBots.jsx` → Config tab): section “Loyalty engine” + preview + liste tiers + toggles
 
 #### Sprint 4 — Email #3 « Allégeance notée » ✅
 - Template HTML: `email_templates.py:render_loyalty_email()` + `loyalty_email_subject()`
 - Module `core/loyalty_email.py`:
-  - `_generate_prophet_message()` via LLM (provider/model de bot_config) + fallback curated
+  - `_generate_prophet_message()` via LLM + fallback curated
   - `list_pending(delay_hours)` sur `access_cards`
   - `_send_one()` → Resend + audit `email_events` + stamp `access_cards.loyalty_email_sent_at`
   - `loyalty_email_tick()` scheduler
   - `force_send_loyalty()` + `get_loyalty_email_stats()`
-- Scheduler:
-  - Job `loyalty_email` toutes les 30 min (`interval[0:30:00]`)
-- Toggles:
-  - `bot_config.loyalty.email_enabled` (default false)
-  - `bot_config.loyalty.email_delay_hours` (default 12h, range 1–168)
-- Admin endpoints:
-  - `GET /api/admin/bots/loyalty/email-stats`
-  - `POST /api/admin/bots/loyalty/test-send` (force send)
-- Admin UI (`AdminBots.jsx`):
-  - Toggle email_enabled + delay + stats + form “Force-send now” + panneau résultat
-- Validation: testing agent a réussi un envoi via Resend (status=sent).
-
-#### Bug fix during testing ✅
-- `PUT /api/admin/bots/config` ignorait `payload.loyalty` → `empty_patch`.
-  - Patch ajouté: merge `payload.loyalty` dans `patch_dict`.
-  - `_shape_config()` + `BotConfigResponse` mis à jour pour exposer `loyalty`.
-  - Fix confirmé via curl + UI.
+- Scheduler: job `loyalty_email` toutes les 30 min
+- Toggles: `bot_config.loyalty.email_enabled`, `bot_config.loyalty.email_delay_hours`
+- Admin endpoints: `GET /api/admin/bots/loyalty/email-stats`, `POST /api/admin/bots/loyalty/test-send`
+- Admin UI (`AdminBots.jsx`): toggle + delay + stats + force-send + panneau résultat
 
 ### Sprint Bonus — DeepStateIntro (entrée hack-style) — ✅ COMPLETED + validated
+- `/app/frontend/src/components/intro/` : `DeepStateIntro.jsx`, `TerminalWindow.jsx`, `MatrixRain.jsx`, `GlitchOverlay.jsx`, `hackScripts.js`
+- Timeline 14s + skip + cooldown 24h + reduced-motion
+- Mounted au-dessus de la landing (premier enfant de `Landing.jsx`)
 
-#### Objectif
-Créer une **page d’introduction mystérieuse** sur première visite (≤15s) : écran noir → fenêtres terminal “hack” → glitch → fondu vers la landing.
-
-#### Livraison (14s)
-- Écran noir + prologue "PROTOCOL ΔΣ · INITIATING SECURE BOOT..."
-- 4 fenêtres terminal (kernel / nmap / handshake / access granted)
-- Matrix rain (canvas) en arrière-plan
-- Glitch RGB + flash blanc (200ms)
-- Fade out vers landing (révélée en dessous)
-
-#### Architecture
-- `/app/frontend/src/components/intro/`
-  - `DeepStateIntro.jsx` — orchestrateur timeline + skip + 24h cooldown + `?intro=force`
-  - `TerminalWindow.jsx` — chrome rétro + typewriter effect
-  - `MatrixRain.jsx` — canvas 2D + trails
-  - `GlitchOverlay.jsx` — RGB split + scanlines + flash
-  - `hackScripts.js` — scripts curated (mix FR/EN)
-- CSS (`/app/frontend/src/index.css`):
-  - `@keyframes deepstate-rgb-jitter`, `@keyframes deepstate-flash-keys`
-  - `.deepstate-glitch-rgb`, `.deepstate-glitch-flash`, `.deepstate-scanlines`
-  - `prefers-reduced-motion: reduce` → animations coupées
-
-#### Features
-- localStorage `deepstate.intro.lastSeenAt` (cooldown 24h)
-- Skip button bottom-right (FR: "PASSER · ESC" / EN: "SKIP · ESC")
-- ESC key handler + click anywhere
-- `?intro=force` param
-- Auto-skip si `prefers-reduced-motion: reduce`
-- Body scroll lock pendant intro
-- Corner badge progression "DEEPSTATE.SYS · X%"
-
-#### Validation
-- eslint OK
-- webpack compiled successfully
-- screenshots keyframes validés
-- cooldown 24h confirmé
-- skip confirmé
-
-### Sprint Bonus — News repost engine (auto-relay RSS headlines) — ✅ COMPLETED + validated
+### Sprint Bonus — News repost engine (RSS headlines) — ✅ COMPLETED + validated
 
 #### Concept
-Deux flux indépendants tournent maintenant en parallèle dans "Prophet Fleet · Bots Control" :
-1. **Prophet posts** (existant) : LLM génère des commentaires inspirés des news selon l’intervalle admin
-2. **News reposts** (nouveau) : repost des **top-5 kept headlines** du flux RSS **sans modification** (sans LLM) vers X et Telegram
-
-#### Choix utilisateur appliqués
-- Préfixe: `⚡ INTERCEPTÉ ·` (FR) / `⚡ INTERCEPT ·` (EN)
-- Cadence: 30 min entre reposts
-- Delay après refresh RSS: 5 min (config exposée)
-- Cap: 10 reposts / jour / plateforme
-- Wait Prophet: 2 min après un post Prophet (pour éviter collision)
+Deux flux indépendants dans “Prophet Fleet · Bots Control” :
+1. Prophet posts (LLM) selon interval admin
+2. News reposts: top-5 kept headlines RSS sans LLM vers X/Telegram
 
 #### Backend
-- Module `core/news_repost.py`:
-  - `format_repost(item, platform, prefix)`
-    - X: ≤270 chars, `prefix + source + title + 🔗 link`, troncature intelligente
-    - Telegram: Markdown léger `prefix + *source* + title + [Source →](url)`
-  - `_link_hash(url)` SHA1 stable pour dédup
-  - `_pick_candidate(platform, limit=5)` top-5 kept headlines non encore repostés
-  - `_send_one()` dispatch (real ou dry_run) + insert Mongo `news_reposts`
-  - `news_repost_tick()` avec: kill_switch gate, per-platform toggle, wait-Prophet, interval gate, daily cap, dedup
-  - `force_repost()` admin test-send
-  - `get_news_repost_status()` snapshot admin + queue_preview (3 items / plateforme)
-- Mode `dry_run` tant que creds X/Telegram absents (log en DB)
-- DEFAULT_BOT_CONFIG: ajout `news_repost` + allowlist update
-- Scheduler APScheduler:
-  - Job `news_repost` toutes les 5 min (rate-limited en interne)
-- MongoDB collection `news_reposts`:
-  - `{_id, link, link_hash, platform, posted_at, post_id, raw_title, source, lang, status, preview_text, error}`
+- `core/news_repost.py`: format par plateforme, dédup SHA1, tick scheduler, force-send, status snapshot
+- Scheduler job `news_repost` toutes les 5 min (rate-limited en interne)
+- Endpoints: `GET /api/admin/bots/news-repost/status`, `POST /api/admin/bots/news-repost/test-send`
+- Mode `dry_run` tant que creds absents (log DB)
 
-#### API endpoints
-- `GET /api/admin/bots/news-repost/status`
-- `POST /api/admin/bots/news-repost/test-send` body `{platform: x|telegram, lang: fr|en}`
-- `PUT /api/admin/bots/config` supporte patch `news_repost` (merge logic)
-
-#### Frontend Admin (AdminBots.jsx > Config tab)
-- Nouvelle section “News repost · auto-relay X & Telegram”:
-  - Badge mode (dry-run vs live)
-  - Toggles par plateforme + bouton Test
-  - Inputs: interval, daily_cap, wait-after-Prophet, delay-after-refresh
-  - Prefix FR/EN éditables
-  - Queue preview (3 prochains / plateforme) + preview_text collapsible
-  - Dernier résultat Test avec badge status + preview_text
-
-#### Validation
-- eslint clean + ruff clean
-- backend restart OK
-- cURL: PUT merge OK, test-send dry_run OK, dédup confirmé
-- Screenshot Admin validé
-
----
-
-## Phase 8 — 2FA, Heatmap, Full Export, Email Events Drill-down, Cooldown Blacklist — completed ✅
-- ✅ 2FA TOTP + backup codes + enable/disable
-- ✅ Heatmap activité
-- ✅ Export CSV whitelist complet
-- ✅ Drill-down email events
-- ✅ Blacklist cooldown + auto-unblock
-
----
-
-## Phase 9 — Resend Webhook Finale (Svix) + Test Emails — completed ✅
-- ✅ `RESEND_WEBHOOK_SECRET` injecté
-- ✅ Webhook Resend signé et vérifié
-- ✅ Endpoint admin `POST /api/admin/test-email`
-- ✅ Events persistés + visibles
-
----
-
-## Phase 10 — PROTOCOL ΔΣ (Coffre classifié + reveal twist) — COMPLETED ✅
-- ✅ Vault module + collections + endpoints
-- ✅ `/operation` reveal unlocké uniquement au stage DECLASSIFIED
-- ✅ Hourly tick
-- ✅ Sécurité : combinaison cible jamais exposée publiquement
-
----
-
-## Phase 11 — AI Vault Mockup + DexScreener Live Activity — completed ✅
-- ✅ Chassis IA + overlay dials responsive
-- ✅ DexScreener modes (off/demo/custom)
-- ✅ Admin dex-config + dex-poll
-
----
-
-## Phase 12 — Mobile Vault Fix + “Fall of Deep State” Illustration — completed ✅
-- ✅ Fix responsive
-- ✅ Illustration prophet_chased
-
----
-
-## Phase 13 — Funnel NIVEAU 02 (Terminal + Carte d’accès + Vault réel) — COMPLETED ✅
-- ✅ Terminal CRT modal
-- ✅ Carte d’accès (PIL + QR) + email Resend
-- ✅ `/classified-vault` gate + session
-
----
-
-## Phase 14 — AI Door Gate + VaultChassis Reuse — COMPLETED ✅
-- ✅ door_keypad + input ancré
-- ✅ continuité UI true vault
-
----
-
-## Phase 15 — Production Mechanics + DECLASSIFIED Animation Parity — COMPLETED ✅
-- ✅ 100M tokens/digit + **100K micro** + goal 300K€ (custom)
-- ✅ DexScreener demo/custom adaptés
-- ✅ CTA DECLASSIFIED sur `/classified-vault`
-
----
-
-## Phase 16 — Opération B: Refactor backend monolith → routers/core — **COMPLETED ✅**
+#### Frontend Admin
+- Section “News repost · auto-relay X & Telegram” dans `AdminBots.jsx` (toggles, inputs, queue preview, test result)
 
 ---
 
 ## Phase 17 — Code Quality Hardening (sécurité + maintenabilité) — **COMPLETED ✅**
 
----
+### Sprint Quality (Code review fixes) — ✅ COMPLETED + regression validated
+**Critical fixes**
+1. **Circular import résolu**
+   - Créé `core/bot_config_repo.py` (DEFAULT_BOT_CONFIG, ALLOWED_PATCH_KEYS, ensure/get config, persist patch)
+   - `core/bot_scheduler.py` ne conserve que l’orchestration scheduler + `update_bot_config` (persist + sync)
+   - Consommateurs (`loyalty_email.py`, `news_repost.py`, `prophet_studio.py`) importent désormais `get_bot_config` depuis `bot_config_repo`
+   - Validation : backend tests 100%, jobs APScheduler OK
 
-## Phase 18 — Task C (P2) : Indexer Solana per-trade via Helius — **SHIPPED ✅ (LIVE)**
+2. **Admin JWT migré localStorage → sessionStorage**
+   - Nouveau helper `frontend/src/lib/adminAuth.js`
+   - Migration legacy exécutée au module-load (copie + suppression de localStorage)
+   - Admin pages migrées : Admin.jsx, AdminBots.jsx, AdminVault.jsx, AdminEmails.jsx
+   - Validation : token en sessionStorage, localStorage vidé
 
----
+3. **PRNG du dossier “redacted” sécurisé (scopé)**
+   - `scripts_generate_redacted_dossier.py`: `_rng = random.Random(2026)  # noqa: S311` + remplacement des appels global random
+   - Objectif: reproductibilité build + suppression de l’état global
 
-## Phase 19 — Brand Assets (V4 + monogram ΔΣ + pièce en or) — **COMPLETED ✅**
+4. **React key stability**
+   - `TerminalWindow.jsx`: suppression `key={index}` au profit d’une clé stable dérivée
 
----
+**Important fixes**
+5. **Hook deps / idiome**
+   - `DeepStateIntro.jsx`: `useMemo(() => () => ...)` → `useCallback(() => ...)`
 
-## Phase 20 — Pré-lancement Polish Pack (UI + Roadmap + SEO/OG) — **COMPLETED ✅**
+6. **Refactor complexité**
+   - `core/news_repost.py`: `_send_one()` et `news_repost_tick()` split en helpers (complexité réduite)
+   - `core/loyalty_email.py`: `_send_one()` split en helpers (lisibilité + test)
 
----
+**Nice-to-have**
+7. **Console statements**
+   - `TerminalPopup.jsx`: `console.warn` → `logger.warn` (logger prod-safe)
 
-## Phase 21 — Code Quality Pack (Tier 1 + Tier 3 + Tier 4) — **PARTIALLY COMPLETED / ONGOING**
-
-### Objectif
-- Continuer le refactor structure-only + migration TS progressive sans casser l’existant.
-
-### État actuel
-- ✅ Fondations TypeScript (tsconfig + allowJs + base types)
-- ✅ Splits partiels React (Hero/Tokenomics/ClassifiedVault)
-- ⏳ Backlog restant: conversions TS + splits gros composants Admin.
+**Validation**
+- backend lint clean + restart OK
+- frontend eslint clean + compile OK
+- testing agent regression : **100% backend** + **95% frontend**, 1 finding cosmétique corrigé (legacy localStorage purge)
 
 ---
 
@@ -494,13 +361,14 @@ Deux flux indépendants tournent maintenant en parallèle dans "Prophet Fleet ·
 - ✅ (F) Loyalty narrative rollout: terminé (Sprints 2/3/4)
 - ✅ (G) DeepStateIntro (entrée hack-style 14s): terminé
 - ✅ (H) News repost engine (RSS → X/Telegram, no-LLM): terminé
+- ✅ (I) Sprint Quality (code review fixes): terminé
 - ⏳ (A) Switch à $DEEPOTUS réel: dès que le mint Solana est connu
 
 ---
 
 ## Testing strategy (Phase 21)
 - Après **21a (Python quick wins)**:
-  - ruff/pyflakes clean
+  - lint backend clean
   - smoke test backend
 - Après **21b (React quick wins)**:
   - eslint clean

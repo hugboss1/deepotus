@@ -30,12 +30,18 @@ function migrateLegacyToken() {
     if (legacy && !window.sessionStorage.getItem(TOKEN_KEY)) {
       window.sessionStorage.setItem(TOKEN_KEY, legacy);
     }
-    // Always strip from localStorage so persisted copies don't linger.
+    // Always strip from localStorage so persisted copies don't linger,
+    // even when the legacy value was empty.
     window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch (_) {
     /* storage blocked — non-fatal */
   }
 }
+
+// Run once at module load so the cleanup happens even if the first
+// caller writes a fresh token via `setAdminToken` (login flow) before
+// any `getAdminToken` read.
+migrateLegacyToken();
 
 export function getAdminToken() {
   if (typeof window === "undefined") return "";

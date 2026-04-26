@@ -16,7 +16,7 @@
     "status": "completed"
   },
   {
-    "content": "[Critical] Audit localStorage usage — swap admin auth token to sessionStorage",
+    "content": "[Critical] Audit localStorage usage — swap admin auth token to sessionStorage + eager legacy cleanup at module load",
     "status": "completed"
   },
   {
@@ -32,7 +32,7 @@
     "status": "completed"
   },
   {
-    "content": "Regression test all touched APIs + admin login flow with sessionStorage",
-    "status": "in_progress"
+    "content": "Regression test all touched APIs + admin login flow with sessionStorage — 100% backend, 95% frontend, 1 LOW-priority cosmetic finding fixed",
+    "status": "completed"
   }
 ]
