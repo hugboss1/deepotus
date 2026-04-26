@@ -77,6 +77,16 @@ DEFAULT_BOT_CONFIG: Dict[str, Any] = {
         "email_enabled": False,
         "email_delay_hours": 12,
     },
+    # ---- News repost (auto-relay top RSS headlines) ----
+    "news_repost": {
+        "enabled_for": {"x": False, "telegram": False},
+        "interval_minutes": 30,
+        "delay_after_refresh_minutes": 5,
+        "wait_after_prophet_post_minutes": 2,
+        "daily_cap": 10,
+        "prefix_fr": "⚡ INTERCEPTÉ ·",
+        "prefix_en": "⚡ INTERCEPT ·",
+    },
     "heartbeat_interval_minutes": 5,
     "max_posts_per_day": 12,
     "last_updated_at": None,
@@ -117,6 +127,7 @@ async def update_bot_config(patch: Dict[str, Any], updated_by: str = "admin") ->
         "llm",
         "news_feed",
         "loyalty",
+        "news_repost",
         "heartbeat_interval_minutes",
         "max_posts_per_day",
     }
@@ -309,6 +320,41 @@ async def _loyalty_email_job() -> None:
         logging.exception("[bot_scheduler] loyalty email tick failed")
 
 
+async def _news_repost_job() -> None:
+    """Trigger the news-repost tick.
+
+    Runs every 5 min. Internally honours kill_switch + per-platform
+    toggles + interval gating + dedup + daily cap. When neither X nor
+    Telegram is enabled, this is a no-op.
+    """
+    from core.news_repost import news_repost_tick  # noqa: WPS433
+
+    try:
+        summary = await news_repost_tick()
+        # Persist a small breadcrumb on the singleton so the admin can
+        # inspect when the last tick fired and what it produced.
+        await db[CONFIG_COLLECTION].update_one(
+            {"_id": CONFIG_SINGLETON_ID},
+            {
+                "$set": {
+                    "news_repost.last_run_at": datetime.now(timezone.utc).isoformat(),
+                    "news_repost.last_run_summary": {
+                        "skipped": summary.get("skipped"),
+                        "results": [
+                            {
+                                "platform": r.get("platform"),
+                                "status": r.get("status"),
+                            }
+                            for r in (summary.get("results") or [])
+                        ],
+                    },
+                }
+            },
+        )
+    except Exception:
+        logging.exception("[bot_scheduler] news repost tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -371,6 +417,22 @@ async def sync_jobs_from_config() -> None:
             _loyalty_email_job,
             trigger=IntervalTrigger(minutes=30),
             id="loyalty_email",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+    # ---- News repost tick — every 5 min (rate-gated internally) ----
+    if _scheduler.get_job("news_repost"):
+        _scheduler.reschedule_job(
+            "news_repost",
+            trigger=IntervalTrigger(minutes=5),
+        )
+    else:
+        _scheduler.add_job(
+            _news_repost_job,
+            trigger=IntervalTrigger(minutes=5),
+            id="news_repost",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

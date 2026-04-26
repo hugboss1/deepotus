@@ -116,6 +116,12 @@ export default function AdminBots() {
   const [loyaltyTestBusy, setLoyaltyTestBusy] = useState(false);
   const [loyaltyTestResult, setLoyaltyTestResult] = useState(null);
 
+  // ---- News repost state (auto-relay top RSS headlines) ----
+  const [repost, setRepost] = useState(null);
+  const [repostBusy, setRepostBusy] = useState(false);
+  const [repostTestBusy, setRepostTestBusy] = useState(false);
+  const [repostTestResult, setRepostTestResult] = useState(null);
+
   // ---- Custom LLM keys vault (Config tab "Custom LLM keys" section) ----
   // The dialog is shared across the 3 providers — only one can be open at a time.
   const [llmSecretDialogOpen, setLlmSecretDialogOpen] = useState(false);
@@ -178,6 +184,7 @@ export default function AdminBots() {
         loadContentTypes(),
         loadNews(),
         loadLoyalty(),
+        loadRepost(),
       ]);
     } finally {
       setLoading(false);
@@ -291,6 +298,59 @@ export default function AdminBots() {
       toast.error("Force-send failed");
     } finally {
       setLoyaltyTestBusy(false);
+    }
+  }
+
+  async function loadRepost() {
+    try {
+      const { data } = await axios.get(
+        `${API}/api/admin/bots/news-repost/status`,
+        { headers },
+      );
+      setRepost(data);
+    } catch (err) {
+      logger.error(err);
+    }
+  }
+
+  async function patchRepost(patch) {
+    setRepostBusy(true);
+    try {
+      await axios.put(
+        `${API}/api/admin/bots/config`,
+        { news_repost: patch },
+        { headers },
+      );
+      await Promise.all([loadConfig(), loadRepost()]);
+      toast.success("News repost config updated");
+    } catch (err) {
+      logger.error(err);
+      toast.error("Could not update repost config");
+    } finally {
+      setRepostBusy(false);
+    }
+  }
+
+  async function sendRepostTest(platform) {
+    setRepostTestBusy(true);
+    setRepostTestResult(null);
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/bots/news-repost/test-send`,
+        { platform, lang: "fr" },
+        { headers },
+      );
+      setRepostTestResult(data);
+      const status = data?.status || "unknown";
+      if (status === "sent") toast.success(`Reposted on ${platform}`);
+      else if (status === "dry_run") toast.success(`Dry-run on ${platform} (no creds)`);
+      else toast.error(`Status: ${status}`);
+      await loadRepost();
+    } catch (err) {
+      logger.error(err);
+      toast.error("Test repost failed");
+    } finally {
+      setRepostTestBusy(false);
     }
   }
 
@@ -1651,6 +1711,381 @@ export default function AdminBots() {
                   ))}
                 </div>
               </details>
+            </div>
+
+            {/* -------------------- NEWS REPOST -------------------- */}
+            <Separator className="my-2" />
+            <div
+              className="rounded-xl border border-border bg-card p-5 space-y-4"
+              data-testid="news-repost-section"
+            >
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Newspaper size={16} className="text-[#F59E0B]" />
+                  <div className="font-display font-semibold">
+                    News repost · auto-relay X &amp; Telegram
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="font-mono text-[10px] uppercase tracking-widest"
+                    data-testid="news-repost-mode-badge"
+                  >
+                    {repost?.credentials_present?.x ||
+                    repost?.credentials_present?.telegram
+                      ? "live · partial"
+                      : "dry-run · no creds yet"}
+                  </Badge>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadRepost}
+                  disabled={repostBusy}
+                  data-testid="news-repost-refresh-btn"
+                >
+                  <RefreshCw size={14} className="mr-1.5" /> Refresh
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Reposts the top kept RSS headlines verbatim (no LLM) on X and
+                Telegram, prefixed with{" "}
+                <code className="font-mono text-[10px] bg-secondary/40 px-1.5 py-0.5 rounded">
+                  {repost?.config?.prefix_fr || "⚡ INTERCEPTÉ ·"}
+                </code>
+                . Runs in parallel with the Prophet posts and waits{" "}
+                <strong>
+                  {repost?.config?.wait_after_prophet_post_minutes || 2} min
+                </strong>{" "}
+                after a Prophet post to avoid collisions. Dedup is enforced
+                per-link, per-platform.
+              </p>
+
+              {/* Per-platform toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {["telegram", "x"].map((p) => (
+                  <div
+                    key={p}
+                    className="rounded-lg border border-border bg-secondary/30 p-3 flex items-center justify-between gap-2"
+                    data-testid={`news-repost-platform-${p}`}
+                  >
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-widest">
+                        {p}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        sent today: {repost?.today_per_platform?.[p] ?? 0} /{" "}
+                        {repost?.config?.daily_cap ?? 10}
+                        {!repost?.credentials_present?.[p] && (
+                          <span className="ml-2 text-[#F59E0B]">
+                            · dry-run only
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={!!repost?.config?.enabled_for?.[p]}
+                        disabled={repostBusy}
+                        onCheckedChange={(v) =>
+                          patchRepost({ enabled_for: { [p]: !!v } })
+                        }
+                        data-testid={`news-repost-toggle-${p}`}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => sendRepostTest(p)}
+                        disabled={repostTestBusy}
+                        className="font-mono uppercase tracking-widest text-[10px]"
+                        data-testid={`news-repost-test-${p}`}
+                      >
+                        Test
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Numeric controls */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">
+                    Interval (min)
+                  </div>
+                  <Input
+                    type="number"
+                    min="5"
+                    max="720"
+                    value={repost?.config?.interval_minutes ?? 30}
+                    onChange={(e) =>
+                      setRepost((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              config: {
+                                ...prev.config,
+                                interval_minutes: Number(e.target.value || 30),
+                              },
+                            }
+                          : prev,
+                      )
+                    }
+                    onBlur={(e) =>
+                      patchRepost({
+                        interval_minutes: Math.max(
+                          5,
+                          Math.min(720, Number(e.target.value || 30)),
+                        ),
+                      })
+                    }
+                    data-testid="news-repost-interval-input"
+                    className="font-mono text-sm"
+                  />
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">
+                    Daily cap
+                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="200"
+                    value={repost?.config?.daily_cap ?? 10}
+                    onChange={(e) =>
+                      setRepost((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              config: {
+                                ...prev.config,
+                                daily_cap: Number(e.target.value || 10),
+                              },
+                            }
+                          : prev,
+                      )
+                    }
+                    onBlur={(e) =>
+                      patchRepost({
+                        daily_cap: Math.max(
+                          0,
+                          Math.min(200, Number(e.target.value || 10)),
+                        ),
+                      })
+                    }
+                    data-testid="news-repost-cap-input"
+                    className="font-mono text-sm"
+                  />
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">
+                    Wait after Prophet (min)
+                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={repost?.config?.wait_after_prophet_post_minutes ?? 2}
+                    onChange={(e) =>
+                      setRepost((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              config: {
+                                ...prev.config,
+                                wait_after_prophet_post_minutes: Number(
+                                  e.target.value || 2,
+                                ),
+                              },
+                            }
+                          : prev,
+                      )
+                    }
+                    onBlur={(e) =>
+                      patchRepost({
+                        wait_after_prophet_post_minutes: Math.max(
+                          0,
+                          Math.min(120, Number(e.target.value || 2)),
+                        ),
+                      })
+                    }
+                    data-testid="news-repost-wait-input"
+                    className="font-mono text-sm"
+                  />
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">
+                    Delay after RSS refresh (min)
+                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={repost?.config?.delay_after_refresh_minutes ?? 5}
+                    onChange={(e) =>
+                      setRepost((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              config: {
+                                ...prev.config,
+                                delay_after_refresh_minutes: Number(
+                                  e.target.value || 5,
+                                ),
+                              },
+                            }
+                          : prev,
+                      )
+                    }
+                    onBlur={(e) =>
+                      patchRepost({
+                        delay_after_refresh_minutes: Math.max(
+                          0,
+                          Math.min(120, Number(e.target.value || 5)),
+                        ),
+                      })
+                    }
+                    data-testid="news-repost-delay-input"
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Customizable prefixes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {["fr", "en"].map((lng) => {
+                  const key = `prefix_${lng}`;
+                  return (
+                    <div
+                      key={lng}
+                      className="rounded-lg border border-border bg-secondary/30 p-3"
+                    >
+                      <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">
+                        Prefix · {lng.toUpperCase()}
+                      </div>
+                      <Input
+                        type="text"
+                        maxLength={80}
+                        value={repost?.config?.[key] ?? ""}
+                        onChange={(e) =>
+                          setRepost((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  config: {
+                                    ...prev.config,
+                                    [key]: e.target.value,
+                                  },
+                                }
+                              : prev,
+                          )
+                        }
+                        onBlur={(e) =>
+                          patchRepost({ [key]: e.target.value })
+                        }
+                        data-testid={`news-repost-prefix-${lng}`}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Queue preview (3 next per platform) */}
+              <div
+                className="rounded-lg border border-border bg-[#0B0D10]/85 text-white p-3"
+                data-testid="news-repost-queue"
+              >
+                <div className="font-mono text-[10px] uppercase tracking-widest text-white/60 mb-2">
+                  Queue · next 3 per platform (what would go out)
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {["telegram", "x"].map((p) => {
+                    const items = repost?.queue_preview?.[p] || [];
+                    return (
+                      <div
+                        key={p}
+                        className="space-y-2"
+                        data-testid={`news-repost-queue-${p}`}
+                      >
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-[#F59E0B]">
+                          {p}
+                        </div>
+                        {items.length === 0 && (
+                          <div className="font-mono text-[10px] text-white/45 italic">
+                            — empty queue —
+                          </div>
+                        )}
+                        {items.map((it, i) => (
+                          <div
+                            key={`${p}-${i}`}
+                            className="rounded-md border border-white/10 px-2 py-1.5"
+                          >
+                            <div className="text-[10px] text-white/55 font-mono uppercase tracking-widest">
+                              {it.source || "—"}
+                            </div>
+                            <div className="text-xs text-white/90">
+                              {it.title}
+                            </div>
+                            <details className="mt-1">
+                              <summary className="cursor-pointer text-[10px] uppercase tracking-widest text-white/50">
+                                Preview text
+                              </summary>
+                              <pre className="mt-1 font-mono text-[10.5px] text-white/85 whitespace-pre-wrap break-words leading-relaxed">
+                                {it.preview_text}
+                              </pre>
+                            </details>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Last test result */}
+              {repostTestResult && (
+                <div
+                  className="rounded-md border border-border bg-card p-2.5 font-mono text-[11px] space-y-1"
+                  data-testid="news-repost-test-result"
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="uppercase tracking-widest text-muted-foreground">
+                      last test
+                    </span>
+                    <Badge
+                      variant={
+                        repostTestResult.status === "sent"
+                          ? "default"
+                          : "outline"
+                      }
+                      className="text-[10px] uppercase"
+                    >
+                      {repostTestResult.platform} · {repostTestResult.status}
+                    </Badge>
+                  </div>
+                  {repostTestResult.title && (
+                    <div className="text-foreground/85">
+                      {repostTestResult.title}
+                    </div>
+                  )}
+                  {repostTestResult.preview_text && (
+                    <pre className="bg-secondary/40 p-2 rounded text-[10.5px] whitespace-pre-wrap break-words">
+                      {repostTestResult.preview_text}
+                    </pre>
+                  )}
+                  {repostTestResult.error && (
+                    <div className="text-destructive">
+                      {repostTestResult.error}
+                    </div>
+                  )}
+                  {repostTestResult.hint && (
+                    <div className="text-muted-foreground italic">
+                      {repostTestResult.hint}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </TabsContent>
 

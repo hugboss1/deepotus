@@ -1,30 +1,22 @@
 [
   {
-    "content": "Créer hackScripts.js (lignes de terminaux mix FR/EN)",
+    "content": "Backend: créer core/news_repost.py (formatters, dedup, dry_run, tick)",
     "status": "completed"
   },
   {
-    "content": "Créer TerminalWindow.jsx (typewriter + chrome rétro)",
+    "content": "Backend: ajouter news_repost à DEFAULT_BOT_CONFIG + allowed_top + scheduler job",
     "status": "completed"
   },
   {
-    "content": "Créer MatrixRain.jsx (canvas 2D ASCII)",
+    "content": "Backend: pydantic NewsRepostPatch + endpoints status/test-send + merge dans PUT /config + _shape_config",
     "status": "completed"
   },
   {
-    "content": "Créer GlitchOverlay.jsx (RGB split + scanlines)",
+    "content": "Frontend: section AdminBots News-repost (toggles, inputs, stats, preview, test-send)",
     "status": "completed"
   },
   {
-    "content": "Créer DeepStateIntro.jsx (orchestrateur 14s + skip + 24h cooldown)",
-    "status": "completed"
-  },
-  {
-    "content": "Intégrer dans App.js / Landing.jsx",
-    "status": "completed"
-  },
-  {
-    "content": "Vérifier visuellement (screenshots) + skip + reduced-motion",
+    "content": "Vérification: lint, restart, screenshot, curl /news-repost/status",
     "status": "completed"
   }
 ]

@@ -7,6 +7,11 @@
 - **LLM**: Emergent LLM key (validé)
 - **Go-to-market**: lancement sur **Pump.fun**, puis migration automatique vers **Raydium**
 - **Intro Deepstate** (bonus, validé): **14s** · cooldown **24h** · **aucun audio** · terminaux **mix FR/EN**
+- **News repost** (bonus, validé): repost organique des **top-5 kept headlines RSS** sans LLM vers X & Telegram
+  - **Préfixe**: `⚡ INTERCEPTÉ ·` (FR) / `⚡ INTERCEPT ·` (EN)
+  - **Cadence**: 30 min (repost interval)
+  - **Cap quotidien**: 10 / jour / plateforme
+  - **Wait Prophet**: 2 min après un post Prophet
 
 ---
 
@@ -94,7 +99,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 16. **Language Switcher** — FR ↔ EN
 17. **Operation Reveal Page (`/operation`)** — unlock quand DECLASSIFIED
 18. **Classified Vault (`/classified-vault`)** — gate Niveau 02 + session token + “true vault”
-19. **Admin Dashboard** — JWT/2FA + gestion vault + scheduler bots + **loyalty engine**
+19. **Admin Dashboard** — JWT/2FA + gestion vault + scheduler bots + **loyalty engine** + **news repost engine**
 
 ---
 
@@ -169,6 +174,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 36. **Public Stats**: ne jamais exposer la date de lancement, remplacée par un dossier “REDACTED”
 37. **Loyalty narrative**: citation Prophète ultra visible + bots hints progressifs + email #3 post-N2 (sans nommer GENCOIN)
 38. **DeepStateIntro**: écran noir + fenêtres terminal + glitch + fade vers landing en ≤15s, show-once/24h, skip + reduced-motion
+39. **News repost**: repost automatique top-5 headlines RSS vers X + Telegram (sans LLM), cadence admin, cap/jour, dedup, wait-after-Prophet
 
 ---
 
@@ -299,6 +305,58 @@ Créer une **page d’introduction mystérieuse** sur première visite (≤15s) 
 - cooldown 24h confirmé
 - skip confirmé
 
+### Sprint Bonus — News repost engine (auto-relay RSS headlines) — ✅ COMPLETED + validated
+
+#### Concept
+Deux flux indépendants tournent maintenant en parallèle dans "Prophet Fleet · Bots Control" :
+1. **Prophet posts** (existant) : LLM génère des commentaires inspirés des news selon l’intervalle admin
+2. **News reposts** (nouveau) : repost des **top-5 kept headlines** du flux RSS **sans modification** (sans LLM) vers X et Telegram
+
+#### Choix utilisateur appliqués
+- Préfixe: `⚡ INTERCEPTÉ ·` (FR) / `⚡ INTERCEPT ·` (EN)
+- Cadence: 30 min entre reposts
+- Delay après refresh RSS: 5 min (config exposée)
+- Cap: 10 reposts / jour / plateforme
+- Wait Prophet: 2 min après un post Prophet (pour éviter collision)
+
+#### Backend
+- Module `core/news_repost.py`:
+  - `format_repost(item, platform, prefix)`
+    - X: ≤270 chars, `prefix + source + title + 🔗 link`, troncature intelligente
+    - Telegram: Markdown léger `prefix + *source* + title + [Source →](url)`
+  - `_link_hash(url)` SHA1 stable pour dédup
+  - `_pick_candidate(platform, limit=5)` top-5 kept headlines non encore repostés
+  - `_send_one()` dispatch (real ou dry_run) + insert Mongo `news_reposts`
+  - `news_repost_tick()` avec: kill_switch gate, per-platform toggle, wait-Prophet, interval gate, daily cap, dedup
+  - `force_repost()` admin test-send
+  - `get_news_repost_status()` snapshot admin + queue_preview (3 items / plateforme)
+- Mode `dry_run` tant que creds X/Telegram absents (log en DB)
+- DEFAULT_BOT_CONFIG: ajout `news_repost` + allowlist update
+- Scheduler APScheduler:
+  - Job `news_repost` toutes les 5 min (rate-limited en interne)
+- MongoDB collection `news_reposts`:
+  - `{_id, link, link_hash, platform, posted_at, post_id, raw_title, source, lang, status, preview_text, error}`
+
+#### API endpoints
+- `GET /api/admin/bots/news-repost/status`
+- `POST /api/admin/bots/news-repost/test-send` body `{platform: x|telegram, lang: fr|en}`
+- `PUT /api/admin/bots/config` supporte patch `news_repost` (merge logic)
+
+#### Frontend Admin (AdminBots.jsx > Config tab)
+- Nouvelle section “News repost · auto-relay X & Telegram”:
+  - Badge mode (dry-run vs live)
+  - Toggles par plateforme + bouton Test
+  - Inputs: interval, daily_cap, wait-after-Prophet, delay-after-refresh
+  - Prefix FR/EN éditables
+  - Queue preview (3 prochains / plateforme) + preview_text collapsible
+  - Dernier résultat Test avec badge status + preview_text
+
+#### Validation
+- eslint clean + ruff clean
+- backend restart OK
+- cURL: PUT merge OK, test-send dry_run OK, dédup confirmé
+- Screenshot Admin validé
+
 ---
 
 ## Phase 8 — 2FA, Heatmap, Full Export, Email Events Drill-down, Cooldown Blacklist — completed ✅
@@ -398,8 +456,8 @@ Créer une **page d’introduction mystérieuse** sur première visite (≤15s) 
 - ⏳ `POST /api/admin/vault/helius-register` avec le vrai mint
 
 ### Bots — phases bloquées (attente credentials)
-- ⏳ Phase 3: Telegram Bot API (token + chat_id)
-- ⏳ Phase 4/5: X API v2 (OAuth2) + KOL list
+- ⏳ Phase 3: Telegram Bot API (token + chat_id) → **compléter `_dispatch_telegram()` dans `core/news_repost.py`** + dispatcher Prophet Telegram
+- ⏳ Phase 4/5: X API v2 (OAuth2) → **compléter `_dispatch_x()` dans `core/news_repost.py`** + dispatcher Prophet X
 - ⏳ Trading bot refs: liens BonkBot/Maestro/Trojan
 
 ---
@@ -435,6 +493,7 @@ Créer une **page d’introduction mystérieuse** sur première visite (≤15s) 
 - ✅ (E) Vault production tuning: terminé (micro-rotations 100K)
 - ✅ (F) Loyalty narrative rollout: terminé (Sprints 2/3/4)
 - ✅ (G) DeepStateIntro (entrée hack-style 14s): terminé
+- ✅ (H) News repost engine (RSS → X/Telegram, no-LLM): terminé
 - ⏳ (A) Switch à $DEEPOTUS réel: dès que le mint Solana est connu
 
 ---

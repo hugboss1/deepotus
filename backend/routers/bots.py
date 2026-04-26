@@ -93,6 +93,26 @@ class LoyaltyPatch(BaseModel):
     email_delay_hours: Optional[int] = Field(default=None, ge=1, le=168)
 
 
+class NewsRepostEnabledFor(BaseModel):
+    x: Optional[bool] = None
+    telegram: Optional[bool] = None
+
+
+class NewsRepostPatch(BaseModel):
+    """Partial patch for the news_repost sub-document.
+
+    All fields optional so the admin can update a single knob at a time.
+    """
+
+    enabled_for: Optional[NewsRepostEnabledFor] = None
+    interval_minutes: Optional[int] = Field(default=None, ge=5, le=720)
+    delay_after_refresh_minutes: Optional[int] = Field(default=None, ge=0, le=120)
+    wait_after_prophet_post_minutes: Optional[int] = Field(default=None, ge=0, le=120)
+    daily_cap: Optional[int] = Field(default=None, ge=0, le=200)
+    prefix_fr: Optional[str] = Field(default=None, max_length=80)
+    prefix_en: Optional[str] = Field(default=None, max_length=80)
+
+
 class BotConfigPatch(BaseModel):
     kill_switch_active: Optional[bool] = None
     platforms: Optional[Dict[str, PlatformPatch]] = None
@@ -100,6 +120,7 @@ class BotConfigPatch(BaseModel):
     llm: Optional[LlmPatch] = None
     news_feed: Optional[NewsFeedPatch] = None
     loyalty: Optional[LoyaltyPatch] = None
+    news_repost: Optional[NewsRepostPatch] = None
     heartbeat_interval_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
     max_posts_per_day: Optional[int] = Field(default=None, ge=0, le=500)
 
@@ -166,6 +187,7 @@ class BotConfigResponse(BaseModel):
     llm: Dict[str, Any]
     news_feed: Dict[str, Any]
     loyalty: Optional[Dict[str, Any]] = None
+    news_repost: Optional[Dict[str, Any]] = None
     custom_llm_keys: Dict[str, Any]
     heartbeat_interval_minutes: int
     max_posts_per_day: int
@@ -239,6 +261,20 @@ def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
             "email_delay_hours": int((doc.get("loyalty") or {}).get("email_delay_hours", 12)),
             "last_run_at": (doc.get("loyalty") or {}).get("last_run_at"),
             "last_run_summary": (doc.get("loyalty") or {}).get("last_run_summary"),
+        },
+        "news_repost": {
+            "enabled_for": {
+                "x": bool(((doc.get("news_repost") or {}).get("enabled_for") or {}).get("x", False)),
+                "telegram": bool(((doc.get("news_repost") or {}).get("enabled_for") or {}).get("telegram", False)),
+            },
+            "interval_minutes": int((doc.get("news_repost") or {}).get("interval_minutes", 30)),
+            "delay_after_refresh_minutes": int((doc.get("news_repost") or {}).get("delay_after_refresh_minutes", 5)),
+            "wait_after_prophet_post_minutes": int((doc.get("news_repost") or {}).get("wait_after_prophet_post_minutes", 2)),
+            "daily_cap": int((doc.get("news_repost") or {}).get("daily_cap", 10)),
+            "prefix_fr": str((doc.get("news_repost") or {}).get("prefix_fr") or "⚡ INTERCEPTÉ ·"),
+            "prefix_en": str((doc.get("news_repost") or {}).get("prefix_en") or "⚡ INTERCEPT ·"),
+            "last_run_at": (doc.get("news_repost") or {}).get("last_run_at"),
+            "last_run_summary": (doc.get("news_repost") or {}).get("last_run_summary"),
         },
         "heartbeat_interval_minutes": int(doc.get("heartbeat_interval_minutes") or 5),
         "max_posts_per_day": int(doc.get("max_posts_per_day") or 12),
@@ -336,6 +372,30 @@ async def put_config(
         if ly.email_delay_hours is not None:
             merged_loyalty["email_delay_hours"] = int(ly.email_delay_hours)
         patch_dict["loyalty"] = merged_loyalty
+    if payload.news_repost is not None:
+        # Same partial-merge pattern as loyalty/news_feed.
+        merged_repost = dict(current.get("news_repost") or {})
+        rp = payload.news_repost
+        if rp.enabled_for is not None:
+            merged_enabled = dict(merged_repost.get("enabled_for") or {})
+            if rp.enabled_for.x is not None:
+                merged_enabled["x"] = bool(rp.enabled_for.x)
+            if rp.enabled_for.telegram is not None:
+                merged_enabled["telegram"] = bool(rp.enabled_for.telegram)
+            merged_repost["enabled_for"] = merged_enabled
+        if rp.interval_minutes is not None:
+            merged_repost["interval_minutes"] = int(rp.interval_minutes)
+        if rp.delay_after_refresh_minutes is not None:
+            merged_repost["delay_after_refresh_minutes"] = int(rp.delay_after_refresh_minutes)
+        if rp.wait_after_prophet_post_minutes is not None:
+            merged_repost["wait_after_prophet_post_minutes"] = int(rp.wait_after_prophet_post_minutes)
+        if rp.daily_cap is not None:
+            merged_repost["daily_cap"] = int(rp.daily_cap)
+        if rp.prefix_fr is not None:
+            merged_repost["prefix_fr"] = rp.prefix_fr.strip()
+        if rp.prefix_en is not None:
+            merged_repost["prefix_en"] = rp.prefix_en.strip()
+        patch_dict["news_repost"] = merged_repost
     if payload.heartbeat_interval_minutes is not None:
         patch_dict["heartbeat_interval_minutes"] = payload.heartbeat_interval_minutes
     if payload.max_posts_per_day is not None:
@@ -879,3 +939,75 @@ async def loyalty_test_send(
         error=result.get("error"),
         prophet_message=result.get("prophet_message"),
     )
+
+
+# ---------------------------------------------------------------------
+# NEWS REPOST — auto-relay top RSS headlines (X & Telegram)
+# ---------------------------------------------------------------------
+class NewsRepostQueueItem(BaseModel):
+    title: str
+    source: Optional[str] = None
+    url: str
+    preview_text: str
+
+
+class NewsRepostStatusResponse(BaseModel):
+    config: Dict[str, Any]
+    credentials_present: Dict[str, bool]
+    today_per_platform: Dict[str, int]
+    last_per_platform: Dict[str, Optional[str]]
+    queue_preview: Dict[str, List[NewsRepostQueueItem]]
+
+
+class NewsRepostTestSendRequest(BaseModel):
+    platform: str = Field(..., pattern="^(x|telegram)$")
+    lang: Optional[str] = Field(default="fr", pattern="^(fr|en)$")
+
+
+class NewsRepostTestSendResponse(BaseModel):
+    status: str
+    platform: str
+    post_id: Optional[str] = None
+    preview_text: Optional[str] = None
+    title: Optional[str] = None
+    link: Optional[str] = None
+    error: Optional[str] = None
+    hint: Optional[str] = None
+
+
+@router.get("/news-repost/status", response_model=NewsRepostStatusResponse)
+async def news_repost_status_endpoint(_: Dict[str, Any] = Depends(require_admin)):
+    """Live snapshot for the admin dashboard — config + counters + queue."""
+    from core.news_repost import get_news_repost_status
+
+    status = await get_news_repost_status()
+    return NewsRepostStatusResponse(**status)
+
+
+@router.post("/news-repost/test-send", response_model=NewsRepostTestSendResponse)
+async def news_repost_test_send_endpoint(
+    payload: NewsRepostTestSendRequest,
+    _: Dict[str, Any] = Depends(require_admin),
+):
+    """Force-dispatch (or dry-run) the next eligible headline for a given platform.
+
+    Bypasses interval + daily cap but still honours dedup so the same
+    headline is never sent twice on the same platform.
+    """
+    from core.news_repost import force_repost
+
+    result = await force_repost(
+        platform=payload.platform,
+        lang=payload.lang or "fr",
+    )
+    return NewsRepostTestSendResponse(
+        status=str(result.get("status", "unknown")),
+        platform=str(result.get("platform", payload.platform)),
+        post_id=result.get("post_id"),
+        preview_text=result.get("preview_text"),
+        title=result.get("title"),
+        link=result.get("link"),
+        error=result.get("error"),
+        hint=result.get("hint"),
+    )
+
