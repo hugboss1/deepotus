@@ -370,3 +370,74 @@ code,
     animation: none;
   }
 }
+
+
+/* ---- DeepStateIntro — glitch & scanline utilities ---- */
+@keyframes deepstate-rgb-jitter {
+  0%, 100% {
+    text-shadow:
+      2px 0 #E11D48,
+      -2px 0 #06B6D4,
+      0 0 12px rgba(255, 255, 255, 0.25);
+    transform: translate(0, 0);
+  }
+  20% {
+    text-shadow:
+      4px 0 #E11D48,
+      -3px 0 #06B6D4,
+      0 0 14px rgba(255, 255, 255, 0.3);
+    transform: translate(1px, -1px);
+  }
+  40% {
+    text-shadow:
+      -3px 0 #E11D48,
+      3px 0 #06B6D4,
+      0 0 10px rgba(255, 255, 255, 0.25);
+    transform: translate(-1px, 1px);
+  }
+  60% {
+    text-shadow:
+      2px 0 #F59E0B,
+      -2px 0 #18C964,
+      0 0 16px rgba(255, 255, 255, 0.35);
+    transform: translate(2px, 0);
+  }
+  80% {
+    text-shadow:
+      -2px 0 #E11D48,
+      2px 0 #06B6D4,
+      0 0 8px rgba(255, 255, 255, 0.2);
+    transform: translate(-1px, 0);
+  }
+}
+
+.deepstate-glitch-rgb {
+  animation: deepstate-rgb-jitter 220ms steps(5, end) infinite;
+  filter: blur(0.2px);
+}
+
+@keyframes deepstate-flash-keys {
+  0% { opacity: 0; }
+  20% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+.deepstate-glitch-flash {
+  animation: deepstate-flash-keys 200ms ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.deepstate-scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.06) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deepstate-glitch-rgb,
+  .deepstate-glitch-flash {
+    animation: none;
+  }
+}

@@ -16,10 +16,12 @@ import FAQ from "@/components/landing/FAQ";
 import Whitelist from "@/components/landing/Whitelist";
 import Socials from "@/components/landing/Socials";
 import Footer from "@/components/landing/Footer";
+import DeepStateIntro from "@/components/intro/DeepStateIntro";
 
 export default function Landing() {
   return (
     <div className="relative">
+      <DeepStateIntro />
       <TopNav />
       <main>
         <Hero />

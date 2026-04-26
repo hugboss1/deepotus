@@ -1,38 +1,30 @@
 [
   {
-    "content": "Sprint 2 — Créer ProphetPinnedWhisper.jsx + i18n + insertion après Hero",
+    "content": "Créer hackScripts.js (lignes de terminaux mix FR/EN)",
     "status": "completed"
   },
   {
-    "content": "Sprint 2 — Vérifier visuellement (FR/EN, desktop/mobile)",
+    "content": "Créer TerminalWindow.jsx (typewriter + chrome rétro)",
     "status": "completed"
   },
   {
-    "content": "Sprint 3 — Backend: ajouter loyalty hints dans prophet_studio.generate_post() avec lecture vault progress",
+    "content": "Créer MatrixRain.jsx (canvas 2D ASCII)",
     "status": "completed"
   },
   {
-    "content": "Sprint 3 — Backend: ajouter toggle bot_config.loyalty_hints_enabled + endpoint admin",
+    "content": "Créer GlitchOverlay.jsx (RGB split + scanlines)",
     "status": "completed"
   },
   {
-    "content": "Sprint 3 — Frontend: ajouter UI toggle + preview hints dans AdminBots",
+    "content": "Créer DeepStateIntro.jsx (orchestrateur 14s + skip + 24h cooldown)",
     "status": "completed"
   },
   {
-    "content": "Sprint 4 — Backend: créer render_loyalty_email template + champ MongoDB access_cards.loyalty_email_sent_at",
+    "content": "Intégrer dans App.js / Landing.jsx",
     "status": "completed"
   },
   {
-    "content": "Sprint 4 — Backend: scheduler APScheduler job 30min + endpoint POST /api/admin/loyalty/test-send + toggle",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 4 — Frontend: UI toggle + bouton force send + status display",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 4 — Test end-to-end avec testing agent + fix bug PUT /config (loyalty patch ignored)",
+    "content": "Vérifier visuellement (screenshots) + skip + reduced-motion",
     "status": "completed"
   }
 ]

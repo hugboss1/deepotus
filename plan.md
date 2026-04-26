@@ -5,9 +5,8 @@
 - **Language**: Bilingue FR/EN avec toggle
 - **Art direction**: Hybride — haut de page institutionnel/MiCA-compliant + bas de page brutalist crypto-degen/meme + esthétique deepfake/IA.
 - **LLM**: Emergent LLM key (validé)
-- **Fonctionnalités interactives**: chat, prophéties, tokenomics interactifs, simulateur ROI, countdown, roadmap, FAQ, whitelist, social mockups
-- **Narratif**: PROTOCOL ΔΣ (Black Op) + coffre électronique gamifié ; **GENCOIN** n’apparaît qu’au twist `/operation`
 - **Go-to-market**: lancement sur **Pump.fun**, puis migration automatique vers **Raydium**
+- **Intro Deepstate** (bonus, validé): **14s** · cooldown **24h** · **aucun audio** · terminaux **mix FR/EN**
 
 ---
 
@@ -18,7 +17,6 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ### Narrative core
 - IA Prophète cynique, lucide, moqueuse, annonçant récession/dépression, chaos géopolitique, fragilité des marchés.
 - Repositionné comme **candidat Deep State à la présidence du Monde**.
-- Inspirations: Dogecoin (viral), TURBO (co-design GPT-4), Truth Terminal/GOAT (IA acteur narratif).
 - Pivot public: objectif de financement **classifié** via **PROTOCOL ΔΣ** (Black Op).
 - **GENCOIN** est un twist révélé uniquement après déclassification, via `/api/operation/reveal` et la page `/operation`.
 - Funnel post-déclassification : accès au “vrai coffre” derrière **Niveau 02** (carte d’accès email) sur `/classified-vault`.
@@ -79,23 +77,24 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ## Sections / features to build
 
 1. **Hero** — bannière candidat présidentiel, toggle FR/EN, CTA, countdown
-2. **Prophet pinned whisper** — *citation épinglée* ultra-visible post-Hero (loyauté)
-3. **Vault (PROTOCOL ΔΣ)** — coffre animé 6 digits + chassis IA + feed activité on-chain + funnel Niveau 02
-4. **AI Prophet Live Chat** — Emergent LLM, persona FR/EN
-5. **Prophecies Feed** — punchlines auto-refresh
-6. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
-7. **Interactive Tokenomics** — pie chart (Recharts)
-8. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
-9. **ROI Simulator** — **simulateur dynamique** : graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun+initiation (MiCA) + masquage montant + devise localisée
-10. **Roadmap** — timeline
-11. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
-12. **Whitelist / Email Capture** — MongoDB
-13. **Social Mockups** — X/Twitter, Telegram, Discord
-14. **Risk Disclaimer Footer** — MiCA + bilingue
-15. **Language Switcher** — FR ↔ EN
-16. **Operation Reveal Page (`/operation`)** — unlock quand DECLASSIFIED
-17. **Classified Vault (`/classified-vault`)** — gate Niveau 02 + session token + “true vault”
-18. **Admin Dashboard** — JWT/2FA + gestion vault + scheduler bots + **loyalty engine**
+2. **DeepStateIntro** — page d’introduction hack-style (14s, show-once/24h) avant landing
+3. **Prophet pinned whisper** — citation épinglée ultra-visible post-Hero (loyauté)
+4. **Vault (PROTOCOL ΔΣ)** — coffre animé 6 digits + chassis IA + feed activité on-chain + funnel Niveau 02
+5. **AI Prophet Live Chat** — Emergent LLM, persona FR/EN
+6. **Prophecies Feed** — punchlines auto-refresh
+7. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
+8. **Interactive Tokenomics** — pie chart (Recharts)
+9. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
+10. **ROI Simulator** — **simulateur dynamique** : graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun+initiation (MiCA) + masquage montant + devise localisée
+11. **Roadmap** — timeline
+12. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
+13. **Whitelist / Email Capture** — MongoDB
+14. **Social Mockups** — X/Twitter, Telegram, Discord
+15. **Risk Disclaimer Footer** — MiCA + bilingue
+16. **Language Switcher** — FR ↔ EN
+17. **Operation Reveal Page (`/operation`)** — unlock quand DECLASSIFIED
+18. **Classified Vault (`/classified-vault`)** — gate Niveau 02 + session token + “true vault”
+19. **Admin Dashboard** — JWT/2FA + gestion vault + scheduler bots + **loyalty engine**
 
 ---
 
@@ -169,6 +168,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 35. **Accès NIVEAU 02**: lien email/QR doit forcer l’atterrissage sur la page digicode
 36. **Public Stats**: ne jamais exposer la date de lancement, remplacée par un dossier “REDACTED”
 37. **Loyalty narrative**: citation Prophète ultra visible + bots hints progressifs + email #3 post-N2 (sans nommer GENCOIN)
+38. **DeepStateIntro**: écran noir + fenêtres terminal + glitch + fade vers landing en ≤15s, show-once/24h, skip + reduced-motion
 
 ---
 
@@ -231,7 +231,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Admin endpoints:
   - `GET /api/admin/bots/loyalty` (status + tiers + sample)
 - Admin UI (`AdminBots.jsx` → Config tab):
-  - Section “Loyalty engine · vault-aware hints” + preview + liste tiers + toggle hints
+  - Section “Loyalty engine · vault-aware hints” + preview + liste tiers + toggles
 
 #### Sprint 4 — Email #3 « Allégeance notée » ✅
 - Template HTML: `email_templates.py:render_loyalty_email()` + `loyalty_email_subject()`
@@ -250,16 +250,54 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
   - `GET /api/admin/bots/loyalty/email-stats`
   - `POST /api/admin/bots/loyalty/test-send` (force send)
 - Admin UI (`AdminBots.jsx`):
-  - Toggle email_enabled
-  - input delay hours
-  - stats + form “Force-send now” + panneau résultat
-- Validation: testing agent a réussi un envoi réel via Resend (status=sent).
+  - Toggle email_enabled + delay + stats + form “Force-send now” + panneau résultat
+- Validation: testing agent a réussi un envoi via Resend (status=sent).
 
 #### Bug fix during testing ✅
 - `PUT /api/admin/bots/config` ignorait `payload.loyalty` → `empty_patch`.
   - Patch ajouté: merge `payload.loyalty` dans `patch_dict`.
   - `_shape_config()` + `BotConfigResponse` mis à jour pour exposer `loyalty`.
-  - Fix confirmé via curl + UI (toast “Loyalty config updated”).
+  - Fix confirmé via curl + UI.
+
+### Sprint Bonus — DeepStateIntro (entrée hack-style) — ✅ COMPLETED + validated
+
+#### Objectif
+Créer une **page d’introduction mystérieuse** sur première visite (≤15s) : écran noir → fenêtres terminal “hack” → glitch → fondu vers la landing.
+
+#### Livraison (14s)
+- Écran noir + prologue "PROTOCOL ΔΣ · INITIATING SECURE BOOT..."
+- 4 fenêtres terminal (kernel / nmap / handshake / access granted)
+- Matrix rain (canvas) en arrière-plan
+- Glitch RGB + flash blanc (200ms)
+- Fade out vers landing (révélée en dessous)
+
+#### Architecture
+- `/app/frontend/src/components/intro/`
+  - `DeepStateIntro.jsx` — orchestrateur timeline + skip + 24h cooldown + `?intro=force`
+  - `TerminalWindow.jsx` — chrome rétro + typewriter effect
+  - `MatrixRain.jsx` — canvas 2D + trails
+  - `GlitchOverlay.jsx` — RGB split + scanlines + flash
+  - `hackScripts.js` — scripts curated (mix FR/EN)
+- CSS (`/app/frontend/src/index.css`):
+  - `@keyframes deepstate-rgb-jitter`, `@keyframes deepstate-flash-keys`
+  - `.deepstate-glitch-rgb`, `.deepstate-glitch-flash`, `.deepstate-scanlines`
+  - `prefers-reduced-motion: reduce` → animations coupées
+
+#### Features
+- localStorage `deepstate.intro.lastSeenAt` (cooldown 24h)
+- Skip button bottom-right (FR: "PASSER · ESC" / EN: "SKIP · ESC")
+- ESC key handler + click anywhere
+- `?intro=force` param
+- Auto-skip si `prefers-reduced-motion: reduce`
+- Body scroll lock pendant intro
+- Corner badge progression "DEEPSTATE.SYS · X%"
+
+#### Validation
+- eslint OK
+- webpack compiled successfully
+- screenshots keyframes validés
+- cooldown 24h confirmé
+- skip confirmé
 
 ---
 
@@ -396,6 +434,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - ✅ (D) ROI Simulator dynamique (extended): terminé
 - ✅ (E) Vault production tuning: terminé (micro-rotations 100K)
 - ✅ (F) Loyalty narrative rollout: terminé (Sprints 2/3/4)
+- ✅ (G) DeepStateIntro (entrée hack-style 14s): terminé
 - ⏳ (A) Switch à $DEEPOTUS réel: dès que le mint Solana est connu
 
 ---
