@@ -421,7 +421,7 @@ export const translations = {
       resultLabel: "Valeur théorique",
       chartTitle: "Trajectoire de prix · projection 90 jours",
       chartSubtitle:
-        "Mint Pump.fun à €5e-7, puis injection founder de €2 000 (≈ J+0,15) → prix de référence €2e-6. La courbe optimiste vise la cible MiCA €0,0005 (FDV €500 000).",
+        "Mint Pump.fun à €5e-7, puis Initiation Deep State de €2 000 (≈ J+0,15) → prix de référence €2e-6. La courbe optimiste vise la cible MiCA €0,0005 (FDV €500 000).",
       chartXLabel: "Jours depuis le mint",
       chartYLabel: "Prix (€)",
       chartTooltipDay: "J+",
@@ -432,7 +432,7 @@ export const translations = {
       chartLegendBase: "Base",
       chartLegendOptimistic: "Optimiste",
       chartLegendPortfolio: "Portefeuille",
-      injectionCallout: "INJECTION FOUNDER",
+      injectionCallout: "INITIATION DEEP STATE",
       roadmapDayPrefix: "J+",
       roadmapPhases: {
         phase01: {
@@ -1160,7 +1160,7 @@ export const translations = {
       resultLabel: "Theoretical value",
       chartTitle: "Price trajectory · 90-day projection",
       chartSubtitle:
-        "Pump.fun mint at €5e-7, then a €2,000 founder injection (~D+0.15) → reference price €2e-6. The optimistic curve targets the MiCA goal €0.0005 (FDV €500,000).",
+        "Pump.fun mint at €5e-7, then a €2,000 Deep State Initiation (~D+0.15) → reference price €2e-6. The optimistic curve targets the MiCA goal €0.0005 (FDV €500,000).",
       chartXLabel: "Days since mint",
       chartYLabel: "Price (€)",
       chartTooltipDay: "D+",
@@ -1171,7 +1171,7 @@ export const translations = {
       chartLegendBase: "Base",
       chartLegendOptimistic: "Optimistic",
       chartLegendPortfolio: "Portfolio",
-      injectionCallout: "FOUNDER INJECTION",
+      injectionCallout: "DEEP STATE INITIATION",
       roadmapDayPrefix: "D+",
       roadmapPhases: {
         phase01: {
