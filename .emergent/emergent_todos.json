@@ -1,34 +1,22 @@
 [
   {
-    "content": "Backend secrets_vault.py (Fernet AES-128-GCM, KEK env, mask, fingerprint, provider detection) ✅",
-    "status": "completed"
+    "content": "Générer les courbes synthétiques (RNG seedable + ease-out + bruit memecoin) dans un module utils",
+    "status": "in_progress"
   },
   {
-    "content": "Backend SDKs natifs installés : openai 1.99.9 + anthropic 0.42 + google-generativeai 0.8.3 ✅",
-    "status": "completed"
+    "content": "Refondre ROISimulator avec chart Recharts interactif + tabs synchronisés + portfolio overlay",
+    "status": "pending"
   },
   {
-    "content": "Backend llm_router.py (custom key SDK natif vs Emergent fallback, decrypt-on-read) ✅",
-    "status": "completed"
+    "content": "Custom Tooltip Recharts (jour, prix, MC, portfolio)",
+    "status": "pending"
   },
   {
-    "content": "Backend prophet_studio passe par llm_router ✅",
-    "status": "completed"
+    "content": "Bandeau marquee disclaimer + CSS @keyframes + traductions FR/EN",
+    "status": "pending"
   },
   {
-    "content": "Backend endpoints PUT /admin/bots/llm-secrets + DELETE /admin/bots/llm-secrets/{provider} ✅",
-    "status": "completed"
-  },
-  {
-    "content": "Frontend AdminBots Config — bloc Custom LLM keys (3 cards, dialog set/rotate, eye-toggle, revoke) ✅",
-    "status": "completed"
-  },
-  {
-    "content": "Test E2E ✅ · set OpenAI key (sk-proj-...) → mask sk-...klmn affiché → revoke → NOT SET",
-    "status": "completed"
-  },
-  {
-    "content": "DEPLOYMENT_AND_PHASES_GUIDE.md — SECRETS_KEK_KEY documenté avec génération + warning éphéméral ✅",
-    "status": "completed"
+    "content": "Vérifications visuelles desktop + mobile + dark mode",
+    "status": "pending"
   }
 ]

@@ -391,6 +391,9 @@ export const translations = {
     roi: {
       kicker: "— SIMULATEUR",
       title: "Simulateur ROI (vicieux mais honnête)",
+      subtitle:
+        "Tournez les molettes. Le graphique réagit en direct. Les scénarios ne sont pas des prévisions : ce sont des reflets de la rumeur du marché.",
+      amountLabel: "Combien investissez-vous (€) ?",
       inputLabel: "Combien investissez-vous (€) ?",
       placeholder: "Ex : 500",
       tokenLabel: "Tokens théoriques à €0,0005",
@@ -398,21 +401,46 @@ export const translations = {
       scenarios: {
         brutal: {
           label: "Vérité brutale (99%)",
+          short: "Brutal",
           caption: "Le plus probable : le coffre n'atteint pas sa combinaison à temps.",
           multiplier: 0.2,
         },
         base: {
           label: "Base (cas moyen)",
+          short: "Base",
           caption: "Lancement modeste, communauté modérée, rétention limitée.",
           multiplier: 1,
         },
         optimistic: {
           label: "Optimiste (~1%)",
+          short: "Optimiste",
           caption: "Le narratif prend. Les molettes tournent. La chance souffle.",
           multiplier: 5,
         },
       },
       resultLabel: "Valeur théorique",
+      chartTitle: "Trajectoire de prix · projection 90 jours",
+      chartSubtitle:
+        "Simulation interactive depuis le mint Pump.fun. Le prix s'aligne sur le Market Cap théorique de chaque scénario.",
+      chartXLabel: "Jours depuis le mint",
+      chartYLabel: "Prix (€)",
+      chartTooltipDay: "J+",
+      chartTooltipPrice: "Prix",
+      chartTooltipMC: "Market Cap",
+      chartTooltipPortfolio: "Votre portefeuille",
+      chartLegendBrutal: "Brutal",
+      chartLegendBase: "Base",
+      chartLegendOptimistic: "Optimiste",
+      chartLegendPortfolio: "Portefeuille",
+      marqueeMessages: [
+        "TOKEN HAUTEMENT SPÉCULATIF",
+        "AUCUNE PROMESSE DE RENDEMENT",
+        "PROBABILITÉ ~1% D'ATTEINDRE LA CIBLE",
+        "LES SCÉNARIOS NE SONT PAS DES PRÉVISIONS",
+        "N'INVESTISSEZ QUE CE QUE VOUS POUVEZ PERDRE",
+        "CECI N'EST NI UN STABLECOIN NI UN TITRE",
+        "DEEP STATE COORDINATION OFFICE · CANAL SÉCURISÉ",
+      ],
       riskTitle: "Avertissement — lisez avant de rêver",
       risk:
         "La probabilité réaliste d'ouvrir le Coffre dans la fenêtre de lancement est d'environ 1%. Les scénarios ci-dessus ne sont pas des prévisions : ce sont des illustrations. N'investissez que ce que vous acceptez de perdre entièrement. Ce token est hautement spéculatif. Aucune promesse n'est faite.",
@@ -1082,6 +1110,9 @@ export const translations = {
     roi: {
       kicker: "— SIMULATOR",
       title: "ROI Simulator (mean but honest)",
+      subtitle:
+        "Turn the dials. The chart reacts live. The scenarios are not forecasts — they reflect the market's rumour.",
+      amountLabel: "How much are you investing (€)?",
       inputLabel: "How much are you investing (€)?",
       placeholder: "E.g. 500",
       tokenLabel: "Theoretical tokens at €0.0005",
@@ -1089,21 +1120,46 @@ export const translations = {
       scenarios: {
         brutal: {
           label: "Brutal truth (99%)",
+          short: "Brutal",
           caption: "Most likely: the vault doesn't reach its combination in time.",
           multiplier: 0.2,
         },
         base: {
           label: "Base (average case)",
+          short: "Base",
           caption: "Modest launch, moderate community, limited retention.",
           multiplier: 1,
         },
         optimistic: {
           label: "Optimistic (~1%)",
+          short: "Optimistic",
           caption: "Narrative catches on. Dials turn. Luck shows up.",
           multiplier: 5,
         },
       },
       resultLabel: "Theoretical value",
+      chartTitle: "Price trajectory · 90-day projection",
+      chartSubtitle:
+        "Interactive simulation since the Pump.fun mint. The price tracks the theoretical Market Cap of each scenario.",
+      chartXLabel: "Days since mint",
+      chartYLabel: "Price (€)",
+      chartTooltipDay: "D+",
+      chartTooltipPrice: "Price",
+      chartTooltipMC: "Market Cap",
+      chartTooltipPortfolio: "Your portfolio",
+      chartLegendBrutal: "Brutal",
+      chartLegendBase: "Base",
+      chartLegendOptimistic: "Optimistic",
+      chartLegendPortfolio: "Portfolio",
+      marqueeMessages: [
+        "HIGHLY SPECULATIVE TOKEN",
+        "NO YIELD PROMISED",
+        "~1% PROBABILITY OF HITTING TARGET",
+        "SCENARIOS ARE NOT FORECASTS",
+        "ONLY INVEST WHAT YOU CAN AFFORD TO LOSE",
+        "NOT A STABLECOIN — NOT A SECURITY",
+        "DEEP STATE COORDINATION OFFICE · SECURED CHANNEL",
+      ],
       riskTitle: "Warning — read before dreaming",
       risk:
         "The realistic probability of cracking the Vault within the launch window is about 1%. The above scenarios are NOT predictions — they are illustrations. Only invest what you accept to lose entirely. This token is highly speculative. No promises are made.",

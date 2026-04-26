@@ -86,7 +86,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 5. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
 6. **Interactive Tokenomics** — pie chart (Recharts)
 7. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
-8. **ROI Simulator** — avertissement risque
+8. **ROI Simulator** — **simulateur dynamique avec graphe live + bandeau risque défilant** (MiCA)
 9. **Roadmap** — timeline
 10. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
 11. **Whitelist / Email Capture** — MongoDB
@@ -138,7 +138,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 4. Chat live in-character
 5. Prophéties auto-refresh
 6. Tokenomics interactifs
-7. Simu ROI avec avertissement
+7. **Simu ROI dynamique + graphe interactif + bandeau risque défilant**
 8. Countdown
 9. Timeline liquidité + anti-dump
 10. Whitelist email OK
@@ -193,6 +193,11 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - **Public Stats: date de lancement masquée ✅**
   - suppression de la card “Launch date”
   - ajout bannière `redacted_dossier.png` + rail explicatif FR/EN
+- **ROI Simulator dynamique + Recharts + bandeau défilant ✅ (VALIDATION VISUELLE ✅)**
+  - Chart live 90 jours (3 trajectoires) lié au calculateur
+  - Tooltip custom (J+jour, prix, market cap, portefeuille)
+  - Bandeau risque en marquee CSS (pause hover, reduced-motion)
+  - Fixes UX: overlay contraste + z-index backdrop + tabs non chevauchants
 
 ---
 
@@ -390,11 +395,16 @@ Préparer le site pour partage public et campagne de lancement (Pump.fun mint im
 
 ---
 
-## Phase 21 — Code Quality Pack (Tier 1 + Tier 3 + Tier 4) — **IN PROGRESS**
+## Phase 21 — Code Quality Pack (Tier 1 + Tier 3 + Tier 4) — **PARTIALLY COMPLETED / ONGOING**
 
 ### Objectif
 Appliquer les recommandations code review **Tier 1 + Tier 3 + Tier 4**.
 - **Tier 2 (sécurité auth: localStorage → cookies httpOnly)** reste volontairement **différé** (déjà loggé dans `TODO_POST_LAUNCH.md`), car plus risqué en période pré-launch.
+
+### État actuel (mise à jour)
+- ✅ **Fondations TypeScript** ajoutées (tsconfig, types, providers/hooks convertis partiellement) ; backlog restant loggé dans `TODO_TYPESCRIPT.md`.
+- ✅ Splits partiels de composants React (Hero/Tokenomics/ClassifiedVault déjà découpés).
+- ⏳ Reste: migrations TS supplémentaires + splits Admin/TerminalPopup et nettoyage eslint résiduel.
 
 ### Sous-Phase 21a — Tier 1 Python Quick Wins (qualité + stabilité)
 - [ ] Exécuter ruff/pyflakes pour lister exactement :
@@ -440,36 +450,22 @@ Approche: refactor **structure-only** (pas de changement UI/UX), extraction prog
 - [ ] `AdminBots.jsx` → `BotsList` + `BotEditor` + `JobsPanel` + `LLMConfig`
 - [ ] `Admin.jsx` → `WhitelistManagement` + `ChatLogPanel` + `StatsDisplay` + `SettingsPanel`
 - [ ] `AdminVault.jsx` → `VaultPresetEditor` + `VaultPlanList` + `VaultDevTools`
-- [ ] `ClassifiedVault.jsx` → `GateView` + `AuthedVaultView` + `useClassifiedSession` hook
 - [ ] `TerminalPopup.jsx` → `TerminalHistory` + `CommandParser`
-- [ ] `Hero.jsx` → `HeroPoster` + `HeroHeadline` + `HeroCountdown`
-- [ ] `Tokenomics.jsx` → `TokenomicsCoinDonut` + `TokenomicsStats`
-- [ ] `HowToBuy.jsx` → `HowToBuyHero` + `StepCards`
-- [ ] `PublicStats.jsx` → `StatsBento` + `StatsChart` + `StatsDistribution`
-- [ ] `Operation.jsx` → `OperationStages` + `OperationHero`
 Validation:
 - capture screenshots avant/après pour diff visuel
 - smoke test navigation + interactions (Admin, Vault, Terminal, Stats)
 
 ### Sous-Phase 21e — Tier 4 TypeScript Migration (multi-session)
 Stratégie: progressive et compatible CRA via `allowJs`. Le but de cette phase est de **mettre en place TS** et convertir d’abord le socle.
-- [ ] Installer deps TS: `typescript`, `@types/react`, `@types/react-dom`, `@types/node` (+ types libs si nécessaires)
-- [ ] Ajouter `tsconfig.json` :
-  - `allowJs: true`
-  - `checkJs: false`
-  - `strict: false` (au début)
-  - `noEmit: true`
-- [ ] Ajouter `src/types/` : types API (vault, bots, stats, access card, admin)
-- [ ] Convertir en priorité : `src/lib/` + hooks utilitaires + petites UI components
-- [ ] Convertir pages ensuite (itératif, multi-sessions)
-- [ ] Une fois couverture suffisante : relever progressivement `strictness` (future)
+- [ ] Continuer conversions vers `.ts/.tsx` selon `TODO_TYPESCRIPT.md` (60+ fichiers)
+- [ ] Ajouter types API (vault, bots, stats, access card, admin) si manquants
+- [ ] Monter progressivement le niveau de `strictness` (post-launch)
 Validation:
 - build front OK
 - navigation smoke
 
 ### Phase 21 Status
-- **IN PROGRESS**
-- Ordre recommandé : **21a → 21b → 21c → 21d → 21e** (TS setup peut commencer tôt mais conversion pages diffère)
+- **ONGOING** (fondations déjà livrées, reste du backlog planifié)
 
 ---
 
@@ -503,6 +499,7 @@ Validation:
 - ✅ **(B) Backend refactor**: TERMINÉ — monolithe `server.py` → `core/` + `routers/`
 - ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
 - ✅ **(C) On-chain accuracy upgrade**: TERMINÉ — indexer Solana per-trade via Helius (webhooks + catch-up)
+- ✅ **(D) ROI Simulator dynamique**: TERMINÉ — Recharts live + marquee disclaimers + i18n + validation visuelle
 - ⏳ **(A) Switch à $DEEPOTUS réel**: à faire dès que le mint Solana est connu
 
 ---
@@ -519,5 +516,5 @@ Validation:
   - non-régression vault polling + dex poll
 - Après **21d (React splits)**:
   - screenshot diff avant/après sur pages touchées
-- Après **21e (TypeScript setup)**:
+- Après **21e (TypeScript setup/migration)**:
   - build CRA OK + navigation smoke

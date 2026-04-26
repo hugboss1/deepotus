@@ -1,218 +1,288 @@
-import React, { useMemo, useState } from "react";
+/**
+ * ROI Simulator — interactive price-trajectory simulator.
+ *
+ * Composition:
+ *  - <CalculatorPanel />   left column — exposes the same "how much are
+ *                          you investing?" input + scenario tabs as before.
+ *                          State lifted up so the chart can react live.
+ *  - <PriceChart />        right column — interactive Recharts LineChart
+ *                          plotting brutal/base/optimistic synthetic price
+ *                          paths since the mint, plus an overlay of the
+ *                          user's portfolio value when an amount is set.
+ *  - <DisclaimerMarquee /> bottom — endless scrolling deep-state banner
+ *                          replacing the previous static red panel.
+ *
+ * The base business logic (amount → tokens → multiplier × amount) is
+ * preserved exactly. We only add the chart visualisation around it.
+ */
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Calculator } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { TrendingUp, ShieldAlert } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useI18n } from "@/i18n/I18nProvider";
-
-const PRICE = 0.0005;
-
-function fmtEur(n) {
-  try {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "EUR",
-      maximumFractionDigits: 2,
-    }).format(n);
-  } catch {
-    return `€${n.toFixed(2)}`;
-  }
-}
-
-function fmtInt(n) {
-  try {
-    return new Intl.NumberFormat("fr-FR").format(Math.floor(n));
-  } catch {
-    return Math.floor(n).toLocaleString();
-  }
-}
+import {
+  CHART_DAYS,
+  LAUNCH_PRICE_EUR,
+  SCENARIO_COLORS,
+  SCENARIO_KEYS,
+} from "./roi/constants";
+import { buildChartDataset } from "./roi/synthPath";
+import { PriceChart } from "./roi/PriceChart";
+import { DisclaimerMarquee } from "./roi/DisclaimerMarquee";
 
 export default function ROISimulator() {
   const { t } = useI18n();
+  const scenarios = useMemo(() => t("roi.scenarios") || {}, [t]);
+  const pricePerToken = LAUNCH_PRICE_EUR;
   const [amount, setAmount] = useState(500);
+  const [active, setActive] = useState("base");
 
   const tokens = useMemo(() => {
-    const a = Number(amount);
-    if (!isFinite(a) || a <= 0) return 0;
-    return a / PRICE;
-  }, [amount]);
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return Math.floor(n / pricePerToken);
+  }, [amount, pricePerToken]);
 
-  const scenarios = t("roi.scenarios") || {};
+  const fmt = (n) =>
+    new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
 
-  const card = (key) => {
-    const s = scenarios[key];
-    if (!s) return null;
-    const a = Number(amount) || 0;
-    const val = a * s.multiplier;
-    return (
-      <div className="rounded-xl border border-border bg-card/85 backdrop-blur-md p-5 h-full flex flex-col gap-3 shadow-[var(--shadow-elev-1,0_8px_28px_rgba(0,0,0,0.18))]">
-        <div className="flex items-center justify-between">
-          <Badge variant="outline" className="font-mono uppercase tracking-widest text-[10px]">
-            {key}
-          </Badge>
-          <span className="tabular font-mono text-sm text-foreground/70">
-            x{s.multiplier}
-          </span>
-        </div>
-        <div className="font-display font-semibold">{s.label}</div>
-        <div className="text-sm text-foreground/70 leading-snug">{s.caption}</div>
-        <div className="mt-auto">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            {t("roi.resultLabel")}
-          </div>
-          <div className="tabular font-mono text-2xl font-semibold">
-            {fmtEur(val)}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const valueFromMultiplier = (mult) => tokens * pricePerToken * mult;
+
+  // The chart consumes a single merged dataset re-computed when the user's
+  // tokens or active tab change. With CHART_DAYS=90 this is < 1ms and the
+  // useMemo guards against re-renders triggered by unrelated state.
+  const chartData = useMemo(
+    () =>
+      buildChartDataset({
+        days: CHART_DAYS,
+        tokensHeld: tokens,
+        activeKey: active,
+      }),
+    [tokens, active],
+  );
 
   return (
     <section
       id="roi"
-      className="relative py-14 sm:py-18 lg:py-24 border-t border-border overflow-hidden"
+      data-testid="roi-section"
+      className="relative py-14 sm:py-18 lg:py-24 border-t border-border overflow-hidden bg-secondary/40"
     >
-      {/* Cinematic gold coin backdrop */}
+      {/* --- Background: gold coin backdrop, kept from the previous design --- */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        data-testid="roi-coin-backdrop"
+        className="absolute inset-0 z-0 pointer-events-none select-none"
       >
         <img
           src="/gold_coin_3d.png"
           alt=""
-          className="h-full w-full object-cover object-center opacity-70 md:opacity-80 select-none"
+          className="h-full w-full object-cover object-center opacity-90 select-none"
           draggable={false}
           loading="lazy"
           decoding="async"
         />
-        {/* Very light tint just to keep text contrast */}
-        <div className="absolute inset-0 bg-background/25 dark:bg-background/35" />
-        {/* Soft radial darkening ONLY around the cards area, not the whole section */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 55% at center, hsl(var(--background) / 0.45) 0%, hsl(var(--background) / 0.15) 55%, hsl(var(--background) / 0) 100%)",
+              "linear-gradient(180deg, rgba(11,13,16,0.85) 0%, rgba(11,13,16,0.78) 45%, rgba(11,13,16,0.88) 100%)",
           }}
         />
-        {/* Subtle top + bottom fades to blend with adjacent sections */}
-        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent" />
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-          {t("roi.kicker")}
-        </div>
-        <div className="flex items-center gap-3 mt-2">
-          <Calculator size={22} className="text-accent" />
-          <h2
-            className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight"
-            style={{ textShadow: "0 2px 14px hsl(var(--background) / 0.55)" }}
-          >
+        {/* Section header */}
+        <div className="text-center md:text-left">
+          <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-[#F59E0B]">
+            <ShieldAlert size={11} className="inline -mt-0.5 mr-1" />
+            {t("roi.kicker")}
+          </div>
+          <h2 className="mt-2 font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight text-white">
             {t("roi.title")}
           </h2>
+          <p className="mt-3 text-sm md:text-base text-white/75 max-w-2xl">
+            {t("roi.subtitle")}
+          </p>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Input */}
-          <div className="lg:col-span-5">
-            <div className="rounded-xl border border-border bg-card/85 backdrop-blur-md p-5 shadow-[var(--shadow-elev-1,0_8px_28px_rgba(0,0,0,0.18))]">
-              <label
-                htmlFor="roi-amount"
-                className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
-              >
-                {t("roi.inputLabel")}
-              </label>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="tabular font-mono text-xl text-foreground/70">
-                  €
-                </span>
-                <Input
-                  id="roi-amount"
-                  data-testid="roi-amount-input"
-                  type="number"
-                  min={0}
-                  step="10"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder={t("roi.placeholder")}
-                  className="tabular font-mono text-2xl h-14"
-                />
-              </div>
+        {/* --- Two-column layout: calculator left, live chart right --- */}
+        <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+          <CalculatorPanel
+            t={t}
+            scenarios={scenarios}
+            amount={amount}
+            setAmount={setAmount}
+            tokens={tokens}
+            active={active}
+            setActive={setActive}
+            valueFromMultiplier={valueFromMultiplier}
+            fmt={fmt}
+          />
 
-              <div className="mt-5 rounded-lg border border-border bg-background/90 backdrop-blur-sm p-4">
-                <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                  {t("roi.tokenLabel")}
-                </div>
-                <div
-                  className="tabular font-mono text-3xl font-semibold"
-                  data-testid="roi-tokens-output"
-                >
-                  {fmtInt(tokens)}
-                </div>
-                <div className="tabular font-mono text-xs text-muted-foreground mt-1">
-                  @ €0.0005 / token
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Scenarios */}
-          <div className="lg:col-span-7">
-            <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
-              {t("roi.scenariosTitle")}
-            </div>
-            <Tabs defaultValue="base" className="w-full">
-              <TabsList className="grid grid-cols-3 w-full md:w-[420px]">
-                <TabsTrigger value="brutal" data-testid="roi-tab-brutal">
-                  Brutal
-                </TabsTrigger>
-                <TabsTrigger value="base" data-testid="roi-tab-base">
-                  Base
-                </TabsTrigger>
-                <TabsTrigger value="optimistic" data-testid="roi-tab-optimistic">
-                  Optimistic
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="brutal" className="mt-4" data-testid="roi-results-brutal">
-                {card("brutal")}
-              </TabsContent>
-              <TabsContent value="base" className="mt-4" data-testid="roi-results-base">
-                {card("base")}
-              </TabsContent>
-              <TabsContent value="optimistic" className="mt-4" data-testid="roi-results-optimistic">
-                {card("optimistic")}
-              </TabsContent>
-            </Tabs>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.55 }}
+            className="lg:col-span-7"
+          >
+            <PriceChart
+              t={t}
+              data={chartData}
+              activeKey={active}
+              tokensHeld={tokens}
+            />
+          </motion.div>
         </div>
+      </div>
 
-        {/* Warning */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="mt-8 rounded-xl border-2 border-[--campaign-red] bg-[--campaign-red]/5 backdrop-blur-md p-5 md:p-6 shadow-[var(--shadow-elev-1,0_8px_28px_rgba(0,0,0,0.18))]"
-          data-testid="roi-risk-warning"
-        >
-          <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-[--campaign-red] flex-none mt-0.5" />
-            <div>
-              <div className="font-display font-semibold">
-                {t("roi.riskTitle")}
-              </div>
-              <p className="mt-1 text-foreground/80 leading-relaxed">
-                {t("roi.risk")}
-              </p>
-            </div>
-          </div>
-        </motion.div>
+      {/* Bottom-of-section: rolling deep-state risk banner */}
+      <div className="relative z-10 mt-10">
+        <DisclaimerMarquee t={t} />
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Calculator panel (left column)
+// ---------------------------------------------------------------------------
+function CalculatorPanel({
+  t,
+  scenarios,
+  amount,
+  setAmount,
+  tokens,
+  active,
+  setActive,
+  valueFromMultiplier,
+  fmt,
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.55 }}
+      className="lg:col-span-5"
+    >
+      <div
+        className="rounded-2xl border border-white/10 bg-[#0B0D10]/85 backdrop-blur-md p-5 md:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] h-full flex flex-col"
+        data-testid="roi-calculator"
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp size={14} className="text-[#2DD4BF]" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/60">
+            INPUT.LOG
+          </span>
+        </div>
+
+        <Label
+          htmlFor="roi-amount"
+          className="text-sm text-white/85 font-medium"
+        >
+          {t("roi.amountLabel")}
+        </Label>
+        <div className="mt-2 relative">
+          <span
+            aria-hidden
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/55 font-mono text-sm"
+          >
+            €
+          </span>
+          <Input
+            id="roi-amount"
+            type="number"
+            min="0"
+            step="10"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            data-testid="roi-amount-input"
+            className="pl-7 font-mono text-lg bg-black/40 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#2DD4BF]/50"
+          />
+        </div>
+        <div
+          className="mt-2 font-mono text-[11px] text-white/55"
+          data-testid="roi-tokens-display"
+        >
+          ≈ <span className="text-[#2DD4BF]">{fmt(tokens)}</span>{" "}
+          $DEEPOTUS · @ €{LAUNCH_PRICE_EUR.toFixed(4)}
+        </div>
+
+        {/* --- Scenario tabs (existing functionality preserved) --- */}
+        <Tabs
+          value={active}
+          onValueChange={setActive}
+          className="mt-5 flex-1 flex flex-col"
+        >
+          <TabsList
+            className="grid grid-cols-3 bg-black/40 border border-white/10 gap-0.5 h-auto"
+            data-testid="roi-scenario-tabs"
+          >
+            {SCENARIO_KEYS.map((key) => (
+              <TabsTrigger
+                key={key}
+                value={key}
+                data-testid={`roi-tab-${key}`}
+                className="min-w-0 px-1.5 py-2 data-[state=active]:bg-white data-[state=active]:text-[#0B0D10] text-white/70 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] truncate"
+              >
+                <span className="truncate">{scenarios[key]?.short || scenarios[key]?.label || key}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {SCENARIO_KEYS.map((key) => {
+            const sc = scenarios[key] || {};
+            const mult = Number(sc.multiplier ?? 1);
+            const value = valueFromMultiplier(mult);
+            const color = SCENARIO_COLORS[key];
+            return (
+              <TabsContent
+                key={key}
+                value={key}
+                data-testid={`roi-tab-content-${key}`}
+                className="mt-4 flex-1"
+              >
+                <div
+                  className="rounded-xl border bg-black/40 p-4 h-full"
+                  style={{ borderColor: `${color}55` }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div
+                        className="font-mono text-[10px] uppercase tracking-[0.25em]"
+                        style={{ color }}
+                      >
+                        {sc.label || key}
+                      </div>
+                      <div className="font-display text-2xl md:text-3xl font-semibold text-white tabular mt-0.5">
+                        ×{mult.toFixed(mult < 1 ? 2 : 0)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-white/50">
+                        {t("roi.resultLabel")}
+                      </div>
+                      <div
+                        className="font-display text-2xl md:text-3xl font-semibold tabular"
+                        style={{ color }}
+                        data-testid={`roi-result-${key}`}
+                      >
+                        €{fmt(value)}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs md:text-sm text-white/70 leading-relaxed">
+                    {sc.caption || sc.copy}
+                  </p>
+                </div>
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      </div>
+    </motion.div>
   );
 }

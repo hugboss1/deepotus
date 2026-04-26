@@ -343,3 +343,30 @@ code,
     border-bottom-color: inherit;
   }
 }
+
+
+/* ---------------------------------------------------------------------- */
+/* Marquee — used by the ROI risk-disclaimer rolling banner. The track is */
+/* duplicated in JSX so the second copy can take over before the first   */
+/* exits the viewport, giving a seamless loop.                            */
+/* ---------------------------------------------------------------------- */
+@keyframes deepotus-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: deepotus-marquee 60s linear infinite;
+  will-change: transform;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
