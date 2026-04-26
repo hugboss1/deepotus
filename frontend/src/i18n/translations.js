@@ -402,26 +402,26 @@ export const translations = {
         brutal: {
           label: "Vérité brutale (99%)",
           short: "Brutal",
-          caption: "Le plus probable : le coffre n'atteint pas sa combinaison à temps.",
-          multiplier: 0.2,
+          caption: "Bonding curve avale l'injection. Le prix retombe sous le seuil. Le coffre n'atteint jamais sa combinaison.",
+          multiplier: 0.1,
         },
         base: {
           label: "Base (cas moyen)",
           short: "Base",
-          caption: "Lancement modeste, communauté modérée, rétention limitée.",
-          multiplier: 1,
+          caption: "Migration Raydium réussie, communauté modérée. Le prix tient un palier à €5e-5, sans euphorie.",
+          multiplier: 25,
         },
         optimistic: {
           label: "Optimiste (~1%)",
           short: "Optimiste",
-          caption: "Le narratif prend. Les molettes tournent. La chance souffle.",
-          multiplier: 5,
+          caption: "Le narratif prend. Les molettes tournent. Le prix atteint la cible MiCA €0,0005 (FDV €500k).",
+          multiplier: 250,
         },
       },
       resultLabel: "Valeur théorique",
       chartTitle: "Trajectoire de prix · projection 90 jours",
       chartSubtitle:
-        "Simulation interactive depuis le mint Pump.fun. Le prix s'aligne sur le Market Cap théorique de chaque scénario.",
+        "Mint Pump.fun à €5e-7, puis injection founder de €2 000 (≈ J+0,15) → prix de référence €2e-6. La courbe optimiste vise la cible MiCA €0,0005 (FDV €500 000).",
       chartXLabel: "Jours depuis le mint",
       chartYLabel: "Prix (€)",
       chartTooltipDay: "J+",
@@ -432,6 +432,26 @@ export const translations = {
       chartLegendBase: "Base",
       chartLegendOptimistic: "Optimiste",
       chartLegendPortfolio: "Portefeuille",
+      injectionCallout: "INJECTION FOUNDER",
+      roadmapDayPrefix: "J+",
+      roadmapPhases: {
+        phase01: {
+          title: "Pump.fun Launch",
+          subtitle: "Bonding curve · 0% tax",
+        },
+        phase02: {
+          title: "Raydium Migration",
+          subtitle: "LP burn · marché ouvert",
+        },
+        phase03: {
+          title: "PROTOCOL ΔΣ",
+          subtitle: "Premières molettes",
+        },
+        phase04: {
+          title: "Déclassification",
+          subtitle: "Coffre ouvert",
+        },
+      },
       marqueeMessages: [
         "TOKEN HAUTEMENT SPÉCULATIF",
         "AUCUNE PROMESSE DE RENDEMENT",
@@ -1121,26 +1141,26 @@ export const translations = {
         brutal: {
           label: "Brutal truth (99%)",
           short: "Brutal",
-          caption: "Most likely: the vault doesn't reach its combination in time.",
-          multiplier: 0.2,
+          caption: "Bonding curve eats the injection. Price falls below threshold. The vault never hits its combination.",
+          multiplier: 0.1,
         },
         base: {
           label: "Base (average case)",
           short: "Base",
-          caption: "Modest launch, moderate community, limited retention.",
-          multiplier: 1,
+          caption: "Raydium migration goes through, moderate community. Price holds a plateau around €5e-5, no euphoria.",
+          multiplier: 25,
         },
         optimistic: {
           label: "Optimistic (~1%)",
           short: "Optimistic",
-          caption: "Narrative catches on. Dials turn. Luck shows up.",
-          multiplier: 5,
+          caption: "Narrative catches on. Dials turn. Price reaches the MiCA target €0.0005 (FDV €500k).",
+          multiplier: 250,
         },
       },
       resultLabel: "Theoretical value",
       chartTitle: "Price trajectory · 90-day projection",
       chartSubtitle:
-        "Interactive simulation since the Pump.fun mint. The price tracks the theoretical Market Cap of each scenario.",
+        "Pump.fun mint at €5e-7, then a €2,000 founder injection (~D+0.15) → reference price €2e-6. The optimistic curve targets the MiCA goal €0.0005 (FDV €500,000).",
       chartXLabel: "Days since mint",
       chartYLabel: "Price (€)",
       chartTooltipDay: "D+",
@@ -1151,6 +1171,26 @@ export const translations = {
       chartLegendBase: "Base",
       chartLegendOptimistic: "Optimistic",
       chartLegendPortfolio: "Portfolio",
+      injectionCallout: "FOUNDER INJECTION",
+      roadmapDayPrefix: "D+",
+      roadmapPhases: {
+        phase01: {
+          title: "Pump.fun Launch",
+          subtitle: "Bonding curve · 0% tax",
+        },
+        phase02: {
+          title: "Raydium Migration",
+          subtitle: "LP burn · market opens",
+        },
+        phase03: {
+          title: "PROTOCOL ΔΣ",
+          subtitle: "First dials",
+        },
+        phase04: {
+          title: "Declassification",
+          subtitle: "Vault opens",
+        },
+      },
       marqueeMessages: [
         "HIGHLY SPECULATIVE TOKEN",
         "NO YIELD PROMISED",

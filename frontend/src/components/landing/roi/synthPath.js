@@ -1,21 +1,27 @@
 /**
  * Synthetic price-path generator for the ROI Simulator chart.
  *
- * Goal: produce a *deterministic* but plausibly chaotic memecoin-style
- * price curve from launch (day 0, €0.0005) to a target multiplier
- * applied at the end of the window, so the chart feels alive and
- * different per scenario without being random across renders.
+ * Story modelled by the path:
+ *   - day 0           : Pump.fun mint, bonding curve très basse
+ *                       (MINT_PRICE_EUR ≈ €0.0000005)
+ *   - day 0.15 (~3-4h): Founder injection de 2 000€ → INJECTION_PRICE_EUR
+ *                       (€0.000002 = capital ÷ supply 1B)
+ *   - day 1 → end     : évolution organique vers le multiplier du scénario
+ *                       (×0.1 brutal · ×25 base · ×250 optimistic = €0.0005)
  *
- * Design notes:
- *  - mulberry32 PRNG: tiny, fast, seedable, distribution good enough.
- *  - the trend is shaped by an ease-out cubic so the bulk of the move
- *    happens early (typical memecoin pump pattern); the noise envelope
- *    decays later (post-pump cooling) — both feel realistic.
- *  - the target price is hit at exactly day = (days - 1) so axis labels
- *    line up cleanly.
+ * The generator is *deterministic* (mulberry32 PRNG) so the chart looks
+ * "alive" but reproducible across renders. The trend uses an ease-out cubic
+ * (memecoin pump pattern) and a noise envelope that decays over time
+ * (post-pump cooling).
  */
 
-import { TOTAL_SUPPLY, LAUNCH_PRICE_EUR } from "./constants";
+import {
+  TOTAL_SUPPLY,
+  MINT_PRICE_EUR,
+  INJECTION_PRICE_EUR,
+  FOUNDER_INJECTION_DAY,
+  SCENARIO_MULTIPLIERS,
+} from "./constants";
 
 function mulberry32(seed) {
   let t = seed >>> 0;
@@ -33,54 +39,65 @@ function easeOutCubic(x) {
 }
 
 /**
- * Generate `days` daily price points for a single scenario.
- *
- * @param {number} multiplier  end-of-window target multiplier (e.g. 0.2, 1, 5)
- * @param {number} days        number of points (default 90)
- * @param {number} seed        RNG seed — different per scenario for variety
+ * Build a daily price series from the founder injection (J~0.15) to the
+ * end of the window, ease-cubic toward `targetPrice`.
  */
-export function buildPricePath({ multiplier, days = 90, seed = 1 }) {
-  const targetPrice = LAUNCH_PRICE_EUR * multiplier;
+function buildOrganicTail({ targetPrice, days, seed }) {
   const rng = mulberry32(seed);
-  const points = [];
+  const out = [];
 
-  let lastPrice = LAUNCH_PRICE_EUR;
+  let last = INJECTION_PRICE_EUR;
 
-  for (let d = 0; d < days; d++) {
-    const progress = d / (days - 1);
-    // Smooth interpolation toward the target along an ease-out cubic.
+  // index 0 of this tail represents the first FULL day after injection
+  // (i.e. day=1 in the global axis). The last index = days-2 covers day=89.
+  const span = days - 1; // we will produce span points (days 1..days-1)
+
+  for (let i = 0; i < span; i++) {
+    const progress = i / Math.max(1, span - 1);
     const trend =
-      LAUNCH_PRICE_EUR + (targetPrice - LAUNCH_PRICE_EUR) * easeOutCubic(progress);
+      INJECTION_PRICE_EUR +
+      (targetPrice - INJECTION_PRICE_EUR) * easeOutCubic(progress);
 
-    // Volatility envelope: large early, decays smoothly after the pump.
-    // Scaled relative to *current* trend so up-only scenarios swing more
-    // in absolute terms (matches memecoin lived experience).
+    // Volatility envelope — large early, decays toward end.
     const envelope =
-      trend * 0.18 * (1 - progress) + LAUNCH_PRICE_EUR * 0.04 * progress;
+      trend * 0.22 * (1 - progress) + INJECTION_PRICE_EUR * 0.06 * progress;
     const noise = (rng() - 0.5) * envelope;
 
-    // Slight momentum so successive days correlate — looks less hairy.
-    const momentum = (lastPrice - trend) * 0.12;
+    // Soft momentum so consecutive days correlate visually.
+    const momentum = (last - trend) * 0.12;
 
     let price = trend + noise - momentum;
-    if (price < LAUNCH_PRICE_EUR * 0.05) {
-      price = LAUNCH_PRICE_EUR * 0.05; // soft floor (95% drawdown)
-    }
-    lastPrice = price;
+    if (price < INJECTION_PRICE_EUR * 0.05) price = INJECTION_PRICE_EUR * 0.05;
+    last = price;
 
-    points.push({
-      day: d,
-      price,
-      marketCap: price * TOTAL_SUPPLY,
-    });
+    out.push({ day: i + 1, price, marketCap: price * TOTAL_SUPPLY });
   }
 
-  // Snap exact endpoint to the target so the line ends cleanly on the
-  // multiplier the user selected (no surprise visual mismatch).
-  points[points.length - 1].price = targetPrice;
-  points[points.length - 1].marketCap = targetPrice * TOTAL_SUPPLY;
+  // Snap exact endpoint to the multiplier so it lines up with the calculator.
+  out[out.length - 1].price = targetPrice;
+  out[out.length - 1].marketCap = targetPrice * TOTAL_SUPPLY;
 
-  return points;
+  return out;
+}
+
+/**
+ * Build the full deterministic price path for one scenario, including the
+ * mint floor + founder injection visible at the start of the chart.
+ */
+export function buildPricePath({ multiplier, days = 90, seed = 1 }) {
+  const targetPrice = INJECTION_PRICE_EUR * multiplier;
+  const head = [
+    // J0 — mint Pump.fun (bonding curve floor)
+    { day: 0, price: MINT_PRICE_EUR, marketCap: MINT_PRICE_EUR * TOTAL_SUPPLY },
+    // J~0.15 — founder injection lands. Price snaps to INJECTION_PRICE.
+    {
+      day: FOUNDER_INJECTION_DAY,
+      price: INJECTION_PRICE_EUR,
+      marketCap: INJECTION_PRICE_EUR * TOTAL_SUPPLY,
+    },
+  ];
+  const tail = buildOrganicTail({ targetPrice, days, seed });
+  return [...head, ...tail];
 }
 
 /**
@@ -88,12 +105,25 @@ export function buildPricePath({ multiplier, days = 90, seed = 1 }) {
  * the three scenario prices PLUS an optional portfolio overlay derived
  * from the active scenario's price path × the user-held tokens.
  *
- * Recharts likes a "wide" shape for multi-line: { day, brutal, base, optimistic, portfolio }
+ * Note: the head (J0 + J0.15) is shared across scenarios because mint
+ * and injection are deterministic events, not scenario-dependent.
  */
 export function buildChartDataset({ days = 90, tokensHeld = 0, activeKey }) {
-  const brutal = buildPricePath({ multiplier: 0.2, days, seed: 11 });
-  const base = buildPricePath({ multiplier: 1, days, seed: 23 });
-  const optimistic = buildPricePath({ multiplier: 5, days, seed: 47 });
+  const brutal = buildPricePath({
+    multiplier: SCENARIO_MULTIPLIERS.brutal,
+    days,
+    seed: 11,
+  });
+  const base = buildPricePath({
+    multiplier: SCENARIO_MULTIPLIERS.base,
+    days,
+    seed: 23,
+  });
+  const optimistic = buildPricePath({
+    multiplier: SCENARIO_MULTIPLIERS.optimistic,
+    days,
+    seed: 47,
+  });
 
   const activePath =
     activeKey === "brutal"
@@ -102,6 +132,7 @@ export function buildChartDataset({ days = 90, tokensHeld = 0, activeKey }) {
         ? optimistic
         : base;
 
+  // The three arrays have the same length and same "day" axis — merge them.
   return brutal.map((b, i) => ({
     day: b.day,
     brutal: b.price,

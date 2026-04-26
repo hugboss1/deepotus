@@ -27,10 +27,18 @@ import {
   LAUNCH_PRICE_EUR,
   SCENARIO_COLORS,
   SCENARIO_KEYS,
+  SCENARIO_MULTIPLIERS,
 } from "./roi/constants";
 import { buildChartDataset } from "./roi/synthPath";
 import { PriceChart } from "./roi/PriceChart";
 import { DisclaimerMarquee } from "./roi/DisclaimerMarquee";
+
+// Price formatter that gracefully degrades into scientific notation for the
+// sub-fractional memecoin prices we now deal with (€0.000002 etc.).
+const fmtRefPrice = (v) => {
+  if (v >= 0.0001) return v.toFixed(6);
+  return v.toExponential(2);
+};
 
 export default function ROISimulator() {
   const { t } = useI18n();
@@ -208,7 +216,7 @@ function CalculatorPanel({
           data-testid="roi-tokens-display"
         >
           ≈ <span className="text-[#2DD4BF]">{fmt(tokens)}</span>{" "}
-          $DEEPOTUS · @ €{LAUNCH_PRICE_EUR.toFixed(4)}
+          $DEEPOTUS · @ €{fmtRefPrice(LAUNCH_PRICE_EUR)}
         </div>
 
         {/* --- Scenario tabs (existing functionality preserved) --- */}
@@ -235,7 +243,9 @@ function CalculatorPanel({
 
           {SCENARIO_KEYS.map((key) => {
             const sc = scenarios[key] || {};
-            const mult = Number(sc.multiplier ?? 1);
+            // Multiplier is sourced from the canonical constants module so
+            // the chart endpoint and the calculator card always agree.
+            const mult = Number(SCENARIO_MULTIPLIERS[key] ?? sc.multiplier ?? 1);
             const value = valueFromMultiplier(mult);
             const color = SCENARIO_COLORS[key];
             return (

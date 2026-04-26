@@ -86,7 +86,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 5. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
 6. **Interactive Tokenomics** — pie chart (Recharts)
 7. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
-8. **ROI Simulator** — **simulateur dynamique avec graphe live + bandeau risque défilant** (MiCA)
+8. **ROI Simulator** — **simulateur dynamique avec graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun/injection** (MiCA)
 9. **Roadmap** — timeline
 10. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
 11. **Whitelist / Email Capture** — MongoDB
@@ -138,7 +138,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 4. Chat live in-character
 5. Prophéties auto-refresh
 6. Tokenomics interactifs
-7. **Simu ROI dynamique + graphe interactif + bandeau risque défilant**
+7. **Simu ROI dynamique + graphe interactif + bandeau risque défilant + marqueurs roadmap + injection founder visible**
 8. Countdown
 9. Timeline liquidité + anti-dump
 10. Whitelist email OK
@@ -193,11 +193,21 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - **Public Stats: date de lancement masquée ✅**
   - suppression de la card “Launch date”
   - ajout bannière `redacted_dossier.png` + rail explicatif FR/EN
-- **ROI Simulator dynamique + Recharts + bandeau défilant ✅ (VALIDATION VISUELLE ✅)**
-  - Chart live 90 jours (3 trajectoires) lié au calculateur
-  - Tooltip custom (J+jour, prix, market cap, portefeuille)
-  - Bandeau risque en marquee CSS (pause hover, reduced-motion)
-  - Fixes UX: overlay contraste + z-index backdrop + tabs non chevauchants
+- **ROI Simulator dynamique + Recharts + bandeau défilant + modèle Pump.fun + injection founder + marqueurs roadmap ✅ (VALIDATION VISUELLE ✅)**
+  - **Modèle Pump.fun + injection**:
+    - Mint floor: `MINT_PRICE_EUR = 0.0000005` (bonding curve)
+    - Injection founder: `FOUNDER_INJECTION_EUR = 2000` à `FOUNDER_INJECTION_DAY = 0.15` → `INJECTION_PRICE_EUR = 0.000002`
+    - Prix de référence calculateur: `LAUNCH_PRICE_EUR = 0.000002`
+    - Cible MiCA: `TARGET_PRICE_EUR = 0.0005` (FDV €500k)
+  - **Scénarios canonisés** (aucun drift chart/calculateur): `SCENARIO_MULTIPLIERS` = brutal ×0.1 / base ×25 / optimistic ×250
+  - **Chart**:
+    - YAxis **log scale** pour l’écart €5e-7 → €5e-4
+    - 4 marqueurs roadmap (Δ01..Δ04) via `ReferenceLine` + légende sous le graphe
+    - `ReferenceDot` cyan sur l’injection founder
+    - Tooltip supporte jours fractionnaires (ex: J+0.15)
+  - **UX**:
+    - prix affichés en notation scientifique quand nécessaire (ex: €2.00e-6)
+    - bandeau risque en marquee CSS (pause hover, reduced-motion)
 
 ---
 
@@ -499,7 +509,7 @@ Validation:
 - ✅ **(B) Backend refactor**: TERMINÉ — monolithe `server.py` → `core/` + `routers/`
 - ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
 - ✅ **(C) On-chain accuracy upgrade**: TERMINÉ — indexer Solana per-trade via Helius (webhooks + catch-up)
-- ✅ **(D) ROI Simulator dynamique**: TERMINÉ — Recharts live + marquee disclaimers + i18n + validation visuelle
+- ✅ **(D) ROI Simulator dynamique (extended)**: TERMINÉ — Recharts live + marquee + **marqueurs roadmap** + **modèle Pump.fun + injection founder** + i18n + validation visuelle
 - ⏳ **(A) Switch à $DEEPOTUS réel**: à faire dès que le mint Solana est connu
 
 ---

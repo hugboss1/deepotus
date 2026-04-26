@@ -10,27 +10,41 @@
  *                  values in the tooltip in priority.
  *   - tokensHeld : the user-held token count (>0 toggles the portfolio line).
  *
- * The chart is purely visual — all data shaping happens upstream so this
- * component can stay declarative and fast to re-render.
+ * Visual overlays:
+ *   - Founder injection ReferenceDot at FOUNDER_INJECTION_DAY (₂000€).
+ *   - Roadmap phase markers (4× ReferenceLine with Δ01..Δ04 caps) tied
+ *     to the campaign roadmap section. Captions live in a compact legend
+ *     below the chart so the chart itself stays readable.
  */
 import {
-  Area,
   CartesianGrid,
   ComposedChart,
   Legend,
   Line,
+  ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { LAUNCH_PRICE_EUR, SCENARIO_COLORS, TOTAL_SUPPLY } from "./constants";
+import {
+  FOUNDER_INJECTION_DAY,
+  FOUNDER_INJECTION_EUR,
+  INJECTION_PRICE_EUR,
+  LAUNCH_PRICE_EUR,
+  ROADMAP_MARKERS,
+  SCENARIO_COLORS,
+  TOTAL_SUPPLY,
+} from "./constants";
 
 const fmtPrice = (v) => {
   if (v == null || Number.isNaN(v)) return "—";
   if (v >= 1) return `€${v.toFixed(2)}`;
   if (v >= 0.01) return `€${v.toFixed(3)}`;
-  return `€${v.toFixed(5)}`;
+  if (v >= 0.0001) return `€${v.toFixed(5)}`;
+  // Sub-fractional memecoin range — switch to scientific.
+  return `€${v.toExponential(2)}`;
 };
 
 const fmtCompact = (v) => {
@@ -44,26 +58,20 @@ const fmtCompact = (v) => {
 function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld }) {
   if (!active || !payload?.length) return null;
 
-  const byKey = Object.fromEntries(
-    payload.map((p) => [p.dataKey, p.value]),
-  );
+  const byKey = Object.fromEntries(payload.map((p) => [p.dataKey, p.value]));
 
-  const scenarioLines = ["brutal", "base", "optimistic"].map((key) => {
-    const value = byKey[key];
-    const color = SCENARIO_COLORS[key];
-    const isActive = key === activeKey;
-    return {
-      key,
-      color,
-      isActive,
-      value,
-      label: t(`roi.chartLegend${key.charAt(0).toUpperCase() + key.slice(1)}`),
-    };
-  });
+  const scenarioLines = ["brutal", "base", "optimistic"].map((key) => ({
+    key,
+    color: SCENARIO_COLORS[key],
+    isActive: key === activeKey,
+    value: byKey[key],
+    label: t(`roi.chartLegend${key.charAt(0).toUpperCase() + key.slice(1)}`),
+  }));
 
   const portfolioValue = byKey.portfolio;
   const activePrice = byKey[activeKey];
   const activeMC = activePrice != null ? activePrice * TOTAL_SUPPLY : null;
+  const dayLabel = Number(label).toFixed(Number(label) < 1 ? 2 : 0);
 
   return (
     <div
@@ -72,7 +80,7 @@ function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld }) {
     >
       <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/55">
         {t("roi.chartTooltipDay")}
-        {label}
+        {dayLabel}
       </div>
       <div className="mt-1.5 space-y-1">
         {scenarioLines.map((row) => (
@@ -140,6 +148,54 @@ function LegendDot({ color, label, active }) {
   );
 }
 
+/**
+ * Compact roadmap legend rendered below the chart so the chart itself
+ * keeps a clean signal-to-noise ratio. Each cell pairs a coloured Δ tag
+ * with its short label coming from i18n (`roi.roadmapPhases.<key>`).
+ */
+function RoadmapLegend({ t }) {
+  const phases = t("roi.roadmapPhases") || {};
+  return (
+    <div
+      className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2.5"
+      data-testid="roi-roadmap-legend"
+    >
+      {ROADMAP_MARKERS.map((m) => {
+        const phase = phases[m.key] || {};
+        return (
+          <div
+            key={m.key}
+            className="flex items-start gap-2 min-w-0"
+            data-testid={`roi-roadmap-legend-${m.key}`}
+          >
+            <span
+              aria-hidden
+              className="shrink-0 mt-[2px] inline-flex items-center justify-center rounded-sm border px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-widest"
+              style={{
+                color: m.color,
+                borderColor: `${m.color}66`,
+                background: `${m.color}1A`,
+              }}
+            >
+              {m.short}
+            </span>
+            <div className="min-w-0">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-white/85 truncate">
+                {phase.title || m.key}
+              </div>
+              <div className="font-mono text-[9px] text-white/45 truncate">
+                {t("roi.roadmapDayPrefix")}
+                {m.day}
+                {phase.subtitle ? ` · ${phase.subtitle}` : ""}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PriceChart({ t, data, activeKey, tokensHeld }) {
   const xTicks = [0, 22, 45, 67, 89]; // 5 evenly spaced ticks across 90 days
 
@@ -158,6 +214,16 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
         <p className="mt-1 text-xs md:text-sm text-white/65 max-w-xl">
           {t("roi.chartSubtitle")}
         </p>
+
+        {/* Founder-injection callout, surfaced visibly above the chart */}
+        <div
+          className="mt-3 inline-flex items-center gap-2 rounded-md border border-[#2DD4BF]/30 bg-[#2DD4BF]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-[#2DD4BF]"
+          data-testid="roi-injection-callout"
+        >
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
+          {t("roi.injectionCallout")} · €
+          {FOUNDER_INJECTION_EUR.toLocaleString()} → {fmtPrice(INJECTION_PRICE_EUR)}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
@@ -180,11 +246,11 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
         )}
       </div>
 
-      <div className="mt-3 flex-1 min-h-[280px] sm:min-h-[320px] lg:min-h-[360px]">
+      <div className="mt-3 flex-1 min-h-[300px] sm:min-h-[340px] lg:min-h-[380px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
-            margin={{ top: 8, right: 14, bottom: 8, left: 0 }}
+            margin={{ top: 24, right: 18, bottom: 8, left: 0 }}
           >
             <defs>
               <linearGradient id="roi-portfolio-fill" x1="0" y1="0" x2="0" y2="1">
@@ -208,19 +274,24 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
             />
             <XAxis
               dataKey="day"
+              type="number"
+              domain={[0, 89]}
               ticks={xTicks}
               tickFormatter={(v) => `J+${v}`}
               tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 10 }}
               axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
               tickLine={false}
+              allowDecimals={false}
             />
             <YAxis
               tickFormatter={fmtPrice}
               tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 10 }}
               axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
               tickLine={false}
-              width={64}
-              domain={[0, "auto"]}
+              width={78}
+              scale="log"
+              domain={["auto", "auto"]}
+              allowDataOverflow={false}
             />
             <Tooltip
               cursor={{ stroke: "rgba(255,255,255,0.18)", strokeDasharray: "3 3" }}
@@ -233,6 +304,25 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
               }
             />
             <Legend content={() => null} />
+
+            {/* --- Roadmap phase markers (Δ01 → Δ04) --- */}
+            {ROADMAP_MARKERS.map((m) => (
+              <ReferenceLine
+                key={`marker-${m.key}`}
+                x={m.day}
+                stroke={m.color}
+                strokeDasharray="4 4"
+                strokeOpacity={0.55}
+                label={{
+                  value: m.short,
+                  position: "top",
+                  fill: m.color,
+                  fontSize: 10,
+                  fontFamily: "monospace",
+                  fontWeight: 600,
+                }}
+              />
+            ))}
 
             {/* Brutal scenario */}
             <Line
@@ -268,18 +358,16 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
               animationDuration={400}
             />
 
-            {/* Portfolio overlay (only when user enters an amount) */}
-            {tokensHeld > 0 && (
-              <Area
-                type="monotone"
-                dataKey="portfolio"
-                yAxisId={0}
-                stroke="transparent"
-                fill="url(#roi-portfolio-fill)"
-                isAnimationActive={false}
-                hide
-              />
-            )}
+            {/* Founder-injection event marker on the active line */}
+            <ReferenceDot
+              x={FOUNDER_INJECTION_DAY}
+              y={INJECTION_PRICE_EUR}
+              r={5}
+              fill={SCENARIO_COLORS.portfolio}
+              stroke="#0B0D10"
+              strokeWidth={2}
+              ifOverflow="extendDomain"
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -287,9 +375,12 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
       <div className="mt-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-white/50">
         <span>{t("roi.chartXLabel")}</span>
         <span>
-          {t("roi.chartYLabel")} · base = €{LAUNCH_PRICE_EUR.toFixed(4)}
+          {t("roi.chartYLabel")} · ref = {fmtPrice(LAUNCH_PRICE_EUR)}
         </span>
       </div>
+
+      {/* Roadmap legend — clarifies what each Δ marker stands for */}
+      <RoadmapLegend t={t} />
     </div>
   );
 }
