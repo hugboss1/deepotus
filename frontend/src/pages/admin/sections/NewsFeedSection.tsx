@@ -99,6 +99,8 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
   }, []);
 
   // Sync drafts with config
+  const feedsKey = JSON.stringify(newsFeedConfig.feeds || []);
+  const keywordsKey = JSON.stringify(newsFeedConfig.keywords || []);
   useEffect(() => {
     const nf = newsFeedConfig;
     if (!nf || Object.keys(nf).length === 0) return;
@@ -111,10 +113,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
     setNewsFeedsDraft(feedsList.join("\n"));
     setNewsKeywordsDraft(kwList.join(", "));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    JSON.stringify(newsFeedConfig.feeds || []),
-    JSON.stringify(newsFeedConfig.keywords || []),
-  ]);
+  }, [feedsKey, keywordsKey]);
 
   return (
     <div

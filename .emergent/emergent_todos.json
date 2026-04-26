@@ -1,26 +1,18 @@
 [
   {
-    "content": "Sprint 6.1 — Splitter Admin.jsx en sections TSX",
+    "content": "Sprint 10a — yarn build production : ✅ Compiled successfully",
     "status": "completed"
   },
   {
-    "content": "Sprint 6.2 — Extraire NewsFeedSection.tsx d'AdminBots.jsx",
+    "content": "Sprint 10b — Corriger les blockers (warnings ESLint NewsFeedSection + index.html dynamique via REACT_APP_SITE_URL)",
     "status": "completed"
   },
   {
-    "content": "Sprint 6.3 — Extraire HeliusSection.tsx d'AdminVault.jsx",
+    "content": "Sprint 10c — Vérifier env vars frontend (7) + backend (15) pour Vercel/Render",
     "status": "completed"
   },
   {
-    "content": "Sprint 6.4 — Migrer TerminalPopup.jsx → .tsx avec types stricts",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 6.5 — Migrer AdminEmails.jsx → .tsx",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 6 Validation — tsc --noEmit + smoke test E2E pages admin",
+    "content": "Sprint 10d — Créer DEPLOY.md (guide complet Vercel + Render + MongoDB Atlas)",
     "status": "completed"
   }
 ]
