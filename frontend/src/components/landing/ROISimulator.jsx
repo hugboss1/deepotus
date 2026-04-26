@@ -41,11 +41,15 @@ const fmtRefPrice = (v) => {
 };
 
 export default function ROISimulator() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const scenarios = useMemo(() => t("roi.scenarios") || {}, [t]);
   const pricePerToken = LAUNCH_PRICE_EUR;
   const [amount, setAmount] = useState(500);
   const [active, setActive] = useState("base");
+
+  // Currency symbol — sourced from the active locale dictionary so prices
+  // displayed in the simulator render in € for FR and $ for EN.
+  const currencySymbol = (t("roi.currencySymbol") || (lang === "en" ? "$" : "€"));
 
   const tokens = useMemo(() => {
     const n = Number(amount);
@@ -126,6 +130,7 @@ export default function ROISimulator() {
             setActive={setActive}
             valueFromMultiplier={valueFromMultiplier}
             fmt={fmt}
+            currencySymbol={currencySymbol}
           />
 
           <motion.div
@@ -140,6 +145,7 @@ export default function ROISimulator() {
               data={chartData}
               activeKey={active}
               tokensHeld={tokens}
+              currencySymbol={currencySymbol}
             />
           </motion.div>
         </div>
@@ -166,6 +172,7 @@ function CalculatorPanel({
   setActive,
   valueFromMultiplier,
   fmt,
+  currencySymbol,
 }) {
   return (
     <motion.div
@@ -197,7 +204,7 @@ function CalculatorPanel({
             aria-hidden
             className="absolute left-3 top-1/2 -translate-y-1/2 text-white/55 font-mono text-sm"
           >
-            €
+            {currencySymbol}
           </span>
           <Input
             id="roi-amount"
@@ -216,7 +223,8 @@ function CalculatorPanel({
           data-testid="roi-tokens-display"
         >
           ≈ <span className="text-[#2DD4BF]">{fmt(tokens)}</span>{" "}
-          $DEEPOTUS · @ €{fmtRefPrice(LAUNCH_PRICE_EUR)}
+          $DEEPOTUS · @ {currencySymbol}
+          {fmtRefPrice(LAUNCH_PRICE_EUR)}
         </div>
 
         {/* --- Scenario tabs (existing functionality preserved) --- */}
@@ -280,7 +288,8 @@ function CalculatorPanel({
                         style={{ color }}
                         data-testid={`roi-result-${key}`}
                       >
-                        €{fmt(value)}
+                        {currencySymbol}
+                        {fmt(value)}
                       </div>
                     </div>
                   </div>

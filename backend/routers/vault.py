@@ -236,7 +236,7 @@ async def helius_catchup(_p: dict = Depends(require_admin)):
     pool = (vs.get("helius_pool_address") or "").strip() or None
     demo_tokens_per_buy: Optional[int] = None
     if vs.get("helius_demo_mode"):
-        demo_tokens_per_buy = int(vs.get("tokens_per_micro") or 10_000)
+        demo_tokens_per_buy = int(vs.get("tokens_per_micro") or 100_000)
     if not mint:
         raise HTTPException(status_code=400, detail="No mint configured")
     return await helius_mod.catch_up_from_helius(

@@ -30,7 +30,6 @@ import {
 } from "recharts";
 import {
   FOUNDER_INJECTION_DAY,
-  FOUNDER_INJECTION_EUR,
   INJECTION_PRICE_EUR,
   LAUNCH_PRICE_EUR,
   ROADMAP_MARKERS,
@@ -38,13 +37,13 @@ import {
   TOTAL_SUPPLY,
 } from "./constants";
 
-const fmtPrice = (v) => {
+const fmtPrice = (v, sym = "€") => {
   if (v == null || Number.isNaN(v)) return "—";
-  if (v >= 1) return `€${v.toFixed(2)}`;
-  if (v >= 0.01) return `€${v.toFixed(3)}`;
-  if (v >= 0.0001) return `€${v.toFixed(5)}`;
+  if (v >= 1) return `${sym}${v.toFixed(2)}`;
+  if (v >= 0.01) return `${sym}${v.toFixed(3)}`;
+  if (v >= 0.0001) return `${sym}${v.toFixed(5)}`;
   // Sub-fractional memecoin range — switch to scientific.
-  return `€${v.toExponential(2)}`;
+  return `${sym}${v.toExponential(2)}`;
 };
 
 const fmtCompact = (v) => {
@@ -55,7 +54,7 @@ const fmtCompact = (v) => {
   }).format(v);
 };
 
-function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld }) {
+function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld, currencySymbol }) {
   if (!active || !payload?.length) return null;
 
   const byKey = Object.fromEntries(payload.map((p) => [p.dataKey, p.value]));
@@ -98,7 +97,7 @@ function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld }) {
               style={{ background: row.color }}
             />
             <span className="flex-1">{row.label}</span>
-            <span className="tabular">{fmtPrice(row.value)}</span>
+            <span className="tabular">{fmtPrice(row.value, currencySymbol)}</span>
           </div>
         ))}
       </div>
@@ -108,7 +107,7 @@ function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld }) {
           <span className="uppercase tracking-widest text-[9px]">
             {t("roi.chartTooltipMC")}
           </span>
-          <span className="tabular">€{fmtCompact(activeMC)}</span>
+          <span className="tabular">{currencySymbol}{fmtCompact(activeMC)}</span>
         </div>
       )}
 
@@ -121,7 +120,7 @@ function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld }) {
             className="tabular font-semibold"
             style={{ color: SCENARIO_COLORS.portfolio }}
           >
-            €{fmtCompact(portfolioValue)}
+            {currencySymbol}{fmtCompact(portfolioValue)}
           </span>
         </div>
       )}
@@ -196,8 +195,9 @@ function RoadmapLegend({ t }) {
   );
 }
 
-export function PriceChart({ t, data, activeKey, tokensHeld }) {
+export function PriceChart({ t, data, activeKey, tokensHeld, currencySymbol = "€" }) {
   const xTicks = [0, 22, 45, 67, 89]; // 5 evenly spaced ticks across 90 days
+  const amountMasked = t("roi.injectionAmountMasked") || `xxxx${currencySymbol}`;
 
   return (
     <div
@@ -215,14 +215,14 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
           {t("roi.chartSubtitle")}
         </p>
 
-        {/* Founder-injection callout, surfaced visibly above the chart */}
+        {/* Deep State Initiation callout — amount is intentionally masked */}
         <div
           className="mt-3 inline-flex items-center gap-2 rounded-md border border-[#2DD4BF]/30 bg-[#2DD4BF]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-[#2DD4BF]"
           data-testid="roi-injection-callout"
         >
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#2DD4BF]" />
-          {t("roi.injectionCallout")} · €
-          {FOUNDER_INJECTION_EUR.toLocaleString()} → {fmtPrice(INJECTION_PRICE_EUR)}
+          {t("roi.injectionCallout")} · {amountMasked} →{" "}
+          {fmtPrice(INJECTION_PRICE_EUR, currencySymbol)}
         </div>
       </div>
 
@@ -277,14 +277,14 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
               type="number"
               domain={[0, 89]}
               ticks={xTicks}
-              tickFormatter={(v) => `J+${v}`}
+              tickFormatter={(v) => `${t("roi.roadmapDayPrefix") || "J+"}${v}`}
               tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 10 }}
               axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
               tickLine={false}
               allowDecimals={false}
             />
             <YAxis
-              tickFormatter={fmtPrice}
+              tickFormatter={(v) => fmtPrice(v, currencySymbol)}
               tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 10 }}
               axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
               tickLine={false}
@@ -300,6 +300,7 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
                   t={t}
                   activeKey={activeKey}
                   tokensHeld={tokensHeld}
+                  currencySymbol={currencySymbol}
                 />
               }
             />
@@ -375,7 +376,7 @@ export function PriceChart({ t, data, activeKey, tokensHeld }) {
       <div className="mt-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-white/50">
         <span>{t("roi.chartXLabel")}</span>
         <span>
-          {t("roi.chartYLabel")} · ref = {fmtPrice(LAUNCH_PRICE_EUR)}
+          {t("roi.chartYLabel")} · ref = {fmtPrice(LAUNCH_PRICE_EUR, currencySymbol)}
         </span>
       </div>
 

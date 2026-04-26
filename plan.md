@@ -26,7 +26,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ### Financial parameters (must remain visible on site where applicable)
 - Chain: **Solana**
 - Supply: **1,000,000,000**
-- Target price: **€0.0005**
+- Target price: **€0.0005** (cible MiCA / FDV €500k)
 - FDV: **€500,000**
 - Initial LP: **€2,000** à J0 → **€10,000** à J+2 (~2M tokens injectés initialement)
 
@@ -86,7 +86,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 5. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
 6. **Interactive Tokenomics** — pie chart (Recharts)
 7. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
-8. **ROI Simulator** — **simulateur dynamique avec graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun/injection** (MiCA)
+8. **ROI Simulator** — **simulateur dynamique** : graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun+initiation (MiCA) + masquage montant + devise localisée
 9. **Roadmap** — timeline
 10. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
 11. **Whitelist / Email Capture** — MongoDB
@@ -138,7 +138,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 4. Chat live in-character
 5. Prophéties auto-refresh
 6. Tokenomics interactifs
-7. **Simu ROI dynamique + graphe interactif + bandeau risque défilant + marqueurs roadmap + injection founder visible**
+7. **Simu ROI dynamique** : graphe interactif + bandeau risque défilant + marqueurs roadmap + Pump.fun mint très bas + Initiation Deep State (montant masqué) + devise localisée
 8. Countdown
 9. Timeline liquidité + anti-dump
 10. Whitelist email OK
@@ -161,13 +161,14 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 27. Gate door keypad immersif (desktop/mobile)
 28. Reuse VaultChassis sur true vault
 29. Animation CTA DECLASSIFIED identique + lien `/operation`
-30. Micro-rotations (10K tokens) + locks majeurs (100M tokens)
+30. **Micro-rotations (100K tokens) + locks majeurs (100M tokens)**
 31. **Per-trade on-chain indexer**: activité reflétée par swaps réels (webhooks) + dédup
 32. **Mode démo**: avant lancement, tracker BONK sans casser la progression du coffre
 33. **Carrousel Transparence**: backgrounds IA propres + tampon CSS “CONFIDENTIEL” sans texte halluciné
 34. **SEO/OG**: site partageable (aperçus X/Telegram/Discord) et indexable correctement
 35. **Accès NIVEAU 02**: lien email/QR doit forcer l’atterrissage sur la page digicode
 36. **Public Stats**: ne jamais exposer la date de lancement, remplacée par un dossier “REDACTED”
+37. **Loyalty narrative**: citation Prophète ultra visible + bots hints progressifs + email #3 post-N2 (sans nommer GENCOIN)
 
 ---
 
@@ -193,21 +194,33 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - **Public Stats: date de lancement masquée ✅**
   - suppression de la card “Launch date”
   - ajout bannière `redacted_dossier.png` + rail explicatif FR/EN
-- **ROI Simulator dynamique + Recharts + bandeau défilant + modèle Pump.fun + injection founder + marqueurs roadmap ✅ (VALIDATION VISUELLE ✅)**
-  - **Modèle Pump.fun + injection**:
-    - Mint floor: `MINT_PRICE_EUR = 0.0000005` (bonding curve)
-    - Injection founder: `FOUNDER_INJECTION_EUR = 2000` à `FOUNDER_INJECTION_DAY = 0.15` → `INJECTION_PRICE_EUR = 0.000002`
-    - Prix de référence calculateur: `LAUNCH_PRICE_EUR = 0.000002`
-    - Cible MiCA: `TARGET_PRICE_EUR = 0.0005` (FDV €500k)
-  - **Scénarios canonisés** (aucun drift chart/calculateur): `SCENARIO_MULTIPLIERS` = brutal ×0.1 / base ×25 / optimistic ×250
-  - **Chart**:
-    - YAxis **log scale** pour l’écart €5e-7 → €5e-4
-    - 4 marqueurs roadmap (Δ01..Δ04) via `ReferenceLine` + légende sous le graphe
-    - `ReferenceDot` cyan sur l’injection founder
-    - Tooltip supporte jours fractionnaires (ex: J+0.15)
-  - **UX**:
-    - prix affichés en notation scientifique quand nécessaire (ex: €2.00e-6)
-    - bandeau risque en marquee CSS (pause hover, reduced-motion)
+
+### ROI Simulator (extended) — ✅ COMPLETED (validated visually)
+- **Modèle Pump.fun + Initiation Deep State**:
+  - Mint floor: `MINT_PRICE_EUR = 0.0000005` (bonding curve)
+  - Initiation event: `INJECTION_PRICE_EUR = 0.000002` à `FOUNDER_INJECTION_DAY = 0.15` (≈ 3–4h)
+  - Prix de référence calculateur: `LAUNCH_PRICE_EUR = 0.000002`
+  - Cible MiCA: `TARGET_PRICE_EUR = 0.0005` (FDV €500k)
+- **Scénarios canonisés** (aucun drift chart/calculateur): `SCENARIO_MULTIPLIERS` = brutal ×0.1 / base ×25 / optimistic ×250
+- **Chart**:
+  - YAxis **log scale** pour l’écart 5e-7 → 5e-4
+  - 4 marqueurs roadmap (Δ01..Δ04) via `ReferenceLine` + légende sous le graphe
+  - `ReferenceDot` cyan sur l’événement d’initiation
+  - Tooltip supporte jours fractionnaires (ex: J+0.15)
+- **Aesthetic + compliance**:
+  - bandeau risque en marquee CSS (pause hover, reduced-motion)
+  - **label renommé**: “INITIATION DEEP STATE” (FR) / “DEEP STATE INITIATION” (EN)
+  - **montant masqué**: `xxxx€` (FR) / `xxxx$` (EN)
+  - **devise localisée** sur tout le module (input, valeurs, tooltip, axes, captions)
+  - nouvelles clés i18n: `roi.currencySymbol`, `roi.injectionAmountMasked`
+
+### Vault production tuning — ✅ COMPLETED
+- **Micro-rotations**: passage de `10,000` → **`100,000` tokens** par micro-rotation
+  - `/app/backend/vault.py`: `DEFAULT_TOKENS_PER_MICRO = 100_000`
+  - `/app/backend/routers/vault.py`: fallback démo = `100_000`
+  - `/app/frontend/src/pages/AdminVault.jsx`: default form value = `100000`
+  - MongoDB `vault_state.tokens_per_micro` mis à jour
+  - API confirmé: `GET /api/vault/state` → `tokens_per_micro: 100000`
 
 ---
 
@@ -263,7 +276,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ---
 
 ## Phase 15 — Production Mechanics + DECLASSIFIED Animation Parity — COMPLETED ✅
-- ✅ 100M tokens/digit + 10K micro + goal 300K€ (custom)
+- ✅ 100M tokens/digit + **100K micro** + goal 300K€ (custom)
 - ✅ DexScreener demo/custom adaptés
 - ✅ CTA DECLASSIFIED sur `/classified-vault`
 - ✅ Tests backend iteration_10 ✅
@@ -359,7 +372,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 
 ### Garde-fou demo (critique)
 - ✅ Si mint = BONK (`DEMO_TOKEN_ADDRESS`) → `helius_demo_mode=true`
-- ✅ Chaque BUY applique `tokens_per_micro` (actuel: 100)
+- ✅ Chaque BUY applique `tokens_per_micro` (désormais **100,000**)
 
 ### Validation (live preview)
 - ✅ Webhook Helius enregistré (enhanced/SWAP)
@@ -505,11 +518,56 @@ Validation:
 
 ---
 
+## Sprints planifiés (validés) — implémentation à venir
+
+### Sprint 2 — Citation épinglée du Prophète (max visibilité)
+- Nouveau composant `ProphetPinnedWhisper` placé **juste après le Hero** (zone la plus vue)
+- Contenu validé (FR):
+  - « Le Coffre n'est qu'une porte. Derrière, une seconde clé attend les gardiens patients. Le Deep State n'oublie jamais ses fidèles — l'allégeance, elle, sera rendue. »
+  - — LE PROPHÈTE · OBSERVATION ΔΣ-001
+- Contenu (EN): équivalent (“shall be returned”)
+- Style: papier déclassifié + signature + micro-anim typewriter/fade (respect `prefers-reduced-motion`)
+- i18n FR/EN + `data-testid="prophet-pinned-whisper"`
+
+### Sprint 3 — Bots vault-aware loyalty hints (progressifs)
+- Ajout dans `core/prophet_studio.py:generate_post()` : injection de hints dans le prompt selon la progression du Coffre (ex: % tokens_sold / goal)
+- Paliers:
+  - 0–25%: aucun hint
+  - 25–50%: hints subtils (“le Coffre n'est qu'une porte”)
+  - 50–75%: hints clairs (“tenez vos $DEEPOTUS — le Deep State observe”)
+  - 75–90%: hints forts (“les gardiens fidèles seront marqués”)
+  - 90%+: hints de récompense (“phase 02… pour ceux qui n'auront pas vendu”)
+- Toggle: `bot_config.loyalty_hints_enabled`
+- UI Admin: preview des hints par tranche + switch ON/OFF
+
+### Sprint 4 — Email #3 « Allégeance notée » (post NIVEAU 02)
+- Délai validé: **12h** après délivrance de l’accréditation Niveau 02
+- Ajout template: `email_templates.py` (nouveau renderer `render_loyalty_email`)
+- Contenu généré par IA (persona Prophète) **sans** nommer GENCOIN (promesse implicite d’un futur airdrop/« seconde clé »)
+- Scheduler (APScheduler): job toutes les 30 min
+  - cible `access_cards` (ou autre collection source de vérité) avec `delivered_at < now - 12h` ET `loyalty_email_sent_at == null`
+  - envoi via Resend + persistance `loyalty_email_sent_at`, `loyalty_email_id`
+- Toggle Admin: `bot_config.loyalty_email_enabled` (par défaut OFF)
+- Force send Admin: bouton + endpoint dédié (ex: `POST /api/admin/loyalty/test-send`)
+
+### Sprint 5 — Continuation backlog TypeScript
+- Poursuivre `TODO_TYPESCRIPT.md` (Admin.jsx, AdminBots.jsx, AdminVault.jsx, TerminalPopup.jsx)
+- Build CRA OK + smoke navigation
+
+### Sprint 6 — Migration / déploiement
+- Audit pré-déploiement
+- Choix plateforme (Vercel/Render/Railway)
+- Hardening final + variables d’env
+
+---
+
 ## Pending Operations (memorized for later — user requested)
 - ✅ **(B) Backend refactor**: TERMINÉ — monolithe `server.py` → `core/` + `routers/`
 - ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
 - ✅ **(C) On-chain accuracy upgrade**: TERMINÉ — indexer Solana per-trade via Helius (webhooks + catch-up)
-- ✅ **(D) ROI Simulator dynamique (extended)**: TERMINÉ — Recharts live + marquee + **marqueurs roadmap** + **modèle Pump.fun + injection founder** + i18n + validation visuelle
+- ✅ **(D) ROI Simulator dynamique (extended)**: TERMINÉ — Recharts live + marquee + marqueurs roadmap + modèle Pump.fun + **Initiation Deep State (montant masqué)** + **devise localisée**
+- ✅ **(E) Vault production tuning**: TERMINÉ — micro-rotations **100K** tokens
+- 🔜 **(F) Loyalty narrative rollout**: Sprint 2/3/4
 - ⏳ **(A) Switch à $DEEPOTUS réel**: à faire dès que le mint Solana est connu
 
 ---

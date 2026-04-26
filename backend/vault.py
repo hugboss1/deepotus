@@ -56,7 +56,7 @@ from pydantic import BaseModel, Field
 VAULT_DOC_ID = "protocol_delta_sigma"
 DEFAULT_NUM_DIGITS = 6
 DEFAULT_TOKENS_PER_DIGIT = 100_000_000   # 100M tokens → 1 dial locked
-DEFAULT_TOKENS_PER_MICRO = 10_000        # every 10,000 tokens bought = 1 micro-rotation
+DEFAULT_TOKENS_PER_MICRO = 100_000       # every 100,000 tokens bought = 1 micro-rotation
 DEFAULT_TREASURY_GOAL_EUR = 300_000.0    # soft cap — also declassifies
 DEFAULT_EUR_USD_RATE = 1.08              # approx; admin-editable
 HOURLY_TICK_SECONDS = 3600               # 1h

@@ -421,7 +421,7 @@ export const translations = {
       resultLabel: "Valeur théorique",
       chartTitle: "Trajectoire de prix · projection 90 jours",
       chartSubtitle:
-        "Mint Pump.fun à €5e-7, puis Initiation Deep State de €2 000 (≈ J+0,15) → prix de référence €2e-6. La courbe optimiste vise la cible MiCA €0,0005 (FDV €500 000).",
+        "Mint Pump.fun à €5e-7, puis Initiation Deep State (≈ J+0,15) → prix de référence €2e-6. La courbe optimiste vise la cible MiCA €0,0005 (FDV €500 000).",
       chartXLabel: "Jours depuis le mint",
       chartYLabel: "Prix (€)",
       chartTooltipDay: "J+",
@@ -433,6 +433,8 @@ export const translations = {
       chartLegendOptimistic: "Optimiste",
       chartLegendPortfolio: "Portefeuille",
       injectionCallout: "INITIATION DEEP STATE",
+      injectionAmountMasked: "xxxx€",
+      currencySymbol: "€",
       roadmapDayPrefix: "J+",
       roadmapPhases: {
         phase01: {
@@ -1132,8 +1134,8 @@ export const translations = {
       title: "ROI Simulator (mean but honest)",
       subtitle:
         "Turn the dials. The chart reacts live. The scenarios are not forecasts — they reflect the market's rumour.",
-      amountLabel: "How much are you investing (€)?",
-      inputLabel: "How much are you investing (€)?",
+      amountLabel: "How much are you investing ($)?",
+      inputLabel: "How much are you investing ($)?",
       placeholder: "E.g. 500",
       tokenLabel: "Theoretical tokens at €0.0005",
       scenariosTitle: "Scenarios",
@@ -1147,22 +1149,22 @@ export const translations = {
         base: {
           label: "Base (average case)",
           short: "Base",
-          caption: "Raydium migration goes through, moderate community. Price holds a plateau around €5e-5, no euphoria.",
+          caption: "Raydium migration goes through, moderate community. Price holds a plateau around $5e-5, no euphoria.",
           multiplier: 25,
         },
         optimistic: {
           label: "Optimistic (~1%)",
           short: "Optimistic",
-          caption: "Narrative catches on. Dials turn. Price reaches the MiCA target €0.0005 (FDV €500k).",
+          caption: "Narrative catches on. Dials turn. Price reaches the MiCA target $0.0005 (FDV $500k).",
           multiplier: 250,
         },
       },
       resultLabel: "Theoretical value",
       chartTitle: "Price trajectory · 90-day projection",
       chartSubtitle:
-        "Pump.fun mint at €5e-7, then a €2,000 Deep State Initiation (~D+0.15) → reference price €2e-6. The optimistic curve targets the MiCA goal €0.0005 (FDV €500,000).",
+        "Pump.fun mint at $5e-7, then a Deep State Initiation (~D+0.15) → reference price $2e-6. The optimistic curve targets the MiCA goal $0.0005 (FDV $500,000).",
       chartXLabel: "Days since mint",
-      chartYLabel: "Price (€)",
+      chartYLabel: "Price ($)",
       chartTooltipDay: "D+",
       chartTooltipPrice: "Price",
       chartTooltipMC: "Market Cap",
@@ -1172,6 +1174,8 @@ export const translations = {
       chartLegendOptimistic: "Optimistic",
       chartLegendPortfolio: "Portfolio",
       injectionCallout: "DEEP STATE INITIATION",
+      injectionAmountMasked: "xxxx$",
+      currencySymbol: "$",
       roadmapDayPrefix: "D+",
       roadmapPhases: {
         phase01: {

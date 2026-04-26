@@ -63,7 +63,7 @@ export default function AdminVault() {
       const { data } = await axios.get(`${API}/api/admin/vault/state`, { headers });
       setState(data);
       if (tokensPerDigit === "") setTokensPerDigit(String(data.tokens_per_digit));
-      if (tokensPerMicro === "") setTokensPerMicro(String(data.tokens_per_micro ?? 10000));
+      if (tokensPerMicro === "") setTokensPerMicro(String(data.tokens_per_micro ?? 100000));
       if (treasuryGoal === "") setTreasuryGoal(String(data.treasury_goal_eur ?? 300000));
       if (eurUsdRate === "") setEurUsdRate(String(data.eur_usd_rate ?? 1.08));
       if (dexCustomAddr === "" && data.dex_token_address) setDexCustomAddr(data.dex_token_address);
