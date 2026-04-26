@@ -1,18 +1,34 @@
 [
   {
-    "content": "Sprint 10a — yarn build production : ✅ Compiled successfully",
+    "content": "Sprint 11.1 — Backend : flag + endpoints + 403 defense ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 10b — Corriger les blockers (warnings ESLint NewsFeedSection + index.html dynamique via REACT_APP_SITE_URL)",
+    "content": "Sprint 11.2 — Backend : Genesis Broadcast + Mail #1 FR/EN ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 10c — Vérifier env vars frontend (7) + backend (15) pour Vercel/Render",
+    "content": "Sprint 11.3 — Frontend TerminalPopup : phase 'sealed' + Genesis form + countdown ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 10d — Créer DEPLOY.md (guide complet Vercel + Render + MongoDB Atlas)",
+    "content": "Sprint 11.4 — Admin /admin/vault : 3-state toggle Auto/Sealed/Live ✅",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 11.5 — i18n FR/EN ✅ (sealedLines + Genesis success states)",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 11.6 — Validation E2E ✅ (sealed mode + Genesis form + override + denied + reset auto)",
+    "status": "completed"
+  },
+  {
+    "content": "Bug fix — Duplication des lignes typing ✅ (ref + functional update)",
+    "status": "completed"
+  },
+  {
+    "content": "Bug fix — Position Genesis renvoyée dans la réponse ✅",
     "status": "completed"
   }
 ]

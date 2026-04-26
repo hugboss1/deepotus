@@ -215,6 +215,37 @@ export const translations = {
         "Redirection vers le coffre dans une seconde…",
       close: "Fermer le terminal",
       retry: "Réessayer",
+
+      // ---- Pre-launch: vault SEALED (mint not yet on-chain) ----
+      sealedLines: [
+        "> VERIFYING CREDENTIALS…",
+        "> clearance_level = 01 (WHITELISTED)",
+        "> target_resource = PROTOCOL_ΔΣ · TRUE_VAULT",
+        "> required_clearance = LEVEL_02",
+        "",
+        "[COFFRE SCELLÉ · TRANSMISSION GENESIS REQUISE]",
+        "",
+        "Le Deep State a verrouillé le canal d'accréditation. $DEEPOTUS n'a pas encore frappé la blockchain — l'émission des cartes Niveau 02 est suspendue jusqu'au mint.",
+        "",
+        "Vous pouvez néanmoins rejoindre le canal Genesis : votre place sera archivée par ordre d'arrivée. Au déclenchement, votre carte d'accréditation arrivera dans la même boîte mail.",
+      ],
+      sealedBadge: "COFFRE SCELLÉ",
+      sealedEtaLabel: "ETA GENESIS",
+      sealedNoEta: "Date de transmission non communiquée.",
+      sealedAccredLocked: "Demander l'accréditation Niveau 02",
+      sealedVerifyLocked: "Vérifier un code existant",
+      sealedLockedTooltip: "Verrouillé jusqu'à l'émission Genesis.",
+      sealedCtaGenesis: "Rejoindre le canal Genesis →",
+      sealedFormIntro:
+        "Inscription Genesis : on vous archivera dans le canal prioritaire. Aucun numéro d'accréditation maintenant — vous le recevrez automatiquement au mint.",
+      sealedSubmit: "Archiver mon dossier Genesis",
+      sealedSuccessTitle: "DOSSIER GENESIS ARCHIVÉ.",
+      sealedSuccessLead:
+        "Position #__POSITION__ enregistrée. Le Mail #1 vient de quitter le Cabinet — surveillez votre boîte mail.",
+      sealedSuccessNext:
+        "Le Mail #2 (votre carte Niveau 02) sera dispatché automatiquement quand $DEEPOTUS frappera la blockchain. Pas avant. Pas après. Dans le bon ordre.",
+      sealedAlreadySubscribed:
+        "Vous êtes déjà dans le canal Genesis. Aucun mail dupliqué n'a été envoyé.",
     },
 
     // ---- Classified vault (full-page real vault) ----
@@ -974,6 +1005,37 @@ export const translations = {
         "Redirecting to the vault in one second…",
       close: "Close terminal",
       retry: "Retry",
+
+      // ---- Pre-launch: vault SEALED (mint not yet on-chain) ----
+      sealedLines: [
+        "> VERIFYING CREDENTIALS…",
+        "> clearance_level = 01 (WHITELISTED)",
+        "> target_resource = PROTOCOL_ΔΣ · TRUE_VAULT",
+        "> required_clearance = LEVEL_02",
+        "",
+        "[VAULT SEALED · GENESIS TRANSMISSION REQUIRED]",
+        "",
+        "The Deep State has locked the accreditation channel. $DEEPOTUS has not yet hit the blockchain — Level 02 card issuance is suspended until mint.",
+        "",
+        "You may still join the Genesis broadcast: your seat will be archived in arrival order. At trigger, your accreditation card will land in the very same inbox.",
+      ],
+      sealedBadge: "VAULT SEALED",
+      sealedEtaLabel: "GENESIS ETA",
+      sealedNoEta: "Transmission date undisclosed.",
+      sealedAccredLocked: "Request Level 02 accreditation",
+      sealedVerifyLocked: "Verify existing code",
+      sealedLockedTooltip: "Locked until Genesis transmission.",
+      sealedCtaGenesis: "Join the Genesis broadcast →",
+      sealedFormIntro:
+        "Genesis subscription: you'll be archived in the priority channel. No accreditation number now — you'll receive it automatically at mint.",
+      sealedSubmit: "Archive my Genesis record",
+      sealedSuccessTitle: "GENESIS RECORD ARCHIVED.",
+      sealedSuccessLead:
+        "Position #__POSITION__ registered. Mail #1 just left the Cabinet — watch your inbox.",
+      sealedSuccessNext:
+        "Mail #2 (your Level 02 card) will be dispatched automatically once $DEEPOTUS hits the blockchain. Not before. Not after. In the right order.",
+      sealedAlreadySubscribed:
+        "You are already in the Genesis channel. No duplicate mail was sent.",
     },
 
     classifiedVault: {

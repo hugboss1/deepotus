@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, CheckCircle2, AlertTriangle, Mail, KeyRound, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,33 @@ const SESSION_KEY = "deepotus_access_session";
 
 type TerminalPhase =
   | "denied"
+  | "sealed"
   | "form"
+  | "genesis-form"
   | "verify-existing"
   | "sending"
   | "verifying"
   | "success"
+  | "genesis-success"
   | "verify-success"
   | "error";
+
+interface SealedStatus {
+  sealed: boolean;
+  mint_live: boolean;
+  launch_eta: string | null;
+  source: "auto" | "override";
+}
+
+interface GenesisResponse {
+  ok: boolean;
+  email: string;
+  display_name: string;
+  message: string;
+  launch_eta: string | null;
+  already_subscribed: boolean;
+  position?: number;
+}
 
 interface TerminalPopupProps {
   open: boolean;
@@ -32,6 +52,11 @@ interface TerminalPopupProps {
  *   1. Request a fresh Level-2 access card (email-gated).
  *   2. Verify an existing accreditation code (for visitors returning within
  *      the 24 h validity window — they go straight to the vault).
+ *
+ * SEALED MODE: when /api/vault/classified-status returns sealed=true (mint
+ * not yet on-chain), the terminal switches to the "sealed" phase narrative:
+ * both Level-02 buttons are visually disabled and the only available action
+ * is to subscribe to the Genesis broadcast (Mail #1).
  */
 export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
   const { t, lang } = useI18n();
@@ -40,43 +65,103 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
   const [displayName, setDisplayName] = useState<string>("");
   const [existingCode, setExistingCode] = useState<string>("");
   const [result, setResult] = useState<AccessSession | null>(null);
+  const [genesisResult, setGenesisResult] = useState<GenesisResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [typedLines, setTypedLines] = useState<string[]>([]);
   const [showCursor, setShowCursor] = useState<boolean>(true);
+  const [sealedStatus, setSealedStatus] = useState<SealedStatus | null>(null);
 
-  // Typing animation for the "denied" intro
+  // Typing animation for the "denied" / "sealed" intro
   const deniedLines: string[] = useMemo(
     () => (t("terminal.deniedLines") as string[]) || [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lang],
   );
+  const sealedLines: string[] = useMemo(
+    () => (t("terminal.sealedLines") as string[]) || [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang],
+  );
 
+  // Fetch the seal status whenever the terminal opens — this drives the
+  // initial phase ("sealed" pre-mint, "denied" post-mint).
   useEffect(() => {
-    if (!open) return;
-    setPhase("denied");
+    if (!open) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/vault/classified-status`);
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data: SealedStatus = await res.json();
+        if (cancelled) return;
+        setSealedStatus(data);
+      } catch (err) {
+        logger.error(err);
+        // On failure, fall back to "denied" (safer UX — never lock out users
+        // due to a network blip on the public seal endpoint).
+        if (!cancelled) setSealedStatus({ sealed: false, mint_live: true, launch_eta: null, source: "auto" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  // Reset state on every open and switch to sealed/denied based on status.
+  useEffect(() => {
+    if (!open) return undefined;
+    if (sealedStatus === null) return undefined; // wait for the fetch to settle
+    setPhase(sealedStatus.sealed ? "sealed" : "denied");
     setTypedLines([]);
     setEmail("");
     setDisplayName("");
     setExistingCode("");
     setResult(null);
+    setGenesisResult(null);
     setErrorMsg(null);
-  }, [open]);
+    return undefined;
+  }, [open, sealedStatus]);
 
-  // Animate typing of denied lines, one per ~700ms
+  // Animate typing of denied/sealed lines, one per ~700ms.
+  // Uses a ref to ensure only ONE interval is active even under React 18
+  // StrictMode double-effect runs (which would otherwise race & duplicate).
+  const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
-    if (!open || phase !== "denied") return undefined;
+    if (!open) return undefined;
+    if (phase !== "denied" && phase !== "sealed") return undefined;
+    // Always clear any prior interval first (defensive against StrictMode).
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    const lines = phase === "sealed" ? sealedLines : deniedLines;
     let i = 0;
     setTypedLines([]);
     const id = setInterval(() => {
-      if (i >= deniedLines.length) {
+      if (i >= lines.length) {
         clearInterval(id);
+        if (typingIntervalRef.current === id) {
+          typingIntervalRef.current = null;
+        }
         return;
       }
-      setTypedLines((prev) => [...prev, deniedLines[i]]);
+      const next = lines[i];
       i += 1;
+      // Functional update protects against double-pushes if React re-renders
+      // before the interval ticks again.
+      setTypedLines((prev) => {
+        if (prev.length >= i) return prev; // already at or past this index
+        return [...prev, next];
+      });
     }, 600);
-    return () => clearInterval(id);
-  }, [open, phase, deniedLines]);
+    typingIntervalRef.current = id;
+    return () => {
+      clearInterval(id);
+      if (typingIntervalRef.current === id) {
+        typingIntervalRef.current = null;
+      }
+    };
+  }, [open, phase, deniedLines, sealedLines]);
 
   // Blinking cursor
   useEffect(() => {
@@ -168,6 +253,48 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
       setTimeout(() => {
         window.location.href = "/classified-vault";
       }, 1500);
+    } catch (err: unknown) {
+      // eslint-disable-next-line
+      setErrorMsg(String((err as any)?.message || err));
+      setPhase("error");
+    }
+  }
+
+  async function submitGenesis(e: React.FormEvent) {
+    e?.preventDefault();
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMsg(t("terminal.emailInvalid") || "Invalid email");
+      return;
+    }
+    setErrorMsg(null);
+    setPhase("sending");
+    try {
+      const res = await fetch(`${API}/api/access-card/genesis-broadcast`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Language": lang,
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+          display_name: (displayName || "").trim() || null,
+          lang,
+        }),
+      });
+      if (!res.ok) {
+        // 410 VAULT_LIVE: vault opened between mount and submit — restart
+        // the terminal in the regular "denied" flow.
+        if (res.status === 410) {
+          setSealedStatus({ sealed: false, mint_live: true, launch_eta: null, source: "auto" });
+          setPhase("denied");
+          return;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data: GenesisResponse = await res.json();
+      setGenesisResult(data);
+      setPhase("genesis-success");
     } catch (err: unknown) {
       // eslint-disable-next-line
       setErrorMsg(String((err as any)?.message || err));
@@ -295,6 +422,201 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                   )}
                 </div>
               )}
+
+              {/* SEALED phase — pre-launch (mint not yet on-chain) */}
+              {phase === "sealed" && (
+                <div data-testid="terminal-phase-sealed">
+                  <div className="text-[#F59E0B]/80 text-[11px] mb-3 inline-flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" />
+                    &gt; SECURE_CHANNEL · {String(t("terminal.sealedBadge"))} · {lang.toUpperCase()}
+                  </div>
+                  {typedLines.map((line, i) => (
+                    <div
+                      key={`tty-sealed-${i}-${(line || "").slice(0, 16)}`}
+                      className="whitespace-pre-wrap mb-1"
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  {typedLines.length < sealedLines.length && (
+                    <span className="inline-block w-2 h-4 bg-[#F59E0B] align-middle ml-1" />
+                  )}
+                  {typedLines.length >= sealedLines.length && (
+                    <div className="mt-6 flex flex-col gap-4">
+                      {/* ETA strip */}
+                      <div className="rounded-md border border-[#F59E0B]/30 bg-[#F59E0B]/5 px-3 py-2 font-mono text-[11px] text-[#F59E0B]/90 inline-flex items-center gap-2">
+                        <span className="font-bold">⌛ {String(t("terminal.sealedEtaLabel"))}</span>
+                        <span className="text-[#F59E0B]/70">·</span>
+                        <span data-testid="terminal-sealed-eta">
+                          {sealedStatus?.launch_eta
+                            ? new Date(sealedStatus.launch_eta).toLocaleString(lang === "fr" ? "fr-FR" : "en-US", {
+                                dateStyle: "long",
+                                timeStyle: "short",
+                              })
+                            : String(t("terminal.sealedNoEta"))}
+                        </span>
+                      </div>
+
+                      {/* Locked CTAs (visually disabled) */}
+                      <div className="flex flex-col gap-2 max-w-md">
+                        <div
+                          className="flex items-center justify-between gap-2 rounded-md border border-[#18C964]/15 bg-[#0A0F0A] px-3 py-2 opacity-60 cursor-not-allowed"
+                          title={String(t("terminal.sealedLockedTooltip"))}
+                          data-testid="terminal-sealed-locked-request"
+                        >
+                          <span className="font-mono text-xs text-[#18C964]/70 inline-flex items-center gap-2">
+                            <Mail size={12} />
+                            {t("terminal.sealedAccredLocked")}
+                          </span>
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-[#F59E0B]/80">
+                            🔒 LOCKED
+                          </span>
+                        </div>
+                        <div
+                          className="flex items-center justify-between gap-2 rounded-md border border-[#18C964]/15 bg-[#0A0F0A] px-3 py-2 opacity-60 cursor-not-allowed"
+                          title={String(t("terminal.sealedLockedTooltip"))}
+                          data-testid="terminal-sealed-locked-verify"
+                        >
+                          <span className="font-mono text-xs text-[#22D3EE]/70 inline-flex items-center gap-2">
+                            <KeyRound size={12} />
+                            {t("terminal.sealedVerifyLocked")}
+                          </span>
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-[#F59E0B]/80">
+                            🔒 LOCKED
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Genesis CTA — the only available branch */}
+                      <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-[#F59E0B]/20">
+                        <Button
+                          onClick={() => {
+                            setErrorMsg(null);
+                            setPhase("genesis-form");
+                          }}
+                          className="rounded-md bg-[#F59E0B] hover:bg-[#F59E0B]/90 text-black font-mono font-semibold"
+                          data-testid="terminal-genesis-cta"
+                        >
+                          {t("terminal.sealedCtaGenesis")}
+                        </Button>
+                        <button
+                          onClick={onClose}
+                          className="text-[#18C964]/60 hover:text-[#18C964] font-mono text-xs underline decoration-dashed underline-offset-2"
+                          data-testid="terminal-sealed-retreat"
+                        >
+                          {t("terminal.ctaRetreat")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* GENESIS FORM — pre-launch subscription (Mail #1) */}
+              {phase === "genesis-form" && (
+                <form onSubmit={submitGenesis} data-testid="terminal-phase-genesis-form">
+                  <div className="text-[#F59E0B]/80 text-[11px] mb-3">
+                    &gt; archive.genesis.subscription · {lang.toUpperCase()}
+                  </div>
+                  <div className="mb-3">{t("terminal.sealedFormIntro")}</div>
+                  <div className="space-y-3 max-w-md">
+                    <div>
+                      <label
+                        htmlFor="terminal-genesis-email"
+                        className="text-[11px] text-[#F59E0B]/80 block mb-1"
+                      >
+                        &gt; {t("terminal.emailLabel")}
+                      </label>
+                      <Input
+                        id="terminal-genesis-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={String(t("terminal.emailPlaceholder"))}
+                        className="bg-black/60 border-[#F59E0B]/30 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
+                        autoFocus
+                        data-testid="terminal-genesis-email-input"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="terminal-genesis-name"
+                        className="text-[11px] text-[#F59E0B]/80 block mb-1"
+                      >
+                        &gt; {t("terminal.nameLabel")}
+                      </label>
+                      <Input
+                        id="terminal-genesis-name"
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder={String(t("terminal.namePlaceholder"))}
+                        className="bg-black/60 border-[#F59E0B]/30 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
+                        data-testid="terminal-genesis-name-input"
+                      />
+                    </div>
+                    {errorMsg && (
+                      <div className="text-[#FF4D4D] text-xs flex items-center gap-2">
+                        <AlertTriangle size={12} />
+                        {errorMsg}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 pt-1">
+                      <Button
+                        type="submit"
+                        className="rounded-md bg-[#F59E0B] hover:bg-[#F59E0B]/90 text-black font-mono font-semibold"
+                        data-testid="terminal-genesis-submit"
+                      >
+                        <Send size={14} className="mr-1" />
+                        {t("terminal.sealedSubmit")}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setPhase("sealed")}
+                        className="text-[#18C964]/60 hover:text-[#18C964] font-mono text-xs underline decoration-dashed underline-offset-2"
+                        data-testid="terminal-genesis-back"
+                      >
+                        {t("terminal.back")}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* GENESIS SUCCESS phase */}
+              {phase === "genesis-success" && (
+                <div data-testid="terminal-phase-genesis-success">
+                  <div className="text-[#F59E0B]/80 text-[11px] mb-3 inline-flex items-center gap-2">
+                    <CheckCircle2 size={12} className="text-[#F59E0B]" />
+                    &gt; archive.confirmed · {lang.toUpperCase()}
+                  </div>
+                  <div className="text-[#F59E0B] text-base font-semibold mb-3">
+                    {t("terminal.sealedSuccessTitle")}
+                  </div>
+                  <div className="text-[#18C964]/85 mb-3 leading-relaxed">
+                    {String(t("terminal.sealedSuccessLead")).replace(
+                      "__POSITION__",
+                      String(genesisResult?.position ?? "—"),
+                    )}
+                  </div>
+                  {genesisResult?.already_subscribed && (
+                    <div className="text-[#22D3EE]/80 text-xs italic mb-3">
+                      {t("terminal.sealedAlreadySubscribed")}
+                    </div>
+                  )}
+                  <div className="text-[#18C964]/70 text-xs mb-4 leading-relaxed">
+                    {t("terminal.sealedSuccessNext")}
+                  </div>
+                  <Button
+                    onClick={onClose}
+                    className="rounded-md bg-[#18C964] hover:bg-[#18C964]/90 text-black font-mono font-semibold"
+                    data-testid="terminal-genesis-close"
+                  >
+                    {t("terminal.close")}
+                  </Button>
+                </div>
+              )}
+
 
               {/* FORM phase */}
               {phase === "form" && (

@@ -209,6 +209,194 @@ def render_welcome_email(
 
 
 # ---------------------------------------------------------------------
+# Genesis Broadcast email (PRE-LAUNCH · sealed-mode subscription, "Mail #1")
+# ---------------------------------------------------------------------
+def genesis_broadcast_subject(lang: str) -> str:
+    if lang == "fr":
+        return "🔒 Inscription Genesis · DEEPOTUS · accréditation différée"
+    return "🔒 Genesis Subscription · DEEPOTUS · accreditation deferred"
+
+
+def render_genesis_broadcast_email(
+    lang: Literal["fr", "en"],
+    display_name: str,
+    base_url: str,
+    launch_eta: str | None = None,
+) -> str:
+    """Mail #1 — sent when a visitor subscribes to the Genesis broadcast
+    while the classified vault is still SEALED (mint not yet live on-chain).
+
+    Narrative: confirms the visitor will be among the first to receive their
+    Level 2 accreditation (Mail #2) once the vault opens.
+    """
+    site_url = base_url.rstrip("/")
+    hero_url = f"{site_url}/deepotus_email_hero.jpg"
+    eta_line = ""
+    if launch_eta:
+        # show only the YYYY-MM-DD part if ISO with timezone
+        try:
+            eta_short = launch_eta.split("T")[0]
+        except Exception:
+            eta_short = launch_eta
+        eta_line = (
+            f"<p style='margin:0 0 14px 0; font-size:13px; color:#F59E0B; font-family:Courier New, monospace;'>"
+            f"&gt; ETA GENESIS · {eta_short}</p>"
+        )
+
+    if lang == "fr":
+        badge = "— TRANSMISSION GENESIS · COFFRE SCELLÉ"
+        title = "Inscription Genesis enregistrée."
+        lead = (
+            f"Agent <strong>{display_name}</strong>, votre demande d'élévation Niveau 02 a "
+            "été <strong>archivée</strong> avant la transmission Genesis. "
+            "Le coffre $DEEPOTUS reste scellé jusqu'au mint on-chain. "
+            "Vous figurez désormais dans le canal prioritaire d'envoi des accréditations."
+        )
+        prophet_title = "Un mot de DEEPOTUS"
+        prophet_quote = (
+            "« Vous êtes en avance. Le coffre dort encore. Quand $DEEPOTUS frappera la "
+            "blockchain, vous recevrez votre carte Niveau 02 dans la même boîte mail "
+            "où vous lisez ceci. Pas avant. Pas après. Dans le bon ordre. »"
+            " — DEEPOTUS 🕶️"
+        )
+        info_title = "Ce qui va se passer"
+        bullets = [
+            "Mail #1 — celui-ci — confirme votre inscription Genesis.",
+            "Mail #2 (à venir) — votre carte d'accréditation Niveau 02 (envoi automatique au mint).",
+            "Aucune action requise de votre part. Surveillez votre boîte mail.",
+            "Si le mint est différé, l'attribution conserve l'ordre d'arrivée.",
+        ]
+        cta_label = "Retour au site"
+        footer_disclaimer = (
+            "$DEEPOTUS est un token mémétique hautement spéculatif. Cette inscription "
+            "Genesis ne constitue ni un investissement, ni une promesse d'allocation, "
+            "ni un titre. Aucun rendement n'est garanti."
+        )
+        unsub = "Se désabonner"
+        tagline = "DEEPOTUS · The Deep State's Chosen One."
+        address_line = "Transmis depuis le canal Genesis — Bureau de coordination du Deep State."
+    else:
+        badge = "— GENESIS TRANSMISSION · VAULT SEALED"
+        title = "Genesis subscription confirmed."
+        lead = (
+            f"Agent <strong>{display_name}</strong>, your Level 02 clearance request has been "
+            "<strong>archived</strong> ahead of the Genesis transmission. "
+            "The $DEEPOTUS vault stays sealed until on-chain mint. "
+            "You are now in the priority dispatch channel for accreditation cards."
+        )
+        prophet_title = "A word from DEEPOTUS"
+        prophet_quote = (
+            "“You're early. The vault still sleeps. When $DEEPOTUS lands on-chain, "
+            "your Level 02 card will arrive in the very same inbox you're reading "
+            "this from. Not before. Not after. In the right order.”"
+            " — DEEPOTUS 🕶️"
+        )
+        info_title = "What happens next"
+        bullets = [
+            "Mail #1 — this one — confirms your Genesis subscription.",
+            "Mail #2 (incoming) — your Level 02 accreditation card (auto-sent at mint).",
+            "No action required. Watch your inbox.",
+            "If the mint is delayed, allocation honors arrival order.",
+        ]
+        cta_label = "Back to the site"
+        footer_disclaimer = (
+            "$DEEPOTUS is a highly speculative memetic token. This Genesis "
+            "subscription is neither an investment, nor an allocation promise, nor a "
+            "security. No yield guaranteed."
+        )
+        unsub = "Unsubscribe"
+        tagline = "DEEPOTUS · The Deep State's Chosen One."
+        address_line = "Transmitted from the Genesis channel — Deep State Coordination Bureau."
+
+    bullets_html = "\n".join(
+        f'<li style="margin: 0 0 8px 0; color:#d1d5db;">{b}</li>' for b in bullets
+    )
+
+    return f"""<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEEPOTUS · Genesis</title>
+</head>
+<body style="margin:0; padding:0; background:#0B0D10; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#e5e7eb;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0B0D10;">
+  <tr>
+    <td align="center" style="padding:0;">
+      <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="max-width:620px; width:100%; background:#0F141B; border:1px solid #1f2937;">
+        <tr>
+          <td style="padding:0;">
+            <a href="{site_url}" style="display:block; text-decoration:none;">
+              <img src="{hero_url}" alt="DEEPOTUS Genesis" width="620" style="display:block; width:100%; max-width:620px; height:auto; border:0; outline:none;">
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 24px 6px 24px; background:#0B0D10;">
+            <div style="font-family: 'Courier New', monospace; font-size:10px; letter-spacing:2.5px; color:#F59E0B; text-transform:uppercase;">
+              {badge}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 24px 8px 24px; background:#0B0D10;">
+            <h1 style="margin:0 0 12px 0; font-size:28px; line-height:1.2; color:#ffffff; font-weight:700;">{title}</h1>
+            <p style="margin:0 0 14px 0; font-size:15px; line-height:1.55; color:#e5e7eb;">{lead}</p>
+            {eta_line}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 24px 4px 24px; background:#0B0D10;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0e141b; border:1px solid #1f2937; border-radius:10px;">
+              <tr>
+                <td style="padding:16px 18px;">
+                  <div style="font-family: 'Courier New', monospace; font-size:10px; letter-spacing:2.5px; color:#33FF33; text-transform:uppercase; margin-bottom:8px;">&gt; {prophet_title}</div>
+                  <p style="margin:0; font-size:15px; line-height:1.55; color:#f3f4f6; font-style:italic;">{prophet_quote}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 24px 8px 24px; background:#0B0D10;">
+            <h2 style="margin:0 0 10px 0; font-size:16px; color:#ffffff; font-weight:700;">{info_title}</h2>
+            <ul style="margin:0 0 6px 18px; padding:0; font-size:14px; line-height:1.5; color:#d1d5db;">
+              {bullets_html}
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:18px 24px 22px 24px; background:#0B0D10;">
+            <a href="{site_url}" style="display:inline-block; padding:12px 22px; background:#ffffff; color:#0B0D10; text-decoration:none; font-weight:600; border-radius:10px; font-size:14px; letter-spacing:0.2px;">
+              {cta_label} →
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 24px 6px 24px; background:#0e141b; border-top:1px solid #1f2937;">
+            <p style="margin:0; font-size:11px; line-height:1.5; color:#9ca3af; font-family: 'Courier New', monospace;">
+              {footer_disclaimer}
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:14px 24px 18px 24px; background:#0e141b;">
+            <div style="font-family: 'Courier New', monospace; font-size:10px; letter-spacing:2.5px; color:#6b7280; text-transform:uppercase; margin-bottom:6px;">{tagline}</div>
+            <div style="font-size:11px; color:#6b7280;">{address_line}</div>
+            <div style="margin-top:8px;">
+              <a href="{site_url}/?unsub={display_name}" style="color:#9ca3af; font-size:11px;">{unsub}</a>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------
 # Level 2 Access Card email (Clearance upgrade)
 # ---------------------------------------------------------------------
 def access_card_subject(lang: str) -> str:

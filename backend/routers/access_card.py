@@ -30,7 +30,14 @@ from core.config import (
     SENDER_EMAIL,
     db,
 )
-from email_templates import access_card_subject, render_access_card_email
+from core.vault_seal import get_sealed_status, raise_if_sealed
+from email_templates import (
+    access_card_subject,
+    genesis_broadcast_subject,
+    render_access_card_email,
+    render_genesis_broadcast_email,
+)
+from pydantic import BaseModel, EmailStr, Field
 
 router = APIRouter(prefix="/api/access-card", tags=["access-card"])
 
@@ -46,9 +53,14 @@ async def access_card_request(
 ):
     """Publicly callable: visitor asks for a Level 2 access card.
 
-    We always succeed (narrative keeps flowing); whitelisted=True if email is
-    found in the whitelist, False otherwise (we still send the card).
+    Defense in depth: if the classified vault is currently sealed (mint not
+    yet live OR admin override), refuse with 403 VAULT_SEALED so even a
+    bypass of the frontend cannot trigger the email-2 / accreditation flow
+    pre-genesis. Use the /api/access-card/genesis-broadcast endpoint
+    instead during seal mode.
     """
+    await raise_if_sealed(db, action="request_accreditation")
+
     email = req.email.lower().strip()
 
     # Check blacklist (reuse existing collection)
@@ -156,6 +168,8 @@ async def access_card_request(
     response_model=access_card_mod.AccessCardVerifyResponse,
 )
 async def access_card_verify(req: access_card_mod.AccessCardVerifyRequest):
+    await raise_if_sealed(db, action="verify_accreditation")
+
     raw = (req.accreditation_number or "").strip().upper()
     raw = "".join(c for c in raw if c.isalnum() or c == "-")
     if not raw:
@@ -221,3 +235,155 @@ async def access_card_image(accred: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Card image missing")
     return FileResponse(path, media_type="image/png")
+
+
+
+# ---------------------------------------------------------------------
+# Genesis Broadcast — pre-launch subscription (Mail #1)
+# Used when classified vault is SEALED. Captures emails as Genesis
+# subscribers; the regular accreditation flow (Mail #2) re-opens
+# automatically once the vault flips to LIVE.
+# ---------------------------------------------------------------------
+class GenesisBroadcastRequest(BaseModel):
+    email: EmailStr
+    display_name: str | None = Field(default=None, max_length=64)
+    lang: str | None = Field(default=None, pattern=r"^(fr|en)$")
+
+
+class GenesisBroadcastResponse(BaseModel):
+    ok: bool
+    email: EmailStr
+    display_name: str
+    message: str
+    launch_eta: str | None = None
+    already_subscribed: bool = False
+    position: int | None = None
+
+
+@router.post("/genesis-broadcast", response_model=GenesisBroadcastResponse)
+async def genesis_broadcast_request(
+    req: GenesisBroadcastRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
+    """Capture a Genesis broadcast subscriber while the vault is SEALED.
+
+    This endpoint is only meaningful pre-mint:
+        - sealed=True → record the subscriber and queue Mail #1.
+        - sealed=False → 410 Gone, redirect the client to /access-card/request
+          (the regular Level-2 accreditation flow has re-opened).
+
+    On admin override Force-Live, this endpoint also returns 410 so we don't
+    capture stale subscribers when the vault is artificially open.
+    """
+    status_obj = await get_sealed_status(db)
+    if not status_obj["sealed"]:
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "VAULT_LIVE",
+                "message": (
+                    "The classified vault has opened. Use /access-card/request "
+                    "to receive your Level 02 accreditation directly."
+                ),
+            },
+        )
+
+    email = req.email.lower().strip()
+
+    # Honor blacklist (same as access-card/request)
+    bl = await db.blacklist.find_one({"email": email})
+    if bl:
+        raise HTTPException(status_code=403, detail="Agent revoked")
+
+    display_name = (req.display_name or "").strip() or email.split("@")[0]
+
+    # Idempotent upsert with ordered position (helps narrative "in arrival order")
+    existing = await db.genesis_subscribers.find_one({"email": email})
+    if existing:
+        already = True
+        position = existing.get("position", 0)
+    else:
+        already = False
+        count = await db.genesis_subscribers.count_documents({})
+        position = count + 1
+        await db.genesis_subscribers.insert_one(
+            {
+                "_id": str(uuid.uuid4()),
+                "email": email,
+                "display_name": display_name,
+                "position": position,
+                "subscribed_at": datetime.now(timezone.utc).isoformat(),
+                "ip": request.client.host if request.client else None,
+                "ua": (request.headers.get("user-agent") or "")[:240],
+                "lang": req.lang or "fr",
+                "vault_status_at_signup": "sealed",
+                "promoted_to_accreditation": False,
+            }
+        )
+
+    # Send Mail #1 in the background (idempotent: only resend if NOT already)
+    lang = req.lang or "fr"
+    al = (request.headers.get("accept-language") or "").lower()
+    if not req.lang and al.startswith("en"):
+        lang = "en"
+
+    async def _send_mail_1():
+        if already:
+            logging.info(f"[genesis] {email} already subscribed, no mail re-sent")
+            return
+        if not RESEND_API_KEY:
+            logging.warning("[genesis] Resend key missing; skipping email")
+            return
+        try:
+            html = render_genesis_broadcast_email(
+                lang=lang,
+                display_name=display_name,
+                base_url=PUBLIC_BASE_URL,
+                launch_eta=status_obj.get("launch_eta"),
+            )
+            subject = genesis_broadcast_subject(lang)
+            params = {
+                "from": SENDER_EMAIL,
+                "to": [email],
+                "subject": subject,
+                "html": html,
+                "tags": [
+                    {"name": "category", "value": "genesis_broadcast"},
+                    {"name": "lang", "value": lang},
+                ],
+            }
+            res = await asyncio.to_thread(resend.Emails.send, params)
+            eid = (res or {}).get("id") if isinstance(res, dict) else None
+            await db.email_events.insert_one(
+                {
+                    "_id": str(uuid.uuid4()),
+                    "type": "genesis_broadcast.sent",
+                    "email_id": eid,
+                    "recipient": email,
+                    "received_at": datetime.now(timezone.utc).isoformat(),
+                    "raw": {
+                        "display_name": display_name,
+                        "lang": lang,
+                        "position": position,
+                    },
+                }
+            )
+            logging.info(f"[genesis] sent to={email} pos=#{position} id={eid}")
+        except Exception:
+            logging.exception(f"[genesis] mail #1 failed for {email}")
+
+    background_tasks.add_task(_send_mail_1)
+
+    return GenesisBroadcastResponse(
+        ok=True,
+        email=email,
+        display_name=display_name,
+        message=(
+            "Genesis subscription archived. Watch your inbox — Mail #1 just left "
+            "the Cabinet, Mail #2 will follow at mint."
+        ),
+        launch_eta=status_obj.get("launch_eta"),
+        already_subscribed=already,
+        position=position,
+    )

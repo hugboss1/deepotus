@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { logger } from "@/lib/logger";
 import HeliusSection from "@/pages/admin/sections/HeliusSection";
+import SealStatusSection from "@/pages/admin/sections/SealStatusSection";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -625,6 +626,9 @@ export default function AdminVault() {
           vaultDexMode={state?.dex_mode}
           onChanged={load}
         />
+
+        {/* Classified Vault Seal Status (Sprint 11 — pre-launch gate) */}
+        <SealStatusSection api={API} headers={headers} />
 
 
 

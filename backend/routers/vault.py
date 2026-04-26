@@ -20,6 +20,7 @@ import vault as vault_mod
 from core.config import HELIUS_API_KEY, PUBLIC_BASE_URL, db
 from core.models import VaultCrackPublicRequest
 from core.security import require_admin
+from core.vault_seal import admin_status as seal_admin_status, get_sealed_status, set_override
 
 router = APIRouter(prefix="/api/vault", tags=["vault"])
 admin_router = APIRouter(prefix="/api/admin/vault", tags=["vault-admin"])
@@ -32,6 +33,21 @@ admin_router = APIRouter(prefix="/api/admin/vault", tags=["vault-admin"])
 async def vault_state_public():
     """Public snapshot of the classified vault. Never reveals the target combination."""
     return await vault_mod.get_public_state(db)
+
+
+@router.get("/classified-status")
+async def vault_classified_status():
+    """Public seal status — drives the TerminalPopup phase ("sealed" vs "denied").
+
+    Returns:
+        { sealed: bool, mint_live: bool, launch_eta: iso | null, source: "auto"|"override" }
+
+    Used by:
+        - frontend TerminalPopup at mount
+        - any client wishing to know if the genesis broadcast pre-registration
+          should be displayed instead of the regular accreditation flow
+    """
+    return await get_sealed_status(db)
 
 
 @router.post("/report-purchase", response_model=vault_mod.VaultStateResponse)
@@ -263,3 +279,36 @@ async def helius_delete_webhook(
             {"$unset": {"helius_webhook_id": ""}},
         )
     return {"ok": ok}
+
+
+
+# ---------------------------------------------------------------------
+# Classified vault seal — admin (3-state toggle: Auto / Sealed / Live)
+# ---------------------------------------------------------------------
+class SealOverrideRequest(BaseModel):
+    """3-state override:
+    - override = None  → use auto-rule (sealed iff demo OR no mint OR not helius)
+    - override = True  → force SEALED
+    - override = False → force LIVE (unlock, even in demo — for staff QA)
+    """
+
+    override: Optional[bool] = None
+
+
+@admin_router.get("/classified-status", response_model=dict)
+async def admin_classified_status(_p: dict = Depends(require_admin)):
+    """Admin view of seal status — exposes override + raw signals so the UI
+    can render the 3-state toggle accurately.
+    """
+    vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
+    return seal_admin_status(vs)
+
+
+@admin_router.post("/classified-status/override", response_model=dict)
+async def admin_set_seal_override(
+    req: SealOverrideRequest, _p: dict = Depends(require_admin)
+):
+    """Persist or clear the admin override. Pass `{ "override": null }` to
+    revert to the auto-rule.
+    """
+    return await set_override(db, req.override)
