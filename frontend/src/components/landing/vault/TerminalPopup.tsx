@@ -443,16 +443,27 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                   )}
                   {typedLines.length >= sealedLines.length && (
                     <div className="mt-6 flex flex-col gap-4">
-                      {/* ETA strip */}
-                      <div className="rounded-md border border-[#F59E0B]/30 bg-[#F59E0B]/5 px-3 py-2 font-mono text-[11px] text-[#F59E0B]/90 inline-flex items-center gap-2">
-                        <span className="font-bold">⌛ {String(t("terminal.sealedEtaLabel"))}</span>
+                      {/* Transmission schedule strip — kept mysterious by design.
+                          The Deep State does not announce its own genesis;
+                          launch_eta is intentionally stripped from the public
+                          endpoint (admin still sees it). */}
+                      <div className="rounded-md border border-[#F59E0B]/30 bg-[#F59E0B]/5 px-3 py-2 font-mono text-[11px] text-[#F59E0B]/90 inline-flex items-center gap-2 max-w-full">
+                        <span className="font-bold whitespace-nowrap">
+                          ⌛ {String(t("terminal.sealedEtaLabel"))}
+                        </span>
                         <span className="text-[#F59E0B]/70">·</span>
-                        <span data-testid="terminal-sealed-eta">
+                        <span
+                          className="text-[#F59E0B]/70 italic"
+                          data-testid="terminal-sealed-eta"
+                        >
                           {sealedStatus?.launch_eta
-                            ? new Date(sealedStatus.launch_eta).toLocaleString(lang === "fr" ? "fr-FR" : "en-US", {
-                                dateStyle: "long",
-                                timeStyle: "short",
-                              })
+                            ? new Date(sealedStatus.launch_eta).toLocaleString(
+                                lang === "fr" ? "fr-FR" : "en-US",
+                                {
+                                  dateStyle: "long",
+                                  timeStyle: "short",
+                                },
+                              )
                             : String(t("terminal.sealedNoEta"))}
                         </span>
                       </div>

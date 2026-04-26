@@ -1,34 +1,22 @@
 [
   {
-    "content": "Sprint 11.1 — Backend : flag + endpoints + 403 defense ✅",
+    "content": "Backend : retirer launch_eta de la réponse PUBLIQUE ✅ (admin garde l'info)",
     "status": "completed"
   },
   {
-    "content": "Sprint 11.2 — Backend : Genesis Broadcast + Mail #1 FR/EN ✅",
+    "content": "Frontend : strip ETA en mode mystère 'TRANSMISSION SCHEDULE · CLASSIFIED' ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 11.3 — Frontend TerminalPopup : phase 'sealed' + Genesis form + countdown ✅",
+    "content": "i18n : Genesis broadcast → Allégeance / Allegiance partout (FR + EN) ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 11.4 — Admin /admin/vault : 3-state toggle Auto/Sealed/Live ✅",
+    "content": "Email Mail #1 : subject + body refondus en narratif Allégeance ✅ (date retirée du mail aussi)",
     "status": "completed"
   },
   {
-    "content": "Sprint 11.5 — i18n FR/EN ✅ (sealedLines + Genesis success states)",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 11.6 — Validation E2E ✅ (sealed mode + Genesis form + override + denied + reset auto)",
-    "status": "completed"
-  },
-  {
-    "content": "Bug fix — Duplication des lignes typing ✅ (ref + functional update)",
-    "status": "completed"
-  },
-  {
-    "content": "Bug fix — Position Genesis renvoyée dans la réponse ✅",
+    "content": "Validation E2E EN + FR ✅ captures parfaites + tous les checks passent",
     "status": "completed"
   }
 ]

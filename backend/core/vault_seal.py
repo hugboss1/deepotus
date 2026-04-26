@@ -35,7 +35,13 @@ VAULT_DOC_ID = "protocol_delta_sigma"
 def compute_sealed_status(vs: dict) -> dict:
     """Compute the canonical sealed/live status from a vault_state document.
 
-    Returns a dict safe for public exposure (no override field leaked).
+    Returns a dict safe for public exposure.
+
+    Note on the launch ETA:
+        The narrative MUST stay mysterious for visitors — the Deep State does
+        not announce its own genesis. We therefore expose `launch_eta=None` on
+        the PUBLIC channel even when an ISO is configured. The admin endpoint
+        (`admin_status`) still surfaces the actual ETA so staff can plan.
     """
     override = vs.get("classified_vault_sealed_override")
     if isinstance(override, bool):
@@ -47,20 +53,21 @@ def compute_sealed_status(vs: dict) -> dict:
         is_helius_mode = vs.get("dex_mode") == "helius"
         sealed = is_demo or (not mint_set) or (not is_helius_mode)
         source = "auto"
-    launch_eta = vs.get("launch_eta") or os.environ.get("DEEPOTUS_LAUNCH_ISO")
     return {
         "sealed": sealed,
         "mint_live": not sealed,
-        "launch_eta": launch_eta,
+        "launch_eta": None,  # intentionally hidden from public — keep mystery
         "source": source,  # "auto" | "override"
     }
 
 
 def admin_status(vs: dict) -> dict:
-    """Same as compute_sealed_status but also exposes the override raw value
-    for the admin UI (so it can render a 3-state toggle: Auto / Sealed / Live).
+    """Same as compute_sealed_status but exposes the override raw value AND the
+    real launch_eta for the admin UI (so it can render a 3-state toggle plus
+    a Genesis ETA pill that's visible only to staff).
     """
     pub = compute_sealed_status(vs)
+    pub["launch_eta"] = vs.get("launch_eta") or os.environ.get("DEEPOTUS_LAUNCH_ISO")
     pub["override"] = vs.get("classified_vault_sealed_override")  # None | True | False
     pub["mint"] = (vs.get("dex_token_address") or None)
     pub["helius_demo_mode"] = bool(vs.get("helius_demo_mode"))

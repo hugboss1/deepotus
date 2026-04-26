@@ -209,48 +209,49 @@ def render_welcome_email(
 
 
 # ---------------------------------------------------------------------
-# Genesis Broadcast email (PRE-LAUNCH · sealed-mode subscription, "Mail #1")
+# Allegiance email (PRE-LAUNCH · sealed-mode subscription, "Mail #1")
+# Internal narrative: "Mail d'allégeance" — the visitor pledges allegiance
+# to the Deep State and gets archived in the priority dispatch channel for
+# the Level 02 accreditation card (Mail #2, sent at mint).
 # ---------------------------------------------------------------------
 def genesis_broadcast_subject(lang: str) -> str:
+    """Subject line for Mail #1 — kept under the historical function name
+    for backwards compatibility with the deployed router, but the user-facing
+    copy now leans on the "allégeance" narrative.
+    """
     if lang == "fr":
-        return "🔒 Inscription Genesis · DEEPOTUS · accréditation différée"
-    return "🔒 Genesis Subscription · DEEPOTUS · accreditation deferred"
+        return "🔒 Allégeance enregistrée · DEEPOTUS · accréditation différée"
+    return "🔒 Allegiance pledged · DEEPOTUS · accreditation deferred"
 
 
 def render_genesis_broadcast_email(
     lang: Literal["fr", "en"],
     display_name: str,
     base_url: str,
-    launch_eta: str | None = None,
+    launch_eta: str | None = None,  # noqa: ARG001 — kept for API compatibility, no longer rendered
 ) -> str:
-    """Mail #1 — sent when a visitor subscribes to the Genesis broadcast
-    while the classified vault is still SEALED (mint not yet live on-chain).
+    """Mail #1 — "Allégeance enregistrée" — sent while the classified vault
+    is still SEALED (mint not yet live on-chain).
 
-    Narrative: confirms the visitor will be among the first to receive their
-    Level 2 accreditation (Mail #2) once the vault opens.
+    Narrative: confirms the visitor pledged allegiance and will be among the
+    first to receive their Level 2 accreditation (Mail #2) at mint.
+
+    Note: the launch_eta argument is intentionally ignored. The Deep State
+    does not announce its own genesis — the email keeps the mystery and only
+    references "the moment $DEEPOTUS hits the chain" without a date.
     """
     site_url = base_url.rstrip("/")
     hero_url = f"{site_url}/deepotus_email_hero.jpg"
     eta_line = ""
-    if launch_eta:
-        # show only the YYYY-MM-DD part if ISO with timezone
-        try:
-            eta_short = launch_eta.split("T")[0]
-        except Exception:
-            eta_short = launch_eta
-        eta_line = (
-            f"<p style='margin:0 0 14px 0; font-size:13px; color:#F59E0B; font-family:Courier New, monospace;'>"
-            f"&gt; ETA GENESIS · {eta_short}</p>"
-        )
 
     if lang == "fr":
-        badge = "— TRANSMISSION GENESIS · COFFRE SCELLÉ"
-        title = "Inscription Genesis enregistrée."
+        badge = "— ALLÉGEANCE NOTÉE · COFFRE SCELLÉ"
+        title = "Allégeance enregistrée."
         lead = (
-            f"Agent <strong>{display_name}</strong>, votre demande d'élévation Niveau 02 a "
-            "été <strong>archivée</strong> avant la transmission Genesis. "
-            "Le coffre $DEEPOTUS reste scellé jusqu'au mint on-chain. "
-            "Vous figurez désormais dans le canal prioritaire d'envoi des accréditations."
+            f"Agent <strong>{display_name}</strong>, votre allégeance au Cabinet a "
+            "été <strong>archivée</strong>. Le coffre $DEEPOTUS demeure scellé jusqu'au "
+            "mint on-chain — la date reste classifiée. "
+            "Vous figurez désormais dans le canal prioritaire d'envoi des accréditations Niveau 02."
         )
         prophet_title = "Un mot de DEEPOTUS"
         prophet_quote = (
@@ -261,28 +262,28 @@ def render_genesis_broadcast_email(
         )
         info_title = "Ce qui va se passer"
         bullets = [
-            "Mail #1 — celui-ci — confirme votre inscription Genesis.",
+            "Mail #1 — celui-ci — confirme votre allégeance au Cabinet.",
             "Mail #2 (à venir) — votre carte d'accréditation Niveau 02 (envoi automatique au mint).",
             "Aucune action requise de votre part. Surveillez votre boîte mail.",
             "Si le mint est différé, l'attribution conserve l'ordre d'arrivée.",
         ]
         cta_label = "Retour au site"
         footer_disclaimer = (
-            "$DEEPOTUS est un token mémétique hautement spéculatif. Cette inscription "
-            "Genesis ne constitue ni un investissement, ni une promesse d'allocation, "
+            "$DEEPOTUS est un token mémétique hautement spéculatif. Cette allégeance "
+            "ne constitue ni un investissement, ni une promesse d'allocation, "
             "ni un titre. Aucun rendement n'est garanti."
         )
         unsub = "Se désabonner"
         tagline = "DEEPOTUS · The Deep State's Chosen One."
-        address_line = "Transmis depuis le canal Genesis — Bureau de coordination du Deep State."
+        address_line = "Transmis depuis le canal Allégeance — Bureau de coordination du Deep State."
     else:
-        badge = "— GENESIS TRANSMISSION · VAULT SEALED"
-        title = "Genesis subscription confirmed."
+        badge = "— ALLEGIANCE LOGGED · VAULT SEALED"
+        title = "Allegiance pledged."
         lead = (
-            f"Agent <strong>{display_name}</strong>, your Level 02 clearance request has been "
-            "<strong>archived</strong> ahead of the Genesis transmission. "
-            "The $DEEPOTUS vault stays sealed until on-chain mint. "
-            "You are now in the priority dispatch channel for accreditation cards."
+            f"Agent <strong>{display_name}</strong>, your allegiance to the Cabinet has been "
+            "<strong>archived</strong>. The $DEEPOTUS vault stays sealed until on-chain mint "
+            "— the date stays classified. "
+            "You are now in the priority dispatch channel for Level 02 accreditation cards."
         )
         prophet_title = "A word from DEEPOTUS"
         prophet_quote = (
@@ -293,20 +294,20 @@ def render_genesis_broadcast_email(
         )
         info_title = "What happens next"
         bullets = [
-            "Mail #1 — this one — confirms your Genesis subscription.",
+            "Mail #1 — this one — confirms your allegiance to the Cabinet.",
             "Mail #2 (incoming) — your Level 02 accreditation card (auto-sent at mint).",
             "No action required. Watch your inbox.",
             "If the mint is delayed, allocation honors arrival order.",
         ]
         cta_label = "Back to the site"
         footer_disclaimer = (
-            "$DEEPOTUS is a highly speculative memetic token. This Genesis "
-            "subscription is neither an investment, nor an allocation promise, nor a "
+            "$DEEPOTUS is a highly speculative memetic token. This allegiance "
+            "is neither an investment, nor an allocation promise, nor a "
             "security. No yield guaranteed."
         )
         unsub = "Unsubscribe"
         tagline = "DEEPOTUS · The Deep State's Chosen One."
-        address_line = "Transmitted from the Genesis channel — Deep State Coordination Bureau."
+        address_line = "Transmitted from the Allegiance channel — Deep State Coordination Bureau."
 
     bullets_html = "\n".join(
         f'<li style="margin: 0 0 8px 0; color:#d1d5db;">{b}</li>' for b in bullets
