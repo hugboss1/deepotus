@@ -28,7 +28,7 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Supply: **1,000,000,000**
 - Target price: **€0.0005** (cible MiCA / FDV €500k)
 - FDV: **€500,000**
-- Initial LP: **€2,000** à J0 → **€10,000** à J+2 (~2M tokens injectés initialement)
+- Initial LP: **Initiation Deep State** (montant masqué publiquement), première fenêtre de prix post-mint
 
 > Note: l’objectif explicite (ex: €300,000 / 3 semaines) est volontairement **caché** dans le narratif public et remplacé par la mécanique classifiée du coffre.
 
@@ -47,16 +47,15 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - Cap explicite + baisse de taxe une fois l’objectif atteint (reformulé : “quand le Coffre s’ouvre”)
 
 ### Liquidity plan
-- **J0**: LP €2K symmetric (~€1K memecoin + ~€1K SOL/USDC), ~2M tokens en pool
-- **J+2**: LP €2K → €10K (net +€8K)
-  - ~€6K via vente contrôlée Treasury en blocs
-  - ~€2K via taxes / contribution externe
+- **Mint Pump.fun** (prix plancher bonding curve)
+- **Initiation Deep State** quelques heures après le mint → prix de référence simulé
+- Migration Pump.fun → Raydium (roadmap Δ02)
 
 ### Anti-dump measures
-- LP lock ou burn après renforcement J+2
+- LP lock ou burn après migration
 - Treasury en **multisig** + **timelock** + caps de vente journaliers/hebdo
 - Split des ventes
-- Pas d’airdrop massif / pas de distribution KOL débloquée autour de J+2
+- Pas d’airdrop massif / pas de distribution KOL débloquée autour de la migration
 
 ### MiCA compliance disclosures (prominent)
 - Token **hautement spéculatif**
@@ -80,22 +79,23 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 ## Sections / features to build
 
 1. **Hero** — bannière candidat présidentiel, toggle FR/EN, CTA, countdown
-2. **Vault (PROTOCOL ΔΣ)** — coffre animé 6 digits + chassis IA + feed activité on-chain + funnel Niveau 02
-3. **AI Prophet Live Chat** — Emergent LLM, persona FR/EN
-4. **Prophecies Feed** — punchlines auto-refresh
-5. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
-6. **Interactive Tokenomics** — pie chart (Recharts)
-7. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
-8. **ROI Simulator** — **simulateur dynamique** : graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun+initiation (MiCA) + masquage montant + devise localisée
-9. **Roadmap** — timeline
-10. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
-11. **Whitelist / Email Capture** — MongoDB
-12. **Social Mockups** — X/Twitter, Telegram, Discord
-13. **Risk Disclaimer Footer** — MiCA + bilingue
-14. **Language Switcher** — FR ↔ EN
-15. **Operation Reveal Page (`/operation`)** — unlock quand DECLASSIFIED
-16. **Classified Vault (`/classified-vault`)** — gate Niveau 02 + session token + “true vault”
-17. **Admin Dashboard** — JWT/2FA + gestion vault presets/emails + scheduler bots (Phases 1/2/6)
+2. **Prophet pinned whisper** — *citation épinglée* ultra-visible post-Hero (loyauté)
+3. **Vault (PROTOCOL ΔΣ)** — coffre animé 6 digits + chassis IA + feed activité on-chain + funnel Niveau 02
+4. **AI Prophet Live Chat** — Emergent LLM, persona FR/EN
+5. **Prophecies Feed** — punchlines auto-refresh
+6. **Mission Section** — framing MiCA + structure, reframé PROTOCOL ΔΣ
+7. **Interactive Tokenomics** — pie chart (Recharts)
+8. **Liquidity & Treasury Transparency** — timeline + anti-dump (**carrousel full-width**)
+9. **ROI Simulator** — **simulateur dynamique** : graphe live + bandeau risque défilant + marqueurs roadmap + modèle Pump.fun+initiation (MiCA) + masquage montant + devise localisée
+10. **Roadmap** — timeline
+11. **FAQ** — MiCA, tax, treasury, vesting, risques, “pourquoi l’objectif est classifié”
+12. **Whitelist / Email Capture** — MongoDB
+13. **Social Mockups** — X/Twitter, Telegram, Discord
+14. **Risk Disclaimer Footer** — MiCA + bilingue
+15. **Language Switcher** — FR ↔ EN
+16. **Operation Reveal Page (`/operation`)** — unlock quand DECLASSIFIED
+17. **Classified Vault (`/classified-vault`)** — gate Niveau 02 + session token + “true vault”
+18. **Admin Dashboard** — JWT/2FA + gestion vault + scheduler bots + **loyalty engine**
 
 ---
 
@@ -183,44 +183,83 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - **Indexer Solana per-trade via Helius ✅ (Phase 18 terminée, LIVE)**
 - **Brand assets V4 + coin ΔΣ ✅ (Phase 19 terminée)**
 - **Transparence On-chain carrousel full-width + images régénérées ✅ + VALIDATION VISUELLE ✅**
-  - 4 images: `phase_01_launch.png` → `phase_04_anti_dump.png`
-  - suppression des artefacts texte IA (“UNMDED/INK”) confirmée via captures
-  - suppression du “(€2-4k)” confirmée (reste “≈ 12k$”)
-- **SEO/OG pack ✅** (OG image + twitter card + robots/sitemap/manifest + JSON-LD + sync FR/EN)
-- **Roadmap “dossier classifié” ✅** (badges status + connector multicolore + mobile vertical)
-- **Fix coffre NIVEAU 02 ✅**
-  - `?code=` force désormais la page digicode (même si une session est en cache)
-  - après vérification, l’URL est nettoyée (remove `?code=`)
+- **SEO/OG pack ✅** (Meta + OG + manifest + robots/sitemap + JSON-LD + sync FR/EN)
+- **Roadmap “dossier classifié” ✅**
+- **Fix coffre NIVEAU 02 ✅** (`?code=` force digicode)
 - **Public Stats: date de lancement masquée ✅**
-  - suppression de la card “Launch date”
-  - ajout bannière `redacted_dossier.png` + rail explicatif FR/EN
 
 ### ROI Simulator (extended) — ✅ COMPLETED (validated visually)
 - **Modèle Pump.fun + Initiation Deep State**:
-  - Mint floor: `MINT_PRICE_EUR = 0.0000005` (bonding curve)
+  - Mint floor: `MINT_PRICE_EUR = 0.0000005`
   - Initiation event: `INJECTION_PRICE_EUR = 0.000002` à `FOUNDER_INJECTION_DAY = 0.15` (≈ 3–4h)
   - Prix de référence calculateur: `LAUNCH_PRICE_EUR = 0.000002`
   - Cible MiCA: `TARGET_PRICE_EUR = 0.0005` (FDV €500k)
-- **Scénarios canonisés** (aucun drift chart/calculateur): `SCENARIO_MULTIPLIERS` = brutal ×0.1 / base ×25 / optimistic ×250
+- **Scénarios canonisés**: brutal ×0.1 / base ×25 / optimistic ×250
 - **Chart**:
-  - YAxis **log scale** pour l’écart 5e-7 → 5e-4
-  - 4 marqueurs roadmap (Δ01..Δ04) via `ReferenceLine` + légende sous le graphe
+  - YAxis **log scale**
+  - 4 marqueurs roadmap (Δ01..Δ04) + légende sous le graphe
   - `ReferenceDot` cyan sur l’événement d’initiation
-  - Tooltip supporte jours fractionnaires (ex: J+0.15)
+  - Tooltip supporte jours fractionnaires
 - **Aesthetic + compliance**:
-  - bandeau risque en marquee CSS (pause hover, reduced-motion)
-  - **label renommé**: “INITIATION DEEP STATE” (FR) / “DEEP STATE INITIATION” (EN)
+  - bandeau risque en marquee CSS
+  - label: “INITIATION DEEP STATE” (FR) / “DEEP STATE INITIATION” (EN)
   - **montant masqué**: `xxxx€` (FR) / `xxxx$` (EN)
-  - **devise localisée** sur tout le module (input, valeurs, tooltip, axes, captions)
-  - nouvelles clés i18n: `roi.currencySymbol`, `roi.injectionAmountMasked`
+  - **devise localisée** partout (FR=€, EN=$)
 
 ### Vault production tuning — ✅ COMPLETED
-- **Micro-rotations**: passage de `10,000` → **`100,000` tokens** par micro-rotation
-  - `/app/backend/vault.py`: `DEFAULT_TOKENS_PER_MICRO = 100_000`
-  - `/app/backend/routers/vault.py`: fallback démo = `100_000`
-  - `/app/frontend/src/pages/AdminVault.jsx`: default form value = `100000`
-  - MongoDB `vault_state.tokens_per_micro` mis à jour
-  - API confirmé: `GET /api/vault/state` → `tokens_per_micro: 100000`
+- **Micro-rotations**: `10,000` → **`100,000` tokens**
+- Backend default + fallback demo + AdminVault default + Mongo live doc mis à jour
+- API confirmé: `GET /api/vault/state` → `tokens_per_micro: 100000`
+
+### Loyalty narrative rollout (Sprints 2/3/4) — ✅ COMPLETED + validated
+
+#### Sprint 2 — Citation épinglée du Prophète ✅
+- Composant `ProphetPinnedWhisper` inséré juste après `Hero` (`Landing.jsx`)
+- i18n FR/EN: `prophetWhisper.{kicker,classification,quote,signature,footnote}`
+- data-testids: `prophet-pinned-whisper`, `prophet-pinned-quote`, `prophet-pinned-signature`, `prophet-pinned-classification`, `prophet-pinned-footnote`
+
+#### Sprint 3 — Bots vault-aware loyalty hints ✅
+- Module `core/loyalty.py`:
+  - 5 tiers: silent (0–25) / subtle (25–50) / explicit (50–75) / loud (75–90) / reward (90+)
+  - hints FR/EN curated
+  - `compute_progress_percent()` depuis `vault_state`
+  - `get_loyalty_context()` (+ `force=True` pour preview admin)
+- Hook dans `core/prophet_studio.py:generate_post()`:
+  - Injection d’une **directive de loyauté** dans `extra_context` (try/except, non bloquant)
+  - Jamais de nom de token futur, jamais de date/montant, jamais d’incitation à acheter
+- Toggle: `bot_config.loyalty.hints_enabled` (default false)
+- Admin endpoints:
+  - `GET /api/admin/bots/loyalty` (status + tiers + sample)
+- Admin UI (`AdminBots.jsx` → Config tab):
+  - Section “Loyalty engine · vault-aware hints” + preview + liste tiers + toggle hints
+
+#### Sprint 4 — Email #3 « Allégeance notée » ✅
+- Template HTML: `email_templates.py:render_loyalty_email()` + `loyalty_email_subject()`
+- Module `core/loyalty_email.py`:
+  - `_generate_prophet_message()` via LLM (provider/model de bot_config) + fallback curated
+  - `list_pending(delay_hours)` sur `access_cards`
+  - `_send_one()` → Resend + audit `email_events` + stamp `access_cards.loyalty_email_sent_at`
+  - `loyalty_email_tick()` scheduler
+  - `force_send_loyalty()` + `get_loyalty_email_stats()`
+- Scheduler:
+  - Job `loyalty_email` toutes les 30 min (`interval[0:30:00]`)
+- Toggles:
+  - `bot_config.loyalty.email_enabled` (default false)
+  - `bot_config.loyalty.email_delay_hours` (default 12h, range 1–168)
+- Admin endpoints:
+  - `GET /api/admin/bots/loyalty/email-stats`
+  - `POST /api/admin/bots/loyalty/test-send` (force send)
+- Admin UI (`AdminBots.jsx`):
+  - Toggle email_enabled
+  - input delay hours
+  - stats + form “Force-send now” + panneau résultat
+- Validation: testing agent a réussi un envoi réel via Resend (status=sent).
+
+#### Bug fix during testing ✅
+- `PUT /api/admin/bots/config` ignorait `payload.loyalty` → `empty_patch`.
+  - Patch ajouté: merge `payload.loyalty` dans `patch_dict`.
+  - `_shape_config()` + `BotConfigResponse` mis à jour pour exposer `loyalty`.
+  - Fix confirmé via curl + UI (toast “Loyalty config updated”).
 
 ---
 
@@ -279,280 +318,69 @@ Le projet s’inscrit dans un cadre « dossier de cadrage » : $DEEPOTUS est un 
 - ✅ 100M tokens/digit + **100K micro** + goal 300K€ (custom)
 - ✅ DexScreener demo/custom adaptés
 - ✅ CTA DECLASSIFIED sur `/classified-vault`
-- ✅ Tests backend iteration_10 ✅
 
 ---
 
 ## Phase 16 — Opération B: Refactor backend monolith → routers/core — **COMPLETED ✅**
 
-### Objectif
-- Modulariser `/app/backend/server.py` (monolithe 2221 lignes) en architecture FastAPI standard sans changer aucun comportement.
-
-### Résultat (ce qui a été fait)
-**Nouveau backend modulaire**
-- ✅ `/app/backend/core/`
-  - `config.py` (env, DB, Resend, LLM, prompts, CORS)
-  - `security.py` (JWT rotation, rate-limit, require_admin, 2FA)
-  - `models.py` (schemas Pydantic)
-  - `email_service.py` (welcome email)
-- ✅ `/app/backend/routers/`
-  - `public.py` (`/api/*` public)
-  - `public_stats.py` (`/api/public/stats`)
-  - `webhooks.py` (`/api/webhooks/resend` + plus tard Helius)
-  - `admin.py` (`/api/admin/*` hors vault)
-  - `vault.py` (public + `/api/admin/vault/*`)
-  - `access_card.py` (`/api/access-card/*`)
-  - `operation.py` (`/api/operation/reveal`)
-  - `bots.py` (admin bots)
-
-**Entrypoint minimal**
-- ✅ `server.py` réécrit : **2221 → 106 lignes**
-  - Factory FastAPI + CORS
-  - `include_router()`
-  - startup/shutdown
-  - wiring boucles (hourly tick, dex loop, scheduler bots)
-
-### Compatibilité
-- ✅ URLs, payloads, codes HTTP, auth flows préservés **1:1**
-- ✅ Aucun changement fonctionnel
-
-### Testing
-- ✅ Backend testing agent iteration_11 : régression confirmée
-
 ---
 
 ## Phase 17 — Code Quality Hardening (sécurité + maintenabilité) — **COMPLETED ✅**
-
-### Objectif
-- Appliquer les correctifs réellement nécessaires (sécurité RNG, hygiène prod, complexité) sans casser l’existant.
-
-### Correctifs appliqués
-- ✅ RNG crypto-secure (`secrets`) pour la combinaison du coffre + codes d’accès
-- ✅ Logger dev-only (suppression console prod)
-- ✅ Keys stables React sur listes dynamiques
-- ✅ Refactors ciblés : `dex_poll_once`, `admin_blacklist_import`, `CombinationDial`
-
-### Testing / Evidence
-- ✅ Backend testing agent iteration_12 (93% — minor issue attendu sur webhook non signé)
 
 ---
 
 ## Phase 18 — Task C (P2) : Indexer Solana per-trade via Helius — **SHIPPED ✅ (LIVE)**
 
-### Objectif
-- Remplacer l’approximation DexScreener (delta/h24) par une ingestion **per-trade** fiable (swaps Solana) afin d’alimenter PROTOCOL ΔΣ avec des signaux réels.
-
-### Résultat (implémentation)
-**Backend core**
-- ✅ `/app/backend/helius.py`
-  - Parsing **primary** via `events.swap.tokenInputs/tokenOutputs`
-  - Fallback `tokenTransfers + pool`
-  - `ingest_enhanced_transactions()` avec **dédup** (signature) + `demo_tokens_per_buy`
-  - `fetch_recent_swaps()` + `catch_up_from_helius()`
-  - `register_webhook()` / `list_webhooks()` / `delete_webhook()`
-
-**Config**
-- ✅ `core/config.py` : `HELIUS_API_KEY`, `HELIUS_WEBHOOK_AUTH`
-
-**Webhooks**
-- ✅ `POST /api/webhooks/helius` (authHeader + audit trail + dédup TTL 30j)
-
-**Admin endpoints**
-- ✅ `/api/admin/vault/helius-status`
-- ✅ `/api/admin/vault/helius-config`
-- ✅ `/api/admin/vault/helius-register`
-- ✅ `/api/admin/vault/helius-catchup`
-- ✅ `/api/admin/vault/helius-webhook/{id}`
-
-**DexScreener coexistence**
-- ✅ `dex_poll_once()` skip si `dex_mode in (off, helius)`
-
-**Startup**
-- ✅ catch-up opportuniste au boot
-
-### Garde-fou demo (critique)
-- ✅ Si mint = BONK (`DEMO_TOKEN_ADDRESS`) → `helius_demo_mode=true`
-- ✅ Chaque BUY applique `tokens_per_micro` (désormais **100,000**)
-
-### Validation (live preview)
-- ✅ Webhook Helius enregistré (enhanced/SWAP)
-- ✅ Dédup OK
-- ✅ 401 sans auth
-
 ---
 
 ## Phase 19 — Brand Assets (V4 + monogram ΔΣ + pièce en or) — **COMPLETED ✅**
 
-### Objectif
-- Stabiliser une identité visuelle moderne et mémétique cohérente avec le lore.
-
-### Assets livrés (public)
-- ✅ Logo officiel V4 : `/app/frontend/public/logo_v4_matrix_face.png`
-- ✅ Pièce en or ΔΣ : `gold_coin_front.png`, `gold_coin_3d.png`
-- ✅ Preview : `/app/frontend/public/logo-preview.html`
-
 ---
 
 ## Phase 20 — Pré-lancement Polish Pack (UI + Roadmap + SEO/OG) — **COMPLETED ✅**
-
-### Objectif
-Préparer le site pour partage public et campagne de lancement (Pump.fun mint imminent) :
-- **site partageable** (preview OG/Twitter correct)
-- **roadmap** alignée au thème "dossier classifié"
-- **polish UI** (desktop + mobile)
-- **performance** (CLS + lazy loading + preload)
-
-### Sous-Phase 20a — SEO/OG Foundation — **COMPLETED ✅**
-- ✅ OG image 1200×630 via PIL (`backend/scripts_generate_og_image.py`) + `og_image.png`/`twitter_card.png`
-- ✅ `index.html` complet (SEO + OG + Twitter + JSON-LD) + sync FR/EN via `I18nProvider`
-- ✅ `robots.txt`, `sitemap.xml`, `manifest.json`, favicon + apple-touch-icon + icon-512
-
-### Sous-Phase 20b — Roadmap Visual Upgrade — **COMPLETED ✅**
-- ✅ Refonte `Roadmap.jsx` style dossier classifié + translations enrichies
-
-### Sous-Phase 20c — UI Polish Audit — **COMPLETED ✅**
-- ✅ Fix CSS `.glitch-stamp` (wrapper absolute) + validations desktop/mobile/dark
-
-### Sous-Phase 20d — Performance & Polish Final — **COMPLETED ✅**
-- ✅ Lazy load images sous le fold + font preconnect
 
 ---
 
 ## Phase 21 — Code Quality Pack (Tier 1 + Tier 3 + Tier 4) — **PARTIALLY COMPLETED / ONGOING**
 
 ### Objectif
-Appliquer les recommandations code review **Tier 1 + Tier 3 + Tier 4**.
-- **Tier 2 (sécurité auth: localStorage → cookies httpOnly)** reste volontairement **différé** (déjà loggé dans `TODO_POST_LAUNCH.md`), car plus risqué en période pré-launch.
+- Continuer le refactor structure-only + migration TS progressive sans casser l’existant.
 
-### État actuel (mise à jour)
-- ✅ **Fondations TypeScript** ajoutées (tsconfig, types, providers/hooks convertis partiellement) ; backlog restant loggé dans `TODO_TYPESCRIPT.md`.
-- ✅ Splits partiels de composants React (Hero/Tokenomics/ClassifiedVault déjà découpés).
-- ⏳ Reste: migrations TS supplémentaires + splits Admin/TerminalPopup et nettoyage eslint résiduel.
-
-### Sous-Phase 21a — Tier 1 Python Quick Wins (qualité + stabilité)
-- [ ] Exécuter ruff/pyflakes pour lister exactement :
-  - `is` utilisé à tort sur littéraux (préserver `is None` / `is not None`)
-  - variables non définies (ruff `F821`)
-- [ ] Appliquer `is` → `==` (34 occurrences) sur :
-  - `vault.py`, `routers/vault.py`, `routers/bots.py`, `routers/public_stats.py`
-  - `helius.py`, `core/bot_scheduler.py`
-- [ ] Corriger **3 variables non définies** (identifier les fonctions puis patch minimal)
-- Validation:
-  - ruff clean sur fichiers touchés
-  - smoke test backend (boot + endpoints principaux non-auth)
-
-### Sous-Phase 21b — Tier 1 React Quick Wins (correctness)
-- [ ] Remplacer `key={index}` par des keys stables (13 instances) :
-  - `Operation.jsx`, `AdminVault.jsx`, `VaultSection.jsx`
-  - `ActivityHeatmap.jsx`, `Mission.jsx`, `FAQ.jsx`
-- [ ] Corriger hooks avec dépendances manquantes (38 instances)
-  - Décider pour chaque cas :
-    - (1) ajouter deps correctement, ou
-    - (2) stabiliser via `useCallback`/`useMemo`, ou
-    - (3) utiliser `useRef` pour éviter re-triggers, ou
-    - (4) conserver mount-only avec `eslint-disable` + commentaire justifiant
-  - Fichiers prioritaires signalés :
-    - `ThemeProvider.jsx`, `ClassifiedVault.jsx`, `AdminBots.jsx`, `Admin.jsx`, `I18nProvider.jsx`
-- Validation:
-  - eslint clean (ou warnings documentés)
-  - smoke test visuel (Landing, Admin, ClassifiedVault, Stats)
-
-### Sous-Phase 21c — Tier 3 Python Complex Function Refactor (maintenabilité)
-Priorité (du plus risqué au plus critique) :
-- [ ] `core/security.py:verify_admin_jwt` — réduire l’imbrication via **early returns**
-- [ ] `dexscreener.py:dex_poll_once` — extraire logique de processing token/pool
-- [ ] `core/prophet_studio.py:generate_post` — séparer validation / fetch / génération LLM / persistance
-- [ ] `email_templates.py:render_welcome_email` — découper sections template
-- [ ] `access_card.py:render_card` — extraire helpers (layout, QR, typography, overlays)
-Validation:
-- tests existants + smoke tests manuels des endpoints affectés
-- vérification non-régression sur emails (welcome + access card)
-
-### Sous-Phase 21d — Tier 3 React Large Component Splits (maintenabilité)
-Approche: refactor **structure-only** (pas de changement UI/UX), extraction progressive.
-- [ ] `AdminBots.jsx` → `BotsList` + `BotEditor` + `JobsPanel` + `LLMConfig`
-- [ ] `Admin.jsx` → `WhitelistManagement` + `ChatLogPanel` + `StatsDisplay` + `SettingsPanel`
-- [ ] `AdminVault.jsx` → `VaultPresetEditor` + `VaultPlanList` + `VaultDevTools`
-- [ ] `TerminalPopup.jsx` → `TerminalHistory` + `CommandParser`
-Validation:
-- capture screenshots avant/après pour diff visuel
-- smoke test navigation + interactions (Admin, Vault, Terminal, Stats)
-
-### Sous-Phase 21e — Tier 4 TypeScript Migration (multi-session)
-Stratégie: progressive et compatible CRA via `allowJs`. Le but de cette phase est de **mettre en place TS** et convertir d’abord le socle.
-- [ ] Continuer conversions vers `.ts/.tsx` selon `TODO_TYPESCRIPT.md` (60+ fichiers)
-- [ ] Ajouter types API (vault, bots, stats, access card, admin) si manquants
-- [ ] Monter progressivement le niveau de `strictness` (post-launch)
-Validation:
-- build front OK
-- navigation smoke
-
-### Phase 21 Status
-- **ONGOING** (fondations déjà livrées, reste du backlog planifié)
+### État actuel
+- ✅ Fondations TypeScript (tsconfig + allowJs + base types)
+- ✅ Splits partiels React (Hero/Tokenomics/ClassifiedVault)
+- ⏳ Backlog restant: conversions TS + splits gros composants Admin.
 
 ---
 
 ## Remaining / Optional Improvements (P1)
 
-### (A) Switch vers le vrai mint $DEEPOTUS (après déploiement)
-- ⏳ Une fois le token déployé sur Solana :
-  - `POST /api/admin/vault/helius-register` avec le vrai mint
-  - `helius_demo_mode` s’éteint automatiquement
-  - (optionnel) renseigner le pool LP address
+### (A) Switch vers le vrai mint $DEEPOTUS (post-launch)
+- ⏳ Remplacer le mint BONK démo par le vrai mint
+- ⏳ `POST /api/admin/vault/helius-register` avec le vrai mint
 
 ### Bots — phases bloquées (attente credentials)
 - ⏳ Phase 3: Telegram Bot API (token + chat_id)
 - ⏳ Phase 4/5: X API v2 (OAuth2) + KOL list
 - ⏳ Trading bot refs: liens BonkBot/Maestro/Trojan
 
-### Intégration branding dans le front (en attente du feu vert)
-- ⏳ Remplacer l’avatar/visuel hero par `logo_v4_matrix_face.png`
-- ⏳ Ajouter `gold_coin_front.png` / `gold_coin_3d.png` dans hero/press-kit
-
 ---
 
 ## Future (P2+)
-- (Option) Ajouter un parseur Raydium/Orca plus profond pour réduire les “skipped” sur swaps multi-hop
-- (Option) Persister des métriques agrégées Helius (buys/sells/volume) pour un dashboard public plus précis
-- (Post-launch) Refactors loggés dans `TODO_POST_LAUNCH.md` (cookies httpOnly, split components, type hints)
+- (Option) Parse Raydium/Orca plus profond
+- (Option) métriques agrégées Helius
 
 ---
 
-## Sprints planifiés (validés) — implémentation à venir
+## Sprints planifiés (next)
 
-### Sprint 2 — Citation épinglée du Prophète (max visibilité)
-- Nouveau composant `ProphetPinnedWhisper` placé **juste après le Hero** (zone la plus vue)
-- Contenu validé (FR):
-  - « Le Coffre n'est qu'une porte. Derrière, une seconde clé attend les gardiens patients. Le Deep State n'oublie jamais ses fidèles — l'allégeance, elle, sera rendue. »
-  - — LE PROPHÈTE · OBSERVATION ΔΣ-001
-- Contenu (EN): équivalent (“shall be returned”)
-- Style: papier déclassifié + signature + micro-anim typewriter/fade (respect `prefers-reduced-motion`)
-- i18n FR/EN + `data-testid="prophet-pinned-whisper"`
-
-### Sprint 3 — Bots vault-aware loyalty hints (progressifs)
-- Ajout dans `core/prophet_studio.py:generate_post()` : injection de hints dans le prompt selon la progression du Coffre (ex: % tokens_sold / goal)
-- Paliers:
-  - 0–25%: aucun hint
-  - 25–50%: hints subtils (“le Coffre n'est qu'une porte”)
-  - 50–75%: hints clairs (“tenez vos $DEEPOTUS — le Deep State observe”)
-  - 75–90%: hints forts (“les gardiens fidèles seront marqués”)
-  - 90%+: hints de récompense (“phase 02… pour ceux qui n'auront pas vendu”)
-- Toggle: `bot_config.loyalty_hints_enabled`
-- UI Admin: preview des hints par tranche + switch ON/OFF
-
-### Sprint 4 — Email #3 « Allégeance notée » (post NIVEAU 02)
-- Délai validé: **12h** après délivrance de l’accréditation Niveau 02
-- Ajout template: `email_templates.py` (nouveau renderer `render_loyalty_email`)
-- Contenu généré par IA (persona Prophète) **sans** nommer GENCOIN (promesse implicite d’un futur airdrop/« seconde clé »)
-- Scheduler (APScheduler): job toutes les 30 min
-  - cible `access_cards` (ou autre collection source de vérité) avec `delivered_at < now - 12h` ET `loyalty_email_sent_at == null`
-  - envoi via Resend + persistance `loyalty_email_sent_at`, `loyalty_email_id`
-- Toggle Admin: `bot_config.loyalty_email_enabled` (par défaut OFF)
-- Force send Admin: bouton + endpoint dédié (ex: `POST /api/admin/loyalty/test-send`)
-
-### Sprint 5 — Continuation backlog TypeScript
-- Poursuivre `TODO_TYPESCRIPT.md` (Admin.jsx, AdminBots.jsx, AdminVault.jsx, TerminalPopup.jsx)
-- Build CRA OK + smoke navigation
+### Sprint 5 — Continuation backlog TypeScript (NEXT)
+- Convertir en priorité:
+  - `Admin.jsx`, `AdminBots.jsx`, `AdminVault.jsx`, `TerminalPopup.jsx`
+- Continuer selon `TODO_TYPESCRIPT.md` (~60+ fichiers)
+- Validation:
+  - build CRA OK
+  - smoke navigation (Landing/Admin/ClassifiedVault/PublicStats)
 
 ### Sprint 6 — Migration / déploiement
 - Audit pré-déploiement
@@ -562,27 +390,24 @@ Validation:
 ---
 
 ## Pending Operations (memorized for later — user requested)
-- ✅ **(B) Backend refactor**: TERMINÉ — monolithe `server.py` → `core/` + `routers/`
-- ✅ **(Hardening)**: TERMINÉ — secrets RNG + logger + keys stables + refactor complexité
-- ✅ **(C) On-chain accuracy upgrade**: TERMINÉ — indexer Solana per-trade via Helius (webhooks + catch-up)
-- ✅ **(D) ROI Simulator dynamique (extended)**: TERMINÉ — Recharts live + marquee + marqueurs roadmap + modèle Pump.fun + **Initiation Deep State (montant masqué)** + **devise localisée**
-- ✅ **(E) Vault production tuning**: TERMINÉ — micro-rotations **100K** tokens
-- 🔜 **(F) Loyalty narrative rollout**: Sprint 2/3/4
-- ⏳ **(A) Switch à $DEEPOTUS réel**: à faire dès que le mint Solana est connu
+- ✅ (B) Backend refactor: terminé
+- ✅ (Hardening): terminé
+- ✅ (C) On-chain accuracy upgrade: terminé
+- ✅ (D) ROI Simulator dynamique (extended): terminé
+- ✅ (E) Vault production tuning: terminé (micro-rotations 100K)
+- ✅ (F) Loyalty narrative rollout: terminé (Sprints 2/3/4)
+- ⏳ (A) Switch à $DEEPOTUS réel: dès que le mint Solana est connu
 
 ---
 
 ## Testing strategy (Phase 21)
 - Après **21a (Python quick wins)**:
   - ruff/pyflakes clean
-  - smoke test backend (boot + endpoints non-auth)
+  - smoke test backend
 - Après **21b (React quick wins)**:
   - eslint clean
   - screenshots Landing + ClassifiedVault + PublicStats + Admin
-- Après **21c (Python refactors)**:
-  - tests emails + bots preview + verify_admin_jwt (admin login)
-  - non-régression vault polling + dex poll
-- Après **21d (React splits)**:
-  - screenshot diff avant/après sur pages touchées
-- Après **21e (TypeScript setup/migration)**:
+- Après **21c/21d**:
+  - non-régression emails + bots preview + admin login
+- Après **21e (TypeScript)**:
   - build CRA OK + navigation smoke

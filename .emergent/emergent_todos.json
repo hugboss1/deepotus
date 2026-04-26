@@ -32,7 +32,7 @@
     "status": "completed"
   },
   {
-    "content": "Sprint 4 — Test end-to-end avec testing agent (backend only)",
-    "status": "in_progress"
+    "content": "Sprint 4 — Test end-to-end avec testing agent + fix bug PUT /config (loyalty patch ignored)",
+    "status": "completed"
   }
 ]

@@ -165,6 +165,7 @@ class BotConfigResponse(BaseModel):
     content_modes: Dict[str, bool]
     llm: Dict[str, Any]
     news_feed: Dict[str, Any]
+    loyalty: Optional[Dict[str, Any]] = None
     custom_llm_keys: Dict[str, Any]
     heartbeat_interval_minutes: int
     max_posts_per_day: int
@@ -232,6 +233,13 @@ def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
         "llm": doc.get("llm")
         or {"provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
         "news_feed": news_feed,
+        "loyalty": {
+            "hints_enabled": bool((doc.get("loyalty") or {}).get("hints_enabled", False)),
+            "email_enabled": bool((doc.get("loyalty") or {}).get("email_enabled", False)),
+            "email_delay_hours": int((doc.get("loyalty") or {}).get("email_delay_hours", 12)),
+            "last_run_at": (doc.get("loyalty") or {}).get("last_run_at"),
+            "last_run_summary": (doc.get("loyalty") or {}).get("last_run_summary"),
+        },
         "heartbeat_interval_minutes": int(doc.get("heartbeat_interval_minutes") or 5),
         "max_posts_per_day": int(doc.get("max_posts_per_day") or 12),
         "last_updated_at": doc.get("last_updated_at"),
@@ -316,6 +324,18 @@ async def put_config(
         if nf.headlines_per_post is not None:
             merged_nf["headlines_per_post"] = int(nf.headlines_per_post)
         patch_dict["news_feed"] = merged_nf
+    if payload.loyalty is not None:
+        # Loyalty is a small flat dict — merge with any pre-existing values
+        # so toggling one knob does not erase the others.
+        merged_loyalty = dict(current.get("loyalty") or {})
+        ly = payload.loyalty
+        if ly.hints_enabled is not None:
+            merged_loyalty["hints_enabled"] = bool(ly.hints_enabled)
+        if ly.email_enabled is not None:
+            merged_loyalty["email_enabled"] = bool(ly.email_enabled)
+        if ly.email_delay_hours is not None:
+            merged_loyalty["email_delay_hours"] = int(ly.email_delay_hours)
+        patch_dict["loyalty"] = merged_loyalty
     if payload.heartbeat_interval_minutes is not None:
         patch_dict["heartbeat_interval_minutes"] = payload.heartbeat_interval_minutes
     if payload.max_posts_per_day is not None:
