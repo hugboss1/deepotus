@@ -18,7 +18,13 @@ from .base import (
     TriggerResult,
     register_trigger,
 )
-from . import mc_milestone, mint  # noqa: F401  — side-effect imports register triggers
+from . import (  # noqa: F401  — side-effect imports register triggers
+    jeet_dip,
+    mc_milestone,
+    mint,
+    raydium_migration,
+    whale_buy,
+)
 
 __all__ = [
     "KNOWN_TRIGGERS",

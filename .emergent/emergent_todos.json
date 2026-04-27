@@ -1,30 +1,34 @@
 [
   {
-    "content": "Sprint 13.1 - Backend: orchestrateur + queue + templates + 2 triggers + router + seed",
+    "content": "Sprint 13.2 - market_analytics.py + 3 triggers (jeet_dip, whale_buy, raydium_migration) + tone_engine.py + FR templates + PATCH /settings + ToneTab frontend",
     "status": "completed"
   },
   {
-    "content": "Sprint 13.1 - Frontend: pages/Propaganda.tsx + route + lien dashboard + 4 tabs + Panic Switch + Manual Fire dialog + Templates CRUD + Queue + Activity",
+    "content": "Sprint 13.2 - Tests E2E backend (5 triggers fire OK, LLM rewrite FR avec persona Vault/Signal/Noise, threshold whale 5 SOL, FR locale)",
     "status": "completed"
   },
   {
-    "content": "Sprint 13.1 - Validation E2E manuelle via screenshots (3 tabs validés, queue fonctionne, templates rendered)",
+    "content": "Sprint 13.2 - Tests E2E frontend (5 tabs render, 5 trigger rows, Tone tab pleinement fonctionnel)",
     "status": "completed"
   },
   {
-    "content": "Sprint 13.2 - Triggers complets (jeet_dip, whale_buy, raydium_migration) + market_analytics.py",
+    "content": "Sprint 13.3 - Dispatcher cron worker (lit /queue status=approved + scheduled_for<now → envoie aux plateformes)",
     "status": "pending"
   },
   {
-    "content": "Sprint 13.2 - tone_engine.py LLM hybride 70/30 + personality prompt + every-3rd vault injection",
+    "content": "Sprint 13.3 - Telegram Bot API integration (sendMessage avec auth depuis Cabinet Vault telegram/*)",
     "status": "pending"
   },
   {
-    "content": "Sprint 13.3 - Dispatchers réels (Telegram Bot API + X Tweepy OAuth2 PKCE) + rate limiting + dispatcher cron",
+    "content": "Sprint 13.3 - X (Twitter) Tweepy OAuth2 user context PKCE flow + token refresh",
     "status": "pending"
   },
   {
-    "content": "Future - Bots credentials + Helius live mode (post-mint)",
+    "content": "Sprint 13.3 - Rate limiting global (8/h, 24/jour, 1/trigger/15min) avec rejets gracieux",
+    "status": "pending"
+  },
+  {
+    "content": "Sprint 13.3 - Onboarding credentials Cabinet Vault + tests E2E happy path",
     "status": "pending"
   }
 ]

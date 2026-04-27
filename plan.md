@@ -7,7 +7,7 @@
 - Préserver le comportement actuel (bots en **dry-run** tant que credentials non fournis, vault, ROI, intro, admin).
 - **Centraliser la gestion des secrets** via le **Cabinet Vault** (BIP39 + PBKDF2 + AES-256-GCM) et migrer les clés existantes (LLM, Resend, Helius, bots) vers ce coffre.
 - **Conformité sécurité** : 2FA côté admin pour les actions sensibles, audit logging, rotation, export/import de backups chiffrés.
-- **NOUVEAU : PROTOCOL ΔΣ — Propaganda Engine** : automatiser une logique “scenario-based” (triggers marché → message → dispatch) pour réagir au marché avec des garde-fous anti-slop, un mode test pré-mint et une UI admin.
+- **PROTOCOL ΔΣ — Propaganda Engine** : automatiser une logique “scenario-based” (triggers marché → message → queue → dispatch) pour réagir au marché avec garde-fous anti-slop, **testable pré-mint** via Manual Fire, et opérable via UI admin.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing agent) avant activation en prod.
 
@@ -15,16 +15,33 @@
 - Couverture TS/TSX : **~94% du frontend** migré (reste quelques gros JSX stables : `AdminBots.jsx`, `AdminVault.jsx` — migration différée post-déploiement).
 - Sécurité session : migration `localStorage` → **`sessionStorage`** effectuée.
 - Build : **`yarn build` OK** + doc déploiement (`DEPLOY.md`).
-- **Cabinet Vault** complet end-to-end ✅ :
-  - Backend BIP39 + PBKDF2 + AES-256-GCM + audit
-  - Frontend UI `/admin/cabinet-vault` + export + import + audit
-  - Import/Export chiffrés validés
-  - SecretProvider en place (vault → fallback env) + script migration secrets
-- **2FA bootstrap** : ajout d’un mode bootstrap Cabinet Vault (init/unlock/list/audit autorisés **sans 2FA** uniquement si vault vide). CRUD/export/import restent **2FA strict**. Endpoint recovery `POST /api/admin/2fa/force-reset` + guide `/app/docs/2FA_SETUP_GUIDE.md`.
-- Tests automatisés (subagents) :
-  - **Iteration 16** : backend Cabinet Vault (12.3.E2E backend) ✅
-  - **Iteration 17** : régression Sprint 12.4 (SecretProvider) ✅
-  - **Iteration 18** : Sprint 12.5 Import/Export (22/22) ✅
+
+#### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
+- Backend BIP39 + PBKDF2 + AES-256-GCM + audit
+- Frontend UI `/admin/cabinet-vault` + export + import + audit
+- Import/Export chiffrés validés
+- **SecretProvider** en place (vault → fallback env) + script migration secrets
+- **2FA bootstrap** : ajout d’un mode bootstrap Cabinet Vault (init/unlock/list/audit autorisés **sans 2FA** uniquement si vault vide). CRUD/export/import restent **2FA strict**.
+- Endpoint recovery `POST /api/admin/2fa/force-reset` + guide `/app/docs/2FA_SETUP_GUIDE.md`.
+
+#### Propaganda Engine (Sprints 13.1–13.2) — ✅ LIVRÉ end-to-end
+- **Sprint 13.1 MVP** ✅ : orchestrateur + templates DB + approval queue + panic kill-switch + UI admin (Triggers/Templates/Queue/Activity)
+- **Sprint 13.2 COMPLET** ✅ :
+  - **5 triggers** : `mint`, `mc_milestone`, `jeet_dip`, `whale_buy`, `raydium_migration`
+  - `market_analytics.py` : snapshots prix/MC (TTL 1h), dip detection, snapshot market synthétique
+  - `tone_engine.py` : LLM hybride **70/30** (configurable), persona “weary intel officer”, post-processor (placeholders intacts, pas de hashtags/emoji, ≤280 chars)
+  - **FR optionnel** : +12 templates FR seedés (EN=13)
+  - `PATCH /api/admin/propaganda/settings` : `llm_enabled`, `llm_enhance_ratio`, `personality_prompt`, `provider/model`
+  - Frontend : tab **Tone & LLM** (toggle + slider 0–100% + provider/model + editor prompt 4000 chars)
+
+#### Tests automatisés & validations
+- **Iteration 16** : backend Cabinet Vault (12.3.E2E backend) ✅
+- **Iteration 17** : régression Sprint 12.4 (SecretProvider) ✅
+- **Iteration 18** : Sprint 12.5 Import/Export (22/22) ✅
+- **Sprint 13.2** : smoke tests backend (9/9) + screenshots frontend (5 tabs + Tone tab) ✅
+
+#### Restant
+- **Sprint 13.3** : dispatchers réels (Telegram/X) + worker cron + rate limiting + onboarding credentials (bloqué par credentials Telegram/X).
 
 ---
 
@@ -160,13 +177,7 @@
 **Travaux (réalisés)**
 - ✅ Ajout `core/secret_provider.py` (Vault → fallback env, cache TTL, invalidation).
 - ✅ Ajout `get_secret_silent()` + `is_unlocked()` dans `core/cabinet_vault.py` (évite flood audit côté services).
-- ✅ Refactor call sites :
-  - `routers/public.py` (Prophecy/Chat)
-  - `core/llm_router.py` (Emergent key dynamique + custom keys via Cabinet Vault en priorité, fallback legacy Fernet)
-  - `core/email_service.py`, `core/loyalty_email.py`, `routers/access_card.py`, `routers/admin.py`
-  - `routers/vault.py`, `routers/webhooks.py`, `server.py` (Helius dynamique)
-  - `core/news_repost.py` (credentials via provider, dry-run inchangé)
-  - `core/prophet_studio.py` (image key dynamique)
+- ✅ Refactor call sites (public/admin/webhooks/vault/email/llm/news_repost/prophet_studio).
 - ✅ Script one-shot : `/app/backend/scripts/migrate_secrets_to_cabinet.py`.
 
 **Tests & validation gate**
@@ -180,7 +191,7 @@
 **Travaux (réalisés)**
 - ✅ Backend : `cabinet_vault.import_encrypted(bundle, passphrase, overwrite)` + audit.
 - ✅ Router : `POST /api/admin/cabinet-vault/import` + invalidation cache SecretProvider.
-- ✅ Frontend : `ImportDialog` + bouton Import (barre d’actions du panel déverrouillé).
+- ✅ Frontend : `ImportDialog` + bouton Import.
 - ✅ `yarn build` : **Compiled successfully**.
 
 **Tests & validation gate**
@@ -188,81 +199,95 @@
 
 ---
 
-## 3) Next Actions (NOUVEAU)
+## 3) Next Actions
 
-### Phase 13 — **PROTOCOL ΔΣ : Propaganda Engine (NEW MAJOR FEATURE)**
+### Phase 13 — **PROTOCOL ΔΣ : Propaganda Engine**
 Objectif : implémenter une logique “scenario-based” de propagande automatisée avec garde-fous (anti-spam, anti-slop), testable **avant le mint** via Manual Fire.
 
 #### Choix validés (scope global)
-- **Génération messages** : Hybride **templates + LLM** (70/30)
-- **Langues** : **EN par défaut**, FR optionnel par trigger
+- **Génération messages** : Hybride **templates + LLM** (70/30, ratio configurable)
+- **Langues** : **EN par défaut**, FR optionnel par trigger (fallback EN)
 - **Détection triggers** : **Helius + Manual Fire** (testable maintenant)
 - **Roadmap** : MVP itératif **13.1 → 13.2 → 13.3**
 - **Garde-fous** : **Approval queue** + policy auto/manuel par trigger + **Panic Kill Switch**
-- **Rate limits** (défaut) : **8/h**, **24/jour**, **1/trigger/15min**
-- **Injection liens** : automatique depuis Cabinet Vault `trading_refs`
-- **Override “Vault mention”** : chaque 3e message mentionne l’état des dials/progression (traffic driver)
+- **Rate limits** (défaut) : **8/h**, **24/jour**, **1/trigger/15min** (à implémenter réellement en 13.3)
+- **Override “Vault mention”** : chaque 3e message doit mentionner le Vault (traffic driver)
 - **Human delay** : 10–30s après trigger
 
 ---
 
-### Phase 13.1 (P0) — MVP Squelette (1 jour)
-**Livrables**
+### Phase 13.1 (P0) — MVP Squelette ✅ **COMPLETED**
+**Livrables (réalisés)**
 - Backend :
   - `core/propaganda_engine.py` (orchestrateur)
-  - `core/dispatch_queue.py` (approval queue + transitions : proposed→approved→sent/rejected)
-  - `core/templates_repo.py` (templates DB-backed) + seed initial templates EN
+  - `core/dispatch_queue.py` (approval queue)
+  - `core/templates_repo.py` (templates DB-backed) + seed initial EN
   - `core/triggers/mint.py` + `core/triggers/mc_milestone.py`
-  - `routers/propaganda.py` : endpoints admin (CRUD templates, list queue, approve/reject, manual fire)
-  - `propaganda_events` collection + `propaganda_queue` + `propaganda_templates`
+  - `routers/propaganda.py` : endpoints admin
+  - Collections : `propaganda_events`, `propaganda_queue`, `propaganda_templates`, `propaganda_settings`, `propaganda_triggers`
 - Frontend :
-  - `pages/Propaganda.tsx` (nouvelle page admin) : Tabs **Triggers / Templates / Queue / Activity**
-  - Panic Kill Switch (global ON/OFF)
-  - Manual Fire UI (sélecteur trigger + payload minimal)
-  - Approval queue UI (Approve/Reject)
-- Sécurité : endpoints sous `require_admin` + 2FA exigée pour **approve/send** (recommandé)
+  - `pages/Propaganda.tsx` (admin) : Tabs **Triggers / Templates / Queue / Activity**
+  - Panic Kill Switch + Manual Fire + Templates CRUD + Approval queue
+- Sécurité : endpoints sous `require_admin`; actions “send-like” (panic/approve/reject) protégées par 2FA.
 
-**Validation gate**
-- `yarn build` OK
-- Tests API : manual fire → queue → approve → (dry-run dispatcher) → activity log
+**Validation gate (réalisée)**
+- ✅ `yarn build` OK
+- ✅ API smoke : manual fire → queue → approve gated by 2FA → activity log
+- ✅ Screenshots UI : page accessible, tabs render, queue items visibles
 
 ---
 
-### Phase 13.2 (P1) — Triggers complets + Tone Engine (1 jour)
-**Ajouts**
+### Phase 13.2 (P1) — Triggers complets + Tone Engine ✅ **COMPLETED**
+**Ajouts (réalisés)**
 - Triggers :
-  - `jeet_dip` (drop -20% en 2 min après rally)
-  - `whale_buy` (tx > 5 SOL)
-  - `raydium_migration` (bonding curve 100%)
-- `core/market_analytics.py` : rolling windows prix/MC, thresholds, cooldowns
-- `core/tone_engine.py` : prompt “weary 50yo intel officer” + LLM hybrid (30% rewrite)
-- FR optionnel : champs `templates.fr[]` par trigger (fallback EN)
-- Injection “Vault mention” : compteur global → chaque 3e message inclut l’état des dials + lien landing
-- Anti-slop :
-  - 70% templates stricts
-  - 30% LLM “rewrite-with-constraints” (max 1-2 variations, pas de contenu non sollicité)
+  - ✅ `jeet_dip` (drop -20% / 2 min)
+  - ✅ `whale_buy` (tx > 5 SOL, threshold configurable)
+  - ✅ `raydium_migration` (dex_mode=raydium)
+- ✅ `core/market_analytics.py` :
+  - snapshots (TTL 1h) + `detect_dip()`
+  - `current_market_snapshot()` pour fournir des links + contexte
+- ✅ `core/tone_engine.py` :
+  - LLM hybride (ratio configurable)
+  - persona prompt configurable
+  - post-processor strict (placeholders intacts, no hashtags/emoji, ≤280)
+- ✅ FR optionnel : +12 templates FR seedés (EN=13)
+- ✅ API : `GET /settings` enrichi (tone) + `PATCH /settings`
+- ✅ Frontend : tab **Tone & LLM** (toggle, slider, provider/model, personality editor)
 
-**Validation gate**
-- Tests unitaires fonctions analytics (drop detection)
-- Simulation via Manual Fire sur chaque trigger → queue/approve → dry-run
+**Validation gate (réalisée)**
+- ✅ Backend smoke tests 9/9 (LLM rewrite FR validé, persona terminologie OK)
+- ✅ Frontend screenshots : 5 tabs + 5 triggers + Tone tab opérationnel
+- ✅ `yarn build` OK
 
 ---
 
-### Phase 13.3 (P2) — Dispatchers réels + Rate limiting + Activity feed + Onboarding (1 jour, dépend credentials)
+### Phase 13.3 (P2) — Dispatchers réels + Worker cron + Rate limiting + Onboarding (**NEXT**) 
 **Pré-requis**
 - Credentials Telegram + X API (stockés via Cabinet Vault catégories `telegram`, `x_twitter`) + éventuellement `trading_refs`.
 
 **Livrables**
-- `core/dispatchers/telegram.py` (Bot API) + `core/dispatchers/x.py` (OAuth2 user PKCE)
-- Rate limiting réel (DB) + dedup sur événements (idempotency keys)
-- Activity feed complet dans l’admin (filtre par trigger, statut, platform)
-- Onboarding screen : checklist credentials + test post (sandbox channel)
+- Worker :
+  - `core/dispatcher_worker.py` (ou extension `core/bot_scheduler.py`) :
+    - consomme `propaganda_queue` items `status=approved` et `scheduled_for <= now`
+    - applique rate limiting (8/h, 24/j, per-trigger cooldown)
+    - écrit `sent/failed` + results dans queue
+    - logge dans `propaganda_events`
+- Dispatchers réels :
+  - `core/dispatchers/telegram.py` (Bot API `sendMessage`)
+  - `core/dispatchers/x.py` (OAuth2 user context PKCE + refresh)
+- Rate limiting DB :
+  - table/collection `propaganda_rate_limits` (ou counters dans `propaganda_settings`)
+  - règles : global/hour, global/day, per-trigger/minutes
+- Onboarding :
+  - checklist credentials + “Test post” vers un channel sandbox
+  - intégration Cabinet Vault : lecture des secrets (token/chat_id, client_id/secret/refresh)
 - Tests E2E :
   - Manual Fire → approve → envoi réel Telegram
   - Manual Fire → approve → envoi réel X
+  - Tests limites : spam guard + cooldown per trigger
 
 **Validation gate**
-- E2E “happy path” sur Telegram + X
+- E2E “happy path” Telegram + X
 - Vérification anti-spam : limites/h + limites/jour + cooldown per trigger
 
 ---
@@ -278,31 +303,36 @@ Objectif : implémenter une logique “scenario-based” de propagande automatis
 - Phase 13.2 :
   - 5 triggers complets + tone engine hybride + FR optionnel + vault mention every 3rd.
 - Phase 13.3 :
-  - Dispatch Telegram + X réels, rate limiting robuste, activity feed complet.
+  - Dispatch Telegram + X réels, worker cron fiable, rate limiting robuste, onboarding clair.
 
 ---
 
 ## 5) Notes d’architecture (Phase 13)
-**Backend (proposé)**
-- `core/propaganda_engine.py` : orchestration, cooldowns, randomization, delay 10–30s
-- `core/triggers/*` : détecteurs et normalisation payload
-- `core/market_analytics.py` : price/MC windows, bonding curve progress
-- `core/templates_repo.py` : storage templates + versioning
-- `core/dispatch_queue.py` : approval queue + sending pipeline
-- `core/tone_engine.py` : LLM rewrite constrained + safety
-- `routers/propaganda.py` : API admin
+**Backend (réel, livré/planifié)**
+- ✅ `core/propaganda_engine.py` : orchestration, randomization, delay 10–30s, template pick, LLM rewrite (13.2)
+- ✅ `core/triggers/*` : détecteurs + idempotency
+- ✅ `core/market_analytics.py` : windows prix/MC, detect_dip, snapshots TTL
+- ✅ `core/templates_repo.py` : storage templates + versioning
+- ✅ `core/dispatch_queue.py` : approval queue
+- ✅ `core/tone_engine.py` : LLM rewrite constrained + safety
+- ✅ `routers/propaganda.py` : API admin
+- ⏳ 13.3 `core/dispatcher_worker.py` : consume queue + dispatch real platforms + mark sent/failed
+- ⏳ 13.3 `core/dispatchers/telegram.py`, `core/dispatchers/x.py`
 
 **Frontend**
-- `pages/Propaganda.tsx` : panel admin Propaganda
-- Intégration i18n : EN default, FR optionnel par trigger
+- ✅ `pages/Propaganda.tsx` : panel admin complet (5 tabs incl. Tone)
+- EN default + FR via templates; le choix de locale se fait via `locale_override` ou default settings.
 
 **DB Collections**
 - `propaganda_templates`
 - `propaganda_queue`
 - `propaganda_events`
-- `price_snapshots` (TTL, si nécessaire pour jeet_dip)
+- `propaganda_settings`
+- `propaganda_triggers`
+- `propaganda_price_snapshots` (TTL 1h)
+- (13.3) `propaganda_rate_limits` (proposé)
 
 **Sécurité**
 - Lecture/édition templates : admin JWT
-- Approve/send : admin JWT + 2FA enabled
+- Panic + approve/reject : admin JWT + 2FA enabled
 - Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`)

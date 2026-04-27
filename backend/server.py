@@ -144,12 +144,13 @@ async def on_startup():
 
     # ---- Sprint 13.1 — Propaganda Engine ΔΣ ----
     try:
-        from core import templates_repo as _tpl
+        from core import market_analytics as _ma, templates_repo as _tpl
         await db.propaganda_templates.create_index([("trigger_key", 1), ("language", 1)])
         await db.propaganda_queue.create_index("proposed_at")
         await db.propaganda_queue.create_index("idem_hash")
         await db.propaganda_queue.create_index("status")
         await db.propaganda_events.create_index("at")
+        await _ma.ensure_indexes()
         seeded = await _tpl.seed_default_templates()
         logger.info(
             "[startup] Propaganda engine ready (seeded %d default templates).",

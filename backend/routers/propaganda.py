@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from core import dispatch_queue, propaganda_engine, templates_repo
+from core import dispatch_queue, propaganda_engine, templates_repo, tone_engine
 from core.security import get_twofa_config, require_admin
 
 router = APIRouter(prefix="/api/admin/propaganda", tags=["propaganda"])
@@ -58,6 +58,16 @@ def _client_ip(req: Request) -> Optional[str]:
 # ---- Models ----------------------------------------------------------------
 class PanicRequest(BaseModel):
     panic: bool
+
+
+class ToneSettingsPatch(BaseModel):
+    """Live-tunable LLM + persona settings exposed to the admin UI."""
+
+    llm_enabled: Optional[bool] = None
+    llm_enhance_ratio: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    personality_prompt: Optional[str] = Field(default=None, max_length=4000)
+    llm_provider: Optional[str] = None
+    llm_model: Optional[str] = None
 
 
 class TriggerPatch(BaseModel):
@@ -100,7 +110,30 @@ class RejectRequest(BaseModel):
 async def get_settings(_p: dict = Depends(require_admin)):
     s = await propaganda_engine.get_settings()
     s.pop("_id", None)
+    tone = await tone_engine.get_tone_settings()
+    s.update(tone)  # llm_enabled, llm_enhance_ratio, personality_prompt, …
     return s
+
+
+@router.patch("/settings")
+async def patch_tone(body: ToneSettingsPatch, _p: dict = Depends(require_admin)):
+    """Live-update the LLM + persona settings.
+
+    Power users can flip the LLM hybrid mix from this single endpoint —
+    no restart needed. Personality prompt edits propagate to the next
+    fire that wins the dice roll for an LLM rewrite.
+    """
+    try:
+        tone = await tone_engine.patch_tone_settings(
+            llm_enabled=body.llm_enabled,
+            llm_enhance_ratio=body.llm_enhance_ratio,
+            personality_prompt=body.personality_prompt,
+            llm_provider=body.llm_provider,
+            llm_model=body.llm_model,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return tone
 
 
 @router.post("/panic")

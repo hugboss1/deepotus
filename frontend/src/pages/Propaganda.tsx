@@ -22,6 +22,7 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
+  Brain,
   CheckCircle2,
   Clock,
   Flame,
@@ -142,6 +143,12 @@ interface Settings {
   default_delay_seconds_min: number;
   default_delay_seconds_max: number;
   platforms: string[];
+  // Sprint 13.2 — Tone Engine
+  llm_enabled: boolean;
+  llm_enhance_ratio: number;
+  personality_prompt: string;
+  llm_provider: string;
+  llm_model: string;
 }
 
 // ---------------------------------------------------------------------
@@ -265,7 +272,7 @@ export default function Propaganda() {
 
       <main className="max-w-6xl mx-auto">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid grid-cols-4 w-full md:w-auto">
+          <TabsList className="grid grid-cols-5 w-full md:w-auto">
             <TabsTrigger value="triggers" data-testid="propaganda-tab-triggers">
               <Flame size={14} className="mr-2" /> Triggers
             </TabsTrigger>
@@ -274,6 +281,9 @@ export default function Propaganda() {
             </TabsTrigger>
             <TabsTrigger value="queue" data-testid="propaganda-tab-queue">
               <ListChecks size={14} className="mr-2" /> Queue
+            </TabsTrigger>
+            <TabsTrigger value="tone" data-testid="propaganda-tab-tone">
+              <Brain size={14} className="mr-2" /> Tone & LLM
             </TabsTrigger>
             <TabsTrigger value="activity" data-testid="propaganda-tab-activity">
               <Activity size={14} className="mr-2" /> Activity
@@ -288,6 +298,9 @@ export default function Propaganda() {
           </TabsContent>
           <TabsContent value="queue" className="mt-6">
             <QueueTab />
+          </TabsContent>
+          <TabsContent value="tone" className="mt-6">
+            <ToneTab settings={settings} onSaved={loadSettings} />
           </TabsContent>
           <TabsContent value="activity" className="mt-6">
             <ActivityTab />
@@ -1299,6 +1312,193 @@ function ActivityTab() {
           Audit feed never persists secret values — only trigger keys, item ids and metadata.
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------------
+// Tone & LLM tab (Sprint 13.2) — controls the LLM hybrid mix and the
+// "weary intelligence officer" personality prompt that drives rewrites.
+// ---------------------------------------------------------------------
+interface ToneTabProps {
+  settings: Settings;
+  onSaved: () => void | Promise<void>;
+}
+
+function ToneTab({ settings, onSaved }: ToneTabProps) {
+  const [enabled, setEnabled] = useState<boolean>(settings.llm_enabled);
+  const [ratio, setRatio] = useState<number>(settings.llm_enhance_ratio);
+  const [prompt, setPrompt] = useState<string>(settings.personality_prompt);
+  const [provider, setProvider] = useState<string>(settings.llm_provider);
+  const [model, setModel] = useState<string>(settings.llm_model);
+  const [busy, setBusy] = useState<boolean>(false);
+
+  const dirty = useMemo(
+    () =>
+      enabled !== settings.llm_enabled ||
+      Math.abs(ratio - settings.llm_enhance_ratio) > 0.001 ||
+      prompt.trim() !== settings.personality_prompt.trim() ||
+      provider !== settings.llm_provider ||
+      model !== settings.llm_model,
+    [enabled, ratio, prompt, provider, model, settings],
+  );
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await axios.patch(
+        `${API}/api/admin/propaganda/settings`,
+        {
+          llm_enabled: enabled,
+          llm_enhance_ratio: ratio,
+          personality_prompt: prompt,
+          llm_provider: provider,
+          llm_model: model,
+        },
+        { headers: authHeaders() },
+      );
+      toast.success("Tone settings saved.");
+      await onSaved();
+    } catch (err) {
+      handleError(err, "Failed to save tone settings");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ratioLabel = `${Math.round(ratio * 100)}%`;
+  const ratioColor =
+    ratio >= 0.7 ? "text-[#FF4D4D]" : ratio >= 0.4 ? "text-[#F59E0B]" : "text-[#18C964]";
+
+  return (
+    <div className="space-y-6" data-testid="propaganda-tone-tab">
+      {/* Hybrid mix card */}
+      <section className="rounded-md border border-border bg-background/40 p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Brain size={16} className="text-[#0EA5E9]" />
+          <h3 className="text-sm font-medium">LLM hybrid mix</h3>
+        </div>
+        <p className="text-[12px] text-muted-foreground -mt-2">
+          When the engine fires, it picks a templated message at random. With
+          probability <strong className={ratioColor}>{ratioLabel}</strong> we
+          ask the LLM to rewrite that message in the persona below — keeping
+          the meaning, the placeholders and the platform char budget intact.
+          Lower the ratio for cheaper, more predictable output; raise it for
+          more variety.
+        </p>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <label
+            className="flex items-center gap-2 cursor-pointer text-xs"
+            data-testid="tone-llm-enabled-label"
+          >
+            <Switch
+              checked={enabled}
+              onCheckedChange={setEnabled}
+              data-testid="tone-llm-enabled"
+            />
+            <span className="font-mono uppercase tracking-widest text-[10px]">
+              {enabled ? "LLM ENABLED" : "TEMPLATE-ONLY"}
+            </span>
+          </label>
+        </div>
+
+        <div>
+          <Label className="text-xs uppercase tracking-widest">
+            Enhance ratio — {ratioLabel}
+          </Label>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={ratio}
+            onChange={(e) => setRatio(Number(e.target.value))}
+            disabled={!enabled}
+            className="w-full mt-2 accent-[#F59E0B] disabled:opacity-50"
+            data-testid="tone-ratio-slider"
+          />
+          <div className="flex justify-between text-[10px] font-mono text-muted-foreground mt-1">
+            <span>0% (templates only)</span>
+            <span>50% hybrid</span>
+            <span>100% (always LLM rewrite)</span>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs uppercase tracking-widest">Provider</Label>
+            <Select value={provider} onValueChange={setProvider}>
+              <SelectTrigger
+                className="font-mono"
+                data-testid="tone-provider-select"
+                disabled={!enabled}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openai">openai</SelectItem>
+                <SelectItem value="anthropic">anthropic</SelectItem>
+                <SelectItem value="gemini">gemini</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-widest">Model</Label>
+            <Input
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="gpt-4o-mini"
+              disabled={!enabled}
+              className="font-mono"
+              data-testid="tone-model-input"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Personality prompt */}
+      <section className="rounded-md border border-border bg-background/40 p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <SettingsIcon size={16} className="text-[#F59E0B]" />
+          <h3 className="text-sm font-medium">Personality prompt</h3>
+        </div>
+        <p className="text-[12px] text-muted-foreground">
+          Drives every LLM rewrite. Tweak the voice (e.g. add new vocabulary
+          like <code>Bunker</code>, <code>Clearance Level</code>) without
+          touching code. Keep the integrity rules (placeholders, char budget,
+          no hashtags) — they're enforced by the post-processor anyway, but
+          telling the LLM up-front saves tokens.
+        </p>
+        <Textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={12}
+          maxLength={4000}
+          disabled={!enabled}
+          className="font-mono text-xs leading-relaxed disabled:opacity-50"
+          data-testid="tone-personality-prompt"
+        />
+        <div className="text-[10px] text-muted-foreground text-right font-mono">
+          {prompt.length}/4000
+        </div>
+      </section>
+
+      {/* Save bar */}
+      <div className="sticky bottom-2 flex items-center justify-end gap-2 z-10">
+        <span className="text-[11px] text-muted-foreground font-mono">
+          {dirty ? "unsaved changes" : "synced"}
+        </span>
+        <Button
+          onClick={save}
+          disabled={!dirty || busy}
+          className="rounded-[var(--btn-radius)]"
+          data-testid="tone-save"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : "Save tone settings"}
+        </Button>
+      </div>
     </div>
   );
 }

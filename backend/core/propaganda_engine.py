@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from core import dispatch_queue, templates_repo
+from core import dispatch_queue, market_analytics, templates_repo, tone_engine
 from core.config import db
 from core.triggers import KNOWN_TRIGGERS, TriggerCtx
 
@@ -185,6 +185,23 @@ async def fire(
         return {"ok": False, "reason": "trigger_disabled"}
 
     trig = KNOWN_TRIGGERS[trigger_key]
+
+    # ---- Resolve market context -------------------------------------
+    # When the caller didn't pre-build one (which is the common path for
+    # Manual Fire from the admin UI), we synthesize a snapshot here so
+    # detectors always see fresh links + bonding-curve state.
+    if market is None:
+        market = await market_analytics.current_market_snapshot()
+        # Surface the trigger's own metadata (e.g. whale_buy threshold)
+        # so the detector doesn't have to round-trip Mongo by itself.
+        market["trigger_metadata"] = cfg.get("metadata") or {}
+        # For the jeet_dip detector: include an on-demand dip analysis
+        # so a manual fire still has the data it needs to assert.
+        if trigger_key == "jeet_dip":
+            market["dip_analysis"] = await market_analytics.detect_dip(
+                window_minutes=2, threshold_pct=20.0,
+            )
+
     ctx = TriggerCtx(
         trigger_key=trigger_key,
         manual=manual,
@@ -221,10 +238,18 @@ async def fire(
 
     # ---- Render placeholders ----------------------------------------
     payload = dict(result.payload)
-    payload.setdefault("buy_link", "")
-    payload.setdefault("raydium_link", "")
-    payload.setdefault("vault_link", "")
+    # Always offer the standard link placeholders so templates can
+    # safely interpolate even when the trigger payload doesn't include
+    # them explicitly.
+    payload.setdefault("buy_link", market.get("buy_link", ""))
+    payload.setdefault("raydium_link", market.get("raydium_link", ""))
+    payload.setdefault("vault_link", market.get("vault_link", ""))
     rendered = _safe_format(tpl["content"], payload)
+
+    # ---- Optional LLM rewrite (Sprint 13.2) -------------------------
+    enhance = await tone_engine.maybe_enhance(rendered, locale=locale)
+    final_content = enhance.get("content") or rendered
+    used_llm = bool(enhance.get("used_llm"))
 
     # ---- Push to queue ----------------------------------------------
     plat_list = list(platforms or settings.get("platforms") or ["telegram", "x"])
@@ -237,9 +262,10 @@ async def fire(
     item = await dispatch_queue.propose(
         trigger_key=trigger_key,
         template_id=tpl["id"],
-        rendered_content=rendered,
+        rendered_content=final_content,
         platforms=plat_list,
-        payload=payload,
+        payload={**payload, "_llm_used": used_llm,
+                 "_template_origin": tpl["content"] if used_llm else None},
         policy=cfg.get("policy", trig.default_policy),
         idempotency_key=result.idempotency_key,
         delay_seconds=delay,
@@ -253,10 +279,21 @@ async def fire(
         {"$set": {"vault_mention_counter": counter}},
     )
     await _bump_trigger_fire(trigger_key)
+    # If this was a milestone announcement, persist the bump so we never
+    # repeat the same tier.
+    if trigger_key == "mc_milestone":
+        try:
+            tier = int(payload.get("mc") or 0)
+            if tier > 0:
+                await market_analytics.bump_last_milestone(tier)
+        except Exception:  # noqa: BLE001
+            pass
     await _audit("fire", jti=jti, ip=ip, trigger_key=trigger_key,
                  meta={"queue_item": item["id"], "manual": manual,
-                       "policy": cfg.get("policy", trig.default_policy)})
-    return {"ok": True, "queue_item": item}
+                       "policy": cfg.get("policy", trig.default_policy),
+                       "llm_used": used_llm,
+                       "tone_source": enhance.get("source")})
+    return {"ok": True, "queue_item": item, "llm_used": used_llm}
 
 
 def _safe_format(template: str, payload: Dict[str, Any]) -> str:
