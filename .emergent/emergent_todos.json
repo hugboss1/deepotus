@@ -1,15 +1,15 @@
 [
   {
     "content": "Tests E2E frontend Cabinet Vault APPROFONDIS - contexte Playwright persistant + CRUD + Export + Import + Audit",
-    "status": "in_progress"
-  },
-  {
-    "content": "Corriger les bugs frontend trouvés par testing agent (priorité high → low)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Final - Restaurer un état vault vierge pour le user (post-tests)",
-    "status": "pending"
+    "status": "completed"
+  },
+  {
+    "content": "Vérifier les data-testid 2FA existent (admin-2fa-code-wrapper, admin-2fa-code-input, admin-password-input, admin-login-button)",
+    "status": "completed"
   },
   {
     "content": "Future - Bots Telegram + X API integration (bloqué sur credentials user)",
