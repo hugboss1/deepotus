@@ -29,11 +29,6 @@ from typing import Any, Dict, List, Optional
 
 from core.bot_config_repo import get_bot_config
 from core.config import db, logger
-from core.secret_provider import (
-    get_telegram_bot_token,
-    get_telegram_chat_id,
-    get_twitter_bearer_token,
-)
 
 REPOSTS_COLLECTION = "news_reposts"
 NEWS_COLLECTION = "news_items"
