@@ -302,6 +302,7 @@ export const translations = {
         walletSubmit: "Lier le wallet",
         walletSubmitting: "Vérification du wallet…",
         walletInvalid: "Adresse invalide. Attendu : 32–44 caractères base58.",
+        walletAlreadyLinked: "Ce wallet est déjà rattaché à un autre agent. Utilisez une adresse qui n'a jamais été enregistrée.",
         walletSkip: "Lier plus tard (je préfère par email)",
         walletError: "Impossible de lier ce wallet. Vérifiez l'adresse.",
         // Complete phase
@@ -1162,6 +1163,7 @@ export const translations = {
         walletSubmit: "Link wallet",
         walletSubmitting: "Verifying wallet…",
         walletInvalid: "Invalid address. Expected: 32–44 base58 characters.",
+        walletAlreadyLinked: "This wallet is already attached to another agent. Use an address that has never been registered.",
         walletSkip: "Link later (I'd rather via email)",
         walletError: "Unable to link this wallet. Check the address.",
         // Complete phase

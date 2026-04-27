@@ -404,6 +404,13 @@ export default function RiddlesFlow({
         } else if (data?.detail?.error) {
           detailMsg = String(data.detail.error);
         }
+        // Map well-known backend errors to localized copy.
+        if (detailMsg && detailMsg.includes("already linked")) {
+          throw new Error(String(t("terminal.riddles.walletAlreadyLinked")));
+        }
+        if (detailMsg && detailMsg.includes("invalid Solana")) {
+          throw new Error(String(t("terminal.riddles.walletInvalid")));
+        }
         throw new Error(detailMsg || `HTTP ${res.status}`);
       }
       setSession((s) => ({ ...s, wallet: addr, walletLinked: true }));
