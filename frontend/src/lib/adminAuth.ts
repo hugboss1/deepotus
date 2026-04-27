@@ -19,6 +19,8 @@
  * logout the moment we ship this change.
  */
 
+import { logger } from "@/lib/logger";
+
 const TOKEN_KEY = "deepotus_admin_token";
 const LEGACY_TOKEN_KEY = "deepotus_admin_token";
 
@@ -35,8 +37,11 @@ function migrateLegacyToken(): void {
     // Always strip from localStorage so persisted copies don't linger,
     // even when the legacy value was empty.
     window.localStorage.removeItem(LEGACY_TOKEN_KEY);
-  } catch (_e) {
-    /* storage blocked — non-fatal */
+  } catch (e) {
+    // Storage blocked (private mode, quota, disabled) — non-fatal, log for
+    // dev visibility only. Falls back to an in-memory session (the admin
+    // will simply be asked to re-authenticate on the next page).
+    logger.debug("[adminAuth] legacy token migration skipped:", e);
   }
 }
 
@@ -50,7 +55,8 @@ export function getAdminToken(): string {
   migrateLegacyToken();
   try {
     return window.sessionStorage.getItem(TOKEN_KEY) || "";
-  } catch (_e) {
+  } catch (e) {
+    logger.debug("[adminAuth] getAdminToken failed (storage blocked):", e);
     return "";
   }
 }
@@ -60,8 +66,8 @@ export function setAdminToken(token: string): void {
   try {
     if (token) window.sessionStorage.setItem(TOKEN_KEY, token);
     else window.sessionStorage.removeItem(TOKEN_KEY);
-  } catch (_e) {
-    /* storage blocked — non-fatal */
+  } catch (e) {
+    logger.debug("[adminAuth] setAdminToken failed (storage blocked):", e);
   }
 }
 

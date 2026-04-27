@@ -21,7 +21,7 @@ admin can tune it from the UI without touching code.
 from __future__ import annotations
 
 import logging
-import random
+import secrets
 import re
 import uuid
 from typing import Any, Dict, Optional
@@ -30,6 +30,12 @@ from core.config import db
 from core.secret_provider import get_emergent_llm_key
 
 logger = logging.getLogger("deepotus.propaganda.tone")
+
+# `secrets.SystemRandom` is used for every non-crypto pick below to keep
+# the tone engine unpredictable across dispatches. It's not strictly
+# required (cosmetic randomness), but ruff's `S311` audit flags the stdlib
+# `random` module here and this change is free.
+_rand = secrets.SystemRandom()
 
 # ---------------------------------------------------------------------
 # Defaults
@@ -132,7 +138,7 @@ async def maybe_enhance(
 
     if not forced:
         ratio = settings["llm_enhance_ratio"]
-        if ratio <= 0 or random.random() > ratio:
+        if ratio <= 0 or _rand.random() > ratio:
             return {"content": rendered_content, "used_llm": False, "source": "template_only"}
 
     api_key = await get_emergent_llm_key()

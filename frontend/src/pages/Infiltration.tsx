@@ -957,13 +957,15 @@ function SleeperTab() {
         { headers: authHeaders() },
       );
       setState(data);
-      toast.success(
-        patch.active !== undefined
-          ? patch.active
-            ? "Sleeper cell ENGAGED"
-            : "Sleeper cell STOOD DOWN"
-          : "Settings saved",
-      );
+      let toastMsg: string;
+      if (patch.active === undefined) {
+        toastMsg = "Settings saved";
+      } else if (patch.active) {
+        toastMsg = "Sleeper cell ENGAGED";
+      } else {
+        toastMsg = "Sleeper cell STOOD DOWN";
+      }
+      toast.success(toastMsg);
     } catch (err) {
       handleError(err, "Failed to update sleeper state");
     } finally {
@@ -1018,17 +1020,21 @@ function SleeperTab() {
             className="rounded-[var(--btn-radius)] min-w-[140px]"
             data-testid="sleeper-toggle"
           >
-            {busy ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : state.active ? (
-              <>
-                <ShieldCheck size={14} className="mr-1" /> Stand down
-              </>
-            ) : (
-              <>
-                <ShieldOff size={14} className="mr-1" /> Engage
-              </>
-            )}
+            {(() => {
+              if (busy) return <Loader2 size={14} className="animate-spin" />;
+              if (state.active) {
+                return (
+                  <>
+                    <ShieldCheck size={14} className="mr-1" /> Stand down
+                  </>
+                );
+              }
+              return (
+                <>
+                  <ShieldOff size={14} className="mr-1" /> Engage
+                </>
+              );
+            })()}
           </Button>
         </div>
       </div>
@@ -1163,48 +1169,56 @@ function AttemptsTab() {
           data-testid="attempts-filter-slug"
         />
       </div>
-      {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="animate-spin" size={20} />
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center text-sm text-muted-foreground py-12">
-          No attempts match.
-        </div>
-      ) : (
-        <div className="space-y-1.5 font-mono text-[11px]">
-          {items.map((a) => (
-            <div
-              key={a.id}
-              className="flex items-center gap-3 rounded border border-border/60 bg-background/30 px-3 py-1.5"
-              data-testid={`attempt-row-${a.id}`}
-            >
-              <span className="text-muted-foreground shrink-0">
-                {new Date(a.at).toLocaleTimeString()}
-              </span>
-              {a.correct ? (
-                <CheckCircle2 size={12} className="text-[#18C964] shrink-0" />
-              ) : (
-                <span className="text-[#FF4D4D] shrink-0">✗</span>
-              )}
-              <Badge variant="outline" className="shrink-0">
-                {a.slug}
-              </Badge>
-              {a.email && (
-                <span className="text-foreground/80 truncate">{a.email}</span>
-              )}
-              <span className="text-muted-foreground truncate flex-1">
-                "{a.answer_excerpt}"
-              </span>
-              {a.matched_keyword && (
-                <Badge className="bg-[#18C964]/20 text-[#18C964] font-mono text-[10px] shrink-0">
-                  {a.matched_keyword}
-                </Badge>
-              )}
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="animate-spin" size={20} />
             </div>
-          ))}
-        </div>
-      )}
+          );
+        }
+        if (items.length === 0) {
+          return (
+            <div className="text-center text-sm text-muted-foreground py-12">
+              No attempts match.
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-1.5 font-mono text-[11px]">
+            {items.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 rounded border border-border/60 bg-background/30 px-3 py-1.5"
+                data-testid={`attempt-row-${a.id}`}
+              >
+                <span className="text-muted-foreground shrink-0">
+                  {new Date(a.at).toLocaleTimeString()}
+                </span>
+                {a.correct ? (
+                  <CheckCircle2 size={12} className="text-[#18C964] shrink-0" />
+                ) : (
+                  <span className="text-[#FF4D4D] shrink-0">✗</span>
+                )}
+                <Badge variant="outline" className="shrink-0">
+                  {a.slug}
+                </Badge>
+                {a.email && (
+                  <span className="text-foreground/80 truncate">{a.email}</span>
+                )}
+                <span className="text-muted-foreground truncate flex-1">
+                  "{a.answer_excerpt}"
+                </span>
+                {a.matched_keyword && (
+                  <Badge className="bg-[#18C964]/20 text-[#18C964] font-mono text-[10px] shrink-0">
+                    {a.matched_keyword}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -34,8 +34,10 @@ function migrateLegacyClassifiedSession(): void {
     }
     // Always strip the persisted copy regardless.
     window.localStorage.removeItem(SESSION_KEY);
-  } catch (_e) {
-    /* storage blocked — non-fatal */
+  } catch (e) {
+    // Storage blocked (private mode / disabled) — non-fatal, the visitor
+    // will simply be asked to re-enter their accreditation number.
+    logger.debug("[classified-vault] legacy session migration skipped:", e);
   }
 }
 migrateLegacyClassifiedSession();
@@ -80,7 +82,10 @@ function loadStoredSession(): ClassifiedSession | null {
     }
     const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as ClassifiedSession) : null;
-  } catch {
+  } catch (e) {
+    // Malformed JSON (storage corruption) or storage blocked — treat as
+    // "no session" so the visitor hits the gate. Debug-only log.
+    logger.debug("[classified-vault] loadStoredSession failed:", e);
     return null;
   }
 }

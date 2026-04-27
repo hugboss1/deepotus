@@ -264,9 +264,13 @@ async def fire(
     plat_list = list(platforms or settings.get("platforms") or ["telegram", "x"])
     delay_min = int(settings.get("default_delay_seconds_min") or 10)
     delay_max = int(settings.get("default_delay_seconds_max") or 30)
-    import random
 
-    delay = random.randint(delay_min, max(delay_min, delay_max))
+    # Use `secrets.SystemRandom` rather than the stdlib PRNG so the
+    # dispatch offset is harder to predict (and silences ruff S311).
+    # Cosmetic only — the timing window stays humanized 10-30s.
+    import secrets as _secrets
+
+    delay = _secrets.SystemRandom().randint(delay_min, max(delay_min, delay_max))
 
     item = await dispatch_queue.propose(
         trigger_key=trigger_key,

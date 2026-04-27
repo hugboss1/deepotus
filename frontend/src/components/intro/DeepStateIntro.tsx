@@ -25,6 +25,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { logger } from "@/lib/logger";
 import GlitchOverlay from "./GlitchOverlay";
 import MatrixRain from "./MatrixRain";
 import TerminalWindow from "./TerminalWindow";
@@ -63,8 +64,8 @@ function shouldShowIntro() {
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get("intro") === "force") return true;
-  } catch (_) {
-    /* noop */
+  } catch (e) {
+    logger.debug("[intro] query-string probe failed:", e);
   }
 
   // Reduced-motion users skip the intro entirely.
@@ -75,8 +76,8 @@ function shouldShowIntro() {
     ) {
       return false;
     }
-  } catch (_) {
-    /* noop */
+  } catch (e) {
+    logger.debug("[intro] matchMedia unavailable:", e);
   }
 
   // 24h cooldown
@@ -85,8 +86,8 @@ function shouldShowIntro() {
     if (Number.isFinite(lastSeenAt) && Date.now() - lastSeenAt < COOLDOWN_MS) {
       return false;
     }
-  } catch (_) {
-    /* noop (storage blocked) */
+  } catch (e) {
+    logger.debug("[intro] localStorage read blocked:", e);
   }
   return true;
 }
@@ -94,8 +95,8 @@ function shouldShowIntro() {
 function markIntroSeen() {
   try {
     window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
-  } catch (_) {
-    /* noop */
+  } catch (e) {
+    logger.debug("[intro] localStorage write blocked:", e);
   }
 }
 

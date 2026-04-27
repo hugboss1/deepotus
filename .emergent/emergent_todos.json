@@ -1,30 +1,26 @@
 [
   {
-    "content": "Étendre i18n (terminal.riddles.*) FR + EN dans translations.js",
+    "content": "Fix empty catch blocks (5 instances)",
     "status": "completed"
   },
   {
-    "content": "Ajouter CTA 'Proof of Intelligence' + implémenter toutes les phases riddles + persistance sessionStorage",
+    "content": "Audit missing React hook deps — 100% faux positifs",
     "status": "completed"
   },
   {
-    "content": "Fix bug backend: index MongoDB wallet_address partial + suppression null dans _ensure_row + migration DB",
+    "content": "Fix nested ternaries (~10 instances)",
     "status": "completed"
   },
   {
-    "content": "Smoke test frontend FR/EN (i18n + hint + happy path complet via screenshot_tool)",
+    "content": "Audit Python 'is' → '==' — 100% faux positifs",
     "status": "completed"
   },
   {
-    "content": "Build final yarn build + lint + tsc + ruff",
+    "content": "Fix insecure random — tone_engine.py, templates_repo.py, propaganda_engine.py (secrets.SystemRandom)",
     "status": "completed"
   },
   {
-    "content": "Amélioration UX : mapping erreurs backend (wallet déjà lié / invalide) vers i18n localisé",
-    "status": "completed"
-  },
-  {
-    "content": "Tests via testing agent (backend 11/12 OK, frontend non-testable par l'agent du fait de l'intro mais validé manuellement)",
+    "content": "Build + lint + smoke test pour non-régression",
     "status": "completed"
   }
 ]

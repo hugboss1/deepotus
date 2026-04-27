@@ -21,7 +21,7 @@ message drives traffic to the site’.
 from __future__ import annotations
 
 import logging
-import random
+import secrets
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -29,6 +29,11 @@ from typing import Any, Dict, List, Optional
 from core.config import db
 
 logger = logging.getLogger("deepotus.propaganda.templates")
+
+# Weighted template pick — not security-sensitive, but `secrets.SystemRandom`
+# gives more entropy per draw than the PRNG stdlib default and silences the
+# ruff `S311` audit rule for free.
+_rand = secrets.SystemRandom()
 
 ALLOWED_LANGS = ("en", "fr")
 
@@ -133,7 +138,7 @@ async def pick(
     if not candidates:
         return None
     weights = [max(0.1, float(d.get("weight", 1.0))) for d in candidates]
-    return _normalize(random.choices(candidates, weights=weights, k=1)[0])
+    return _normalize(_rand.choices(candidates, weights=weights, k=1)[0])
 
 
 def _normalize(doc: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

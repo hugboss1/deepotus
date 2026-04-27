@@ -941,16 +941,20 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
                           {item.key}
                         </span>
                         <span className="font-mono text-[10px] text-muted-foreground flex-1 truncate">
-                          {item._unset ? (
-                            <em>not set</em>
-                          ) : isRevealed ? (
-                            <span className="text-[#18C964]">{revealed[id]}</span>
-                          ) : (
-                            <span>
-                              {"•".repeat(Math.min(item.value_length, 24))} ·
-                              fp:{item.value_fingerprint}
-                            </span>
-                          )}
+                          {(() => {
+                            if (item._unset) return <em>not set</em>;
+                            if (isRevealed) {
+                              return (
+                                <span className="text-[#18C964]">{revealed[id]}</span>
+                              );
+                            }
+                            return (
+                              <span>
+                                {"•".repeat(Math.min(item.value_length, 24))} ·
+                                fp:{item.value_fingerprint}
+                              </span>
+                            );
+                          })()}
                         </span>
                         {item.updated_at && (
                           <span className="font-mono text-[10px] text-muted-foreground tabular">
@@ -1049,10 +1053,14 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
             className="max-h-[60vh] overflow-y-auto font-mono text-[11px]"
             data-testid="cabinet-audit-list"
           >
-            {audit ? (
-              audit.length === 0 ? (
-                <div className="text-muted-foreground py-4">No entries.</div>
-              ) : (
+            {(() => {
+              if (!audit) {
+                return <div className="text-muted-foreground py-4">Loading…</div>;
+              }
+              if (audit.length === 0) {
+                return <div className="text-muted-foreground py-4">No entries.</div>;
+              }
+              return (
                 <table className="w-full">
                   <tbody>
                     {audit.map((e) => (
@@ -1073,10 +1081,8 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
                     ))}
                   </tbody>
                 </table>
-              )
-            ) : (
-              <div className="text-muted-foreground py-4">Loading…</div>
-            )}
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
@@ -1213,7 +1219,10 @@ const SecretEditDialog: React.FC<{
               className="rounded-[var(--btn-radius)]"
               data-testid="cabinet-edit-submit"
             >
-              {busy ? "…" : isNew ? "Store secret" : "Rotate"}
+              {(() => {
+                if (busy) return "…";
+                return isNew ? "Store secret" : "Rotate";
+              })()}
             </Button>
           </DialogFooter>
         </form>

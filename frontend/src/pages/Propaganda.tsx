@@ -750,17 +750,24 @@ function TemplatesTab() {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin" size={20} />
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center text-sm text-muted-foreground py-12">
-          No templates match these filters.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {items.map((t) => (
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          );
+        }
+        if (items.length === 0) {
+          return (
+            <div className="text-center text-sm text-muted-foreground py-12">
+              No templates match these filters.
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-2">
+            {items.map((t) => (
             <div
               key={t.id}
               className="rounded-md border border-border bg-background/40 p-3"
@@ -817,8 +824,9 @@ function TemplatesTab() {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        );
+      })()}
 
       {editing && (
         <TemplateEditor
@@ -1098,26 +1106,34 @@ function QueueTab() {
         </Select>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin" size={20} />
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center text-sm text-muted-foreground py-12">
-          Queue is empty.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {items.map((q) => (
-            <QueueRow
-              key={q.id}
-              item={q}
-              onApprove={() => approve(q.id)}
-              onReject={() => reject(q.id)}
-            />
-          ))}
-        </div>
-      )}
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          );
+        }
+        if (items.length === 0) {
+          return (
+            <div className="text-center text-sm text-muted-foreground py-12">
+              Queue is empty.
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-2">
+            {items.map((q) => (
+              <QueueRow
+                key={q.id}
+                item={q}
+                onApprove={() => approve(q.id)}
+                onReject={() => reject(q.id)}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1248,63 +1264,71 @@ function ActivityTab() {
 
   return (
     <div>
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin" size={20} />
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center text-sm text-muted-foreground py-12">
-          No activity recorded yet.
-        </div>
-      ) : (
-        <ScrollArea className="h-[480px] pr-2">
-          <ul className="space-y-1.5 font-mono text-[12px]">
-            {items.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-start gap-3 rounded border border-border/60 bg-background/30 px-3 py-1.5"
-                data-testid={`activity-row-${e.id}`}
-              >
-                <Activity size={11} className="mt-1 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`uppercase tracking-widest ${
-                        colorByType[e.type] || "text-foreground"
-                      }`}
-                    >
-                      {e.type.replace(/_/g, " ")}
-                    </span>
-                    {e.trigger_key && (
-                      <Badge variant="outline">{e.trigger_key}</Badge>
-                    )}
-                    {Boolean(e.meta?.policy) && (
-                      <Badge variant="outline">
-                        policy: {String(e.meta.policy)}
-                      </Badge>
-                    )}
-                    {e.queue_item_id && (
-                      <span className="text-muted-foreground truncate text-[10px]">
-                        item: {e.queue_item_id.slice(0, 8)}…
+      {(() => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          );
+        }
+        if (items.length === 0) {
+          return (
+            <div className="text-center text-sm text-muted-foreground py-12">
+              No activity recorded yet.
+            </div>
+          );
+        }
+        return (
+          <ScrollArea className="h-[480px] pr-2">
+            <ul className="space-y-1.5 font-mono text-[12px]">
+              {items.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-start gap-3 rounded border border-border/60 bg-background/30 px-3 py-1.5"
+                  data-testid={`activity-row-${e.id}`}
+                >
+                  <Activity size={11} className="mt-1 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`uppercase tracking-widest ${
+                          colorByType[e.type] || "text-foreground"
+                        }`}
+                      >
+                        {e.type.replace(/_/g, " ")}
                       </span>
+                      {e.trigger_key && (
+                        <Badge variant="outline">{e.trigger_key}</Badge>
+                      )}
+                      {Boolean(e.meta?.policy) && (
+                        <Badge variant="outline">
+                          policy: {String(e.meta.policy)}
+                        </Badge>
+                      )}
+                      {e.queue_item_id && (
+                        <span className="text-muted-foreground truncate text-[10px]">
+                          item: {e.queue_item_id.slice(0, 8)}…
+                        </span>
+                      )}
+                    </div>
+                    {e.meta && Object.keys(e.meta).length > 0 && (
+                      <div className="text-muted-foreground text-[10px] mt-0.5 truncate">
+                        {Object.entries(e.meta)
+                          .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+                          .join(" · ")}
+                      </div>
                     )}
                   </div>
-                  {e.meta && Object.keys(e.meta).length > 0 && (
-                    <div className="text-muted-foreground text-[10px] mt-0.5 truncate">
-                      {Object.entries(e.meta)
-                        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-                        .join(" · ")}
-                    </div>
-                  )}
-                </div>
-                <span className="text-muted-foreground text-[10px] shrink-0">
-                  {new Date(e.at).toLocaleString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </ScrollArea>
-      )}
+                  <span className="text-muted-foreground text-[10px] shrink-0">
+                    {new Date(e.at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </ScrollArea>
+        );
+      })()}
 
       {!loading && items.length > 0 && (
         <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
@@ -1368,8 +1392,11 @@ function ToneTab({ settings, onSaved }: ToneTabProps) {
   };
 
   const ratioLabel = `${Math.round(ratio * 100)}%`;
-  const ratioColor =
-    ratio >= 0.7 ? "text-[#FF4D4D]" : ratio >= 0.4 ? "text-[#F59E0B]" : "text-[#18C964]";
+  const ratioColor = (() => {
+    if (ratio >= 0.7) return "text-[#FF4D4D]";
+    if (ratio >= 0.4) return "text-[#F59E0B]";
+    return "text-[#18C964]";
+  })();
 
   return (
     <div className="space-y-6" data-testid="propaganda-tone-tab">
