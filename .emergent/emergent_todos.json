@@ -1,35 +1,27 @@
 [
   {
     "content": "Sprint 12.3.E2E - Tests E2E backend Cabinet Vault (init, unlock, CRUD secrets, audit, export, TTL, 2FA guard)",
-    "status": "in_progress"
-  },
-  {
-    "content": "Sprint 12.3.E2E - Tests E2E frontend Cabinet Vault (SetupWizard, UnlockForm, SecretsBrowser, EditDialog, ExportDialog, audit)",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 12.3.E2E - Corriger les bugs identifiés par testing agent (priorité high → low)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Sprint 12.4 - Audit existant : recenser TOUTES les sources de secrets (secrets_vault.py Fernet + env vars + config.py)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Sprint 12.4 - Implémenter SecretProvider adapter (cabinet_vault → fallback contrôlé) dans core/",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Sprint 12.4 - Refactorer llm_service.py + email_service.py + helius services pour utiliser le SecretProvider",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Sprint 12.4 - Script one-shot de migration des secrets existants vers Cabinet Vault avec audit",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Sprint 12.4 - Tests : Prophet, repost engine, emails, helius doivent fonctionner avec Cabinet Vault",
-    "status": "pending"
+    "content": "Sprint 12.4 - Tests : Prophet, repost engine, emails, helius doivent fonctionner avec Cabinet Vault (testing agent)",
+    "status": "in_progress"
   },
   {
     "content": "Sprint 12.5 - Backend POST /api/admin/cabinet-vault/import (décrypt passphrase + re-encrypt master)",
@@ -40,11 +32,11 @@
     "status": "pending"
   },
   {
-    "content": "Sprint 12.5 - Audit viewer amélioré (filtres action/category/key + pagination)",
+    "content": "Sprint 12.5 - Tests round-trip export → import → restauration",
     "status": "pending"
   },
   {
-    "content": "Sprint 12.5 - Tests round-trip export → import → restauration",
+    "content": "Tests frontend Cabinet Vault E2E (en même temps que tests E2E finaux 12.4+12.5)",
     "status": "pending"
   }
 ]

@@ -24,11 +24,11 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import FileResponse
 
 import access_card as access_card_mod
-from core.config import (
-    PUBLIC_BASE_URL,
-    RESEND_API_KEY,
-    SENDER_EMAIL,
-    db,
+from core.config import db
+from core.secret_provider import (
+    get_public_base_url,
+    get_resend_api_key,
+    get_sender_email,
 )
 from core.vault_seal import get_sealed_status, raise_if_sealed
 from email_templates import (
@@ -72,12 +72,13 @@ async def access_card_request(
     whitelisted = bool(wl)
 
     display_name = (req.display_name or "").strip() or None
+    base_url = await get_public_base_url()
     card_doc = await access_card_mod.create_or_refresh_card(
         db,
         email=email,
         display_name=display_name,
         whitelisted=whitelisted,
-        base_url=PUBLIC_BASE_URL,
+        base_url=base_url,
     )
 
     # Send the email in the background
@@ -87,9 +88,12 @@ async def access_card_request(
     expires_at_iso = card_doc.get("expires_at")
 
     async def _send_email(lang: str = "fr"):
-        if not RESEND_API_KEY:
+        api_key = await get_resend_api_key()
+        if not api_key:
             logging.warning("[access-card] Resend key missing; skipping email")
             return
+        resend.api_key = api_key
+        sender = await get_sender_email()
         try:
             html = render_access_card_email(
                 lang=lang,
@@ -97,7 +101,7 @@ async def access_card_request(
                 accreditation_number=accred,
                 issued_at=card_doc["issued_at"][:10],
                 expires_at=card_doc["expires_at"][:10],
-                base_url=PUBLIC_BASE_URL,
+                base_url=base_url,
                 card_cid="access-card",
             )
             subject = access_card_subject(lang)
@@ -105,7 +109,7 @@ async def access_card_request(
             with open(card_path, "rb") as fh:
                 card_b64 = b64mod.b64encode(fh.read()).decode("ascii")
             params = {
-                "from": SENDER_EMAIL,
+                "from": sender,
                 "to": [email],
                 "subject": subject,
                 "html": html,
@@ -332,19 +336,22 @@ async def genesis_broadcast_request(
         if already:
             logging.info(f"[genesis] {email} already subscribed, no mail re-sent")
             return
-        if not RESEND_API_KEY:
+        api_key = await get_resend_api_key()
+        if not api_key:
             logging.warning("[genesis] Resend key missing; skipping email")
             return
+        resend.api_key = api_key
+        sender = await get_sender_email()
         try:
             html = render_genesis_broadcast_email(
                 lang=lang,
                 display_name=display_name,
-                base_url=PUBLIC_BASE_URL,
+                base_url=await get_public_base_url(),
                 launch_eta=status_obj.get("launch_eta"),
             )
             subject = genesis_broadcast_subject(lang)
             params = {
-                "from": SENDER_EMAIL,
+                "from": sender,
                 "to": [email],
                 "subject": subject,
                 "html": html,

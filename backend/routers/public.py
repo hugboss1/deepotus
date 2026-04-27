@@ -15,13 +15,13 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from core.config import (
-    EMERGENT_LLM_KEY,
     LAUNCH_ISO,
     LLM_MODEL,
     LLM_PROVIDER,
     db,
     get_system_prompt,
 )
+from core.secret_provider import get_emergent_llm_key
 from core.email_service import send_welcome_email
 from core.models import (
     ChatRequest,
@@ -85,7 +85,8 @@ async def root():
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    if not EMERGENT_LLM_KEY:
+    api_key = await get_emergent_llm_key()
+    if not api_key:
         raise HTTPException(status_code=500, detail="LLM key not configured")
 
     session_id = req.session_id or f"chat-{uuid.uuid4().hex[:12]}"
@@ -93,7 +94,7 @@ async def chat(req: ChatRequest):
 
     try:
         chat_client = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=api_key,
             session_id=session_id,
             system_message=system_prompt,
         ).with_model(LLM_PROVIDER, LLM_MODEL)
@@ -122,7 +123,8 @@ async def chat(req: ChatRequest):
 async def prophecy(lang: str = "fr", live: bool = True):
     lang = "fr" if lang not in ("fr", "en") else lang
 
-    if not live or not EMERGENT_LLM_KEY:
+    api_key = await get_emergent_llm_key() if live else None
+    if not live or not api_key:
         pool = SEEDED_PROPHECIES_FR if lang == "fr" else SEEDED_PROPHECIES_EN
         return ProphecyResponse(
             prophecy=secrets.choice(pool),
@@ -133,7 +135,7 @@ async def prophecy(lang: str = "fr", live: bool = True):
     try:
         sys_p = get_system_prompt(lang)
         chat_client = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
+            api_key=api_key,
             session_id=f"prophecy-{uuid.uuid4().hex[:10]}",
             system_message=sys_p,
         ).with_model(LLM_PROVIDER, LLM_MODEL)

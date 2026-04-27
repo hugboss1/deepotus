@@ -13,11 +13,11 @@ from datetime import datetime, timezone
 
 import resend
 
-from core.config import (
-    PUBLIC_BASE_URL,
-    RESEND_API_KEY,
-    SENDER_EMAIL,
-    db,
+from core.config import db
+from core.secret_provider import (
+    get_public_base_url,
+    get_resend_api_key,
+    get_sender_email,
 )
 from email_templates import email_subject, render_welcome_email
 
@@ -33,20 +33,27 @@ async def send_welcome_email(
     Runs in a background task. Never raises: failures are persisted on the
     whitelist document so the admin dashboard can surface them.
     """
-    if not RESEND_API_KEY:
+    api_key = await get_resend_api_key()
+    if not api_key:
         logging.info("RESEND_API_KEY missing — skipping email.")
         return
+    # `resend` SDK reads its API key from the module-level attribute, so
+    # we reassign on every call to honour rotation through the Cabinet
+    # Vault without requiring a process restart.
+    resend.api_key = api_key
 
     try:
+        sender = await get_sender_email()
+        base_url = await get_public_base_url()
         html = render_welcome_email(
             lang=lang,
             email=email,
             position=position,
-            base_url=PUBLIC_BASE_URL,
+            base_url=base_url,
         )
         subject = email_subject(lang)
         params = {
-            "from": SENDER_EMAIL,
+            "from": sender,
             "to": [email],
             "subject": subject,
             "html": html,

@@ -29,12 +29,14 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 from core.bot_config_repo import get_bot_config
 from core.config import (
-    EMERGENT_IMAGE_LLM_KEY,
-    EMERGENT_LLM_KEY,
     IMAGE_LLM_MODEL,
     IMAGE_LLM_PROVIDER,
     db,
     logger,
+)
+from core.secret_provider import (
+    get_emergent_image_llm_key,
+    get_emergent_llm_key,
 )
 
 # ---------------------------------------------------------------------
@@ -212,15 +214,18 @@ def _validate_generate_inputs(
     platform: str,
     kol_post: Optional[str],
 ) -> None:
-    """Raise ValueError on bad input combinations."""
+    """Raise ValueError on bad input combinations.
+
+    Note: EMERGENT_LLM_KEY presence is validated at call-time inside
+    ``generate_post`` (it's resolved dynamically via the SecretProvider
+    so admins can rotate it through the Cabinet Vault without restart).
+    """
     if content_type not in VALID_CONTENT_TYPES:
         raise ValueError(f"unknown content_type={content_type}")
     if platform not in PLATFORM_CHAR_BUDGETS:
         raise ValueError(f"unknown platform={platform}")
     if content_type == "kol_reply" and not kol_post:
         raise ValueError("kol_reply requires non-empty kol_post")
-    if not EMERGENT_LLM_KEY:
-        raise RuntimeError("EMERGENT_LLM_KEY not configured")
 
 
 def _build_user_prompt(
@@ -486,9 +491,9 @@ IMAGE_HARD_RULES = (
 )
 
 
-def _resolve_image_key() -> str:
+async def _resolve_image_key() -> str:
     """Pick the image key: dedicated one if set, otherwise the base one."""
-    key = EMERGENT_IMAGE_LLM_KEY or EMERGENT_LLM_KEY
+    key = await get_emergent_image_llm_key()
     if not key:
         raise RuntimeError("no_image_llm_key_configured")
     return key
@@ -548,7 +553,7 @@ async def generate_image(
     if aspect_ratio not in {"16:9", "3:4", "1:1"}:
         raise ValueError(f"unsupported aspect_ratio={aspect_ratio}")
 
-    image_key = _resolve_image_key()
+    image_key = await _resolve_image_key()
     prompt = _build_image_prompt(content_type, aspect_ratio, text_hint=text_hint)
 
     try:
@@ -579,6 +584,10 @@ async def generate_image(
 
     size_bytes = int(len(raw_b64) * 3 / 4)
 
+    # Pull both keys for the diagnostic log line. Doing it via the provider
+    # keeps the comparison consistent with the Cabinet Vault state.
+    image_key_for_log = await get_emergent_image_llm_key()
+    base_key_for_log = await get_emergent_llm_key()
     result = {
         "content_type": content_type,
         "aspect_ratio": aspect_ratio,
@@ -594,6 +603,6 @@ async def generate_image(
         content_type,
         aspect_ratio,
         size_bytes // 1024,
-        bool(EMERGENT_IMAGE_LLM_KEY and EMERGENT_IMAGE_LLM_KEY != EMERGENT_LLM_KEY),
+        bool(image_key_for_log and image_key_for_log != base_key_for_log),
     )
     return result

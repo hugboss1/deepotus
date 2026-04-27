@@ -22,7 +22,11 @@ from svix.webhooks import Webhook, WebhookVerificationError
 
 import helius as helius_mod
 import vault as vault_mod
-from core.config import HELIUS_WEBHOOK_AUTH, RESEND_WEBHOOK_SECRET, db
+from core.config import db
+from core.secret_provider import (
+    get_helius_webhook_auth,
+    get_resend_webhook_secret,
+)
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
 
@@ -33,14 +37,16 @@ async def resend_webhook(request: Request):
 
     Signature verification via Svix Webhook header spec:
       svix-id, svix-timestamp, svix-signature
-    Secret comes from RESEND_WEBHOOK_SECRET env var.
+    Secret comes from the Cabinet Vault (email_resend / RESEND_WEBHOOK_SECRET)
+    or, during transition, the RESEND_WEBHOOK_SECRET env var.
     """
     body_bytes = await request.body()
     headers = {k.lower(): v for k, v in request.headers.items()}
 
-    if RESEND_WEBHOOK_SECRET:
+    secret = await get_resend_webhook_secret()
+    if secret:
         try:
-            wh = Webhook(RESEND_WEBHOOK_SECRET)
+            wh = Webhook(secret)
             payload = wh.verify(body_bytes, headers)
         except WebhookVerificationError:
             logging.warning("Webhook signature invalid")
@@ -136,8 +142,9 @@ async def helius_webhook(request: Request):
     """
     # --- 1. Auth ---
     auth_hdr = request.headers.get("authorization") or ""
-    if HELIUS_WEBHOOK_AUTH:
-        if auth_hdr.strip() != HELIUS_WEBHOOK_AUTH:
+    helius_auth = await get_helius_webhook_auth()
+    if helius_auth:
+        if auth_hdr.strip() != helius_auth:
             logging.warning("[helius] webhook auth mismatch")
             raise HTTPException(status_code=401, detail="Invalid auth header")
     else:

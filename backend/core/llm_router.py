@@ -33,7 +33,9 @@ from typing import Any, Dict, Optional
 
 from cryptography.fernet import InvalidToken
 
-from core.config import db, EMERGENT_LLM_KEY
+from core.config import db
+from core import secret_provider
+from core.secret_provider import get_emergent_llm_key
 from core.secrets_vault import (
     decrypt,
     is_kek_configured,
@@ -68,10 +70,37 @@ async def _read_custom_key_doc(provider: str) -> Optional[Dict[str, Any]]:
 async def get_custom_llm_key(provider: str) -> Optional[str]:
     """Return the decrypted plaintext API key for `provider`, or None.
 
-    Logs ONLY the masked fingerprint — never the plaintext. Decryption
-    failures are logged loudly and treated as "no custom key" so the
-    caller can surface a clean error to the admin.
+    Resolution order (Sprint 12.4):
+      1. **Cabinet Vault** category=llm_custom, key=<PROVIDER>_API_KEY.
+         Honoured only when the vault is unlocked. Plaintext never logged.
+      2. **Legacy Fernet vault** stored on the bot_config singleton.
+         Kept active during transition so existing deployments keep
+         working until the admin migrates their keys to the Cabinet.
+      3. ``None`` — caller falls back to the Emergent universal key.
+
+    Logs ONLY the masked fingerprint — never the plaintext.
     """
+    # 1) Cabinet Vault (preferred)
+    cabinet_key_name = {
+        "openai": "OPENAI_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+    }.get(provider)
+    if cabinet_key_name:
+        cabinet_val = await secret_provider.resolve(
+            "llm_custom",
+            cabinet_key_name,
+            env_var=cabinet_key_name,
+        )
+        if cabinet_val:
+            logger.info(
+                "[llm_router] custom-key source=CABINET provider=%s mask=%s",
+                provider,
+                mask_for_display(cabinet_val),
+            )
+            return cabinet_val
+
+    # 2) Legacy Fernet vault — kept until admin migrates to Cabinet Vault
     bag = await _read_custom_key_doc(provider)
     if not bag:
         return None
@@ -85,6 +114,11 @@ async def get_custom_llm_key(provider: str) -> Optional[str]:
             exc,
         )
         return None
+    logger.info(
+        "[llm_router] custom-key source=LEGACY_FERNET provider=%s mask=%s",
+        provider,
+        mask_for_display(plaintext),
+    )
     return plaintext
 
 
@@ -184,8 +218,11 @@ _NATIVE_DISPATCH = {
 async def _call_emergent(
     provider: str, model: str, system_message: str, user_prompt: str
 ) -> str:
-    """Fallback path — relies on the Emergent universal key."""
-    if not EMERGENT_LLM_KEY:
+    """Fallback path — relies on the Emergent universal key resolved at
+    call time so admins can rotate the key via the Cabinet Vault without
+    restarting the process."""
+    api_key = await get_emergent_llm_key()
+    if not api_key:
         raise RuntimeError(
             "EMERGENT_LLM_KEY not configured and no custom key set "
             f"for provider={provider}"
@@ -193,7 +230,7 @@ async def _call_emergent(
     from emergentintegrations.llm.chat import LlmChat, UserMessage  # lazy
 
     chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
+        api_key=api_key,
         session_id=f"prophet-router-{provider}",
         system_message=system_message,
     ).with_model(provider, model)

@@ -28,13 +28,15 @@ import resend
 
 from core.bot_config_repo import get_bot_config
 from core.config import (
-    PUBLIC_BASE_URL,
-    RESEND_API_KEY,
-    SENDER_EMAIL,
     db,
     logger,
 )
 from core.loyalty import get_loyalty_context
+from core.secret_provider import (
+    get_public_base_url,
+    get_resend_api_key,
+    get_sender_email,
+)
 from email_templates import (
     loyalty_email_subject,
     render_loyalty_email,
@@ -172,8 +174,12 @@ async def _dispatch_loyalty_email(
     lang: str,
 ) -> Optional[str]:
     """Hand off the rendered HTML to Resend. Returns the email_id or None."""
+    api_key = await get_resend_api_key()
+    if api_key:
+        resend.api_key = api_key
+    sender = await get_sender_email()
     params = {
-        "from": SENDER_EMAIL,
+        "from": sender,
         "to": [email],
         "subject": subject,
         "html": html,
@@ -249,7 +255,7 @@ async def _send_one(card: Dict[str, Any], delay_hours: int) -> Dict[str, Any]:
     if not email:
         out["status"] = "skipped_no_email"
         return out
-    if not RESEND_API_KEY:
+    if not (await get_resend_api_key()):
         out["status"] = "skipped_no_resend_key"
         return out
 
@@ -259,7 +265,7 @@ async def _send_one(card: Dict[str, Any], delay_hours: int) -> Dict[str, Any]:
             lang=lang,
             display_name=display_name,
             accreditation_number=accred,
-            base_url=PUBLIC_BASE_URL,
+            base_url=await get_public_base_url(),
             prophet_message=prophet_message,
         )
         eid = await _dispatch_loyalty_email(

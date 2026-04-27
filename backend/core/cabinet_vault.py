@@ -390,6 +390,40 @@ async def delete_secret(category: str, key: str, *,
     return {"ok": True, "deleted": res.deleted_count}
 
 
+# ---- Silent service-internal getter ----------------------------------------
+async def get_secret_silent(category: str, key: str) -> Optional[str]:
+    """Read a secret WITHOUT audit logging — used by internal backend services
+    (LLM router, email service, Helius client) that need to resolve API keys
+    on every request.
+
+    Returns ``None`` instead of raising when:
+      * the vault is currently locked,
+      * the (category, key) entry does not exist,
+      * decryption fails for any reason.
+
+    The audit log would otherwise be flooded with ``get`` events on each
+    HTTP request — *human* admin reveals are still audited via
+    :func:`get_secret`.
+    """
+    sess = _state.get()
+    if not sess:
+        return None
+    doc = await db.cabinet_vault.find_one({"_id": _doc_id(category, key)})
+    if not doc or "blob" not in doc:
+        return None
+    aad = f"{category}/{key}".encode("utf-8")
+    try:
+        return _decrypt(sess.key, doc["blob"], aad=aad)
+    except Exception:  # noqa: BLE001 — never raise inside service layer
+        return None
+
+
+def is_unlocked() -> bool:
+    """Cheap check used by the secret-provider cache to short-circuit
+    Mongo reads when the vault is locked anyway."""
+    return _state.get() is not None
+
+
 async def list_secrets(*, jti: str, ip: Optional[str] = None) -> Dict[str, Any]:
     """Return metadata for all secrets — never the plaintext values.
 

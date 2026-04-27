@@ -17,7 +17,12 @@ from pydantic import BaseModel, Field
 
 import helius as helius_mod
 import vault as vault_mod
-from core.config import HELIUS_API_KEY, PUBLIC_BASE_URL, db
+from core.config import db
+from core.secret_provider import (
+    get_helius_api_key,
+    get_helius_webhook_auth,
+    get_public_base_url,
+)
 from core.models import VaultCrackPublicRequest
 from core.security import require_admin
 from core.vault_seal import admin_status as seal_admin_status, get_sealed_status, set_override
@@ -136,13 +141,15 @@ class HeliusRegisterRequest(HeliusConfigRequest):
 async def helius_status(_p: dict = Depends(require_admin)):
     """Return current Helius configuration and the list of active webhooks."""
     vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
-    existing = await helius_mod.list_webhooks(HELIUS_API_KEY) if HELIUS_API_KEY else []
+    api_key = await get_helius_api_key()
+    base_url = await get_public_base_url()
+    existing = await helius_mod.list_webhooks(api_key) if api_key else []
     return {
-        "api_key_configured": bool(HELIUS_API_KEY),
+        "api_key_configured": bool(api_key),
         "mint": vs.get("dex_token_address"),
         "pool_address": vs.get("helius_pool_address"),
         "webhook_id": vs.get("helius_webhook_id"),
-        "webhook_url": f"{PUBLIC_BASE_URL}/api/webhooks/helius",
+        "webhook_url": f"{base_url}/api/webhooks/helius",
         "helius_webhooks": existing,
         "dex_mode": vs.get("dex_mode"),
     }
@@ -180,6 +187,7 @@ async def helius_register(
     HELIUS_WEBHOOK_AUTH env var. Persists the returned webhookID so we can
     delete/update it later.
     """
+    HELIUS_API_KEY = await get_helius_api_key()
     if not HELIUS_API_KEY:
         raise HTTPException(
             status_code=400,
@@ -193,16 +201,15 @@ async def helius_register(
     if not mint:
         raise HTTPException(status_code=400, detail="No mint provided or configured")
 
-    # Import lazily to pick up any hot-reloaded env var
-    from core.config import HELIUS_WEBHOOK_AUTH
+    webhook_auth = await get_helius_webhook_auth()
 
-    callback_url = f"{PUBLIC_BASE_URL}/api/webhooks/helius"
+    callback_url = f"{await get_public_base_url()}/api/webhooks/helius"
     try:
         res = await helius_mod.register_webhook(
             api_key=HELIUS_API_KEY,
             webhook_url=callback_url,
             mint=mint,
-            auth_header=HELIUS_WEBHOOK_AUTH or None,
+            auth_header=webhook_auth or None,
             transaction_types=["SWAP"],
             webhook_type="enhanced",
         )
@@ -245,6 +252,7 @@ async def helius_register(
 @admin_router.post("/helius-catchup", response_model=dict)
 async def helius_catchup(_p: dict = Depends(require_admin)):
     """Pull the last 50 SWAP txns from Helius and ingest any we haven't seen."""
+    HELIUS_API_KEY = await get_helius_api_key()
     if not HELIUS_API_KEY:
         raise HTTPException(status_code=400, detail="HELIUS_API_KEY not configured")
     vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
@@ -270,6 +278,7 @@ async def helius_delete_webhook(
     webhook_id: str, _p: dict = Depends(require_admin)
 ):
     """Remove a previously-registered Helius webhook."""
+    HELIUS_API_KEY = await get_helius_api_key()
     if not HELIUS_API_KEY:
         raise HTTPException(status_code=400, detail="HELIUS_API_KEY not configured")
     ok = await helius_mod.delete_webhook(HELIUS_API_KEY, webhook_id)

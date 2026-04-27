@@ -29,6 +29,11 @@ from typing import Any, Dict, List, Optional
 
 from core.bot_config_repo import get_bot_config
 from core.config import db, logger
+from core.secret_provider import (
+    get_telegram_bot_token,
+    get_telegram_chat_id,
+    get_twitter_bearer_token,
+)
 
 REPOSTS_COLLECTION = "news_reposts"
 NEWS_COLLECTION = "news_items"
@@ -241,7 +246,7 @@ async def _dispatch_telegram(text: str) -> Dict[str, Any]:
     place to call the Bot API. Returning a non-empty `id` triggers a
     'sent' status; returning {} downgrades to dry_run.
     """
-    if not _platform_creds_present("telegram"):
+    if not await _platform_creds_present("telegram"):
         return {}
     # Phase 3: import + call telegram bot API here.
     # For now we never actually reach this branch.
@@ -250,7 +255,7 @@ async def _dispatch_telegram(text: str) -> Dict[str, Any]:
 
 async def _dispatch_x(text: str) -> Dict[str, Any]:
     """Real X dispatch — currently stubbed (Phase 4 not shipped)."""
-    if not _platform_creds_present("x"):
+    if not await _platform_creds_present("x"):
         return {}
     # Phase 4: tweepy OAuth2 client call.
     return {}
@@ -297,7 +302,7 @@ async def _do_dispatch(
 
     Returns {"id": <post_id_or_None>, "error": <err_or_None>}.
     """
-    if not _platform_creds_present(platform):
+    if not await _platform_creds_present(platform):
         return {"id": None, "error": None}
 
     try:
@@ -552,8 +557,8 @@ async def get_news_repost_status() -> Dict[str, Any]:
     return {
         "config": cfg,
         "credentials_present": {
-            "x": _platform_creds_present("x"),
-            "telegram": _platform_creds_present("telegram"),
+            "x": await _platform_creds_present("x"),
+            "telegram": await _platform_creds_present("telegram"),
         },
         "today_per_platform": today_per_platform,
         "last_per_platform": last_per_platform,

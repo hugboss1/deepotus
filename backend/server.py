@@ -100,11 +100,12 @@ async def on_startup():
 
         # Helius: ensure dedup TTL index + opportunistic catch-up if configured
         import helius as helius_mod
-        from core.config import HELIUS_API_KEY
+        from core.secret_provider import get_helius_api_key
 
         await helius_mod.ensure_dedup_index(db)
         vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
-        if HELIUS_API_KEY and vs.get("dex_mode") == "helius" and vs.get("dex_token_address"):
+        helius_api_key = await get_helius_api_key()
+        if helius_api_key and vs.get("dex_mode") == "helius" and vs.get("dex_token_address"):
             startup_demo_tokens = None
             if vs.get("helius_demo_mode"):
                 startup_demo_tokens = int(vs.get("tokens_per_micro") or 10_000)
@@ -112,7 +113,7 @@ async def on_startup():
                 helius_mod.catch_up_from_helius(
                     db,
                     vault_mod,
-                    HELIUS_API_KEY,
+                    helius_api_key,
                     vs["dex_token_address"],
                     pool=vs.get("helius_pool_address"),
                     demo_tokens_per_buy=startup_demo_tokens,

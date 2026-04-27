@@ -1,0 +1,40 @@
+{
+  "summary": "Tests de régression complets Sprint 12.4 - Migration SecretProvider. Validation que TOUS les flows fonctionnels existants continuent de marcher après le passage à la nouvelle couche core/secret_provider.py avec fallback env.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "minor_issues": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "ADMIN LOGIN avec 2FA (password: deepotus2026 + TOTP)",
+    "PROPHECY LIVE - GET /api/prophecy?lang=fr&live=true → 200 + prophecy non vide",
+    "PROPHECY SEEDED - GET /api/prophecy?lang=en&live=false → 200 + prophecy non vide",
+    "CHAT - POST /api/chat avec {message:'Hello',lang:'fr'} → 200 + reply + session_id",
+    "VAULT STATE - GET /api/vault/state → 200 + champs attendus (tokens_sold, dex_mode)",
+    "HELIUS WEBHOOK - POST /api/webhooks/helius → auth correctement gérée",
+    "VAULT CLASSIFIED STATUS - GET /api/vault/classified-status → 200 + {sealed:bool, mint_live:bool}",
+    "ACCESS CARD GENESIS - POST /api/access-card/genesis-broadcast → pas de 500",
+    "ADMIN FUNCTIONALITY - Endpoints admin accessibles avec token",
+    "CABINET VAULT STATUS - GET /api/admin/cabinet-vault/status → 200 + {initialised:true, locked:bool}",
+    "CABINET VAULT LIST LOCKED - GET /api/admin/cabinet-vault/list → 423 VAULT_LOCKED",
+    "SECRET PROVIDER FALLBACK ENV - /api/prophecy?live=true fonctionne avec vault verrouillé",
+    "SECRET PROVIDER SOURCE LOGS - Logs backend montrent sources de secrets",
+    "NEWS REPOST DRY RUN - Endpoints utilisant news_repost fonctionnent"
+  ],
+  "test_report_links": ["/app/backend_test_sprint_12_4.py"],
+  "success_percentage": {
+    "backend": "100%",
+    "frontend": "N/A - Tests backend uniquement"
+  },
+  "updated_files": [
+    "/app/backend_test_sprint_12_4.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}

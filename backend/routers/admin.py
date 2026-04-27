@@ -42,11 +42,13 @@ from core.admin_password import (
     verify_admin_password,
 )
 from core.config import (
-    PUBLIC_BASE_URL,
-    RESEND_API_KEY,
-    SENDER_EMAIL,
     TWOFA_ISSUER,
     db,
+)
+from core.secret_provider import (
+    get_public_base_url,
+    get_resend_api_key,
+    get_sender_email,
 )
 from core.models import (
     AdminLoginRequest,
@@ -795,8 +797,10 @@ async def admin_test_email(
 
     Does not create a whitelist entry. Purely for delivery / webhook validation.
     """
-    if not RESEND_API_KEY:
+    api_key = await get_resend_api_key()
+    if not api_key:
         raise HTTPException(status_code=500, detail="RESEND_API_KEY not configured")
+    resend.api_key = api_key
 
     lang = (req.lang or "fr").lower()
     if lang not in ("fr", "en"):
@@ -808,12 +812,13 @@ async def admin_test_email(
             lang=lang,
             email=recipient,
             position=0,
-            base_url=PUBLIC_BASE_URL,
+            base_url=await get_public_base_url(),
         )
         base_subject = email_subject(lang)
         subject = f"[TEST] {base_subject}"
+        sender = await get_sender_email()
         params = {
-            "from": SENDER_EMAIL,
+            "from": sender,
             "to": [recipient],
             "subject": subject,
             "html": html,

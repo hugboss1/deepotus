@@ -38,6 +38,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from core import cabinet_vault as vault
+from core import secret_provider
 from core.security import get_twofa_config, require_admin
 
 router = APIRouter(prefix="/api/admin/cabinet-vault", tags=["cabinet-vault"])
@@ -109,12 +110,16 @@ async def vault_init(request: Request, p: dict = Depends(require_2fa_enabled)):
 async def vault_unlock(req: UnlockRequest, request: Request,
                        p: dict = Depends(require_2fa_enabled)):
     try:
-        return await vault.unlock(
+        result = await vault.unlock(
             req.mnemonic,
             jti=p["jti"],
             ip=_client_ip(request),
             ttl_seconds=req.ttl_seconds or vault.DEFAULT_UNLOCK_TTL_S,
         )
+        # Cached env-fallback values may now be shadowed by vault values —
+        # invalidate so service callers refetch from the freshly-unlocked vault.
+        secret_provider.invalidate_cache()
+        return result
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e)) from e
 
@@ -122,6 +127,7 @@ async def vault_unlock(req: UnlockRequest, request: Request,
 @router.post("/lock")
 async def vault_lock(request: Request, p: dict = Depends(require_2fa_enabled)):
     await vault.lock_and_audit(jti=p["jti"], ip=_client_ip(request))
+    secret_provider.invalidate_cache()
     return {"ok": True, "locked": True}
 
 
@@ -152,8 +158,12 @@ async def vault_get(category: str, key: str, request: Request,
 async def vault_set(category: str, key: str, req: SetSecretRequest,
                     request: Request, p: dict = Depends(require_2fa_enabled)):
     try:
-        return await vault.set_secret(category, key, req.value,
-                                      jti=p["jti"], ip=_client_ip(request))
+        result = await vault.set_secret(category, key, req.value,
+                                        jti=p["jti"], ip=_client_ip(request))
+        # Drop cached value for this (category, key) so the next service
+        # call reads the rotated secret immediately.
+        secret_provider.invalidate_cache()
+        return result
     except PermissionError:
         raise HTTPException(status_code=423, detail={"code": "VAULT_LOCKED"})
     except ValueError as e:
@@ -164,8 +174,10 @@ async def vault_set(category: str, key: str, req: SetSecretRequest,
 async def vault_delete(category: str, key: str, request: Request,
                        p: dict = Depends(require_2fa_enabled)):
     try:
-        return await vault.delete_secret(category, key,
-                                         jti=p["jti"], ip=_client_ip(request))
+        result = await vault.delete_secret(category, key,
+                                           jti=p["jti"], ip=_client_ip(request))
+        secret_provider.invalidate_cache()
+        return result
     except PermissionError:
         raise HTTPException(status_code=423, detail={"code": "VAULT_LOCKED"})
 
