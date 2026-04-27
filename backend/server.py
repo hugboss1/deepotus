@@ -35,6 +35,7 @@ from routers import (
     admin as admin_router,
     bots as bots_router,
     cabinet_vault as cabinet_vault_router,
+    infiltration as infiltration_router,
     operation as operation_router,
     propaganda as propaganda_router,
     public as public_router,
@@ -60,6 +61,8 @@ app.include_router(access_card_router.router)
 app.include_router(operation_router.router)
 app.include_router(bots_router.router)
 app.include_router(propaganda_router.router)
+app.include_router(infiltration_router.public_router)
+app.include_router(infiltration_router.admin_router)
 
 # CORS
 app.add_middleware(
@@ -158,6 +161,19 @@ async def on_startup():
         )
     except Exception:
         logging.exception("[startup] propaganda engine failed to initialize")
+
+    # ---- Sprint 14.1 — Pre-Launch Infiltration Brain ----
+    try:
+        from core import clearance_levels as _cl, riddles as _rid
+        await _rid.ensure_indexes()
+        await _cl.ensure_indexes()
+        seeded_riddles = await _rid.seed_default_riddles()
+        logger.info(
+            "[startup] Infiltration Brain ready (seeded %d riddles).",
+            seeded_riddles,
+        )
+    except Exception:
+        logging.exception("[startup] infiltration brain failed to initialize")
 
 
 @app.on_event("shutdown")

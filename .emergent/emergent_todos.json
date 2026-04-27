@@ -1,34 +1,34 @@
 [
   {
-    "content": "Sprint 13.2 - market_analytics.py + 3 triggers (jeet_dip, whale_buy, raydium_migration) + tone_engine.py + FR templates + PATCH /settings + ToneTab frontend",
-    "status": "completed"
+    "content": "Sprint 14.1 - Backend: core/riddles.py (5 énigmes seed + fuzzy match keywords + anti-brute-force) + clearance_levels.py (email + wallet optionnel Level 0→3) + sleeper_cell.py (singleton flag)",
+    "status": "in_progress"
   },
   {
-    "content": "Sprint 13.2 - Tests E2E backend (5 triggers fire OK, LLM rewrite FR avec persona Vault/Signal/Noise, threshold whale 5 SOL, FR locale)",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 13.2 - Tests E2E frontend (5 tabs render, 5 trigger rows, Tone tab pleinement fonctionnel)",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 13.3 - Dispatcher cron worker (lit /queue status=approved + scheduled_for<now → envoie aux plateformes)",
+    "content": "Sprint 14.1 - Backend: routers/infiltration.py (public endpoints: list/attempt/clearance/link-wallet/sleeper-status + admin CRUD + snapshot CSV)",
     "status": "pending"
   },
   {
-    "content": "Sprint 13.3 - Telegram Bot API integration (sendMessage avec auth depuis Cabinet Vault telegram/*)",
+    "content": "Sprint 14.1 - server.py: include router + seed riddles au startup + indexes",
     "status": "pending"
   },
   {
-    "content": "Sprint 13.3 - X (Twitter) Tweepy OAuth2 user context PKCE flow + token refresh",
+    "content": "Sprint 14.1 - Frontend: Admin page /admin/infiltration (Riddles CRUD + Clearance ledger + Sleeper Cell toggle + Snapshot CSV)",
     "status": "pending"
   },
   {
-    "content": "Sprint 13.3 - Rate limiting global (8/h, 24/jour, 1/trigger/15min) avec rejets gracieux",
+    "content": "Sprint 14.1 - Frontend: étendre TerminalPopup.tsx avec mode 'RIDDLES' cinématique (glitch animations + révélation + son ASCII via Web Audio)",
     "status": "pending"
   },
   {
-    "content": "Sprint 13.3 - Onboarding credentials Cabinet Vault + tests E2E happy path",
+    "content": "Sprint 14.1 - Frontend: bannière 'PROOF OF INTELLIGENCE' sur landing + hook useSleeperStatus pour masquer buy_links si Sleeper Cell actif",
+    "status": "pending"
+  },
+  {
+    "content": "Sprint 14.1 - Tone Directives v2: update default personality_prompt (forbidden: LFG/Moon/Gem/100x, required: Procédure/Dossier/Liquidation/Actif/Archive + price template)",
+    "status": "pending"
+  },
+  {
+    "content": "Sprint 14.1 - Tests E2E : submit 5 énigmes avec bonnes/mauvaises réponses + level up + sleeper cell toggle + CSV snapshot",
     "status": "pending"
   }
 ]

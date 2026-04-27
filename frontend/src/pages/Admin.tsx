@@ -452,6 +452,11 @@ export default function Admin() {
                 <Bot size={14} className="mr-1" /> Propaganda Engine
               </Link>
             </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-[var(--btn-radius)]" data-testid="admin-infiltration-link">
+              <Link to="/admin/infiltration">
+                <ShieldAlert size={14} className="mr-1" /> Infiltration Brain
+              </Link>
+            </Button>
             <Button
               variant="outline"
               size="sm"

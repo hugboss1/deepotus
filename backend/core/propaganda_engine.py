@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from core import dispatch_queue, market_analytics, templates_repo, tone_engine
+from core import sleeper_cell
 from core.config import db
 from core.triggers import KNOWN_TRIGGERS, TriggerCtx
 
@@ -178,6 +179,14 @@ async def fire(
     if settings.get("panic"):
         await _audit("fire_skip_panic", jti=jti, ip=ip, trigger_key=trigger_key)
         return {"ok": False, "reason": "panic_on"}
+
+    # Pre-launch sleeper-cell gate: when active, market triggers that
+    # would leak a buy link are blocked upstream. Manual fires for UI
+    # smoke tests still go through so the operator can demo the engine.
+    if not manual and await sleeper_cell.is_trigger_blocked(trigger_key):
+        await _audit("fire_skip_sleeper", jti=jti, ip=ip,
+                     trigger_key=trigger_key)
+        return {"ok": False, "reason": "sleeper_cell_active"}
 
     cfg = await _ensure_trigger_cfg(trigger_key)
     if not cfg.get("enabled", True):
