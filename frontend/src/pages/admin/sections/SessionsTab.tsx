@@ -21,8 +21,11 @@ import type {
   PaginatedState,
   TwoFAStatus,
 } from "@/types";
+import PasswordCard from "../components/PasswordCard";
 
 interface SessionsTabProps {
+  api: string;
+  headers: { Authorization: string };
   sessions: PaginatedState<AdminSession>;
   twofaStatus: TwoFAStatus | null;
   onAskRevokeSession: (entry: AdminSession) => void;
@@ -33,6 +36,8 @@ interface SessionsTabProps {
 }
 
 export const SessionsTab: React.FC<SessionsTabProps> = ({
+  api,
+  headers,
   sessions,
   twofaStatus,
   onAskRevokeSession,
@@ -43,6 +48,9 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({
 }) => {
   return (
     <>
+      {/* Password rotation card (Sprint 12.1 — admin self-service) */}
+      <PasswordCard api={api} headers={headers} />
+
       <div
         className="rounded-xl border border-border bg-card p-5 mb-5"
         data-testid="admin-2fa-card"

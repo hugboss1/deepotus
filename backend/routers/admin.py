@@ -22,18 +22,26 @@ import csv as csv_module
 import io
 import logging
 import re
-import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 import pyotp
 import resend
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+)
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
 
+from core.admin_password import (
+    change_admin_password,
+    verify_admin_password,
+)
 from core.config import (
-    ADMIN_PASSWORD,
     PUBLIC_BASE_URL,
     RESEND_API_KEY,
     SENDER_EMAIL,
@@ -92,7 +100,7 @@ EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 @router.post("/login", response_model=AdminLoginResponse)
 async def admin_login(req: AdminLoginRequest, request: Request):
     rate_limit_check(request)
-    if not req.password or not secrets.compare_digest(req.password, ADMIN_PASSWORD):
+    if not req.password or not await verify_admin_password(req.password):
         raise HTTPException(status_code=401, detail="Invalid password")
 
     # 2FA enforcement
@@ -610,7 +618,7 @@ async def admin_2fa_verify(
 async def admin_2fa_disable(
     req: TwoFADisableRequest, _p: dict = Depends(require_admin)
 ):
-    if not secrets.compare_digest(req.password, ADMIN_PASSWORD):
+    if not await verify_admin_password(req.password):
         raise HTTPException(status_code=401, detail="Invalid password")
     doc = await get_twofa_config()
     if not doc or not doc.get("enabled"):
@@ -632,6 +640,91 @@ async def admin_2fa_disable(
         },
     )
     return SimpleOk(ok=True, message="2FA disabled.")
+
+
+# ---------------------------------------------------------------------
+# Password rotation
+# ---------------------------------------------------------------------
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+    totp_code: Optional[str] = None  # required iff 2FA is enabled
+
+
+class PasswordChangeResponse(BaseModel):
+    ok: bool
+    rotated_at: str
+    message: str
+
+
+class PasswordStatusResponse(BaseModel):
+    using_db_override: bool
+    rotated_at: Optional[str] = None
+    rotation_count: int = 0
+    twofa_enabled: bool
+
+
+@router.get("/password/status", response_model=PasswordStatusResponse)
+async def admin_password_status(_p: dict = Depends(require_admin)):
+    """Lightweight metadata so the UI can show 'last rotated on …'."""
+    doc = await db.admin_credentials.find_one({"_id": "primary"})
+    twofa = await get_twofa_config()
+    return PasswordStatusResponse(
+        using_db_override=bool(doc and doc.get("password_hash")),
+        rotated_at=(doc or {}).get("rotated_at"),
+        rotation_count=int((doc or {}).get("rotation_count", 0)),
+        twofa_enabled=bool(twofa and twofa.get("enabled")),
+    )
+
+
+@router.post("/password/change", response_model=PasswordChangeResponse)
+async def admin_password_change(
+    req: PasswordChangeRequest,
+    p: dict = Depends(require_admin),
+):
+    """Rotate the admin password.
+
+    Requires:
+      1. The CURRENT password to be re-verified (defence in depth — even if
+         the JWT is stolen, the attacker still can't rotate the password
+         without knowing the current one).
+      2. A valid TOTP code (or backup code) IF 2FA is enabled.
+      3. The new password to satisfy the strength policy
+         (12+ chars, alpha + digit + special, not equal to env-var bootstrap).
+
+    On success, the new bcrypt hash is persisted in MongoDB and used by
+    every subsequent /login. The JWT secret is NOT rotated automatically;
+    existing sessions stay valid (the admin can manually rotate via the
+    Sessions panel if they suspect compromise).
+    """
+    # 1) Re-verify current password
+    if not await verify_admin_password(req.current_password):
+        raise HTTPException(status_code=401, detail="Invalid current password")
+    # 2) If 2FA is on, require a fresh TOTP / backup code
+    twofa_doc = await get_twofa_config()
+    if twofa_doc and twofa_doc.get("enabled"):
+        if not req.totp_code or not req.totp_code.strip():
+            raise HTTPException(
+                status_code=401,
+                detail="2FA code required",
+                headers={"x-2fa-required": "true"},
+            )
+        ok = await verify_totp_or_backup(twofa_doc, req.totp_code, req.totp_code)
+        if not ok:
+            raise HTTPException(status_code=401, detail="Invalid 2FA code")
+    # 3) Persist the new password
+    try:
+        result = await change_admin_password(
+            req.new_password,
+            rotated_by_jti=p.get("jti"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return PasswordChangeResponse(
+        ok=True,
+        rotated_at=result["rotated_at"],
+        message="Password rotated. Existing sessions stay valid.",
+    )
 
 
 # ---------------------------------------------------------------------

@@ -1,26 +1,30 @@
 [
   {
-    "content": "Sprint 7.1 — Batch trivial ✅ (10 fichiers : Landing, ConfirmDialog, Hero, Manifesto, FAQ, BrutalTruth, Mission, Socials, Tokenomics, GlitchOverlay)",
+    "content": "Sprint 12.1 — Password change + 2FA UI ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 7.2 — Batch sub-components ✅ (12 fichiers hero/vault/tokenomics/roi)",
+    "content": "Sprint 12.2 — Backend cabinet vault (BIP39 + AES-256-GCM + audit + 16/16 tests OK) ✅",
     "status": "completed"
   },
   {
-    "content": "Sprint 7.3 — Batch wrappers ✅ (8 fichiers : TopNav, TransparencyTimeline, ActivityHeatmap, ProphetPinnedWhisper, Whitelist, PropheciesFeed, Roadmap, BackgroundProject)",
-    "status": "completed"
+    "content": "Sprint 12.3.1 — Frontend page /admin/cabinet-vault avec 3 phases (NotInit / Locked / Unlocked)",
+    "status": "in_progress"
   },
   {
-    "content": "Sprint 7.4 — Batch complexe ✅ (ProphetChat, ROISimulator, ClassifiedVault wrappers, Operation, HowToBuy, PublicStats, DeepStateIntro, TwoFASetupDialog, etc.)",
-    "status": "completed"
+    "content": "Sprint 12.3.2 — Composants : SetupWizard, UnlockForm, SecretsBrowser, SecretEditDialog",
+    "status": "pending"
   },
   {
-    "content": "Sprint 7.5 — Validation ✅ : tsc 0 errors + yarn build prod clean + smoke E2E 0 page errors",
-    "status": "completed"
+    "content": "Sprint 12.3.3 — Routing dans App.tsx + lien depuis /admin top nav",
+    "status": "pending"
   },
   {
-    "content": "Bonus — Shadcn shim refondu (top-level import retiré → ambient module re-fonctionnel)",
-    "status": "completed"
+    "content": "Sprint 12.4 — Migration LLM keys existantes (Fernet KEK → cabinet_vault)",
+    "status": "pending"
+  },
+  {
+    "content": "Sprint 12.5 — Export/import + audit viewer",
+    "status": "pending"
   }
 ]

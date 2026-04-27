@@ -34,6 +34,7 @@ from routers import (
     access_card as access_card_router,
     admin as admin_router,
     bots as bots_router,
+    cabinet_vault as cabinet_vault_router,
     operation as operation_router,
     public as public_router,
     public_stats as public_stats_router,
@@ -53,6 +54,7 @@ app.include_router(webhooks_router.router)
 app.include_router(admin_router.router)
 app.include_router(vault_router.router)
 app.include_router(vault_router.admin_router)
+app.include_router(cabinet_vault_router.router)
 app.include_router(access_card_router.router)
 app.include_router(operation_router.router)
 app.include_router(bots_router.router)

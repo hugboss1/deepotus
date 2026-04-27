@@ -85,7 +85,10 @@ export default function Admin() {
     document.title = "DEEPOTUS · Cabinet Admin";
   }, []);
 
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+  const authHeaders = React.useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token],
+  );
 
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -474,7 +477,7 @@ export default function Admin() {
             <TabsTrigger value="whitelist" data-testid="admin-tab-whitelist">Whitelist ({whitelist.total})</TabsTrigger>
             <TabsTrigger value="chat" data-testid="admin-tab-chat">Chat ({chatLogs.total})</TabsTrigger>
             <TabsTrigger value="blacklist" data-testid="admin-tab-blacklist">Blacklist ({blacklist.total})</TabsTrigger>
-            <TabsTrigger value="sessions" data-testid="admin-tab-sessions">Sessions ({sessions.total})</TabsTrigger>
+            <TabsTrigger value="sessions" data-testid="admin-tab-sessions">Security ({sessions.total})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="whitelist" className="mt-4">
@@ -523,6 +526,8 @@ export default function Admin() {
 
           <TabsContent value="sessions" className="mt-4">
             <SessionsTab
+              api={API}
+              headers={authHeaders as { Authorization: string }}
               sessions={sessions}
               twofaStatus={twofaStatus}
               onAskRevokeSession={(entry) => askConfirm("revokeSession", entry)}
