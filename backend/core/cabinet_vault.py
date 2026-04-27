@@ -48,7 +48,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -504,6 +504,135 @@ async def export_encrypted(passphrase: str, *,
                 "salt": base64.b64encode(salt).decode("ascii")},
         "secrets": payload["secrets"],
         "exported_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+async def import_encrypted(
+    bundle: Dict[str, Any], passphrase: str, *,
+    overwrite: bool = False, jti: str, ip: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Restore secrets from a previously-exported encrypted bundle.
+
+    The export bundle was re-encrypted under a passphrase-derived key
+    (see :func:`export_encrypted`). Here we reverse that:
+
+      1. Validate ``bundle["format"]`` and KDF params.
+      2. Re-derive the export key from the passphrase + bundle salt.
+      3. For each entry:
+           - decrypt with the export key (verifies passphrase + integrity),
+           - re-encrypt with the *currently unlocked* vault master key,
+           - store under (category, key).
+      4. Audit-log the global outcome (counts, never the values).
+
+    Conflict policy
+    ---------------
+    By default we **skip** entries whose ``(category, key)`` already
+    exists in the live vault to avoid clobbering newer rotations. Pass
+    ``overwrite=True`` to force replace. Either way, conflicts are
+    counted in the response so the UI can warn the admin.
+
+    Failures
+    --------
+    Any individual decrypt failure aborts the whole import (atomic
+    semantics) — partial restores are dangerous.
+    """
+    sess = _require_unlocked()
+    if not isinstance(bundle, dict) or bundle.get("format") != "deepotus-vault-v1":
+        raise ValueError("Unsupported bundle format. Expected deepotus-vault-v1.")
+    if not passphrase or len(passphrase) < 12:
+        raise ValueError("Import passphrase must be at least 12 characters.")
+
+    kdf_meta = bundle.get("kdf") or {}
+    salt_b64 = kdf_meta.get("salt")
+    iterations = int(kdf_meta.get("iterations") or KDF_ITERATIONS)
+    if not salt_b64:
+        raise ValueError("Bundle is missing kdf.salt — refusing to import.")
+    try:
+        salt = base64.b64decode(salt_b64)
+    except Exception as e:
+        raise ValueError("Bundle kdf.salt is not valid base64.") from e
+
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA512(), length=KDF_KEY_LEN, salt=salt,
+        iterations=iterations,
+    )
+    import_key = kdf.derive(passphrase.encode("utf-8"))
+
+    secrets_in: List[Dict[str, Any]] = bundle.get("secrets") or []
+    if not isinstance(secrets_in, list):
+        raise ValueError("Bundle.secrets must be an array.")
+
+    # ---- Pre-flight: decrypt EVERY entry up-front so a wrong passphrase
+    # is detected before we touch the live vault. Atomicity over speed.
+    decrypted: List[Tuple[str, str, str, Optional[str]]] = []
+    for entry in secrets_in:
+        category = (entry or {}).get("category")
+        key = (entry or {}).get("key")
+        blob = (entry or {}).get("blob")
+        if not category or not key or not isinstance(blob, dict):
+            raise ValueError("Malformed entry in bundle.secrets.")
+        aad = f"{category}/{key}".encode("utf-8")
+        try:
+            plain = _decrypt(import_key, blob, aad=aad)
+        except Exception as e:  # noqa: BLE001
+            await _audit("import_failed", jti=jti, ip=ip,
+                         extra={"reason": "decrypt", "category": category,
+                                "key": key})
+            raise ValueError(
+                "Decryption failed — wrong passphrase or tampered bundle."
+            ) from e
+        decrypted.append((category, key, plain, entry.get("updated_at")))
+
+    # ---- Apply: encrypt with vault master key + persist.
+    imported, skipped, replaced = 0, 0, 0
+    for category, key, plain, _src_updated_at in decrypted:
+        doc_id = _doc_id(category, key)
+        existing = await db.cabinet_vault.find_one({"_id": doc_id})
+        if existing and not overwrite:
+            skipped += 1
+            continue
+        aad = f"{category}/{key}".encode("utf-8")
+        new_blob = _encrypt(sess.key, plain, aad=aad)
+        now = datetime.now(timezone.utc).isoformat()
+        rotation_count = (existing or {}).get("rotation_count", 0) + (1 if existing else 0)
+        await db.cabinet_vault.update_one(
+            {"_id": doc_id},
+            {
+                "$set": {
+                    "category": category,
+                    "key": key,
+                    "blob": new_blob,
+                    "updated_at": now,
+                    "updated_by_jti": jti,
+                    "rotation_count": rotation_count,
+                    "value_length": len(plain),
+                    "value_fingerprint": hashlib.sha256(plain.encode("utf-8")).hexdigest()[:12],
+                    "imported_from_backup_at": now,
+                },
+                "$setOnInsert": {"created_at": now},
+            },
+            upsert=True,
+        )
+        if existing:
+            replaced += 1
+        else:
+            imported += 1
+
+    await _audit(
+        "import", jti=jti, ip=ip,
+        extra={
+            "imported": imported,
+            "replaced": replaced,
+            "skipped": skipped,
+            "overwrite": overwrite,
+        },
+    )
+    return {
+        "ok": True,
+        "imported": imported,
+        "replaced": replaced,
+        "skipped": skipped,
+        "total_in_bundle": len(decrypted),
     }
 
 

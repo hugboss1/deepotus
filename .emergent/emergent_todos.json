@@ -1,42 +1,26 @@
 [
   {
-    "content": "Sprint 12.3.E2E - Tests E2E backend Cabinet Vault (init, unlock, CRUD secrets, audit, export, TTL, 2FA guard)",
+    "content": "Sprint 12.5 - Backend : implémenter cabinet_vault.import_encrypted(payload, passphrase) + audit",
     "status": "completed"
   },
   {
-    "content": "Sprint 12.4 - Audit existant : recenser TOUTES les sources de secrets (secrets_vault.py Fernet + env vars + config.py)",
+    "content": "Sprint 12.5 - Backend : ajouter endpoint POST /api/admin/cabinet-vault/import au router",
     "status": "completed"
   },
   {
-    "content": "Sprint 12.4 - Implémenter SecretProvider adapter (cabinet_vault → fallback contrôlé) dans core/",
+    "content": "Sprint 12.5 - Frontend : ImportDialog dans CabinetVault.tsx (upload JSON + passphrase + collision preview)",
     "status": "completed"
   },
   {
-    "content": "Sprint 12.4 - Refactorer llm_service.py + email_service.py + helius services pour utiliser le SecretProvider",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 12.4 - Script one-shot de migration des secrets existants vers Cabinet Vault avec audit",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 12.4 - Tests : Prophet, repost engine, emails, helius doivent fonctionner avec Cabinet Vault (testing agent)",
+    "content": "Sprint 12.5 - Tests round-trip export → import → restauration (testing agent)",
     "status": "in_progress"
   },
   {
-    "content": "Sprint 12.5 - Backend POST /api/admin/cabinet-vault/import (décrypt passphrase + re-encrypt master)",
+    "content": "Sprint 12.3.E2E - Tests frontend Cabinet Vault (avec ImportDialog)",
     "status": "pending"
   },
   {
-    "content": "Sprint 12.5 - Frontend ImportDialog (upload JSON + passphrase + preview + collision warning)",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 12.5 - Tests round-trip export → import → restauration",
-    "status": "pending"
-  },
-  {
-    "content": "Tests frontend Cabinet Vault E2E (en même temps que tests E2E finaux 12.4+12.5)",
+    "content": "Plan.md - Marquer phase 12.4 et 12.5 backend comme COMPLETED",
     "status": "pending"
   }
 ]

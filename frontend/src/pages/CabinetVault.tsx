@@ -40,6 +40,7 @@ import {
   Eye,
   EyeOff,
   Download,
+  Upload,
   History,
   ArrowLeft,
   CheckCircle2,
@@ -689,6 +690,7 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [auditOpen, setAuditOpen] = useState<boolean>(false);
   const [exportOpen, setExportOpen] = useState<boolean>(false);
+  const [importOpen, setImportOpen] = useState<boolean>(false);
   const [secondsLeft, setSecondsLeft] = useState<number>(
     status.expires_in_seconds ?? 900,
   );
@@ -851,6 +853,15 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
             data-testid="cabinet-export-open"
           >
             <Download size={14} className="mr-1" /> Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportOpen(true)}
+            className="rounded-[var(--btn-radius)]"
+            data-testid="cabinet-import-open"
+          >
+            <Upload size={14} className="mr-1" /> Import
           </Button>
           <Button
             variant="outline"
@@ -1076,6 +1087,17 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
         onClose={() => setExportOpen(false)}
         headers={headers}
       />
+
+      {/* Import dialog */}
+      <ImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        headers={headers}
+        onImported={async () => {
+          setImportOpen(false);
+          await loadList();
+        }}
+      />
     </div>
   );
 };
@@ -1293,6 +1315,287 @@ const ExportDialog: React.FC<{
           >
             {busy ? "…" : "Download backup"}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
+// -------------------------------------------------------------------------
+// Import dialog (Sprint 12.5) — restore an encrypted backup bundle.
+// -------------------------------------------------------------------------
+interface ImportSummary {
+  imported: number;
+  replaced: number;
+  skipped: number;
+  total_in_bundle: number;
+}
+
+interface ImportDialogProps {
+  open: boolean;
+  onClose: () => void;
+  headers: { Authorization: string };
+  onImported: () => void;
+}
+
+function ImportDialog({
+  open,
+  onClose,
+  headers,
+  onImported,
+}: ImportDialogProps) {
+  const [pp, setPp] = useState<string>("");
+  const [overwrite, setOverwrite] = useState<boolean>(false);
+  const [busy, setBusy] = useState<boolean>(false);
+  // eslint-disable-next-line
+  const [bundle, setBundle] = useState<any | null>(null);
+  const [bundleName, setBundleName] = useState<string>("");
+  const [parseError, setParseError] = useState<string>("");
+  const [summary, setSummary] = useState<ImportSummary | null>(null);
+
+  const reset = () => {
+    setPp("");
+    setOverwrite(false);
+    setBundle(null);
+    setBundleName("");
+    setParseError("");
+    setSummary(null);
+  };
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setParseError("");
+    setBundle(null);
+    setBundleName("");
+    setSummary(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setParseError("File too large (>5MB) — that's not a vault backup.");
+      return;
+    }
+    try {
+      const txt = await file.text();
+      const parsed = JSON.parse(txt);
+      if (parsed?.format !== "deepotus-vault-v1") {
+        setParseError(
+          "Unsupported file format — expected a 'deepotus-vault-v1' export.",
+        );
+        return;
+      }
+      if (!Array.isArray(parsed?.secrets)) {
+        setParseError("Bundle is missing a 'secrets' array.");
+        return;
+      }
+      setBundle(parsed);
+      setBundleName(file.name);
+    } catch (err) {
+      logger.error(err);
+      setParseError("File is not valid JSON.");
+    }
+  };
+
+  const doImport = async () => {
+    if (!bundle || pp.length < 12) return;
+    setBusy(true);
+    setSummary(null);
+    try {
+      const { data } = await axios.post<ImportSummary>(
+        `${API}/api/admin/cabinet-vault/import`,
+        { bundle, passphrase: pp, overwrite },
+        { headers },
+      );
+      setSummary(data);
+      toast.success(
+        `Restored ${data.imported + data.replaced}/${data.total_in_bundle} secrets.`,
+      );
+    } catch (err: unknown) {
+      // eslint-disable-next-line
+      const detail = (err as any)?.response?.data?.detail;
+      toast.error(
+        typeof detail === "string" ? detail : "Import failed — wrong passphrase or tampered backup.",
+      );
+      logger.error(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (busy) return;
+    reset();
+    onClose();
+  };
+
+  const handleDone = () => {
+    reset();
+    onImported();
+  };
+
+  const secretCount = bundle?.secrets?.length ?? 0;
+  const exportedAt = bundle?.exported_at as string | undefined;
+
+  return (
+    <Dialog open={open} onOpenChange={(v: boolean) => !v && handleClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Restore from encrypted backup</DialogTitle>
+          <DialogDescription>
+            Upload a JSON bundle previously produced by{" "}
+            <strong>Export</strong>, then enter the passphrase you set at
+            export time. Each secret is decrypted off the bundle and
+            re-encrypted with the live vault master key.
+          </DialogDescription>
+        </DialogHeader>
+
+        {!summary && (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                Encrypted bundle (.json)
+              </Label>
+              <Input
+                type="file"
+                accept="application/json,.json"
+                onChange={onFile}
+                disabled={busy}
+                className="mt-1 font-mono text-xs"
+                data-testid="cabinet-import-file"
+              />
+              {bundle && (
+                <div className="mt-2 rounded-md border border-border bg-background/40 px-3 py-2 font-mono text-[11px]">
+                  <div className="text-foreground/90 truncate">
+                    {bundleName || "bundle.json"}
+                  </div>
+                  <div className="text-muted-foreground mt-0.5">
+                    {secretCount} secrets ·{" "}
+                    {exportedAt
+                      ? new Date(exportedAt).toLocaleString()
+                      : "no export date"}
+                  </div>
+                </div>
+              )}
+              {parseError && (
+                <div
+                  className="mt-2 flex items-center gap-2 rounded-md border border-[#FF4D4D]/40 bg-[#FF4D4D]/5 px-3 py-2 text-[11px] font-mono text-[#FF4D4D]"
+                  data-testid="cabinet-import-parse-error"
+                >
+                  <AlertTriangle size={12} /> {parseError}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                Passphrase used at export (≥12 chars)
+              </Label>
+              <Input
+                type="password"
+                value={pp}
+                onChange={(e) => setPp(e.target.value)}
+                disabled={busy}
+                className="mt-1 font-mono"
+                autoComplete="new-password"
+                placeholder="••••••••••••"
+                data-testid="cabinet-import-passphrase"
+              />
+            </div>
+
+            <label
+              className="flex items-center gap-2 cursor-pointer select-none text-xs"
+              data-testid="cabinet-import-overwrite-label"
+            >
+              <input
+                type="checkbox"
+                checked={overwrite}
+                onChange={(e) => setOverwrite(e.target.checked)}
+                disabled={busy}
+                className="accent-[#F59E0B]"
+                data-testid="cabinet-import-overwrite"
+              />
+              <span className="text-foreground/80">
+                Overwrite existing secrets (default: skip when a key already
+                lives in the vault).
+              </span>
+            </label>
+
+            <div className="flex items-center gap-2 text-[10px] font-mono text-[#F59E0B]">
+              <AlertTriangle size={11} />
+              Wrong passphrase → atomic abort. Nothing is written until every
+              entry decrypts successfully.
+            </div>
+          </div>
+        )}
+
+        {summary && (
+          <div
+            className="rounded-md border border-[#18C964]/40 bg-[#18C964]/5 p-4 space-y-2"
+            data-testid="cabinet-import-summary"
+          >
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-[#18C964]">
+              <CheckCircle2 size={14} /> Import complete
+            </div>
+            <div className="grid grid-cols-2 gap-3 font-mono text-[11px]">
+              <div className="rounded border border-border bg-background/40 px-3 py-2">
+                <div className="text-muted-foreground">imported (new)</div>
+                <div className="text-2xl text-[#18C964] tabular">
+                  {summary.imported}
+                </div>
+              </div>
+              <div className="rounded border border-border bg-background/40 px-3 py-2">
+                <div className="text-muted-foreground">replaced</div>
+                <div className="text-2xl text-[#F59E0B] tabular">
+                  {summary.replaced}
+                </div>
+              </div>
+              <div className="rounded border border-border bg-background/40 px-3 py-2">
+                <div className="text-muted-foreground">skipped (kept live)</div>
+                <div className="text-2xl text-foreground/70 tabular">
+                  {summary.skipped}
+                </div>
+              </div>
+              <div className="rounded border border-border bg-background/40 px-3 py-2">
+                <div className="text-muted-foreground">bundle total</div>
+                <div className="text-2xl text-foreground tabular">
+                  {summary.total_in_bundle}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          {!summary ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={busy}
+                className="rounded-[var(--btn-radius)]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={doImport}
+                disabled={busy || !bundle || pp.length < 12}
+                className="rounded-[var(--btn-radius)]"
+                data-testid="cabinet-import-submit"
+              >
+                {busy ? "…" : `Restore ${secretCount} secrets`}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleDone}
+              className="rounded-[var(--btn-radius)]"
+              data-testid="cabinet-import-done"
+            >
+              Done
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

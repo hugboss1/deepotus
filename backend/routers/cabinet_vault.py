@@ -32,7 +32,7 @@ Audit
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -56,6 +56,22 @@ class SetSecretRequest(BaseModel):
 
 class ExportRequest(BaseModel):
     passphrase: str = Field(..., min_length=12)
+
+
+class ImportRequest(BaseModel):
+    """Restore an encrypted bundle previously produced by ``/export``.
+
+    The ``bundle`` is expected to be the JSON document written to disk
+    by the export endpoint — we re-derive the export key from
+    ``passphrase`` + ``bundle.kdf.salt``, decrypt every entry up-front
+    (atomic semantics), then re-encrypt under the live master key.
+
+    ``overwrite`` defaults to False so an accidental import never
+    silently replaces a freshly-rotated key.
+    """
+    bundle: Dict[str, Any] = Field(...)
+    passphrase: str = Field(..., min_length=12)
+    overwrite: bool = False
 
 
 # ---- Guards ----------------------------------------------------------------
@@ -189,6 +205,27 @@ async def vault_export(req: ExportRequest, request: Request,
     try:
         return await vault.export_encrypted(req.passphrase,
                                             jti=p["jti"], ip=_client_ip(request))
+    except PermissionError:
+        raise HTTPException(status_code=423, detail={"code": "VAULT_LOCKED"})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/import")
+async def vault_import(req: ImportRequest, request: Request,
+                       p: dict = Depends(require_2fa_enabled)):
+    """Restore an encrypted bundle into the (currently unlocked) vault.
+
+    Returns counts: ``{imported, replaced, skipped, total_in_bundle}``.
+    """
+    try:
+        result = await vault.import_encrypted(
+            req.bundle, req.passphrase,
+            overwrite=req.overwrite,
+            jti=p["jti"], ip=_client_ip(request),
+        )
+        secret_provider.invalidate_cache()
+        return result
     except PermissionError:
         raise HTTPException(status_code=423, detail={"code": "VAULT_LOCKED"})
     except ValueError as e:
