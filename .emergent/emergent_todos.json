@@ -1,26 +1,22 @@
 [
   {
-    "content": "Sprint 12.5 - Backend : implémenter cabinet_vault.import_encrypted(payload, passphrase) + audit",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 12.5 - Backend : ajouter endpoint POST /api/admin/cabinet-vault/import au router",
-    "status": "completed"
-  },
-  {
-    "content": "Sprint 12.5 - Frontend : ImportDialog dans CabinetVault.tsx (upload JSON + passphrase + collision preview)",
-    "status": "completed"
-  },
-  {
     "content": "Sprint 12.5 - Tests round-trip export → import → restauration (testing agent)",
-    "status": "in_progress"
-  },
-  {
-    "content": "Sprint 12.3.E2E - Tests frontend Cabinet Vault (avec ImportDialog)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Plan.md - Marquer phase 12.4 et 12.5 backend comme COMPLETED",
+    "status": "completed"
+  },
+  {
+    "content": "Sprint 12.3.E2E - Tests E2E frontend Cabinet Vault complets (incluant ImportDialog)",
+    "status": "pending"
+  },
+  {
+    "content": "Future - Bots Telegram + X API integration (bloqué sur credentials user)",
+    "status": "pending"
+  },
+  {
+    "content": "Future - Helius live mode (post-mint)",
     "status": "pending"
   }
 ]

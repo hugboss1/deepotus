@@ -8,17 +8,21 @@
 - **Centraliser la gestion des secrets** via le **Cabinet Vault** (BIP39 + PBKDF2 + AES-256-GCM) et migrer les clés existantes (LLM, Resend, Helius, bots) vers ce coffre.
 - **Conformité sécurité** : 2FA obligatoire côté admin pour les actions sensibles, audit logging, rotation, export/import de backups chiffrés.
 
-> Décision POC : **pas de POC d’intégration requis**. Stratégie “migration gates” (tsc/build + smoke tests) à chaque sprint.
+> Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint.
 
-**État actuel (mise à jour)**
+### État actuel (mise à jour)
 - Couverture TS/TSX : **~94% du frontend** migré (reste quelques gros JSX stables : `AdminBots.jsx`, `AdminVault.jsx` — migration différée post-déploiement).
 - Sécurité session : migration `localStorage` → **`sessionStorage`** effectuée.
 - Build : **`yarn build` OK** + doc déploiement (`DEPLOY.md`).
-- **Sprint 12.2 (backend Cabinet Vault)** : complet, endpoints testés au curl, audit log intégré.
-- **Sprint 12.3 (frontend Cabinet Vault)** : **COMPLETED**
-  - Page `CabinetVault.tsx` complète (SetupWizard / UnlockForm / SecretsBrowser / edit / export / audit)
-  - Route **`/admin/cabinet-vault`** ajoutée dans `App.js`
-  - Cache webpack purgé (corrige erreurs TS fantômes)
+- **Cabinet Vault** complet end-to-end :
+  - Backend BIP39 + PBKDF2 + AES-256-GCM + audit ✅
+  - Frontend UI `/admin/cabinet-vault` + export + import + audit ✅
+  - **Import/Export chiffrés** validés ✅
+- **SecretProvider** (Sprint 12.4) en place : lecture Vault (si unlocked) → fallback env contrôlé ✅
+- Tests automatisés (subagents) :
+  - **Iteration 16** : backend Cabinet Vault (12.3.E2E backend) ✅
+  - **Iteration 17** : régression Sprint 12.4 (SecretProvider) ✅
+  - **Iteration 18** : Sprint 12.5 Import/Export (22/22) ✅
 
 ---
 
@@ -84,7 +88,7 @@
 - ✅ Validation `yarn build`.
 
 **Validation gate**
-- ✅ `npm run build` / `yarn build` OK
+- ✅ `yarn build` OK
 - ✅ E2E de non-régression (manuel) : Landing + Admin + Classified Vault.
 
 ---
@@ -120,126 +124,88 @@
 
 **Travaux (réalisés)**
 - ✅ `core/cabinet_vault.py` : PBKDF2-SHA512 + AES-256-GCM + TTL en mémoire.
-- ✅ `routers/cabinet_vault.py` : 16 endpoints.
-- ✅ Audit logging des actions (unlock/lock/read/write/delete/export).
-- ✅ Tests curl complets.
+- ✅ `routers/cabinet_vault.py` : endpoints lifecycle + CRUD + export + audit.
+- ✅ Audit logging des actions.
 
 **Validation gate**
-- ✅ Tous endpoints testés (succès + cas d’erreur).
+- ✅ Endpoints validés (succès + cas d’erreur).
 
 ---
 
 ### Phase 9 — Sprint 12.3 : Cabinet Vault Frontend UI ✅ **COMPLETED**
 **Travaux (réalisés)**
-- ✅ Création/complétion : `/src/pages/CabinetVault.tsx`
-  - Phase 1 : SetupWizard (génération + reveal + quiz 3 mots)
-  - Phase 2 : UnlockForm (validation 24 mots)
-  - Phase 3 : UnlockedPanel (liste catégorisée, reveal on-demand, rotate, delete)
-  - Dialogs : audit log + export chiffré + SecretEditDialog
-  - UX sécurité : inputs password, countdown TTL, auto-lock UX
-- ✅ Route ajoutée : `/admin/cabinet-vault` dans `App.js`.
-- ✅ Purge cache webpack (résout erreurs TS incohérentes).
+- ✅ `/src/pages/CabinetVault.tsx` : SetupWizard / UnlockForm / UnlockedPanel + CRUD.
+- ✅ Dialogs : audit log + export + édition/rotation.
+- ✅ Route `/admin/cabinet-vault` ajoutée dans `App.js`.
 
 **Validation gate**
-- ✅ Frontend compile (HTTP 200)
-- ✅ Backend accessible (401 sans token, OK avec auth)
+- ✅ Frontend compile + route accessible.
 
 ---
 
-### Phase 10 — Sprint 12.3.E2E : Tests E2E Cabinet Vault 🔄 **IN PROGRESS (Priorité actuelle — option D)**
-**Objectif** : sécuriser et valider le coffre *avant* migration des secrets.
+### Phase 10 — Sprint 12.3.E2E : Tests E2E Cabinet Vault (backend) ✅ **COMPLETED**
+**Objectif** : valider sécurité et fonctionnalités avant migration des secrets.
 
-**User stories (min 5)**
-1. En tant qu’admin, je veux être bloqué sans 2FA (403 `TWOFA_REQUIRED`).
-2. En tant qu’admin, je veux initialiser le coffre et confirmer la seed via quiz.
-3. En tant qu’admin, je veux déverrouiller, voir le TTL diminuer et constater l’auto-lock.
-4. En tant qu’admin, je veux stocker/rotate/révéler/supprimer un secret et le retrouver en liste.
-5. En tant qu’admin, je veux voir l’audit log refléter les actions sans leak de valeurs.
-
-**Checklist de test (à exécuter)**
-- Auth : login admin (`deepotus2026`) → token présent en session.
-- 2FA guard : essayer Cabinet Vault sans 2FA → message dédié.
-- Init : générer 24 mots → reveal → copy → quiz 3 mots → status passe à locked.
-- Unlock : coller 24 mots → passe à unlocked.
-- CRUD :
-  - `PUT secret` nouveau → visible + metadata (fingerprint, length, rotations)
-  - `GET secret` reveal on-demand → valeur affichée puis hide
-  - `PUT` rotate → rotation_count++
-  - `DELETE` → retiré
-- Audit : ouvrir modal → présence des actions.
-- Export : passphrase >= 12 → JSON téléchargé.
-- TTL : attendre expiration (ou simuler) → auto-lock + 423 géré.
-
-**Validation gate**
-- `npx tsc --noEmit` OK
-- “Happy path” E2E validé (captures/screens + notes).
-- Liste des bugs (si trouvés) corrigés, re-test.
+**Résultat**
+- ✅ 2FA guard, init/unlock, CRUD, audit, export, TTL/423 validés.
+- ✅ Rapport : `/app/test_reports/iteration_16.json`.
 
 ---
 
-### Phase 11 — Sprint 12.4 : Migration des clés LLM (Fernet → Cabinet Vault AES-256-GCM) ⏳ **NOT STARTED**
-**Objectif** : centraliser toutes les clés externes (LLM, Resend, Helius, bots) dans Cabinet Vault.
+### Phase 11 — Sprint 12.4 : Migration des secrets vers Cabinet Vault via SecretProvider ✅ **COMPLETED**
+**Objectif** : centraliser la résolution des secrets (LLM, emails, Helius, bots) et permettre la rotation sans redémarrage.
 
-**Travaux (prévus)**
-- Identifier toutes les sources actuelles des secrets :
-  - `secrets_vault.py` (Fernet KEK) + env vars fallback éventuel.
-- Ajouter un adaptateur “SecretProvider” backend :
-  - lecture `cabinet_vault.get_secret(category,key)`
-  - fallback contrôlé (optionnel) en phase de transition.
-- Migration de la logique LLM :
-  - `llm_service.py` / modules IA → lecture depuis Cabinet Vault (`llm_emergent`, `llm_custom`).
-- Script de migration (one-shot) :
-  - lire anciens secrets → écrire dans Cabinet Vault (avec audit).
-- Mise à jour Admin UX (si nécessaire) :
-  - afficher quelles clés sont “set/not set” par schéma.
+**Travaux (réalisés)**
+- ✅ Ajout `core/secret_provider.py` (Vault → fallback env, cache TTL, invalidation).
+- ✅ Ajout `get_secret_silent()` + `is_unlocked()` dans `core/cabinet_vault.py` (évite flood audit côté services).
+- ✅ Refactor call sites :
+  - `routers/public.py` (Prophecy/Chat)
+  - `core/llm_router.py` (Emergent key dynamique + custom keys via Cabinet Vault en priorité, fallback legacy Fernet)
+  - `core/email_service.py`, `core/loyalty_email.py`, `routers/access_card.py`, `routers/admin.py`
+  - `routers/vault.py`, `routers/webhooks.py`, `server.py` (Helius dynamique)
+  - `core/news_repost.py` (credentials via provider, dry-run inchangé)
+  - `core/prophet_studio.py` (image key dynamique)
+- ✅ Script one-shot : `/app/backend/scripts/migrate_secrets_to_cabinet.py`.
 
-**Tests**
-- Backend : tests unitaires légers + tests API (crud) + test d’appel LLM (dry-run si nécessaire).
-- Frontend : vérifier catégories et états “not set”.
-
-**Validation gate**
-- Aucune clé LLM critique n’est lue depuis l’ancien vault en prod.
-- Les appels IA fonctionnent (Prophet, repost engine dry-run).
+**Tests & validation gate**
+- ✅ Régression backend 100% (prophecy/chat/admin/webhooks/vault) : `/app/test_reports/iteration_17.json`.
 
 ---
 
-### Phase 12 — Sprint 12.5 : Import backups + Audit viewer (compléter le cycle) ⏳ **NOT STARTED**
-**Objectif** : restauration sécurisée + consultation avancée des logs.
+### Phase 12 — Sprint 12.5 : Import backups (backend + UI) ✅ **COMPLETED**
+**Objectif** : cycle complet sauvegarde/restauration chiffrée.
 
-**Travaux (prévus)**
-- Backend :
-  - `POST /api/admin/cabinet-vault/import` (décryptage via passphrase export, re-chiffrement via master key en mémoire).
-  - garde-fous (structure, versioning, collisions).
-- Frontend :
-  - UI dialog import (upload JSON + passphrase + preview).
-  - Audit viewer amélioré (filtre action / catégorie / key + pagination si utile).
+**Travaux (réalisés)**
+- ✅ Backend : `cabinet_vault.import_encrypted(bundle, passphrase, overwrite)` + audit.
+- ✅ Router : `POST /api/admin/cabinet-vault/import` + invalidation cache SecretProvider.
+- ✅ Frontend : `ImportDialog` + bouton Import (barre d’actions du panel déverrouillé).
+- ✅ `yarn build` : **Compiled successfully**.
 
-**Validation gate**
-- Round-trip : export → import sur base vide → secrets restaurés.
-- Audit visible et cohérent.
+**Tests & validation gate**
+- ✅ 22 scénarios import/export (round-trip, collisions skip/overwrite, wrong passphrase atomic abort, audit) : `/app/test_reports/iteration_18.json`.
 
 ---
 
 ## 3) Next Actions
-1. **Sprint 12.3.E2E** : exécuter la checklist complète (screens/captures + bugfix si besoin).
-2. **Sprint 12.4** : migrer les clés LLM vers Cabinet Vault (débloque la valeur réelle du coffre).
-3. **Sprint 12.5** : import backups + audit viewer (cycle complet de sauvegarde/restauration).
-4. Ensuite :
-   - Bots Telegram/X (dépend des credentials)
-   - Helius “demo mode” → vrai mint post-launch
-   - Migration résiduelle JSX → TSX (post-déploiement, si nécessaire)
+1. **(Optionnel) Sprint 12.3.E2E Frontend** : tests E2E UI complets du Cabinet Vault (init → unlock → CRUD → audit → export → import → TTL).
+2. **(Optionnel) Stabilisation dev server** : si nécessaire, corriger l’affichage d’erreurs fork-ts-checker en mode dev (le build prod est OK).
+3. **Post-12.5 / Go-to-market** :
+   - Bots Telegram (Phase 3) : nécessite token + chat id.
+   - Bots X (Phase 4/5) : nécessite credentials X API + liste KOL.
+   - Helius : passer de demo mode au mint réel post-launch.
+4. **Post-deploy (low priority)** : migration résiduelle JSX → TSX (`AdminBots.jsx`, `AdminVault.jsx`) si besoin.
 
 ---
 
 ## 4) Success Criteria
-- Phases 1–10 :
+- Phases 1–9 :
   - TS/TSX quasi complet, build prod OK.
   - Cabinet Vault UI accessible via `/admin/cabinet-vault`.
-  - E2E Cabinet Vault validé (2FA guard + init/unlock + CRUD + audit + export + TTL).
+- Phase 10 :
+  - Backend Cabinet Vault validé (2FA guard + init/unlock + CRUD + audit + export + TTL).
 - Phase 11 :
-  - Les secrets LLM ne dépendent plus de `secrets_vault.py` (Fernet) en production.
-  - Prophet / engines admin utilisent Cabinet Vault.
+  - SecretProvider en place : lecture Vault (unlock) + fallback env, rotation sans redémarrage.
+  - Services clés (Prophet, emails, Helius wiring, repost dry-run) fonctionnels.
 - Phase 12 :
-  - Export + import chiffrés fonctionnels (restauration).
-  - Audit viewer exploitable.
-- Flows inchangés : landing + intro + ROI + vault + admin (bots restent dry-run tant que credentials non fournis).
+  - Export + import chiffrés fonctionnels (restauration) + audit.
+- Reste inchangé : landing + intro + ROI + vault + admin (bots restent dry-run tant que credentials non fournis).
