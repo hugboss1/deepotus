@@ -644,6 +644,61 @@ async def admin_2fa_disable(
     return SimpleOk(ok=True, message="2FA disabled.")
 
 
+class TwoFAForceResetRequest(BaseModel):
+    """Recovery flow when the admin lost their authenticator device.
+
+    Unlike ``/2fa/disable`` this does NOT require a TOTP code — only the
+    admin password — so a locked-out admin can regain access.
+
+    Side-effects:
+      - wipes the existing TOTP secret + backup codes,
+      - sets enabled=False, setup_pending=False,
+      - logs the reset for audit (db.config.admin_2fa.reset_history).
+
+    The next call to ``/2fa/setup`` will then start a fresh enrollment.
+    """
+    password: str
+
+
+@router.post("/2fa/force-reset", response_model=SimpleOk)
+async def admin_2fa_force_reset(
+    req: TwoFAForceResetRequest, _p: dict = Depends(require_admin),
+):
+    """EMERGENCY recovery: wipe 2FA without TOTP (password-only).
+
+    Use this only when the admin authenticator device is lost. After
+    this call, the admin must run ``/2fa/setup`` + ``/2fa/verify`` again
+    to re-enable 2FA — until then, the Cabinet Vault is inaccessible
+    (its endpoints require 2FA to be **active**).
+    """
+    if not await verify_admin_password(req.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    now = datetime.now(timezone.utc).isoformat()
+    # Append to a small history list so we can audit lost-device events.
+    await db.config.update_one(
+        {"_id": "admin_2fa"},
+        {
+            "$set": {
+                "_id": "admin_2fa",
+                "secret": None,
+                "backup_codes_hashes": [],
+                "enabled": False,
+                "setup_pending": False,
+                "force_reset_at": now,
+            },
+            "$push": {
+                "reset_history": {
+                    "at": now,
+                    "kind": "force_reset_no_totp",
+                },
+            },
+        },
+        upsert=True,
+    )
+    logging.warning("[admin] 2FA force-reset (password-only) executed")
+    return SimpleOk(ok=True, message="2FA reset. Run /2fa/setup to re-enroll.")
+
+
 # ---------------------------------------------------------------------
 # Password rotation
 # ---------------------------------------------------------------------
