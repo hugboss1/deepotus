@@ -1,23 +1,15 @@
 [
   {
-    "content": "Wipe 2FA résiduelle + révoquer sessions stale",
-    "status": "completed"
+    "content": "Tests E2E frontend Cabinet Vault APPROFONDIS - contexte Playwright persistant + CRUD + Export + Import + Audit",
+    "status": "in_progress"
   },
   {
-    "content": "Ajouter endpoint /api/admin/2fa/force-reset (recovery sans TOTP)",
-    "status": "completed"
+    "content": "Corriger les bugs frontend trouvés par testing agent (priorité high → low)",
+    "status": "pending"
   },
   {
-    "content": "Créer guide 2FA complet : /app/docs/2FA_SETUP_GUIDE.md",
-    "status": "completed"
-  },
-  {
-    "content": "Modifier guards Cabinet Vault : require_2fa_or_bootstrap pour init/unlock/lock/list/audit (2FA strict pour CRUD)",
-    "status": "completed"
-  },
-  {
-    "content": "Tests E2E frontend Cabinet Vault complets (testing agent + screenshot manual)",
-    "status": "completed"
+    "content": "Final - Restaurer un état vault vierge pour le user (post-tests)",
+    "status": "pending"
   },
   {
     "content": "Future - Bots Telegram + X API integration (bloqué sur credentials user)",
