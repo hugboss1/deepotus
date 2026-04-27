@@ -46,7 +46,19 @@ def _is_valid_solana(addr: str) -> bool:
 async def ensure_indexes() -> None:
     try:
         await db.clearance_levels.create_index([("email", 1)], unique=True)
-        await db.clearance_levels.create_index([("wallet_address", 1)], unique=True, sparse=True)
+        # Use a PARTIAL index rather than a sparse one: sparse only skips
+        # documents where the field is ABSENT, not when it is present with
+        # value=null. Our row defaults `wallet_address` to null before the
+        # user links it, so a sparse index collides on the second insert.
+        # The partial filter guarantees only real addresses are indexed.
+        await db.clearance_levels.create_index(
+            [("wallet_address", 1)],
+            unique=True,
+            name="wallet_address_unique_when_set",
+            partialFilterExpression={
+                "wallet_address": {"$exists": True, "$type": "string"},
+            },
+        )
         await db.clearance_levels.create_index([("level", -1), ("level_achieved_at", 1)])
     except Exception:  # noqa: BLE001
         pass
@@ -115,12 +127,11 @@ async def _ensure_row(email: str, *, source: str = "terminal") -> Dict[str, Any]
     new = {
         "_id": str(uuid.uuid4()),
         "email": email_l,
-        "wallet_address": None,
+        # NOTE: `wallet_address` is intentionally omitted here so the unique
+        # index (partial, only when present and a string) does not see any
+        # row with `null`. It will be $set later by `link_wallet` /
+        # `admin_set_wallet`. Same rationale for `level_*_achieved_at`.
         "riddles_solved": [],
-        "level_1_achieved_at": None,
-        "level_2_achieved_at": None,
-        "level_3_achieved_at": None,
-        "wallet_linked_at": None,
         "source": source,
         "created_at": now,
         "updated_at": now,

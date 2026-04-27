@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, CheckCircle2, AlertTriangle, Mail, KeyRound, ArrowRight } from "lucide-react";
+import { X, Send, CheckCircle2, AlertTriangle, Mail, KeyRound, ArrowRight, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 import { logger } from "@/lib/logger";
 import type { AccessSession } from "@/types";
+import RiddlesFlow from "./RiddlesFlow";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const SESSION_KEY = "deepotus_access_session";
@@ -21,6 +22,7 @@ type TerminalPhase =
   | "success"
   | "genesis-success"
   | "verify-success"
+  | "riddles"
   | "error";
 
 interface SealedStatus {
@@ -419,6 +421,23 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                           {t("terminal.ctaVerifyExisting")}
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErrorMsg(null);
+                          setPhase("riddles");
+                        }}
+                        className="group inline-flex items-center justify-between gap-3 rounded-md border border-[#F59E0B]/50 bg-[#F59E0B]/5 hover:bg-[#F59E0B]/15 px-3 py-2 text-left transition-colors"
+                        data-testid="terminal-riddles-cta"
+                      >
+                        <span className="inline-flex items-center gap-2 text-[#F59E0B] font-mono font-semibold text-xs uppercase tracking-widest">
+                          <Brain size={13} />
+                          {t("terminal.riddles.ctaOpen")}
+                        </span>
+                        <span className="text-[10px] text-[#F59E0B]/70 font-mono">
+                          {t("terminal.riddles.ctaSubline")}
+                        </span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -519,6 +538,25 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                           {t("terminal.ctaRetreat")}
                         </button>
                       </div>
+
+                      {/* Proof of Intelligence CTA — available pre-mint too */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErrorMsg(null);
+                          setPhase("riddles");
+                        }}
+                        className="group inline-flex items-center justify-between gap-3 rounded-md border border-[#F59E0B]/50 bg-[#F59E0B]/5 hover:bg-[#F59E0B]/15 px-3 py-2 text-left transition-colors max-w-md"
+                        data-testid="terminal-riddles-cta-sealed"
+                      >
+                        <span className="inline-flex items-center gap-2 text-[#F59E0B] font-mono font-semibold text-xs uppercase tracking-widest">
+                          <Brain size={13} />
+                          {t("terminal.riddles.ctaOpen")}
+                        </span>
+                        <span className="text-[10px] text-[#F59E0B]/70 font-mono">
+                          {t("terminal.riddles.ctaSubline")}
+                        </span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -882,6 +920,19 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                       {t("terminal.shortcutHint")}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* RIDDLES phase — Proof of Intelligence (Sprint 14.1) */}
+              {phase === "riddles" && (
+                <div data-testid="terminal-phase-riddles">
+                  <RiddlesFlow
+                    onExitToTerminal={() => {
+                      // Return to the correct prior entry screen based on seal state.
+                      setPhase(sealedStatus?.sealed ? "sealed" : "denied");
+                    }}
+                    onCloseAll={onClose}
+                  />
                 </div>
               )}
 

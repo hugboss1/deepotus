@@ -1,34 +1,26 @@
 [
   {
-    "content": "Sprint 14.1 - Backend: core/riddles.py (5 énigmes seed + fuzzy match keywords + anti-brute-force) + clearance_levels.py (email + wallet optionnel Level 0→3) + sleeper_cell.py (singleton flag)",
+    "content": "Étendre i18n (terminal.riddles.*) FR + EN dans translations.js",
+    "status": "completed"
+  },
+  {
+    "content": "Ajouter CTA 'Proof of Intelligence' + implémenter toutes les phases riddles + persistance sessionStorage",
+    "status": "completed"
+  },
+  {
+    "content": "Fix bug backend: index MongoDB wallet_address partial + suppression null dans _ensure_row + migration DB",
+    "status": "completed"
+  },
+  {
+    "content": "Smoke test frontend FR (verification i18n + hint après 3 échecs)",
+    "status": "completed"
+  },
+  {
+    "content": "Build final yarn build + lint + verification tsc",
+    "status": "completed"
+  },
+  {
+    "content": "Tests exhaustifs via testing agent (E2E happy path + rate-limit + i18n + session persistence + admin snapshot CSV)",
     "status": "in_progress"
-  },
-  {
-    "content": "Sprint 14.1 - Backend: routers/infiltration.py (public endpoints: list/attempt/clearance/link-wallet/sleeper-status + admin CRUD + snapshot CSV)",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 14.1 - server.py: include router + seed riddles au startup + indexes",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 14.1 - Frontend: Admin page /admin/infiltration (Riddles CRUD + Clearance ledger + Sleeper Cell toggle + Snapshot CSV)",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 14.1 - Frontend: étendre TerminalPopup.tsx avec mode 'RIDDLES' cinématique (glitch animations + révélation + son ASCII via Web Audio)",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 14.1 - Frontend: bannière 'PROOF OF INTELLIGENCE' sur landing + hook useSleeperStatus pour masquer buy_links si Sleeper Cell actif",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 14.1 - Tone Directives v2: update default personality_prompt (forbidden: LFG/Moon/Gem/100x, required: Procédure/Dossier/Liquidation/Actif/Archive + price template)",
-    "status": "pending"
-  },
-  {
-    "content": "Sprint 14.1 - Tests E2E : submit 5 énigmes avec bonnes/mauvaises réponses + level up + sleeper cell toggle + CSV snapshot",
-    "status": "pending"
   }
 ]

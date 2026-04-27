@@ -246,6 +246,76 @@ export const translations = {
         "Le Mail #2 (votre carte Niveau 02) sera dispatché automatiquement quand $DEEPOTUS frappera la blockchain. Pas avant. Pas après. Dans le bon ordre.",
       sealedAlreadySubscribed:
         "Votre allégeance figure déjà dans le canal du Cabinet. Aucun mail dupliqué n'a été envoyé.",
+
+      // ---- Proof of Intelligence — Riddles of the Terminal (Sprint 14.1) ----
+      riddles: {
+        ctaOpen: "Proof of Intelligence →",
+        ctaSubline: "5 énigmes · Clearance Level 3",
+        introBadge: "RIDDLES OF THE TERMINAL · PROTOCOL ΔΣ",
+        introTitle: "Prouvez votre intelligence. Gagnez la clearance d'Agent.",
+        introBody:
+          "Cinq énigmes déchiffrent l'ADN du Deep State. Résolvez-en UNE pour débloquer la Clearance Level 3 (statut Agent · éligible à l'airdrop). Résolvez-les TOUTES si vous pensez mériter une place au Cabinet.",
+        introHints: [
+          "→ Chaque énigme accepte plusieurs formulations correctes.",
+          "→ 6 tentatives par heure par énigme. Au-delà : rate-limit.",
+          "→ L'email ne sera demandé qu'à votre PREMIÈRE bonne réponse.",
+        ],
+        introStart: "Commencer l'épreuve →",
+        introAbort: "Retirer ma candidature",
+        introResume: "Reprendre où je me suis arrêté",
+        loading: "Chargement des énigmes depuis l'archive…",
+        loadError: "L'archive ΔΣ est injoignable. Réessayez.",
+        empty: "Aucune énigme n'est actuellement active.",
+        progressLabel: "Progression",
+        progressOf: "sur",
+        alreadySolved: "Déjà résolue",
+        currentSolvedBadge: "SOLVED",
+        answerLabel: "Votre réponse",
+        answerPlaceholder: "Tapez votre réponse (mots-clés suffisent)…",
+        submit: "Transmettre la réponse",
+        submitting: "Analyse du Prophète…",
+        correctTitle: "CORRECT. L'empire tremble.",
+        correctSub: "Mot-clé reconnu : __KEYWORD__",
+        incorrectTitle: "REJETÉ. Le Deep State reste scellé.",
+        incorrectAttemptsLeft: "__N__ tentative(s) restante(s) cette heure.",
+        hintLabel: "Indice (accordé après 3 échecs) :",
+        rateLimited: "Trop de tentatives. Le canal se referme temporairement — revenez dans 30 minutes.",
+        nextRiddle: "Énigme suivante →",
+        claimNow: "Revendiquer ma Clearance Level 3 →",
+        skipToEnd: "J'en ai assez, je revendique maintenant →",
+        // Claim phase
+        claimBadge: "CLEARANCE LEVEL 3 · AGENT STATUS UNLOCKED",
+        claimTitle: "Revendiquez votre statut d'Agent.",
+        claimBody:
+          "Le Deep State a besoin d'un canal pour vous contacter. Votre email servira UNIQUEMENT à l'airdrop et aux transmissions Cabinet. Aucun spam. Aucune revente.",
+        claimEmailLabel: "Email d'agent",
+        claimSubmit: "Sceller la Clearance Level 3",
+        claimSubmitting: "Enregistrement dans le registre Agent…",
+        claimError: "Échec de l'enregistrement. Réessayez.",
+        // Wallet phase
+        walletBadge: "LIEN WALLET · AIRDROP ELIGIBILITY",
+        walletTitle: "Attachez un wallet Solana pour recevoir l'airdrop.",
+        walletBody:
+          "Le snapshot pré-airdrop exclut les agents sans wallet. Collez votre adresse publique Solana (base58, 32–44 caractères). Vous pourrez la modifier plus tard par email.",
+        walletLabel: "Wallet Solana (base58)",
+        walletPlaceholder: "Fh4gX…WpZr",
+        walletSubmit: "Lier le wallet",
+        walletSubmitting: "Vérification du wallet…",
+        walletInvalid: "Adresse invalide. Attendu : 32–44 caractères base58.",
+        walletSkip: "Lier plus tard (je préfère par email)",
+        walletError: "Impossible de lier ce wallet. Vérifiez l'adresse.",
+        // Complete phase
+        completeBadge: "✓ AGENT LEVEL 3 · CABINET ΔΣ",
+        completeTitle: "Bienvenue, Agent. Le Cabinet vous a archivé.",
+        completeLead:
+          "Votre dossier est scellé : __SOLVED__/5 énigmes résolues. Votre wallet figure dans le snapshot pré-airdrop.",
+        completeLeadNoWallet:
+          "Votre dossier est scellé : __SOLVED__/5 énigmes résolues. Liez un wallet par email pour être inclus dans le snapshot.",
+        completeNext:
+          "Les transmissions Cabinet arriveront dans votre boîte. Restez en radio-silence. Le Deep State observe.",
+        completeClose: "Fermer le terminal",
+        completeContinue: "Résoudre les énigmes restantes →",
+      },
     },
 
     // ---- Classified vault (full-page real vault) ----
@@ -1036,6 +1106,76 @@ export const translations = {
         "Mail #2 (your Level 02 card) will be dispatched automatically once $DEEPOTUS hits the blockchain. Not before. Not after. In the right order.",
       sealedAlreadySubscribed:
         "Your allegiance is already on file with the Cabinet. No duplicate mail was sent.",
+
+      // ---- Proof of Intelligence — Riddles of the Terminal (Sprint 14.1) ----
+      riddles: {
+        ctaOpen: "Proof of Intelligence →",
+        ctaSubline: "5 riddles · Clearance Level 3",
+        introBadge: "RIDDLES OF THE TERMINAL · PROTOCOL ΔΣ",
+        introTitle: "Prove your intelligence. Earn Agent clearance.",
+        introBody:
+          "Five riddles decode the DNA of the Deep State. Solve ONE to unlock Clearance Level 3 (Agent status · airdrop eligible). Solve ALL FIVE if you think you deserve a seat at the Cabinet.",
+        introHints: [
+          "→ Each riddle accepts several valid phrasings.",
+          "→ 6 attempts per hour per riddle. Beyond that: rate-limited.",
+          "→ Your email is only requested at your FIRST correct answer.",
+        ],
+        introStart: "Begin the ordeal →",
+        introAbort: "Withdraw candidacy",
+        introResume: "Resume where I left off",
+        loading: "Fetching riddles from the archive…",
+        loadError: "ΔΣ archive unreachable. Try again.",
+        empty: "No riddles are currently active.",
+        progressLabel: "Progress",
+        progressOf: "of",
+        alreadySolved: "Already solved",
+        currentSolvedBadge: "SOLVED",
+        answerLabel: "Your answer",
+        answerPlaceholder: "Type your answer (keywords are enough)…",
+        submit: "Transmit answer",
+        submitting: "Prophet parsing…",
+        correctTitle: "CORRECT. The empire trembles.",
+        correctSub: "Keyword matched: __KEYWORD__",
+        incorrectTitle: "REJECTED. The Deep State stays sealed.",
+        incorrectAttemptsLeft: "__N__ attempt(s) left this hour.",
+        hintLabel: "Hint (unlocked after 3 wrong attempts):",
+        rateLimited: "Too many attempts. Channel closes temporarily — come back in 30 minutes.",
+        nextRiddle: "Next riddle →",
+        claimNow: "Claim my Clearance Level 3 →",
+        skipToEnd: "Enough — claim now →",
+        // Claim phase
+        claimBadge: "CLEARANCE LEVEL 3 · AGENT STATUS UNLOCKED",
+        claimTitle: "Claim your Agent status.",
+        claimBody:
+          "The Deep State needs a channel to reach you. Your email will ONLY be used for the airdrop and Cabinet transmissions. No spam. No resale.",
+        claimEmailLabel: "Agent email",
+        claimSubmit: "Seal Clearance Level 3",
+        claimSubmitting: "Filing into the Agent registry…",
+        claimError: "Registration failed. Try again.",
+        // Wallet phase
+        walletBadge: "WALLET LINK · AIRDROP ELIGIBILITY",
+        walletTitle: "Attach a Solana wallet to receive the airdrop.",
+        walletBody:
+          "The pre-airdrop snapshot excludes agents without a wallet. Paste your public Solana address (base58, 32–44 chars). You can change it later by email.",
+        walletLabel: "Solana wallet (base58)",
+        walletPlaceholder: "Fh4gX…WpZr",
+        walletSubmit: "Link wallet",
+        walletSubmitting: "Verifying wallet…",
+        walletInvalid: "Invalid address. Expected: 32–44 base58 characters.",
+        walletSkip: "Link later (I'd rather via email)",
+        walletError: "Unable to link this wallet. Check the address.",
+        // Complete phase
+        completeBadge: "✓ AGENT LEVEL 3 · CABINET ΔΣ",
+        completeTitle: "Welcome, Agent. The Cabinet has filed you.",
+        completeLead:
+          "Your record is sealed: __SOLVED__/5 riddles solved. Your wallet is in the pre-airdrop snapshot.",
+        completeLeadNoWallet:
+          "Your record is sealed: __SOLVED__/5 riddles solved. Link a wallet by email to be included in the snapshot.",
+        completeNext:
+          "Cabinet transmissions will land in your inbox. Stay radio-silent. The Deep State is watching.",
+        completeClose: "Close terminal",
+        completeContinue: "Solve the remaining riddles →",
+      },
     },
 
     classifiedVault: {
