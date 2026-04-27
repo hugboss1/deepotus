@@ -1,4 +1,4 @@
-# DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ** (Sprints 6 → 14.1)
+# DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ** (Sprints 6 → 13.3 + Infiltration 14.1)
 
 ## 1) Objectives
 - Stabiliser et clarifier le code (split des gros composants, réduction de complexité) **avant** migration d’hébergement (Vercel/Render).
@@ -18,41 +18,42 @@
 - Build : **`yarn build` OK** + doc déploiement (`DEPLOY.md`).
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
-- Backend BIP39 + PBKDF2 + AES-256-GCM + audit
-- Frontend UI `/admin/cabinet-vault` + export + import + audit
-- Import/Export chiffrés validés
-- **SecretProvider** en place (vault → fallback env) + script migration secrets
-- **2FA bootstrap** : ajout d’un mode bootstrap Cabinet Vault (init/unlock/list/audit autorisés **sans 2FA** uniquement si vault vide). CRUD/export/import restent **2FA strict**.
+- Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
+- Frontend UI `/admin/cabinet-vault` + export + import + audit.
+- Import/Export chiffrés validés.
+- **SecretProvider** en place (vault → fallback env) + script migration secrets.
+- **2FA bootstrap** : init/unlock/list/audit autorisés **sans 2FA** uniquement si vault vide. CRUD/export/import restent **2FA strict**.
 - Endpoint recovery `POST /api/admin/2fa/force-reset` + guide `/app/docs/2FA_SETUP_GUIDE.md`.
 
 #### Propaganda Engine (Sprints 13.1–13.2) — ✅ LIVRÉ end-to-end
-- **Sprint 13.1 MVP** ✅ : orchestrateur + templates DB + approval queue + panic kill-switch + UI admin (Triggers/Templates/Queue/Activity)
+- **Sprint 13.1 MVP** ✅ : orchestrateur + templates DB + approval queue + panic kill-switch + UI admin (Triggers/Templates/Queue/Activity).
 - **Sprint 13.2 COMPLET** ✅ :
-  - **5 triggers** : `mint`, `mc_milestone`, `jeet_dip`, `whale_buy`, `raydium_migration`
-  - `market_analytics.py` : snapshots prix/MC (TTL 1h), dip detection, snapshot market synthétique
-  - `tone_engine.py` : LLM hybride **70/30** (configurable), persona “weary intel officer”, post-processor (placeholders intacts, pas de hashtags/emoji, ≤280 chars)
-  - **FR optionnel** : +12 templates FR seedés (EN=13)
-  - `PATCH /api/admin/propaganda/settings` : `llm_enabled`, `llm_enhance_ratio`, `personality_prompt`, `provider/model`
-  - Frontend : tab **Tone & LLM** (toggle + slider 0–100% + provider/model + editor prompt 4000 chars)
+  - **5 triggers** : `mint`, `mc_milestone`, `jeet_dip`, `whale_buy`, `raydium_migration`.
+  - `market_analytics.py` : snapshots prix/MC (TTL 1h), dip detection.
+  - `tone_engine.py` : LLM hybride **70/30** (configurable), persona “weary intel officer”, post-processor (placeholders intacts, pas de hashtags/emoji, ≤280 chars).
+  - **FR optionnel** : +12 templates FR seedés (EN=13).
+  - `PATCH /api/admin/propaganda/settings` : `llm_enabled`, `llm_enhance_ratio`, `personality_prompt`, `provider/model`.
+  - Frontend : tab **Tone & LLM**.
 
-#### Infiltration Brain (Sprint 14.1) — ✅ Backend + ✅ Admin UI / ⏳ Public Terminal flow
-- ✅ Backend : `core/riddles.py`, `core/clearance_levels.py`, `core/sleeper_cell.py` + endpoints `routers/infiltration.py`
-- ✅ Seed de **5 énigmes** + anti-bruteforce (TTL 24h, soft-limit 6/h)
-- ✅ Admin UI : `/app/frontend/src/pages/Infiltration.tsx` **déjà implémenté** (tabs Riddles/Clearance/Sleeper/Attempts)
-- ⏳ Public UX : intégration “Proof of Intelligence” dans `TerminalPopup.tsx` (composant landing)
+#### Infiltration Brain (Sprint 14.1) — ✅ Backend + ✅ Admin UI + ✅ Public Terminal flow
+- ✅ Backend : `core/riddles.py`, `core/clearance_levels.py`, `core/sleeper_cell.py` + endpoints `routers/infiltration.py`.
+- ✅ Seed de **5 énigmes** + anti-bruteforce (TTL 24h, soft-limit 6/h).
+- ✅ Admin UI : `/app/frontend/src/pages/Infiltration.tsx` (tabs Riddles/Clearance/Sleeper/Attempts).
+- ✅ Public UX : intégration “Proof of Intelligence” dans le Terminal (landing) via `TerminalPopup.tsx` + composant dédié `RiddlesFlow.tsx`.
+- ✅ Correction backend critique : index wallet MongoDB sur `clearance_levels` (unique) migré vers **partial index** (unique uniquement quand `wallet_address` est un string) + suppression du `wallet_address: null` à la création.
 
 #### Tests automatisés & validations
-- **Iteration 16** : backend Cabinet Vault (12.3.E2E backend) ✅
-- **Iteration 17** : régression Sprint 12.4 (SecretProvider) ✅
-- **Iteration 18** : Sprint 12.5 Import/Export (22/22) ✅
-- **Sprint 13.2** : smoke tests backend (9/9) + screenshots frontend (5 tabs + Tone tab) ✅
+- **Iteration 16** : backend Cabinet Vault (12.3.E2E backend) ✅.
+- **Iteration 17** : régression Sprint 12.4 (SecretProvider) ✅.
+- **Iteration 18** : Sprint 12.5 Import/Export (22/22) ✅.
+- **Sprint 13.2** : smoke tests backend (9/9) + screenshots frontend (5 tabs + Tone tab) ✅.
 - **Sprint 14.1** :
-  - ✅ Smoke backend endpoints infiltration (manuel / curl)
-  - ⏳ Screenshots + tests frontend du nouveau flow Terminal (à produire)
+  - ✅ E2E manuel (Playwright screenshot_tool) : intro → play → claim → wallet → complete (FR/EN), hint après 3 échecs, wrong answer, persistance sessionStorage.
+  - ✅ Curls backend : attempt, clearance, link-wallet OK.
+  - ⚠️ Testing agent Playwright : difficulté avec l’animation d’intro (DEEPSTATE.SYS) ; privilégier screenshots manuels pour ce module.
 
 #### Restant
 - **Sprint 13.3** : dispatchers réels (Telegram/X) + worker cron + rate limiting + onboarding credentials (bloqué par credentials Telegram/X).
-- **Sprint 14.1 Frontend** : Proof of Intelligence dans le Terminal (P0).
 
 ---
 
@@ -74,8 +75,8 @@
 - ✅ Types consolidés dans `src/types/index.ts`.
 
 **Validation gate (réalisée)**
-- ✅ `npx tsc --noEmit` OK
-- ✅ Webpack dev OK
+- ✅ `npx tsc --noEmit` OK.
+- ✅ Webpack dev OK.
 - ✅ Smoke test manuel des routes admin + landing.
 
 ---
@@ -85,8 +86,8 @@
 - Migration majeure de composants landing vers TSX, stabilisation i18n, conservation UX.
 
 **Validation gate**
-- ✅ `npx tsc --noEmit` OK
-- ✅ Webpack compile OK
+- ✅ `npx tsc --noEmit` OK.
+- ✅ Webpack compile OK.
 - ✅ Smoke test landing (scroll, ROI, toggles theme/lang, vault interactions).
 
 ---
@@ -96,7 +97,7 @@
 - Migration des pages principales vers TSX (Landing/Operation/HowToBuy/PublicStats/ClassifiedVault) + corrections bundler.
 
 **Validation gate**
-- ✅ `npx tsc --noEmit` OK
+- ✅ `npx tsc --noEmit` OK.
 - ✅ Smoke test navigation complète.
 
 ---
@@ -106,7 +107,7 @@
 - Typage intro + UI 2FA (activation/guard) intégré.
 
 **Validation gate**
-- ✅ `npx tsc --noEmit` OK
+- ✅ `npx tsc --noEmit` OK.
 - ✅ Smoke test intro + 2FA.
 
 ---
@@ -118,7 +119,7 @@
 - ✅ Validation `yarn build`.
 
 **Validation gate**
-- ✅ `yarn build` OK
+- ✅ `yarn build` OK.
 - ✅ E2E de non-régression (manuel) : Landing + Admin + Classified Vault.
 
 ---
@@ -129,7 +130,7 @@
 - Remplacement du flow email Genesis par “Allégeance”.
 
 **Validation gate**
-- ✅ Backend protections (403 + override admin)
+- ✅ Backend protections (403 + override admin).
 - ✅ Smoke test UI + email flow.
 
 ---
@@ -187,8 +188,8 @@
 
 **Travaux (réalisés)**
 - ✅ Ajout `core/secret_provider.py` (Vault → fallback env, cache TTL, invalidation).
-- ✅ Ajout `get_secret_silent()` + `is_unlocked()` dans `core/cabinet_vault.py` (évite flood audit côté services).
-- ✅ Refactor call sites (public/admin/webhooks/vault/email/llm/news_repost/prophet_studio).
+- ✅ Ajout `get_secret_silent()` + `is_unlocked()` dans `core/cabinet_vault.py`.
+- ✅ Refactor call sites.
 - ✅ Script one-shot : `/app/backend/scripts/migrate_secrets_to_cabinet.py`.
 
 **Tests & validation gate**
@@ -200,10 +201,10 @@
 **Objectif** : cycle complet sauvegarde/restauration chiffrée.
 
 **Travaux (réalisés)**
-- ✅ Backend : `cabinet_vault.import_encrypted(bundle, passphrase, overwrite)` + audit.
+- ✅ Backend : `cabinet_vault.import_encrypted(...)` + audit.
 - ✅ Router : `POST /api/admin/cabinet-vault/import` + invalidation cache SecretProvider.
 - ✅ Frontend : `ImportDialog` + bouton Import.
-- ✅ `yarn build` : **Compiled successfully**.
+- ✅ `yarn build` : compiled successfully.
 
 **Tests & validation gate**
 - ✅ 22 scénarios import/export : `/app/test_reports/iteration_18.json`.
@@ -216,59 +217,24 @@
 Objectif : implémenter une logique “scenario-based” de propagande automatisée avec garde-fous (anti-spam, anti-slop), testable **avant le mint** via Manual Fire.
 
 #### Choix validés (scope global)
-- **Génération messages** : Hybride **templates + LLM** (70/30, ratio configurable)
-- **Langues** : **EN par défaut**, FR optionnel par trigger (fallback EN)
-- **Détection triggers** : **Helius + Manual Fire** (testable maintenant)
-- **Roadmap** : MVP itératif **13.1 → 13.2 → 13.3**
-- **Garde-fous** : **Approval queue** + policy auto/manuel par trigger + **Panic Kill Switch**
-- **Rate limits** (défaut) : **8/h**, **24/jour**, **1/trigger/15min** (à implémenter réellement en 13.3)
-- **Override “Vault mention”** : chaque 3e message doit mentionner le Vault (traffic driver)
-- **Human delay** : 10–30s après trigger
+- **Génération messages** : Hybride **templates + LLM** (70/30, ratio configurable).
+- **Langues** : **EN par défaut**, FR optionnel par trigger (fallback EN).
+- **Détection triggers** : **Helius + Manual Fire**.
+- **Roadmap** : **13.1 → 13.2 → 13.3**.
+- **Garde-fous** : **Approval queue** + policy auto/manuel + **Panic Kill Switch**.
+- **Rate limits** (défaut) : **8/h**, **24/jour**, **1/trigger/15min** (à implémenter réellement en 13.3).
+- **Override “Vault mention”** : chaque 3e message mentionne le Vault.
+- **Human delay** : 10–30s après trigger.
 
 ---
 
 ### Phase 13.1 (P0) — MVP Squelette ✅ **COMPLETED**
-**Livrables (réalisés)**
-- Backend :
-  - `core/propaganda_engine.py` (orchestrateur)
-  - `core/dispatch_queue.py` (approval queue)
-  - `core/templates_repo.py` (templates DB-backed) + seed initial EN
-  - `core/triggers/mint.py` + `core/triggers/mc_milestone.py`
-  - `routers/propaganda.py` : endpoints admin
-  - Collections : `propaganda_events`, `propaganda_queue`, `propaganda_templates`, `propaganda_settings`, `propaganda_triggers`
-- Frontend :
-  - `pages/Propaganda.tsx` (admin) : Tabs **Triggers / Templates / Queue / Activity**
-  - Panic Kill Switch + Manual Fire + Templates CRUD + Approval queue
-- Sécurité : endpoints sous `require_admin`; actions “send-like” (panic/approve/reject) protégées par 2FA.
-
-**Validation gate (réalisée)**
-- ✅ `yarn build` OK
-- ✅ API smoke : manual fire → queue → approve gated by 2FA → activity log
-- ✅ Screenshots UI : page accessible, tabs render, queue items visibles
+(identique au plan précédent)
 
 ---
 
 ### Phase 13.2 (P1) — Triggers complets + Tone Engine ✅ **COMPLETED**
-**Ajouts (réalisés)**
-- Triggers :
-  - ✅ `jeet_dip` (drop -20% / 2 min)
-  - ✅ `whale_buy` (tx > 5 SOL, threshold configurable)
-  - ✅ `raydium_migration` (dex_mode=raydium)
-- ✅ `core/market_analytics.py` :
-  - snapshots (TTL 1h) + `detect_dip()`
-  - `current_market_snapshot()` pour fournir des links + contexte
-- ✅ `core/tone_engine.py` :
-  - LLM hybride (ratio configurable)
-  - persona prompt configurable
-  - post-processor strict (placeholders intacts, no hashtags/emoji, ≤280)
-- ✅ FR optionnel : +12 templates FR seedés (EN=13)
-- ✅ API : `GET /settings` enrichi (tone) + `PATCH /settings`
-- ✅ Frontend : tab **Tone & LLM** (toggle, slider, provider/model, personality editor)
-
-**Validation gate (réalisée)**
-- ✅ Backend smoke tests 9/9 (LLM rewrite FR validé, persona terminologie OK)
-- ✅ Frontend screenshots : 5 tabs + 5 triggers + Tone tab opérationnel
-- ✅ `yarn build` OK
+(identique au plan précédent)
 
 ---
 
@@ -279,27 +245,22 @@ Objectif : implémenter une logique “scenario-based” de propagande automatis
 **Livrables**
 - Worker :
   - `core/dispatcher_worker.py` (ou extension `core/bot_scheduler.py`) :
-    - consomme `propaganda_queue` items `status=approved` et `scheduled_for <= now`
-    - applique rate limiting (8/h, 24/j, per-trigger cooldown)
-    - écrit `sent/failed` + results dans queue
-    - logge dans `propaganda_events`
+    - consomme `propaganda_queue` items `status=approved` et `scheduled_for <= now`.
+    - applique rate limiting (8/h, 24/j, per-trigger cooldown).
+    - écrit `sent/failed` + results dans queue.
+    - logge dans `propaganda_events`.
 - Dispatchers réels :
-  - `core/dispatchers/telegram.py` (Bot API `sendMessage`)
-  - `core/dispatchers/x.py` (OAuth2 user context PKCE + refresh)
+  - `core/dispatchers/telegram.py` (Bot API `sendMessage`).
+  - `core/dispatchers/x.py` (OAuth2 user context PKCE + refresh).
 - Rate limiting DB :
-  - table/collection `propaganda_rate_limits` (ou counters dans `propaganda_settings`)
-  - règles : global/hour, global/day, per-trigger/minutes
+  - collection `propaganda_rate_limits` (ou counters persistants équivalents).
 - Onboarding :
-  - checklist credentials + “Test post” vers un channel sandbox
-  - intégration Cabinet Vault : lecture des secrets (token/chat_id, client_id/secret/refresh)
-- Tests E2E :
-  - Manual Fire → approve → envoi réel Telegram
-  - Manual Fire → approve → envoi réel X
-  - Tests limites : spam guard + cooldown per trigger
+  - checklist credentials + “Test post” vers un channel sandbox.
+  - intégration Cabinet Vault : lecture des secrets (token/chat_id, client_id/secret/refresh).
 
 **Validation gate**
-- E2E “happy path” Telegram + X
-- Vérification anti-spam : limites/h + limites/jour + cooldown per trigger
+- E2E “happy path” Telegram + X.
+- Vérification anti-spam : limites/h + limites/jour + cooldown per trigger.
 
 ---
 
@@ -307,69 +268,59 @@ Objectif : implémenter une logique “scenario-based” de propagande automatis
 Objectif : rendre jouable le “Proof of Intelligence” côté landing + fournir le pilotage admin (riddles/clearance/sleeper cell/audit) + export airdrop.
 
 #### Choix UX validés (user = “go reco”)
-- **1a** Point d’entrée : visible dans Terminal **en mode `sealed` ET `denied`**
-- **2a** Progression : **séquentielle** (1 énigme à la fois sur 5)
-- **3b** Email : demandé **seulement à la 1ère victoire** (claim Level 3)
-- **4a** Wallet Solana : capturé **immédiatement** après Level 3
-- **5a** Esthétique : CRT vert cohérent, avec accents **ambre** (`#F59E0B`) pour signaler la branche “Clearance 3”
+- **1a** Point d’entrée : visible dans Terminal **en mode `sealed` ET `denied`**.
+- **2a** Progression : **séquentielle** (1 énigme à la fois sur 5).
+- **3b** Email : demandé **seulement à la 1ère victoire**.
+- **4a** Wallet Solana : capturé **immédiatement** après Level 3.
+- **5a** Esthétique : CRT vert cohérent, accents **ambre** (`#F59E0B`).
 
 #### Endpoints consommés (public)
-- `GET /api/infiltration/riddles?locale=fr|en` (liste sans keywords)
-- `POST /api/infiltration/riddles/{slug}/attempt` `{ answer, email?, locale }`
-- `GET /api/infiltration/clearance/{email}`
-- `POST /api/infiltration/clearance/link-wallet` `{ email, wallet_address }`
+- `GET /api/infiltration/riddles?locale=fr|en`.
+- `POST /api/infiltration/riddles/{slug}/attempt`.
+- `GET /api/infiltration/clearance/{email}`.
+- `POST /api/infiltration/clearance/link-wallet`.
 
 ---
 
-### Phase 14.1 (P0) — Backend + Admin UI ✅ / Public Terminal flow ⏳ (**NEXT**)
+### Phase 14.1 (P0) — Backend + Admin UI + Public Terminal flow ✅ **COMPLETED**
 **Livrables (réalisés)**
-- ✅ Backend riddles/clearance/sleeper cell + seed 5 énigmes + anti-bruteforce
-- ✅ Endpoints admin + public dans `routers/infiltration.py`
-- ✅ Admin UI : `/app/frontend/src/pages/Infiltration.tsx` (tabs : Riddles/Clearance/Sleeper/Attempts)
-
-**Livrables (à faire — P0)**
 1) **I18n**
-- Ajouter les clés `terminal.riddles.*` dans `/app/frontend/src/i18n/translations.js` (FR + EN)
-  - intro/briefing, CTA, libellés inputs, erreurs, messages succès, hint/warning attempts_left
+- ✅ Ajout des clés `terminal.riddles.*` (FR + EN) dans `/app/frontend/src/i18n/translations.js`.
+- ✅ Ajout des messages d’erreur localisés : `walletAlreadyLinked`, `walletInvalid`.
 
-2) **TerminalPopup — ajout de la branche Proof of Intelligence**
-- Fichier : `/app/frontend/src/components/landing/vault/TerminalPopup.tsx`
-- Ajouter un CTA “Proof of Intelligence” dans les phases `denied` et `sealed`
-- Étendre le type `TerminalPhase` avec les phases :
-  - `riddles-intro`
-  - `riddles-play`
-  - `riddles-claim`
-  - `riddles-wallet`
-  - `riddles-complete`
+2) **TerminalPopup — branche Proof of Intelligence**
+- ✅ Fichier : `/app/frontend/src/components/landing/vault/TerminalPopup.tsx`.
+- ✅ Extension `TerminalPhase` avec `"riddles"`.
+- ✅ CTA ajouté :
+  - `terminal-riddles-cta` (phase denied).
+  - `terminal-riddles-cta-sealed` (phase sealed).
+- ✅ Montage du flow via `phase === "riddles"`.
 
-3) **Sous-composant de flow**
-- Créer un sous-composant interne (ou extrait) `RiddlesFlow` qui gère :
-  - chargement `GET /api/infiltration/riddles?locale=${lang}`
-  - progression séquentielle (index courant)
-  - soumission `POST /api/infiltration/riddles/{slug}/attempt`
-  - feedback correct/incorrect + affichage `attempts_left`
-  - affichage `hint` après 3 échecs (heuristique client)
-  - **claim email** seulement après 1ʳᵉ bonne réponse (phase `riddles-claim`)
-  - persistance légère via `sessionStorage` : `{ email?, solvedSlugs[], currentIndex, level? }`
+3) **Sous-composant `RiddlesFlow`**
+- ✅ Nouveau fichier : `/app/frontend/src/components/landing/vault/RiddlesFlow.tsx`.
+- ✅ 5 phases internes : intro / play / claim / wallet / complete.
+- ✅ UX : progression 0/5 → 5/5, `attempts_left`, hint après 3 échecs, rate-limit UX.
+- ✅ Claim email après 1ère victoire (replay de la réponse gagnante persistée).
+- ✅ Wallet : validation base58 côté client + mapping erreurs backend → i18n.
 
-4) **Claim + Link wallet**
-- Après claim email :
-  - `GET /api/infiltration/clearance/{email}` (afficher Level)
-- Sur wallet :
-  - `POST /api/infiltration/clearance/link-wallet` + validation base58 côté UI (32–44, regex similaire backend)
+4) **Persistance sessionStorage**
+- ✅ Clé : `deepotus_riddles_session` avec :
+  - `{ email, solvedSlugs[], solvedAnswers{}, currentIndex, wallet, walletLinked, phaseSnapshot }`.
 
-5) **Qualité / DX**
-- Ajouter des `data-testid` pour le testing agent (CTA, inputs, submit, étapes)
-- Garder la posture sécurité existante : pas de leak keywords (on consomme seulement la liste publique)
+5) **Backend hardening (bug critique)**
+- ✅ `clearance_levels.wallet_address` : passage de `unique+sparse` (insuffisant) à **unique+partial index**.
+- ✅ `_ensure_row()` ne pose plus `wallet_address: null`.
+- ✅ Migration DB one-shot : suppression indexes legacy + `$unset` sur `wallet_address: null`.
 
-**Validation gate (Sprint 14.1 Frontend)**
-- ✅ `yarn build` (frontend)
-- ✅ Smoke manuel + screenshots :
-  - Terminal open → CTA Proof of Intelligence en `sealed` et en `denied`
-  - résolution d’énigme 1 → claim email → link wallet → complete
-  - erreurs : mauvais answer → attempts_left diminue, hint visible après 3 erreurs
-- ✅ Tests frontend (testing agent) *dans la limite sessionStorage* :
-  - vérifier que le state `sessionStorage` permet de reprendre le flow en rouvrant le terminal
+**Validation gate (réalisée)**
+- ✅ `yarn build` (frontend).
+- ✅ `npx tsc --noEmit` (frontend).
+- ✅ `ruff check` (backend).
+- ✅ E2E manuel + screenshots : sealed → riddles → claim → wallet → complete (FR/EN).
+
+**Limitations connues**
+- Pydantic `EmailStr` rejette certains TLDs réservés (`.test`, `.local`) : le frontend affiche désormais le message précis du backend.
+- Le testing agent Playwright peut rester bloqué sur l’animation d’intro : préférer `screenshot_tool` pour le Terminal.
 
 ---
 
@@ -382,7 +333,7 @@ Objectif : rendre jouable le “Proof of Intelligence” côté landing + fourni
   - Propaganda Engine MVP testable **pré-mint** via Manual Fire.
   - Approval queue + panic switch fonctionnels.
 - Phase 13.2 :
-  - 5 triggers complets + tone engine hybride + FR optionnel + vault mention every 3rd.
+  - 5 triggers complets + tone engine hybride + FR optionnel.
 - Phase 13.3 :
   - Dispatch Telegram + X réels, worker cron fiable, rate limiting robuste, onboarding clair.
 - Phase 14.1 :
@@ -394,40 +345,34 @@ Objectif : rendre jouable le “Proof of Intelligence” côté landing + fourni
 ## 5) Notes d’architecture (Phase 13–14)
 
 **Backend (réel, livré/planifié)**
-- ✅ `core/propaganda_engine.py` : orchestration, randomization, delay 10–30s, template pick, LLM rewrite (13.2)
-- ✅ `core/triggers/*` : détecteurs + idempotency
-- ✅ `core/market_analytics.py` : windows prix/MC, detect_dip, snapshots TTL
-- ✅ `core/templates_repo.py` : storage templates + versioning
-- ✅ `core/dispatch_queue.py` : approval queue
-- ✅ `core/tone_engine.py` : LLM rewrite constrained + safety
-- ✅ `routers/propaganda.py` : API admin
-- ⏳ 13.3 `core/dispatcher_worker.py` : consume queue + dispatch real platforms + mark sent/failed
-- ⏳ 13.3 `core/dispatchers/telegram.py`, `core/dispatchers/x.py`
+- ✅ Propaganda : orchestrateur + triggers + queue + templates + tone engine.
+- ⏳ 13.3 : dispatchers réels + worker cron + rate limiting + onboarding.
 
 - ✅ Infiltration Brain :
-  - `core/riddles.py` : seed 5 énigmes, normalisation accents, audit attempts, rate-limit soft
-  - `core/clearance_levels.py` : ledger (email PK), Level 3 via riddle solve (bootstrapping), link wallet
-  - `core/sleeper_cell.py` : kill-switch pré-mint (messages FR/EN + blocked triggers)
-  - `routers/infiltration.py` : endpoints publics + admin, mutations admin 2FA
+  - `core/riddles.py` : seed 5 énigmes, normalisation accents, audit attempts, rate-limit soft.
+  - `core/clearance_levels.py` : ledger (email PK), Level 3 via riddle solve, link wallet.
+  - `core/sleeper_cell.py` : kill-switch pré-mint.
+  - `routers/infiltration.py` : endpoints publics + admin (mutations admin = 2FA).
+  - **DB** : `wallet_address` index = **partial unique** (quand string) — évite collision sur `null`.
 
 **Frontend**
-- ✅ `pages/Propaganda.tsx` : panel admin complet (5 tabs incl. Tone)
-- ✅ `pages/Infiltration.tsx` : panel admin infiltration (Riddles/Clearance/Sleeper/Attempts)
-- ⏳ `components/landing/vault/TerminalPopup.tsx` : intégrer la branche Proof of Intelligence
+- ✅ `pages/Propaganda.tsx` : panel admin complet.
+- ✅ `pages/Infiltration.tsx` : panel admin infiltration.
+- ✅ Terminal :
+  - `components/landing/vault/TerminalPopup.tsx` : nouvelle branche `riddles` + CTAs.
+  - `components/landing/vault/RiddlesFlow.tsx` : flow public complet + persistance sessionStorage.
 
 **DB Collections**
-- Propaganda :
-  - `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots` (TTL 1h)
-  - (13.3) `propaganda_rate_limits` (proposé)
+- Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
 - Infiltration :
-  - `riddles`
-  - `riddle_attempts` (TTL 24h)
-  - `clearance_levels` (unique email, unique wallet sparse)
-  - `sleeper_cell` (state unique)
+  - `riddles`.
+  - `riddle_attempts` (TTL 24h).
+  - `clearance_levels` (unique email; wallet unique via partial index).
+  - `sleeper_cell`.
 
 **Sécurité**
 - Propaganda : lecture/édition templates = admin JWT ; panic/approve/reject = admin JWT + 2FA.
 - Infiltration :
-  - endpoints publics : pas de fuite des keywords, rate-limit côté `riddles.submit_attempt`
-  - endpoints admin : mutations = 2FA obligatoire (`TWOFA_REQUIRED`)
-- Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`)
+  - endpoints publics : pas de fuite des keywords, rate-limit côté `riddles.submit_attempt`.
+  - endpoints admin : mutations = 2FA obligatoire (`TWOFA_REQUIRED`).
+- Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`).
