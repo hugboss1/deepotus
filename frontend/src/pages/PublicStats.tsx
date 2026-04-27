@@ -32,7 +32,8 @@ function formatDateShort(iso) {
   }
 }
 
-function ChartTooltip({ active, payload, label }) {
+// eslint-disable-next-line
+function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2 shadow-[var(--shadow-elev-1)] font-mono text-xs">

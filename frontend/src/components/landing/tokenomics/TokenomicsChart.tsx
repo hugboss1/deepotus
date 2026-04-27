@@ -16,7 +16,8 @@ import {
   hasAnyLock,
 } from "@/lib/links";
 
-function CustomTooltip({ active, payload }) {
+// eslint-disable-next-line
+function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (

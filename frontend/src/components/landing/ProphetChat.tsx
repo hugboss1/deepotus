@@ -31,7 +31,7 @@ export default function ProphetChat() {
     }
   }, [messages, sending]);
 
-  const send = async (textOverride) => {
+  const send = async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
     if (!text || sending) return;
     setInput("");
@@ -72,7 +72,7 @@ export default function ProphetChat() {
     }
   };
 
-  const onKey = (e) => {
+  const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();

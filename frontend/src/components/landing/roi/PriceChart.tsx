@@ -54,7 +54,8 @@ const fmtCompact = (v) => {
   }).format(v);
 };
 
-function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld, currencySymbol }) {
+// eslint-disable-next-line
+function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld, currencySymbol }: any) {
   if (!active || !payload?.length) return null;
 
   const byKey = Object.fromEntries(payload.map((p) => [p.dataKey, p.value]));

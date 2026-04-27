@@ -16,8 +16,13 @@ export function useGlitchNumber(refreshMs = 80) {
   return n;
 }
 
+interface GlitchNumProps {
+  label: string;
+  refreshMs?: number;
+}
+
 /** Single 2-digit glitch tile (e.g. "76" labelled "DAYS"). */
-export function GlitchNum({ label, refreshMs }) {
+export function GlitchNum({ label, refreshMs }: GlitchNumProps) {
   const v = useGlitchNumber(refreshMs);
   return (
     <div className="text-center">

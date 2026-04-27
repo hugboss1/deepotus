@@ -1,26 +1,26 @@
 [
   {
-    "content": "CRITICAL — React Hook deps : 4 admin sections + PublicStats refondues avec useCallback ✅",
+    "content": "Sprint 7.1 — Batch trivial ✅ (10 fichiers : Landing, ConfirmDialog, Hero, Manifesto, FAQ, BrutalTruth, Mission, Socials, Tokenomics, GlitchOverlay)",
     "status": "completed"
   },
   {
-    "content": "CRITICAL — Security : useClassifiedSession + TerminalPopup → sessionStorage avec migration legacy ✅",
+    "content": "Sprint 7.2 — Batch sub-components ✅ (12 fichiers hero/vault/tokenomics/roi)",
     "status": "completed"
   },
   {
-    "content": "CRITICAL — Python undefined : faux positifs (ruff = 0 erreurs)",
+    "content": "Sprint 7.3 — Batch wrappers ✅ (8 fichiers : TopNav, TransparencyTimeline, ActivityHeatmap, ProphetPinnedWhisper, Whitelist, PropheciesFeed, Roadmap, BackgroundProject)",
     "status": "completed"
   },
   {
-    "content": "IMPORTANT — Python is vs == : faux positifs (is None est l'idiome PEP 8)",
+    "content": "Sprint 7.4 — Batch complexe ✅ (ProphetChat, ROISimulator, ClassifiedVault wrappers, Operation, HowToBuy, PublicStats, DeepStateIntro, TwoFASetupDialog, etc.)",
     "status": "completed"
   },
   {
-    "content": "IMPORTANT — Nested ternaries : 3 fichiers refactorés (Admin.tsx lookup table, AdminBots IIFE, VaultChassis STAGE_VISUALS) ✅",
+    "content": "Sprint 7.5 — Validation ✅ : tsc 0 errors + yarn build prod clean + smoke E2E 0 page errors",
     "status": "completed"
   },
   {
-    "content": "Validation finale — tsc 0 errors + yarn build clean + smoke E2E 6/6 OK ✅",
+    "content": "Bonus — Shadcn shim refondu (top-level import retiré → ambient module re-fonctionnel)",
     "status": "completed"
   }
 ]

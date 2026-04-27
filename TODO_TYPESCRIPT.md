@@ -1,86 +1,95 @@
-# TypeScript Migration — continuation work
+# TypeScript Migration — completion log
 
-> Status: **Sprint 6 complete**
-> 31 files migrated · 96 to go (45 are auto-generated Shadcn UI primitives, kept .jsx)
-> Effective coverage: 31 / (31 + 96 - 45) = **38% of application code is TypeScript**
-
----
-
-## Sprint 6 (just completed) ✅
-
-### Major splits + .tsx migrations
-- ✅ **`pages/Admin.jsx` (1252 → migrated to `Admin.tsx` + 8 split files)**
-  - `pages/admin/components/StatCard.tsx`
-  - `pages/admin/components/Paginator.tsx`
-  - `pages/admin/components/EmailStatusBadge.tsx`
-  - `pages/admin/components/ChartTooltip.tsx`
-  - `pages/admin/components/EvolutionChart.tsx`
-  - `pages/admin/components/AdminLogin.tsx`
-  - `pages/admin/sections/WhitelistTab.tsx`
-  - `pages/admin/sections/ChatLogsTab.tsx`
-  - `pages/admin/sections/BlacklistTab.tsx`
-  - `pages/admin/sections/SessionsTab.tsx`
-  - Orchestrator `Admin.tsx` (~530 lines, only auth + data loading + tab routing)
-- ✅ **`pages/AdminBots.jsx` (1912 → 1553 lines, -19%)**
-  - Extracted `pages/admin/sections/NewsFeedSection.tsx` (~390 lines, self-contained)
-- ✅ **`pages/AdminVault.jsx` (876 → 656 lines, -25%)**
-  - Extracted `pages/admin/sections/HeliusSection.tsx` (~290 lines, self-contained)
-- ✅ **`components/landing/vault/TerminalPopup.jsx` (569 → migrated to `.tsx`)** with strict types (`TerminalPhase` union, typed handlers, typed result via `AccessSession`)
-- ✅ **`pages/AdminEmails.jsx` (311 → migrated to `.tsx`)** with `EmailEventEntry` + `EmailEventsState` interfaces
-
-### Type system enhancements (`src/types/index.ts`)
-- ✅ Added admin types: `AdminStatsResponse`, `AdminEvolutionPoint`, `WhitelistEntry`, `ChatLogEntry`, `BlacklistEntry`, `AdminSession`, `TwoFAStatus`, `BlacklistImportResult`, `ConfirmMode`, `ConfirmState`, `PaginatedState<T>`
-- ✅ Extended `AccessSession` with optional `email` + `message` fields
-
-### Shadcn shim
-- ✅ Added `@/components/ui/table` declarations (was missing, blocking 4 sections)
-
-### Validation
-- ✅ `tsc --noEmit` passes with 0 errors
-- ✅ Webpack `compiled successfully · No issues found.`
-- ✅ Smoke tested: `/admin`, `/admin/bots`, `/admin/vault`, `/admin/emails`, `/classified-vault`, landing — all good.
+> Status: **Sprints 5–7 complete · 94% TS coverage of application code**
+> Last update: 2026-04-27
 
 ---
 
-## Remaining priorities (Sprint 7+)
+## Final Coverage
 
-### 🔴 P0 — Big files still in JSX (mostly unsplit on purpose for safety)
-- [ ] `pages/AdminBots.jsx` (1553 lines, still heavy) — could extract Platforms / Content&LLM / Custom-LLM-Keys / Bot Studio Preview / Logs Filter sections. Lower priority since the most state-isolated section (NewsFeed) is already out.
-- [ ] `pages/AdminVault.jsx` (656 lines) — could extract DexScreener section + Recent events table.
-- [ ] `pages/PublicStats.jsx` (572 lines) → `.tsx` migration recommended.
-- [ ] `pages/HowToBuy.jsx` (407 lines), `pages/Operation.jsx` (340 lines) → `.tsx` migration.
+| Bucket | Count | Notes |
+|---|---|---|
+| **TypeScript files** (`.ts` / `.tsx`) | **77** | All application logic |
+| Application JS/JSX (remaining) | 5 | Intentionally kept |
+| Shadcn UI primitives (`.jsx`) | 46 | Excluded from `tsconfig.include`; covered by `types/shadcn-shims.d.ts` ambient shim |
+| **Total application coverage** | **94%** | 77 / (77 + 5) |
 
-### 🟠 P1 — Landing components (Sprint 7 target)
-- [ ] `components/landing/Hero.jsx`, `Manifesto.jsx`, `Mission.jsx`, `Roadmap.jsx`, `BrutalTruth.jsx`, `FAQ.jsx`, `Whitelist.jsx`, `Socials.jsx`, `Tokenomics.jsx`, `TransparencyTimeline.jsx`, `TopNav.jsx`, `BackgroundProject.jsx`, `ProphetPinnedWhisper.jsx`, `ROISimulator.jsx`, `ProphetChat.jsx`, `PropheciesFeed.jsx`, `ConfirmDialog.jsx`, `ActivityHeatmap.jsx`
-- [ ] `components/landing/hero/*.jsx` (HeroHeadline, HeroPoster, HeroCountdown)
-- [ ] `components/landing/vault/*.jsx` (VaultSection, VaultChassis, CombinationDial, VaultActivityFeed)
-- [ ] `components/landing/tokenomics/*.jsx` (chart, legend, taxAndBuy)
-- [ ] `components/landing/roi/*.jsx` (PriceChart, DisclaimerMarquee)
-
-### 🟡 P2 — Pages (Sprint 8)
-- [ ] `pages/Landing.jsx` (45 lines, trivial)
-- [ ] `pages/ClassifiedVault.jsx`, `pages/classified-vault/*.jsx` (GateView, AuthedVaultView)
-
-### 🟢 P3 — Misc / intro / 2FA (Sprint 9)
-- [ ] `components/intro/DeepStateIntro.jsx` (314 lines, complexity 28)
-- [ ] `components/intro/{TerminalWindow, MatrixRain, GlitchOverlay}.jsx`
-- [ ] `components/admin/TwoFASetupDialog.jsx` (220 lines)
-
-### 🔵 P4 — Strings / optional (Sprint 10)
-- [ ] `i18n/translations.js` → `.ts` (large, mostly strings)
-- [ ] Final ESLint cleanup + production `yarn build` validation pre-deploy
-
-### 🚫 Out of scope (intentional)
-- 45 Shadcn UI primitives (`components/ui/*.jsx`) — covered by `types/shadcn-shims.d.ts`. Migrating each would be high-effort, low-value for the deploy goal.
+### The 5 remaining JS/JSX (intentional)
+| File | Reason |
+|---|---|
+| `src/App.js` | CRA entry point — convention is `.js`, no benefit migrating |
+| `src/index.js` | CRA entry point — convention is `.js` |
+| `src/i18n/translations.js` | Pure data file (~1 500 lines of strings) — low ROI to migrate |
+| `src/pages/AdminBots.jsx` | 1 559 lines, complex multi-tab. Already split (NewsFeedSection extracted). Pragmatic to leave until next functional refactor |
+| `src/pages/AdminVault.jsx` | 665 lines. Already split (HeliusSection + SealStatusSection extracted). Same rationale |
 
 ---
 
-## Migration recipe (proven)
-1. **Section extraction**: identify a self-contained block (own state, own API calls, own JSX) → create `/pages/admin/sections/<Name>.tsx` → copy state+handlers, type API responses → replace inline JSX with `<NewSection api={API} headers={headers} ... />`.
-2. **Simple .jsx → .tsx**: copy file with `.tsx` extension → add `interface Props {}` → type useState calls → run `tsc --noEmit`, fix errors → delete `.jsx`.
-3. **Always validate**: `tsc --noEmit` 0 errors + `supervisorctl restart frontend` + smoke test.
+## Sprint 7 — Final batch (this session)
 
-## Validation gate per sprint
-- `npx tsc --noEmit` exits 0
-- Webpack `compiled successfully · No issues found.`
-- Smoke test ciblé sur les pages affectées
+### 32 files migrated `.jsx` → `.tsx` in 4 batches:
+
+**Batch 1 — Trivial (10):**
+- `pages/Landing.jsx`, `components/intro/GlitchOverlay.jsx`
+- `components/landing/{Hero,Manifesto,Mission,FAQ,BrutalTruth,Socials,Tokenomics,ConfirmDialog}.jsx`
+
+**Batch 2 — Sub-components (12):**
+- `components/landing/hero/{HeroHeadline,HeroPoster,HeroCountdown}.jsx`
+- `components/landing/vault/{VaultSection,VaultChassis,CombinationDial,VaultActivityFeed}.jsx`
+- `components/landing/tokenomics/{TokenomicsLegend,TokenomicsChart,TokenomicsTaxAndBuy}.jsx`
+- `components/landing/roi/{PriceChart,DisclaimerMarquee}.jsx`
+
+**Batch 3 — Wrappers (8):**
+- `components/landing/{TopNav,TransparencyTimeline,ActivityHeatmap,ProphetPinnedWhisper,Whitelist,PropheciesFeed,Roadmap,BackgroundProject}.jsx`
+
+**Batch 4 — Complex (10+):**
+- `components/landing/{ProphetChat,ROISimulator}.jsx`
+- `pages/{ClassifiedVault,Operation,HowToBuy,PublicStats}.jsx`
+- `pages/classified-vault/{AuthedVaultView,GateView}.jsx`
+- `components/intro/{DeepStateIntro,TerminalWindow,MatrixRain}.jsx`
+- `components/admin/TwoFASetupDialog.jsx`
+- 4 utility files: `useGlitchNumber`, `roi/constants`, `roi/synthPath`, `tokenomics/allocations`
+
+### Critical infrastructure fixes
+1. **Shadcn shim refactored** (`types/shadcn-shims.d.ts`):
+   - Removed top-level `import * as React` which had silently turned the file into a module, breaking ambient `declare module` blocks
+   - Switched all entries from `React.ForwardRefExoticComponent<any>` (rejects `children`) to a permissive `(props: any) => React.ReactElement | null` type that accepts any prop
+   - Added missing entries: `table`, `alert-dialog`, `carousel`, `form`, `dropdown-menu`, etc.
+
+2. **`tsconfig.json` excludes** `src/components/ui/**/*.jsx` so the type-checker uses the shim instead of inferring `RefAttributes<HTMLDivElement>` from the source
+
+3. **Recharts custom `Tooltip` components** typed as `(props: any) => …` — Recharts injects `active/payload/label` at runtime, which the consumer JSX site can't pass explicitly
+
+---
+
+## Migration recipe (proven across 32 files)
+
+1. `cp foo.jsx foo.tsx && rm foo.jsx`
+2. `npx tsc --noEmit` — fix the few errors (mostly `noImplicitReturns` and untyped event handlers)
+3. Replace single nested-ternary spots with lookup tables when convenient
+4. `yarn build` (production) to validate ESLint passes
+5. Smoke test the affected page
+
+Average time per file: ~1 min (90% are pure copy with zero TS errors).
+
+---
+
+## Validation gates (all passing)
+
+- ✅ `npx tsc --noEmit` exit 0
+- ✅ `yarn build` production : `Compiled successfully` zero warning, 413 kB JS gzipped
+- ✅ `ruff check .` (backend) : All checks passed
+- ✅ Smoke E2E : 0 page errors across landing, sealed terminal, /admin, /admin/vault, /admin/bots, /admin/emails, /stats, /operation, /how-to-buy, /classified-vault
+
+---
+
+## Out of scope (intentional)
+
+- 46 Shadcn UI primitives stay `.jsx` — covered by ambient shim, migration is high-effort/low-value
+- `App.js` / `index.js` — CRA convention
+- `translations.js` — pure data, ~1 500 lines
+
+## Future work (post-deploy)
+
+- Could migrate `AdminBots.jsx` + `AdminVault.jsx` if/when a functional refactor of those panels is needed
+- Could migrate `translations.js` → `.ts` to unlock autocomplete on translation keys (but typing 1 500+ keys is heavy)

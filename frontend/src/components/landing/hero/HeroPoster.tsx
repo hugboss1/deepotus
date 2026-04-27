@@ -38,7 +38,7 @@ export function HeroPoster() {
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     )?.matches;
-    if (paused || reduceMotion) return;
+    if (paused || reduceMotion) return undefined;
     const id = setInterval(() => {
       setVariantIdx((i) => (i + 1) % HERO_VARIANTS.length);
     }, CYCLE_MS);
