@@ -442,6 +442,16 @@ export default function Admin() {
                 <Bot size={14} className="mr-1" /> Bots Fleet
               </Link>
             </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-[var(--btn-radius)]" data-testid="admin-cabinet-vault-link">
+              <Link to="/admin/cabinet-vault">
+                <ShieldAlert size={14} className="mr-1" /> Cabinet Vault
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-[var(--btn-radius)]" data-testid="admin-propaganda-link">
+              <Link to="/admin/propaganda">
+                <Bot size={14} className="mr-1" /> Propaganda Engine
+              </Link>
+            </Button>
             <Button
               variant="outline"
               size="sm"

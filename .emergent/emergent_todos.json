@@ -1,22 +1,30 @@
 [
   {
-    "content": "Tests E2E frontend Cabinet Vault APPROFONDIS - contexte Playwright persistant + CRUD + Export + Import + Audit",
+    "content": "Sprint 13.1 - Backend: orchestrateur + queue + templates + 2 triggers + router + seed",
     "status": "completed"
   },
   {
-    "content": "Final - Restaurer un état vault vierge pour le user (post-tests)",
+    "content": "Sprint 13.1 - Frontend: pages/Propaganda.tsx + route + lien dashboard + 4 tabs + Panic Switch + Manual Fire dialog + Templates CRUD + Queue + Activity",
     "status": "completed"
   },
   {
-    "content": "Vérifier les data-testid 2FA existent (admin-2fa-code-wrapper, admin-2fa-code-input, admin-password-input, admin-login-button)",
+    "content": "Sprint 13.1 - Validation E2E manuelle via screenshots (3 tabs validés, queue fonctionne, templates rendered)",
     "status": "completed"
   },
   {
-    "content": "Future - Bots Telegram + X API integration (bloqué sur credentials user)",
+    "content": "Sprint 13.2 - Triggers complets (jeet_dip, whale_buy, raydium_migration) + market_analytics.py",
     "status": "pending"
   },
   {
-    "content": "Future - Helius live mode (post-mint)",
+    "content": "Sprint 13.2 - tone_engine.py LLM hybride 70/30 + personality prompt + every-3rd vault injection",
+    "status": "pending"
+  },
+  {
+    "content": "Sprint 13.3 - Dispatchers réels (Telegram Bot API + X Tweepy OAuth2 PKCE) + rate limiting + dispatcher cron",
+    "status": "pending"
+  },
+  {
+    "content": "Future - Bots credentials + Helius live mode (post-mint)",
     "status": "pending"
   }
 ]

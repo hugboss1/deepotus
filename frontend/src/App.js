@@ -9,6 +9,7 @@ import AdminEmails from "@/pages/AdminEmails";
 import AdminVault from "@/pages/AdminVault";
 import AdminBots from "@/pages/AdminBots";
 import CabinetVault from "@/pages/CabinetVault";
+import Propaganda from "@/pages/Propaganda";
 import Operation from "@/pages/Operation";
 import ClassifiedVault from "@/pages/ClassifiedVault";
 import PublicStats from "@/pages/PublicStats";
@@ -33,6 +34,7 @@ function App() {
               <Route path="/admin/vault" element={<AdminVault />} />
               <Route path="/admin/bots" element={<AdminBots />} />
               <Route path="/admin/cabinet-vault" element={<CabinetVault />} />
+              <Route path="/admin/propaganda" element={<Propaganda />} />
               <Route path="/stats" element={<PublicStats />} />
               <Route path="*" element={<Landing />} />
             </Routes>

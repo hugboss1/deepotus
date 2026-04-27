@@ -36,6 +36,7 @@ from routers import (
     bots as bots_router,
     cabinet_vault as cabinet_vault_router,
     operation as operation_router,
+    propaganda as propaganda_router,
     public as public_router,
     public_stats as public_stats_router,
     vault as vault_router,
@@ -58,6 +59,7 @@ app.include_router(cabinet_vault_router.router)
 app.include_router(access_card_router.router)
 app.include_router(operation_router.router)
 app.include_router(bots_router.router)
+app.include_router(propaganda_router.router)
 
 # CORS
 app.add_middleware(
@@ -139,6 +141,22 @@ async def on_startup():
         logger.info("[startup] bot scheduler online (Phase 1 — kill-switch ON by default).")
     except Exception:
         logging.exception("[startup] bot scheduler failed to start")
+
+    # ---- Sprint 13.1 — Propaganda Engine ΔΣ ----
+    try:
+        from core import templates_repo as _tpl
+        await db.propaganda_templates.create_index([("trigger_key", 1), ("language", 1)])
+        await db.propaganda_queue.create_index("proposed_at")
+        await db.propaganda_queue.create_index("idem_hash")
+        await db.propaganda_queue.create_index("status")
+        await db.propaganda_events.create_index("at")
+        seeded = await _tpl.seed_default_templates()
+        logger.info(
+            "[startup] Propaganda engine ready (seeded %d default templates).",
+            seeded,
+        )
+    except Exception:
+        logging.exception("[startup] propaganda engine failed to initialize")
 
 
 @app.on_event("shutdown")
