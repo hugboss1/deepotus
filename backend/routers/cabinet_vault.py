@@ -39,6 +39,7 @@ from pydantic import BaseModel, Field
 
 from core import cabinet_vault as vault
 from core import secret_provider
+from core.config import db
 from core.security import get_twofa_config, require_admin
 
 router = APIRouter(prefix="/api/admin/cabinet-vault", tags=["cabinet-vault"])
@@ -95,6 +96,44 @@ async def require_2fa_enabled(p: dict = Depends(require_admin)) -> dict:
     return p
 
 
+async def require_2fa_or_bootstrap(p: dict = Depends(require_admin)) -> dict:
+    """Looser guard for *lifecycle* endpoints (init / status / unlock / lock).
+
+    Rationale: an admin who hasn't enrolled 2FA yet still needs to be able
+    to walk through the very first SetupWizard — generating their seed
+    phrase and unlocking the vault — without being stuck on a chicken-and-egg
+    403. Once 2FA is active, the regular guard kicks in everywhere.
+
+    *CRUD endpoints* (set/get/delete/export/import) keep ``require_2fa_enabled``
+    so the second factor is strictly required before any secret is read or
+    persisted. We further refuse this loose mode if the vault already
+    contains real secrets: an existing vault must be protected by 2FA before
+    we let anyone re-unlock it via this endpoint.
+    """
+    cfg = await get_twofa_config()
+    if cfg and cfg.get("enabled"):
+        return p
+    # 2FA not active → only allow when vault is in a fresh / bootstrap state.
+    # We tolerate the presence of `_meta` (initialised but no secrets) so the
+    # admin can finish the setup → first unlock → then enable 2FA → then start
+    # writing secrets.
+    secret_count = await db.cabinet_vault.count_documents(
+        {"_id": {"$ne": "_meta"}}
+    )
+    if secret_count > 0:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TWOFA_REQUIRED",
+                "message": (
+                    "This vault already holds secrets. Enable 2FA "
+                    "before re-unlocking it."
+                ),
+            },
+        )
+    return p
+
+
 def _client_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
 
@@ -110,7 +149,7 @@ async def vault_status(_p: dict = Depends(require_admin)):
 
 
 @router.post("/init")
-async def vault_init(request: Request, p: dict = Depends(require_2fa_enabled)):
+async def vault_init(request: Request, p: dict = Depends(require_2fa_or_bootstrap)):
     """One-time bootstrap. Returns the freshly-generated 24-word mnemonic
     in the response body. The mnemonic is NEVER stored server-side; the
     caller MUST persist it externally (paper backup / hardware password
@@ -124,7 +163,7 @@ async def vault_init(request: Request, p: dict = Depends(require_2fa_enabled)):
 
 @router.post("/unlock")
 async def vault_unlock(req: UnlockRequest, request: Request,
-                       p: dict = Depends(require_2fa_enabled)):
+                       p: dict = Depends(require_2fa_or_bootstrap)):
     try:
         result = await vault.unlock(
             req.mnemonic,
@@ -141,7 +180,7 @@ async def vault_unlock(req: UnlockRequest, request: Request,
 
 
 @router.post("/lock")
-async def vault_lock(request: Request, p: dict = Depends(require_2fa_enabled)):
+async def vault_lock(request: Request, p: dict = Depends(require_2fa_or_bootstrap)):
     await vault.lock_and_audit(jti=p["jti"], ip=_client_ip(request))
     secret_provider.invalidate_cache()
     return {"ok": True, "locked": True}
@@ -149,7 +188,7 @@ async def vault_lock(request: Request, p: dict = Depends(require_2fa_enabled)):
 
 # ---- Secrets ---------------------------------------------------------------
 @router.get("/list")
-async def vault_list(request: Request, p: dict = Depends(require_2fa_enabled)):
+async def vault_list(request: Request, p: dict = Depends(require_2fa_or_bootstrap)):
     try:
         return await vault.list_secrets(jti=p["jti"], ip=_client_ip(request))
     except PermissionError:
@@ -235,7 +274,7 @@ async def vault_import(req: ImportRequest, request: Request,
 # ---- Audit -----------------------------------------------------------------
 @router.get("/audit")
 async def vault_audit(limit: int = 100,
-                      _p: dict = Depends(require_2fa_enabled)):
+                      _p: dict = Depends(require_2fa_or_bootstrap)):
     if limit < 1 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit must be 1-1000")
     return {"items": await vault.get_audit_log(limit=limit)}

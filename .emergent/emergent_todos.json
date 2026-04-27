@@ -1,15 +1,23 @@
 [
   {
-    "content": "Sprint 12.5 - Tests round-trip export → import → restauration (testing agent)",
+    "content": "Wipe 2FA résiduelle + révoquer sessions stale",
     "status": "completed"
   },
   {
-    "content": "Plan.md - Marquer phase 12.4 et 12.5 backend comme COMPLETED",
+    "content": "Ajouter endpoint /api/admin/2fa/force-reset (recovery sans TOTP)",
     "status": "completed"
   },
   {
-    "content": "Sprint 12.3.E2E - Tests E2E frontend Cabinet Vault complets (incluant ImportDialog)",
-    "status": "pending"
+    "content": "Créer guide 2FA complet : /app/docs/2FA_SETUP_GUIDE.md",
+    "status": "completed"
+  },
+  {
+    "content": "Modifier guards Cabinet Vault : require_2fa_or_bootstrap pour init/unlock/lock/list/audit (2FA strict pour CRUD)",
+    "status": "completed"
+  },
+  {
+    "content": "Tests E2E frontend Cabinet Vault complets (testing agent + screenshot manual)",
+    "status": "completed"
   },
   {
     "content": "Future - Bots Telegram + X API integration (bloqué sur credentials user)",
