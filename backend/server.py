@@ -35,7 +35,9 @@ from routers import (
     admin as admin_router,
     bots as bots_router,
     cabinet_vault as cabinet_vault_router,
+    founder as founder_router,
     infiltration as infiltration_router,
+    kol_listener as kol_listener_router,
     operation as operation_router,
     propaganda as propaganda_router,
     public as public_router,
@@ -66,6 +68,9 @@ app.include_router(infiltration_router.public_router)
 app.include_router(infiltration_router.admin_router)
 app.include_router(whale_watcher_router.public_router)
 app.include_router(whale_watcher_router.admin_router)
+app.include_router(founder_router.public_router)
+app.include_router(founder_router.admin_router)
+app.include_router(kol_listener_router.admin_router)
 
 # CORS
 app.add_middleware(
@@ -185,6 +190,15 @@ async def on_startup():
         logger.info("[startup] Whale Watcher ready (queue + APScheduler tick).")
     except Exception:
         logging.exception("[startup] whale watcher failed to initialize")
+
+    # ---- Sprint 16.4 — KOL Mention Listener ----
+    try:
+        from core import kol_listener as _kol
+        await _kol.ensure_indexes()
+        await _kol.seed_default_config()
+        logger.info("[startup] KOL Mention Listener foundation ready (polling DISABLED until X tier confirmed).")
+    except Exception:
+        logging.exception("[startup] kol listener failed to initialize")
 
 
 @app.on_event("shutdown")

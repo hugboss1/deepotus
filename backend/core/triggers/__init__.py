@@ -19,7 +19,9 @@ from .base import (
     register_trigger,
 )
 from . import (  # noqa: F401  — side-effect imports register triggers
+    founder_buy,
     jeet_dip,
+    kol_mention,
     mc_milestone,
     mint,
     raydium_migration,

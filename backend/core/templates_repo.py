@@ -240,6 +240,24 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "[{tier}] Habilitation Niveau 2 détectée. Le Coffre suit le wallet : {buyer_short} vient de larguer {whale_amount} SOL. Lisez entre les bougies."},
     {"trigger_key": "whale_buy", "language": "fr",
      "content": "[{tier}] Le Cabinet a été prévenu. {whale_amount} SOL — le wallet a été archivé. Le graphique ne restera pas silencieux longtemps. {buyer_short}"},
+    # ----- Founder buy disclosure (Sprint 16.2) -----
+    {"trigger_key": "founder_buy", "language": "en",
+     "content": "Cabinet noted: founder bought {founder_amount} SOL of $DEEPOTUS at MC {founder_mc_usd_pretty}. Wallet on file: {founder_wallet_short}. Tx: {tx_signature}. — Pre-announced per Tokenomics §6."},
+    {"trigger_key": "founder_buy", "language": "en",
+     "content": "Public disclosure — the founder just added {founder_amount} SOL to a personal $DEEPOTUS bag. MC at fill: {founder_mc_usd_pretty}. Wallet: {founder_wallet_short}. Auditable on-chain (tx {tx_signature}). Skin in the game."},
+    {"trigger_key": "founder_buy", "language": "fr",
+     "content": "Notification du Cabinet : le fondateur a acheté {founder_amount} SOL de $DEEPOTUS à MC {founder_mc_usd_pretty}. Wallet enregistré : {founder_wallet_short}. Tx : {tx_signature}. — Pré-annoncé selon Tokenomics §6."},
+    {"trigger_key": "founder_buy", "language": "fr",
+     "content": "Disclosure publique — le fondateur vient d'ajouter {founder_amount} SOL à sa bag personnelle $DEEPOTUS. MC à l'exécution : {founder_mc_usd_pretty}. Wallet : {founder_wallet_short}. Vérifiable on-chain (tx {tx_signature}). Skin in the game."},
+    # ----- KOL mention listener (Sprint 16.4) -----
+    {"trigger_key": "kol_mention", "language": "en",
+     "content": "Cabinet noted: @{kol_handle} surfaced $DEEPOTUS. \"{kol_tweet_excerpt}\" — The Vault is watching. {kol_tweet_url}"},
+    {"trigger_key": "kol_mention", "language": "en",
+     "content": "Signal logged. @{kol_handle} just touched the file: \"{kol_tweet_excerpt}\" The Cabinet does not coincidence. {kol_tweet_url}"},
+    {"trigger_key": "kol_mention", "language": "fr",
+     "content": "Le Cabinet a pris note : @{kol_handle} a mentionné $DEEPOTUS. « {kol_tweet_excerpt} » — Le Coffre observe. {kol_tweet_url}"},
+    {"trigger_key": "kol_mention", "language": "fr",
+     "content": "Signal enregistré. @{kol_handle} vient d'effleurer le dossier : « {kol_tweet_excerpt} » Le Cabinet ne croit pas aux coïncidences. {kol_tweet_url}"},
 ]
 
 

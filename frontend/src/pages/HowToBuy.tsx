@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
+import AccessSecuredTerminals from "@/components/landing/AccessSecuredTerminals";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -400,6 +401,7 @@ export default function HowToBuy() {
             </div>
           </div>
         </section>
+        <AccessSecuredTerminals />
       </main>
       <Footer />
     </div>

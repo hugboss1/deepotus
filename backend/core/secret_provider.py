@@ -194,7 +194,21 @@ async def get_telegram_chat_id() -> Optional[str]:
 
 async def get_twitter_bearer_token() -> Optional[str]:
     """Legacy flat env var name kept for compat — vault stores it under
-    ``x_twitter/X_BEARER_TOKEN``."""
+    ``x_twitter/X_BEARER_TOKEN``.
+
+    Resolution chain (first hit wins):
+        1. Cabinet Vault   x_twitter/X_BEARER_TOKEN
+        2. env             X_BEARER_TOKEN          (current name)
+        3. env             TWITTER_BEARER_TOKEN    (legacy)
+        4. Cabinet Vault   x_twitter/X_API_KEY     (very old fallback)
+    """
+    val = await resolve(
+        "x_twitter",
+        "X_BEARER_TOKEN",
+        env_var="X_BEARER_TOKEN",
+    )
+    if val:
+        return val
     val = await resolve(
         "x_twitter",
         "X_BEARER_TOKEN",
@@ -202,7 +216,6 @@ async def get_twitter_bearer_token() -> Optional[str]:
     )
     if val:
         return val
-    # Fallback: some older deployments used X_API_KEY for the bearer.
     return await resolve("x_twitter", "X_API_KEY", env_var="X_API_KEY")
 
 
@@ -215,6 +228,32 @@ async def get_public_base_url() -> str:
         or os.environ.get("PUBLIC_BASE_URL")
         or "https://prophet-ai-memecoin.preview.emergentagent.com"
     )
+
+
+async def get_x_client_id() -> Optional[str]:
+    return await resolve("x_twitter", "X_CLIENT_ID")
+
+
+async def get_x_client_secret() -> Optional[str]:
+    return await resolve("x_twitter", "X_CLIENT_SECRET")
+
+
+async def get_bonkbot_ref_url() -> Optional[str]:
+    """BonkBot affiliate referral link, surfaced on the landing's
+    'Access Secured Terminals' panel and (optionally) appended to
+    high-tier propaganda dispatches as a footer link.
+
+    Stored under ``trading_refs/BONKBOT_REF_URL`` in the Cabinet Vault
+    and falls back to the equivalent env var. Empty string is treated
+    as ``None`` so a stub-blank value won't render a broken button.
+    """
+    val = await resolve("trading_refs", "BONKBOT_REF_URL")
+    return val if (val and val.strip()) else None
+
+
+async def get_trojan_ref_url() -> Optional[str]:
+    val = await resolve("trading_refs", "TROJAN_REF_URL")
+    return val if (val and val.strip()) else None
 
 
 # ---------------------------------------------------------------------
@@ -249,6 +288,10 @@ __all__ = [
     "get_telegram_bot_token",
     "get_telegram_chat_id",
     "get_twitter_bearer_token",
+    "get_x_client_id",
+    "get_x_client_secret",
+    "get_bonkbot_ref_url",
+    "get_trojan_ref_url",
     "get_public_base_url",
     "describe_resolution",
 ]

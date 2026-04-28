@@ -1,18 +1,30 @@
 [
   {
-    "content": "Phase 15.1 — TOKENOMICS_TREASURY_POLICY.md (public, MiCA-aligned, 10 sections)",
+    "content": "16.1 — Credentials provisionnés backend/.env (Telegram bot token, X creds, BonkBot ref). Trojan stub vide.",
     "status": "completed"
   },
   {
-    "content": "Phase 15.2 — core/whale_watcher.py + helius extension + market_analytics + trigger tier-aware + 6 templates seed + APScheduler tick isolé",
+    "content": "16.2 — Founder Buy Disclosure : trigger founder_buy + endpoint admin + dialog manuel + 4 templates (EN/FR × 2 variants)",
     "status": "completed"
   },
   {
-    "content": "Phase 15.3 — routers/whale_watcher.py + WhaleWatcherTab.tsx + intégration Propaganda.tsx + smoke test E2E (admin login + simulate + tick + propaganda_proposed + LLM tone enrichment)",
+    "content": "16.3 — Affiliate refs : public endpoint + secret_provider helpers + section landing 'Access Secured Terminals' rendue OK",
     "status": "completed"
   },
   {
-    "content": "Build frontend + lint backend OK + restart services + screenshots de validation OK",
+    "content": "16.4 — KOL Mention Listener foundation : module + trigger kol_mention + 4 templates + admin endpoints + APScheduler tick (poll DISABLED jusqu'à confirmation tier X API)",
+    "status": "completed"
+  },
+  {
+    "content": "16.5 — Pre-export hygiene : .gitignore couvre .env à 2 niveaux + grep secrets sur fichiers tracked = 0 fuite",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend : section landing OK + dialogs admin propaganda étendus pour founder_buy + kol_mention",
+    "status": "completed"
+  },
+  {
+    "content": "Build + lint + tests E2E + memo de rotation final",
     "status": "completed"
   }
 ]

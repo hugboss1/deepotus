@@ -522,6 +522,16 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
   const [mcTier, setMcTier] = useState<number>(25_000);
   const [whaleAmount, setWhaleAmount] = useState<number>(7);
   const [raydiumLink, setRaydiumLink] = useState<string>("");
+  // Founder Buy Disclosure (Sprint 16.2)
+  const [founderAmount, setFounderAmount] = useState<number>(5);
+  const [founderWallet, setFounderWallet] = useState<string>("");
+  const [founderMcUsd, setFounderMcUsd] = useState<number>(120_000);
+  const [founderTxSig, setFounderTxSig] = useState<string>("");
+  const [founderNote, setFounderNote] = useState<string>("");
+  // KOL Mention (Sprint 16.4)
+  const [kolHandle, setKolHandle] = useState<string>("");
+  const [kolTweetText, setKolTweetText] = useState<string>("");
+  const [kolTweetUrl, setKolTweetUrl] = useState<string>("");
 
   const submit = async () => {
     setBusy(true);
@@ -535,6 +545,18 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
       if (trigger.key === "whale_buy") payload_override.whale_amount = whaleAmount;
       if (trigger.key === "raydium_migration" && raydiumLink) {
         payload_override.raydium_link = raydiumLink;
+      }
+      if (trigger.key === "founder_buy") {
+        payload_override.founder_amount_sol = founderAmount;
+        payload_override.founder_wallet = founderWallet.trim();
+        payload_override.founder_mc_usd = founderMcUsd;
+        if (founderTxSig.trim()) payload_override.tx_signature = founderTxSig.trim();
+        if (founderNote.trim()) payload_override.founder_note = founderNote.trim();
+      }
+      if (trigger.key === "kol_mention") {
+        payload_override.kol_handle = kolHandle.trim().replace(/^@/, "");
+        payload_override.kol_tweet_excerpt = kolTweetText.trim();
+        if (kolTweetUrl.trim()) payload_override.kol_tweet_url = kolTweetUrl.trim();
       }
       await axios.post(
         `${API}/api/admin/propaganda/fire`,
@@ -626,6 +648,128 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 className="font-mono text-xs"
                 data-testid="trigger-fire-raydium-link"
               />
+            </div>
+          )}
+          {trigger.key === "founder_buy" && (
+            <div className="space-y-3">
+              <div className="rounded-md border border-[#F59E0B]/40 bg-[#F59E0B]/5 p-2 text-[10px] text-[#F59E0B] font-mono">
+                Founder Buy Disclosure — per Tokenomics §6, every personal
+                buy must be pre-announced. The post lands in the approval
+                queue and still requires 2FA-locked dispatch.
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs uppercase tracking-widest">
+                    SOL amount
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step={0.5}
+                    value={founderAmount}
+                    onChange={(e) => setFounderAmount(Number(e.target.value || 0))}
+                    className="font-mono"
+                    data-testid="trigger-fire-founder-amount"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs uppercase tracking-widest">
+                    MC at fill (USD)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={founderMcUsd}
+                    onChange={(e) => setFounderMcUsd(Number(e.target.value || 0))}
+                    className="font-mono"
+                    data-testid="trigger-fire-founder-mc"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest">
+                  Founder wallet (Solana pubkey)
+                </Label>
+                <Input
+                  value={founderWallet}
+                  onChange={(e) => setFounderWallet(e.target.value)}
+                  placeholder="7gXkHxJzwy5o..."
+                  spellCheck={false}
+                  className="font-mono text-xs"
+                  data-testid="trigger-fire-founder-wallet"
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest">
+                  Tx signature (optional)
+                </Label>
+                <Input
+                  value={founderTxSig}
+                  onChange={(e) => setFounderTxSig(e.target.value)}
+                  placeholder="2k7Lp...ZfX9"
+                  spellCheck={false}
+                  className="font-mono text-xs"
+                  data-testid="trigger-fire-founder-tx"
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest">
+                  Note (optional, max 80c)
+                </Label>
+                <Input
+                  value={founderNote}
+                  onChange={(e) => setFounderNote(e.target.value.slice(0, 80))}
+                  placeholder="anniversary buy"
+                  className="font-mono text-xs"
+                  data-testid="trigger-fire-founder-note"
+                />
+              </div>
+            </div>
+          )}
+          {trigger.key === "kol_mention" && (
+            <div className="space-y-3">
+              <div className="rounded-md border border-[#22D3EE]/40 bg-[#22D3EE]/5 p-2 text-[10px] text-[#22D3EE] font-mono">
+                KOL Mention — simulate or replay a tweet from a watched
+                handle. Drains through propaganda approval queue (2FA on
+                final dispatch).
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest">
+                  KOL handle (no @)
+                </Label>
+                <Input
+                  value={kolHandle}
+                  onChange={(e) => setKolHandle(e.target.value)}
+                  placeholder="Ansem"
+                  className="font-mono text-xs"
+                  data-testid="trigger-fire-kol-handle"
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest">
+                  Tweet text (excerpt, max 200c)
+                </Label>
+                <Input
+                  value={kolTweetText}
+                  onChange={(e) => setKolTweetText(e.target.value.slice(0, 200))}
+                  placeholder='"Looks like $DEEPOTUS is ..."'
+                  className="font-mono text-xs"
+                  data-testid="trigger-fire-kol-text"
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest">
+                  Tweet URL (optional)
+                </Label>
+                <Input
+                  value={kolTweetUrl}
+                  onChange={(e) => setKolTweetUrl(e.target.value)}
+                  placeholder="https://x.com/Ansem/status/..."
+                  className="font-mono text-xs"
+                  data-testid="trigger-fire-kol-url"
+                />
+              </div>
             </div>
           )}
         </div>

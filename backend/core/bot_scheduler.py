@@ -305,6 +305,23 @@ async def _whale_watcher_job() -> None:
         logging.exception("[bot_scheduler] whale watcher tick failed")
 
 
+async def _kol_listener_job() -> None:
+    """Drain pending KOL mentions + (future) poll X API (Sprint 16.4).
+
+    Runs every 5 minutes. The polling half is currently a TODO — see
+    ``core.kol_listener.poll_x_api_once``. The drain half always runs
+    so an admin who simulates a mention sees it land in the propaganda
+    queue within one tick, regardless of whether real polling is
+    enabled.
+    """
+    from core.kol_listener import poll_x_api_once  # noqa: WPS433
+
+    try:
+        await poll_x_api_once()
+    except Exception:
+        logging.exception("[bot_scheduler] kol listener tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -409,6 +426,28 @@ async def sync_jobs_from_config() -> None:
             max_instances=1,
             coalesce=True,
             misfire_grace_time=30,
+        )
+
+    # ---- KOL listener tick (Sprint 16.4) — every 5 min ----
+    # Drains kol_mentions queue + (future) polls X API for new
+    # mentions. The `enabled` toggle gates the polling half; the
+    # drain half always runs so admin simulates always reach the
+    # propaganda queue. `max_instances=1` to guarantee no overlap on
+    # slow X API responses.
+    if _scheduler.get_job("kol_listener"):
+        _scheduler.reschedule_job(
+            "kol_listener",
+            trigger=IntervalTrigger(minutes=5),
+        )
+    else:
+        _scheduler.add_job(
+            _kol_listener_job,
+            trigger=IntervalTrigger(minutes=5),
+            id="kol_listener",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=120,
         )
 
 
