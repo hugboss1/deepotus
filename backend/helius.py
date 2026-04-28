@@ -221,6 +221,55 @@ def _classify_swap(
     return _classify_swap_via_transfers(tx, mint, pool)
 
 
+_LAMPORTS_PER_SOL = 1_000_000_000.0
+
+
+def _sol_paid_by_buyer(tx: Dict[str, Any], buyer_wallet: Optional[str]) -> float:
+    """Best-effort estimate of how many SOL the buyer spent.
+
+    Order of preference:
+      1. ``events.swap.nativeInput`` — Helius's structured SOL-in field
+         on a swap event (most reliable, exists when the swap leg is
+         SOL → token).
+      2. Sum of ``nativeTransfers`` whose ``fromUserAccount`` matches
+         the buyer wallet (covers DEX-aggregator routes that wrap WSOL
+         and skip the structured event).
+
+    Always returns SOL (not lamports). Returns 0.0 when nothing
+    matched — the watcher's threshold will then early-exit.
+    """
+    # 1. structured swap event
+    events = tx.get("events") or {}
+    swap = events.get("swap") if isinstance(events, dict) else None
+    if isinstance(swap, dict):
+        ni = swap.get("nativeInput")
+        if isinstance(ni, dict):
+            try:
+                lamports = float(ni.get("amount") or 0)
+                if lamports > 0:
+                    return round(lamports / _LAMPORTS_PER_SOL, 6)
+            except (TypeError, ValueError):
+                pass
+
+    # 2. fallback to nativeTransfers attributed to the buyer
+    if not buyer_wallet:
+        return 0.0
+    nts = tx.get("nativeTransfers") or []
+    if not isinstance(nts, list):
+        return 0.0
+    total = 0.0
+    for n in nts:
+        if not isinstance(n, dict):
+            continue
+        if (n.get("fromUserAccount") or "") != buyer_wallet:
+            continue
+        try:
+            total += float(n.get("amount") or 0)
+        except (TypeError, ValueError):
+            pass
+    return round(total / _LAMPORTS_PER_SOL, 6) if total > 0 else 0.0
+
+
 # ---------------------------------------------------------------------
 # Dedup
 # ---------------------------------------------------------------------
@@ -323,6 +372,32 @@ async def ingest_enhanced_transactions(
                 note=f"helius {source}: buy sig={signature[:10]}… ({note_tokens} tokens)",
             )
             buys += 1
+
+            # ----- Brain Connect — Whale Watcher (Sprint 15.2) -------
+            # Compute SOL paid by the buyer and let the watcher decide
+            # if this is a whale (≥ 5 SOL). The watcher absorbs
+            # below-threshold buys silently as `skipped` so we still
+            # have the audit trail, and bursts are smoothed by the
+            # APScheduler worker tick (max 1 propaganda fire per 5s).
+            try:
+                from core import whale_watcher
+                amount_sol = _sol_paid_by_buyer(tx, user_wallet)
+                if amount_sol > 0:
+                    await whale_watcher.enqueue_alert(
+                        buyer=user_wallet or "",
+                        amount_sol=amount_sol,
+                        tx_signature=signature,
+                        mint=mint,
+                        source=f"helius:{source}",
+                        applied_tokens=float(applied_tokens),
+                    )
+            except Exception:  # noqa: BLE001
+                # NEVER let a whale enqueue failure block vault.apply_crack
+                # — the watcher is best-effort, the vault accounting must
+                # always succeed.
+                logging.getLogger("deepotus.helius").exception(
+                    "[helius] whale-watcher enqueue failed (non-fatal)"
+                )
         else:
             sells += 1
 

@@ -57,6 +57,7 @@ def _detect(ctx: TriggerCtx) -> TriggerResult:
             payload={
                 "whale_amount": round(amount, 2),
                 "buyer_short": ctx.payload_override.get("buyer_short", "7gXk…2kQ4"),
+                "tier": _tier_label(amount),
             },
             idempotency_key=f"manual:whale:{key}",
         )
@@ -68,15 +69,35 @@ def _detect(ctx: TriggerCtx) -> TriggerResult:
 
     tx_sig = (last_buy.get("tx_signature") or "").strip()
     buyer = (last_buy.get("buyer") or "").strip()
+    # Trust the watcher's tier first (it's the same numeric mapping but
+    # avoids a recompute mismatch if thresholds ever drift).
+    tier = (last_buy.get("tier") or _tier_label(amount))
     return TriggerResult(
         fired=True,
         payload={
             "whale_amount": round(amount, 2),
             "buyer_short": _truncate_addr(buyer),
             "tx_signature": tx_sig,
+            "tier": tier,
         },
         idempotency_key=f"whale:{tx_sig or hashlib.sha256(f'{amount}|{buyer}'.encode()).hexdigest()[:12]}",
     )
+
+
+def _tier_label(amount: float) -> str:
+    """Mirror of `core.whale_watcher.tier_for` kept tiny here so the
+    trigger module has zero runtime deps on the watcher (avoids a
+    circular import — the watcher itself imports propaganda_engine
+    which imports the triggers)."""
+    try:
+        amt = float(amount)
+    except (TypeError, ValueError):
+        return "T1"
+    if amt < 15.0:
+        return "T1"
+    if amt < 50.0:
+        return "T2"
+    return "T3"
 
 
 WHALE_BUY = register_trigger(

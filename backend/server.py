@@ -42,6 +42,7 @@ from routers import (
     public_stats as public_stats_router,
     vault as vault_router,
     webhooks as webhooks_router,
+    whale_watcher as whale_watcher_router,
 )
 
 # ---------------------------------------------------------------------
@@ -63,6 +64,8 @@ app.include_router(bots_router.router)
 app.include_router(propaganda_router.router)
 app.include_router(infiltration_router.public_router)
 app.include_router(infiltration_router.admin_router)
+app.include_router(whale_watcher_router.public_router)
+app.include_router(whale_watcher_router.admin_router)
 
 # CORS
 app.add_middleware(
@@ -174,6 +177,14 @@ async def on_startup():
         )
     except Exception:
         logging.exception("[startup] infiltration brain failed to initialize")
+
+    # ---- Sprint 15.2 — Brain Connect / Whale Watcher ----
+    try:
+        from core import whale_watcher as _ww
+        await _ww.ensure_indexes()
+        logger.info("[startup] Whale Watcher ready (queue + APScheduler tick).")
+    except Exception:
+        logging.exception("[startup] whale watcher failed to initialize")
 
 
 @app.on_event("shutdown")

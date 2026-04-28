@@ -32,6 +32,7 @@ import {
   Pencil,
   Plus,
   Power,
+  RadioTower,
   Settings as SettingsIcon,
   ShieldOff,
   Trash2,
@@ -69,6 +70,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { getAdminToken } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
+import WhaleWatcherTab from "@/pages/admin/sections/WhaleWatcherTab";
 
 // ---------------------------------------------------------------------
 // Types
@@ -272,7 +274,7 @@ export default function Propaganda() {
 
       <main className="max-w-6xl mx-auto">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid grid-cols-5 w-full md:w-auto">
+          <TabsList className="grid grid-cols-6 w-full md:w-auto">
             <TabsTrigger value="triggers" data-testid="propaganda-tab-triggers">
               <Flame size={14} className="mr-2" /> Triggers
             </TabsTrigger>
@@ -287,6 +289,9 @@ export default function Propaganda() {
             </TabsTrigger>
             <TabsTrigger value="activity" data-testid="propaganda-tab-activity">
               <Activity size={14} className="mr-2" /> Activity
+            </TabsTrigger>
+            <TabsTrigger value="whales" data-testid="propaganda-tab-whales">
+              <RadioTower size={14} className="mr-2" /> Whales
             </TabsTrigger>
           </TabsList>
 
@@ -304,6 +309,9 @@ export default function Propaganda() {
           </TabsContent>
           <TabsContent value="activity" className="mt-6">
             <ActivityTab />
+          </TabsContent>
+          <TabsContent value="whales" className="mt-6">
+            <WhaleWatcherTab />
           </TabsContent>
         </Tabs>
       </main>

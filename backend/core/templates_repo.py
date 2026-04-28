@@ -222,6 +222,24 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
     {"trigger_key": "raydium_migration", "language": "fr",
      "content": "PROTOCOLE ΔΣ évolue. Migration Raydium complète. La LP est verrouillée. Le Coffre est désormais permanent. {raydium_link}",
      "mentions_vault": True},
+    # ----- Whale buy — tier-aware seed (Sprint 15.2) -----
+    # Placeholder {tier} resolves to "T1" / "T2" / "T3"; the templates
+    # below are picked uniformly across tiers for now (the trigger
+    # detector populates the placeholder regardless), but the tone
+    # progresses with the size so an admin or LLM enhancer can route
+    # by tier later if needed.
+    {"trigger_key": "whale_buy", "language": "en",
+     "content": "[{tier}] Cabinet noted a Class-3 acquisition on the chain. {whale_amount} SOL moved. Wallet logged: {buyer_short}."},
+    {"trigger_key": "whale_buy", "language": "en",
+     "content": "[{tier}] Clearance Level 2 detected. The Vault tracks the wallet: {buyer_short} just dropped {whale_amount} SOL. Read between the candles."},
+    {"trigger_key": "whale_buy", "language": "en",
+     "content": "[{tier}] Cabinet has been notified. {whale_amount} SOL — the wallet has been logged. The chart will not stay quiet for long. {buyer_short}"},
+    {"trigger_key": "whale_buy", "language": "fr",
+     "content": "[{tier}] Le Cabinet a noté une acquisition de Classe 3 sur la chaîne. {whale_amount} SOL déplacés. Wallet enregistré : {buyer_short}."},
+    {"trigger_key": "whale_buy", "language": "fr",
+     "content": "[{tier}] Habilitation Niveau 2 détectée. Le Coffre suit le wallet : {buyer_short} vient de larguer {whale_amount} SOL. Lisez entre les bougies."},
+    {"trigger_key": "whale_buy", "language": "fr",
+     "content": "[{tier}] Le Cabinet a été prévenu. {whale_amount} SOL — le wallet a été archivé. Le graphique ne restera pas silencieux longtemps. {buyer_short}"},
 ]
 
 

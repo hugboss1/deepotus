@@ -285,6 +285,26 @@ async def _news_repost_job() -> None:
         logging.exception("[bot_scheduler] news repost tick failed")
 
 
+async def _whale_watcher_job() -> None:
+    """Drain pending whale alerts (Sprint 15.2).
+
+    Runs every 5 s with `max_instances=1, coalesce=True` so two ticks
+    can never overlap. Each tick processes at most ONE alert which
+    keeps the propaganda dispatcher rate-limit (X / Telegram) under
+    control during whale-burst events.
+
+    NOT gated by the bot kill-switch: the whale watcher is read-only
+    (it observes on-chain activity and feeds the propaganda *queue*,
+    which has its own panic switch).
+    """
+    from core.whale_watcher import process_pending_alerts  # noqa: WPS433
+
+    try:
+        await process_pending_alerts(limit=1)
+    except Exception:
+        logging.exception("[bot_scheduler] whale watcher tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -366,6 +386,29 @@ async def sync_jobs_from_config() -> None:
             replace_existing=True,
             max_instances=1,
             coalesce=True,
+        )
+
+    # ---- Whale watcher tick (Sprint 15.2) — every 5 s, isolated ----
+    # Drains the `whale_alerts` queue ONE row per tick so the
+    # propaganda dispatcher (Telegram, X) is never asked to fire 30
+    # messages in a single second when a viral candle hits.
+    # `coalesce=True` collapses missed ticks (e.g. after a brief
+    # process pause) into a single make-up run instead of replaying
+    # the backlog and bursting the rate-limit.
+    if _scheduler.get_job("whale_watcher"):
+        _scheduler.reschedule_job(
+            "whale_watcher",
+            trigger=IntervalTrigger(seconds=5),
+        )
+    else:
+        _scheduler.add_job(
+            _whale_watcher_job,
+            trigger=IntervalTrigger(seconds=5),
+            id="whale_watcher",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=30,
         )
 
 

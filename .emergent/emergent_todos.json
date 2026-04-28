@@ -1,26 +1,18 @@
 [
   {
-    "content": "Fix empty catch blocks (5 instances)",
+    "content": "Phase 15.1 — TOKENOMICS_TREASURY_POLICY.md (public, MiCA-aligned, 10 sections)",
     "status": "completed"
   },
   {
-    "content": "Audit missing React hook deps — 100% faux positifs",
+    "content": "Phase 15.2 — core/whale_watcher.py + helius extension + market_analytics + trigger tier-aware + 6 templates seed + APScheduler tick isolé",
     "status": "completed"
   },
   {
-    "content": "Fix nested ternaries (~10 instances)",
+    "content": "Phase 15.3 — routers/whale_watcher.py + WhaleWatcherTab.tsx + intégration Propaganda.tsx + smoke test E2E (admin login + simulate + tick + propaganda_proposed + LLM tone enrichment)",
     "status": "completed"
   },
   {
-    "content": "Audit Python 'is' → '==' — 100% faux positifs",
-    "status": "completed"
-  },
-  {
-    "content": "Fix insecure random — tone_engine.py, templates_repo.py, propaganda_engine.py (secrets.SystemRandom)",
-    "status": "completed"
-  },
-  {
-    "content": "Build + lint + smoke test pour non-régression",
+    "content": "Build frontend + lint backend OK + restart services + screenshots de validation OK",
     "status": "completed"
   }
 ]

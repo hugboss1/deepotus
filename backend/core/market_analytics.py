@@ -165,7 +165,20 @@ async def current_market_snapshot() -> Dict[str, Any]:
         "helius_pool_address": vs.get("helius_pool_address"),
         "buy_link": buy_link,
         "raydium_link": raydium_link,
+        "last_buy": await _last_buy_safe(),
     }
+
+
+async def _last_buy_safe() -> Dict[str, Any]:
+    """Best-effort fetch of the latest whale alert for the trigger
+    detectors. Defensive: if the watcher module isn't importable yet
+    (cold start race), return an empty dict so the snapshot is still
+    usable."""
+    try:
+        from core import whale_watcher
+        return await whale_watcher.last_buy_for_market_snapshot()
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 async def bump_last_milestone(amount_usd: int) -> None:
