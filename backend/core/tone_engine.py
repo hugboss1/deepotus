@@ -177,7 +177,7 @@ async def _rewrite_with_llm(
     locale: str,
 ) -> Optional[str]:
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage  # lazy
+        from core.llm_compat import LlmChat, UserMessage  # lazy
 
         # Locale hint helps the LLM keep the FR / EN voice consistent.
         sys_msg = system_prompt + (

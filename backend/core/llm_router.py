@@ -227,7 +227,7 @@ async def _call_emergent(
             "EMERGENT_LLM_KEY not configured and no custom key set "
             f"for provider={provider}"
         )
-    from emergentintegrations.llm.chat import LlmChat, UserMessage  # lazy
+    from core.llm_compat import LlmChat, UserMessage  # lazy
 
     chat = LlmChat(
         api_key=api_key,

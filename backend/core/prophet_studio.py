@@ -25,7 +25,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from core.llm_compat import LlmChat, UserMessage
 
 from core.bot_config_repo import get_bot_config
 from core.config import (

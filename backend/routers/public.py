@@ -11,7 +11,7 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from core.llm_compat import LlmChat, UserMessage
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from core.config import (

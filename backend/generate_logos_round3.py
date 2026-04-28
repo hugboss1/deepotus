@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from core.llm_compat import LlmChat, UserMessage
 
 OUT_DIR = Path("/app/frontend/public")
 KEY = os.environ.get("EMERGENT_LLM_KEY")

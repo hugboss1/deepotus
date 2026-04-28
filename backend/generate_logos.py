@@ -11,7 +11,7 @@ import os
 import sys
 from pathlib import Path
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from core.llm_compat import LlmChat, UserMessage
 
 OUT_DIR = Path("/app/frontend/public")
 OUT_DIR.mkdir(exist_ok=True)
