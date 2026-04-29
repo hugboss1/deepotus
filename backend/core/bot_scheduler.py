@@ -450,6 +450,24 @@ async def sync_jobs_from_config() -> None:
             misfire_grace_time=120,
         )
 
+    # ---- Propaganda dispatch worker (Sprint 13.3) ----
+    # Drains the propaganda_queue every DISPATCH_TICK_SECONDS. The
+    # worker is ALWAYS scheduled but reads propaganda_settings on
+    # each tick to decide whether to no-op (panic / dispatch_enabled
+    # / dispatch_dry_run). This decouples the worker lifecycle from
+    # the bot_config toggles owned by the older bot fleet.
+    from core.dispatch_worker import DISPATCH_TICK_SECONDS, tick_async
+
+    _scheduler.add_job(
+        tick_async,
+        trigger=IntervalTrigger(seconds=DISPATCH_TICK_SECONDS),
+        id="propaganda_dispatch",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
+
 
 async def start_scheduler() -> AsyncIOScheduler:
     """Boot the scheduler and attach Phase-1 jobs."""

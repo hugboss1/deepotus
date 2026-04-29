@@ -1,34 +1,46 @@
 [
   {
-    "content": "Recon : localiser AdminBots preview UI",
+    "content": "[V-a] Guide pas-à-pas dashboard Vercel",
     "status": "completed"
   },
   {
-    "content": "[BE] Créer core/openai_image_gen.py",
+    "content": "[V-b] Dry-run Vercel CLI : install + vercel build local",
     "status": "completed"
   },
   {
-    "content": "[BE] Brancher dans routers/bots.py",
+    "content": "[V-c] README court /app/docs/VERCEL_REDEPLOY_QUICK.md",
     "status": "completed"
   },
   {
-    "content": "[BE] Test curl : Gemini + OpenAI + 3 aspect ratios + fallback",
+    "content": "[13.3-1] Schéma : architecture dispatcher + toggles config",
     "status": "completed"
   },
   {
-    "content": "[FE] Ajouter bouton 'Generate OpenAI variant' dans AdminBots preview UI",
+    "content": "[13.3-2] Créer core/dispatchers/__init__.py + telegram.py + x.py",
     "status": "completed"
   },
   {
-    "content": "[FE] Gestion loading state différent (OpenAI plus lent)",
+    "content": "[13.3-3] Créer core/dispatch_worker.py",
     "status": "completed"
   },
   {
-    "content": "Build strict + smoke test",
+    "content": "[13.3-4] Wire propaganda_settings",
     "status": "completed"
   },
   {
-    "content": "Mettre à jour plan.md (17.F)",
+    "content": "[13.3-5] Wire dans bot_scheduler.py + routes admin",
+    "status": "completed"
+  },
+  {
+    "content": "[13.3-6] Doc : SPRINT_13_3_DISPATCHERS.md",
+    "status": "completed"
+  },
+  {
+    "content": "[13.3-7] Tests curl + APScheduler live tick validation",
+    "status": "completed"
+  },
+  {
+    "content": "Build strict + smoke test global + plan.md update",
     "status": "completed"
   }
 ]

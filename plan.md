@@ -17,8 +17,9 @@
 - **Phase 17.D — Hotfix LLM routing (P0)** : garantir Preview Emergent OK avec `EMERGENT_LLM_KEY` tout en conservant compat Render via clés natives.
 - **Phase 17.E — Code review hygiene (D only) (P2)** : appliquer uniquement le cleanup “motion inline objects” (perf/memo), sans refactors structurels.
 - **Phase 17.F — OpenAI image (gpt-image-1) pour preview bots (P1)** : ajouter un provider image alternatif on-demand, sans changer le dispatch réel (reste dry-run pré-mint).
+- **Phase 17.G — Vercel deploy package (P1)** : livrer le trio de docs + validation pipeline locale pour que l’utilisateur finalise le déploiement en autonomie.
 
-> Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing agent) avant activation en prod.
+> Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
 
 ### État actuel (mise à jour)
 - Couverture TS/TSX : ~94% du frontend migré (reste quelques gros JSX stables : `AdminBots.jsx`, `AdminVault.jsx` — migration différée post-déploiement).
@@ -29,6 +30,7 @@
 - **Preview Emergent** : Prophète + preview bots fonctionnels (Mode A via `emergentintegrations`).
 - **Bots preview** : illustrations via **Gemini Nano Banana** (default) + **OpenAI gpt-image-1** (variant on-demand) (Phase 17.F).
 - **Code review externe (374 “issues”)** : audit confirmé → majorité faux positifs ; seules actions retenues : **Phase 17.E (motion cleanup)**.
+- **Sprint 13.3 scaffold** : worker + dispatchers livrés en mode dry-run (activation live = credentials + toggle) — ✅ prêt.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
@@ -47,6 +49,16 @@
   - FR optionnel : templates FR seedés.
   - `PATCH /api/admin/propaganda/settings` : settings LLM.
   - Frontend : tab **Tone & LLM**.
+
+#### Sprint 13.3 — Dispatchers & Worker cron (scaffold) — ✅ COMPLET
+- Worker APScheduler (tick toutes les 30s) : claim atomique `approved → in_flight → sent|failed`.
+- Dispatchers : `telegram.sendMessage` + `X POST /2/tweets` (OAuth1.0a) + mode dry-run.
+- Garde-fous : `dispatch_enabled` (default false) + `dispatch_dry_run` (default true) + rate limits.
+- Routes admin :
+  - `GET /api/admin/propaganda/dispatch/status` (observabilité)
+  - `POST /api/admin/propaganda/dispatch/toggle` (2FA)
+  - `POST /api/admin/propaganda/dispatch/tick-now` (2FA)
+- Doc ops : `/app/docs/SPRINT_13_3_DISPATCHERS.md`.
 
 #### Infiltration Brain (Sprint 14.1) — ✅ Backend + ✅ Admin UI + ✅ Public Terminal flow
 - Backend : riddles/clearance/sleeper cell + endpoints.
@@ -68,18 +80,20 @@
 
 #### Tests automatisés & validations
 - Cabinet Vault : E2E backend ✅ ; import/export ✅.
-- Propaganda Engine : smoke tests backend + UI screenshots ✅.
+- Propaganda Engine : smoke tests backend + UI ✅.
 - Infiltration Brain : E2E manuel + curls backend ✅.
 - Phase 17 : reproduction bug AJV npm ✅ ; yarn build ✅.
 - Phase 17.B : `CI=true yarn build` ✅.
 - Phase 17.C : tests curl 9/9 ✅.
 - Phase 17.D : tests preview bots + prophète ✅.
 - Phase 17.E : `CI=true yarn build` ✅ + smoke tests preview ✅.
-- **Phase 17.F** : curl tests image providers (Gemini + OpenAI) ✅ + `CI=true yarn build` ✅.
+- Phase 17.F : curl tests image providers (Gemini + OpenAI) ✅ + `CI=true yarn build` ✅.
+- **Phase 17.G** : validation pipeline Vercel local (install+build) ✅ + docs ✅.
+- **Sprint 13.3** : tick APScheduler observé + dry-run dispatch Telegram/X ✅.
 
 #### Restant
 - **P0** : Phase 17 (Vercel build) — attente changement dashboard Vercel + redeploy.
-- **NEXT** : Sprint 13.3 (dispatchers réels Telegram/X) — dépend credentials API et worker cron.
+- **Next (activation live)** : Sprint 13.3 — vault credentials + bascule dry_run=false.
 - **Upcoming** : Sprint 14.2 (KOL Infiltration auto-DMs + validation clearance levels 1/2).
 
 ---
@@ -156,12 +170,24 @@
 #### Phase 13.2 (P1) — Triggers complets + Tone Engine ✅ **COMPLETED**
 (identique)
 
-#### Phase 13.3 (P2) — Dispatchers réels + Worker cron + Rate limiting + Onboarding (**NEXT**)
+#### Phase 13.3 (P2) — Dispatchers + Worker cron + Rate limiting + Onboarding ✅ **COMPLETED (scaffold)**
 **Objectif** : exécuter réellement les posts X/TG depuis la `propaganda_queue`.
-- Worker cron/queue runner (APScheduler ou job dédié).
-- Intégration X API + Telegram Bot API.
-- Rate limiting + retry/backoff.
-- Secrets : credentials dans Cabinet Vault (`x_twitter`, `telegram`).
+
+✅ Livré :
+- Worker cron (APScheduler 30s tick) + claim atomique.
+- Dispatchers Telegram/X + dry-run.
+- Settings `dispatch_enabled` + `dispatch_dry_run`.
+- Routes admin + doc ops.
+
+⏳ Pour passer en LIVE (user-side) :
+- Vault credentials :
+  - `telegram/TELEGRAM_BOT_TOKEN`, `telegram/TELEGRAM_CHAT_ID`
+  - `x_twitter/X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`
+- Confirmer tier X (Elevated/Pro requis).
+- `POST /api/admin/propaganda/dispatch/toggle` (2FA) : `{enabled:true, dry_run:true}` → vérifier logs.
+- Puis `{dry_run:false}` pour live.
+
+Backlog 13.3.x : retry/backoff, UI banner LIVE/DRYRUN, threads/replies, metrics.
 
 ---
 
@@ -184,7 +210,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 
 ---
 
-### Phase 17 — Déploiement Vercel : Fix build CRA5 / AJV (P0) — **IN PROGRESS**
+### Phase 17 — Déploiement Vercel : Fix build CRA5 / AJV (P0) — **IN PROGRESS (user dashboard pending)**
 
 #### Problème
 - Vercel est configuré avec :
@@ -205,7 +231,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 
 ---
 
-### Phase 17.B — Ménage “Strict CI” : suppression warnings hooks (P1) — ✅ **COMPLETED**
+### Phase 17.B — Ménage “Strict CI” (P1) — ✅ **COMPLETED**
 (identique)
 
 ---
@@ -226,59 +252,22 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 ---
 
 ### Phase 17.F — OpenAI image (gpt-image-1) pour preview bots (P1) — ✅ **COMPLETED**
+(identique)
 
-#### Contexte
-L’admin “preview bots” générait déjà des illustrations via **Gemini Nano Banana** (provider `gemini`, modèle `gemini-3.1-flash-image-preview`). L’utilisateur a demandé “OpenAI image 2.0”.
+---
 
-Après vérifications :
-- Le proxy Emergent route l’OpenAI image via **`gpt-image-1`** (pas de “2.0” supporté côté proxy aujourd’hui).
-- L’API image OpenAI via Emergent n’utilise pas `LlmChat` multimodal ; elle passe par :
-  `emergentintegrations.llm.openai.image_generation.OpenAIImageGeneration`.
+### Phase 17.G — Vercel deploy package (P1) — ✅ **COMPLETED**
 
-Décision UX (reco acceptée) :
-- **Gemini reste le default** (rapide, gratuit)
-- Ajout d’un bouton **“Try OpenAI variant (~60s)”** après une preview Gemini
-- Bouton miroir **“Try Gemini variant”** quand la preview courante est OpenAI
-- Scope : **preview admin uniquement** (pas de dispatch réel X/TG tant que Sprint 13.3 non activé)
+Objectif : fournir à l’utilisateur un kit complet pour finaliser Vercel sans assistance.
 
-#### Implémentation backend
-- ✅ **NEW** `core/openai_image_gen.py`
-  - `generate_image_openai(content_type, aspect_ratio, text_hint)`
-  - Réutilise `_build_image_prompt()` pour cohérence style (palette Matrix, watermark ΔΣ, hard rules).
-  - Réutilise `get_emergent_image_llm_key()` (compatible EMERGENT_LLM_KEY).
-  - Mapping ratio → size OpenAI :
-    - `1:1` → `1024x1024`
-    - `3:4` → `1024x1536`
-    - `16:9` → `1536x1024` (closest accepted landscape)
-  - Fallback compat : si `size=` non supporté par la version SDK → retry sans `size`.
-  - Retourne le même contrat que `prophet_studio.generate_image` : `{provider, model, mime_type, image_base64, size_bytes, ...}`.
-- ✅ `routers/bots.py`
-  - Ajout `image_provider: str = "gemini"` à `GeneratePreviewRequest`.
-  - Dispatch :
-    - `openai` → `generate_image_openai()`
-    - sinon → `generate_image()` (Gemini)
-  - Provider inconnu → fallback gemini + log info (non-fatal).
-  - Ajout `import logging` (requis par log fallback).
+- ✅ (a) Pas-à-pas dashboard : `/app/docs/VERCEL_DASHBOARD_SETUP.md`
+- ✅ (b) Dry-run local pipeline (équivalent Vercel) :
+  - `yarn install --frozen-lockfile` OK
+  - `CI=true yarn build` OK (≈ 30s)
+  - confirme que le fix AJV est solide **si** dashboard = Node20+yarn
+- ✅ (c) Quick redeploy guide : `/app/docs/VERCEL_REDEPLOY_QUICK.md`
 
-#### Implémentation frontend
-- ✅ `pages/AdminBots.jsx` (surgical edit, pas de refactor)
-  - Ajout state `imageProvider` (sync depuis `preview.image.provider`).
-  - `generatePreview(overrideProvider=null)` : force gemini/openai à la demande.
-  - Timeout axios : **120s** si provider openai (sinon 45s).
-  - Bouton “Try OpenAI variant (~60s)” visible si image courante = gemini.
-  - Bouton “Try Gemini variant” visible si image courante = openai.
-  - Badge provider (vert OpenAI / ambre Gemini).
-  - Download filename inclut suffix `_openai`/`_gemini` pour A/B comparisons.
-
-#### Validation
-- ✅ Gemini default 1:1 : ~765 KB PNG
-- ✅ OpenAI gpt-image-1 :
-  - 1:1 : ~1111 KB PNG
-  - 16:9 : ~1684 KB PNG
-  - 3:4 : ~1987 KB PNG
-- ✅ provider inconnu : fallback gemini
-- ✅ `CI=true yarn build` : Compiled successfully
-- ✅ preview texte-only inchangé
+Résultat : l’utilisateur peut appliquer le changement Vercel en ~5 min.
 
 ---
 
@@ -290,7 +279,8 @@ Décision UX (reco acceptée) :
 - **Phase 17.D** : Preview Emergent stable + Render compatible via fallback natif.
 - **Phase 17.E** : réduction des inline motion objects sur les surfaces critiques (home + classified vault) sans régression.
 - **Phase 17.F** : preview bots supporte A/B image (Gemini default + OpenAI gpt-image-1 variant) avec timeouts et UX safe.
-- **Sprint 13.3** : dispatchers réels (Telegram/X) opérationnels.
+- **Phase 17.G** : docs + validation pipeline locale permettant au user de redeploy Vercel en autonomie.
+- **Sprint 13.3** : dispatchers opérationnels (scaffold) + activation live possible via toggles + credentials.
 - **Sprint 14.2** : KOL infiltration + validation clearance 1/2.
 - **Sprint 15.x** : transparence MiCA (policy publique) + outillage disclosure.
 
@@ -300,7 +290,7 @@ Décision UX (reco acceptée) :
 
 **Backend**
 - ✅ Propaganda : orchestrateur + triggers + queue + templates + tone engine.
-- ⏳ 13.3 : dispatchers réels + worker cron + rate limiting + onboarding.
+- ✅ 13.3 (scaffold) : dispatchers + worker APScheduler + routes admin + doc ops.
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
 - ✅ Whale watcher : Helius webhooks + monitoring admin (base).
 - ✅ Vault recovery : `factory_reset_vault()` + route sécurisée.
@@ -315,7 +305,7 @@ Décision UX (reco acceptée) :
 - ✅ Phase 17 : fichiers Vercel/Node ajoutés.
 - ✅ Phase 17.B : build strict nettoyé.
 - ✅ Phase 17.C : Danger Zone + hardening wizard.
-- ✅ Phase 17.E : `motionVariants.ts` + extraction de 44 inline objects sur surfaces critiques.
+- ✅ Phase 17.E : `motionVariants.ts` + extraction d’inline objects.
 - ✅ Phase 17.F : UI A/B image dans `AdminBots.jsx` via bouton variant.
 
 **DB Collections**
@@ -325,7 +315,7 @@ Décision UX (reco acceptée) :
 - Vault : `cabinet_vault`, `cabinet_vault_audit`, `admin_2fa`.
 
 **Sécurité**
-- Propaganda : lecture/édition templates = admin JWT ; panic/approve/reject = admin JWT + 2FA.
+- Propaganda : lecture/édition templates = admin JWT ; panic/approve/reject/toggles dispatch = admin JWT + 2FA.
 - Infiltration : endpoints publics rate-limit ; mutations admin = 2FA.
 - Whale watcher feed public : anonymisé.
 - Secrets dispatchers : Cabinet Vault.

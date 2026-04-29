@@ -144,6 +144,84 @@ async def toggle_panic(req: PanicRequest, request: Request,
     return s
 
 
+# ---- Dispatch toggles (Sprint 13.3) ----------------------------------------
+class DispatchToggleRequest(BaseModel):
+    """Either or both knobs may be patched. Both default to None
+    (= leave unchanged) so the admin UI can issue partial updates."""
+
+    enabled: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Master switch. When False the dispatch worker reads the "
+            "queue but does not touch any item. When True it starts "
+            "moving items through 'in_flight → sent | failed'."
+        ),
+    )
+    dry_run: Optional[bool] = Field(
+        default=None,
+        description=(
+            "When True (default and recommended until creds are vaulted) "
+            "the dispatchers short-circuit the actual HTTP call and just "
+            "log the would-be payload. Items still transition to 'sent' "
+            "so admin can validate the full pipeline. Flip to False ONLY "
+            "after credentials have been verified via 'tick now'."
+        ),
+    )
+
+
+@router.post("/dispatch/toggle")
+async def toggle_dispatch(
+    req: DispatchToggleRequest,
+    request: Request,
+    p: dict = Depends(require_2fa_for_send),
+):
+    """Flip the dispatch worker's enabled / dry_run knobs.
+
+    Both gated behind 2FA (same as panic): turning ``dry_run`` OFF is
+    the moment real money / brand reputation is on the line, so we
+    require strong proof of intent.
+    """
+    s = await propaganda_engine.set_dispatch_toggle(
+        enabled=req.enabled,
+        dry_run=req.dry_run,
+        jti=p.get("jti"),
+    )
+    s.pop("_id", None)
+    return s
+
+
+@router.get("/dispatch/status")
+async def dispatch_status(_p: dict = Depends(require_admin)):
+    """Snapshot view for the admin UI: settings + queue counts."""
+    settings = await propaganda_engine.get_settings()
+    settings.pop("_id", None)
+    counts = await dispatch_queue.queue_counts()
+    return {
+        "settings": {
+            "panic": settings.get("panic", False),
+            "dispatch_enabled": settings.get("dispatch_enabled", False),
+            "dispatch_dry_run": settings.get("dispatch_dry_run", True),
+            "rate_limits": settings.get("rate_limits"),
+            "platforms": settings.get("platforms", []),
+        },
+        "queue": counts,
+    }
+
+
+@router.post("/dispatch/tick-now")
+async def dispatch_tick_now(p: dict = Depends(require_2fa_for_send)):
+    """Force one immediate drain pass without waiting up to 30s for the
+    scheduler. Useful to test the pipeline after a settings change.
+
+    Honours all the same gates as the scheduled tick (panic /
+    dispatch_enabled / dry_run / rate limits)."""
+    from core.dispatch_worker import force_tick
+
+    summary = await force_tick()
+    summary["triggered_by"] = p.get("jti")
+    return summary
+
+
 # ---- Triggers --------------------------------------------------------------
 @router.get("/triggers")
 async def list_triggers(_p: dict = Depends(require_admin)):

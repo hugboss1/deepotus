@@ -38,6 +38,16 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "per_day": 24,
         "per_trigger_minutes": 15,
     },
+    # ---- Sprint 13.3 dispatcher toggles ----
+    # Both default to the SAFEST possible scaffold:
+    # - dispatch_enabled=False  → worker reads queue but does not
+    #   touch any item. Admin opts in explicitly to start sending.
+    # - dispatch_dry_run=True   → even when enabled, dispatchers
+    #   short-circuit the HTTP call and just log. Admin flips this
+    #   to False ONLY after credentials have been vaulted and
+    #   verified (e.g. via the "tick now" button + audit log).
+    "dispatch_enabled": False,
+    "dispatch_dry_run": True,
     "default_delay_seconds_min": 10,
     "default_delay_seconds_max": 30,
     "platforms": ["telegram", "x"],
@@ -69,6 +79,38 @@ async def set_panic(panic: bool, *, jti: Optional[str] = None) -> Dict[str, Any]
         await _audit("panic_on", jti=jti, meta={"killed": n})
     else:
         await _audit("panic_off", jti=jti)
+    return await get_settings()
+
+
+async def set_dispatch_toggle(
+    *,
+    enabled: Optional[bool] = None,
+    dry_run: Optional[bool] = None,
+    jti: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Toggle the dispatcher's two safety knobs.
+
+    Either argument may be omitted to leave that knob unchanged.
+    Audit-logged so the admin can prove who flipped what when.
+
+    The worker reads these on every tick — no scheduler restart needed.
+    """
+    patch: Dict[str, Any] = {}
+    audit_meta: Dict[str, Any] = {}
+    if enabled is not None:
+        patch["dispatch_enabled"] = bool(enabled)
+        audit_meta["dispatch_enabled"] = bool(enabled)
+    if dry_run is not None:
+        patch["dispatch_dry_run"] = bool(dry_run)
+        audit_meta["dispatch_dry_run"] = bool(dry_run)
+    if not patch:
+        return await get_settings()
+    await db.propaganda_settings.update_one(
+        {"_id": SETTINGS_ID},
+        {"$set": patch},
+        upsert=True,
+    )
+    await _audit("dispatch_toggle", jti=jti, meta=audit_meta)
     return await get_settings()
 
 

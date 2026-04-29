@@ -178,3 +178,35 @@ def _normalize(doc: Dict[str, Any]) -> Dict[str, Any]:
         "reject_reason": doc.get("reject_reason"),
         "results": doc.get("results") or {},
     }
+
+
+
+# ---------------------------------------------------------------------
+# Aggregate counts (Sprint 13.3 — dispatch status endpoint)
+# ---------------------------------------------------------------------
+async def queue_counts() -> Dict[str, int]:
+    """Return a status histogram for the admin dispatcher UI.
+
+    Counts every distinct ``status`` value currently in the queue plus
+    a ``total`` rollup. Missing buckets default to 0 so the UI can
+    render bars without conditionally checking each key.
+    """
+    from core.config import db as _db
+
+    base = {
+        "proposed": 0,
+        "approved": 0,
+        "in_flight": 0,
+        "sent": 0,
+        "failed": 0,
+        "rejected": 0,
+        "killed": 0,
+    }
+    cursor = _db.propaganda_queue.aggregate(
+        [{"$group": {"_id": "$status", "count": {"$sum": 1}}}]
+    )
+    async for row in cursor:
+        bucket = (row.get("_id") or "unknown").lower()
+        base[bucket] = int(row.get("count") or 0)
+    base["total"] = sum(base.values())
+    return base
