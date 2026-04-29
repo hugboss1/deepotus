@@ -1,38 +1,34 @@
 [
   {
-    "content": "Explorer code vault existant (router, init UI, status flow)",
-    "status": "completed"
+    "content": "Audit faux positifs : vérifier hook deps (API, types TS, globals = false positives)",
+    "status": "in_progress"
   },
   {
-    "content": "[B] Backend: ajouter factory_reset_vault() dans core/cabinet_vault.py",
-    "status": "completed"
+    "content": "Audit réel : ruff + lint sur backend pour vrais undefined variables",
+    "status": "pending"
   },
   {
-    "content": "[B] Backend: ajouter route POST /factory-reset dans routers/cabinet_vault.py (locked + password + 2FA + confirm string)",
-    "status": "completed"
+    "content": "Fix scripts_generate_redacted_dossier.py (random → secrets) si fichier existe",
+    "status": "pending"
   },
   {
-    "content": "[B] Backend: tester via curl (cas locked + cas unlocked + cas confirm wrong)",
-    "status": "completed"
+    "content": "Fix `is` vs `==` réels (audit ciblage strict literals 0/None/True/False)",
+    "status": "pending"
   },
   {
-    "content": "[B] Frontend: ajouter section Danger Zone + modal de confirmation",
-    "status": "completed"
+    "content": "Audit localStorage : vérifier que sessionStorage est bien en place + theme = non-sensitive",
+    "status": "pending"
   },
   {
-    "content": "[A] Frontend: renforcer SetupWizard (4 mots + phrase magique + délai 5s)",
-    "status": "completed"
+    "content": "Fix vrais react-hooks/exhaustive-deps via CRA build (pas linter externe)",
+    "status": "pending"
   },
   {
-    "content": "[A] Tester E2E via screenshots: init -> quiz -> confirm -> seal",
-    "status": "completed"
+    "content": "Valider build + curl smoke tests après chaque batch",
+    "status": "pending"
   },
   {
-    "content": "Re-tester yarn build mode strict",
-    "status": "completed"
-  },
-  {
-    "content": "Mettre à jour plan.md avec phase 17.C (anti-récidive vault)",
-    "status": "completed"
+    "content": "Décider avec user : refactors majeurs (oversized components, complexity) - consent before action",
+    "status": "pending"
   }
 ]
