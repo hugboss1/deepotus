@@ -263,17 +263,18 @@ export default function RiddlesFlow({
         // correct answer + email to write the clearance row). Without
         // this, navigating to `claim` and coming back would lose the
         // winning string.
-        const updatedSolved = Array.from(
-          new Set([...session.solvedSlugs, currentRiddle.slug]),
-        );
-        const updatedAnswers = {
-          ...(session.solvedAnswers || {}),
-          [currentRiddle.slug]: clean,
-        };
+        // Using functional setSession(s => ...) so the reducer reads
+        // the *latest* solvedSlugs / solvedAnswers from state instead of
+        // the closure — this also lets us drop both fields from the
+        // useCallback deps without a stale-state risk.
+        const slug = currentRiddle.slug;
         setSession((s) => ({
           ...s,
-          solvedSlugs: updatedSolved,
-          solvedAnswers: updatedAnswers,
+          solvedSlugs: Array.from(new Set([...s.solvedSlugs, slug])),
+          solvedAnswers: {
+            ...(s.solvedAnswers || {}),
+            [slug]: clean,
+          },
         }));
         setWrongCount(0);
       } else {
@@ -285,7 +286,7 @@ export default function RiddlesFlow({
     } finally {
       setSubmitting(false);
     }
-  }, [answer, currentRiddle, lang, session.email, session.solvedSlugs, t]);
+  }, [answer, currentRiddle, lang, session.email, t]);
 
   // --- Claim: submit email so backend creates the clearance row ---
   const claimLevel3 = useCallback(async () => {

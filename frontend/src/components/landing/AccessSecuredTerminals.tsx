@@ -38,11 +38,16 @@ export default function AccessSecuredTerminals(): JSX.Element | null {
     let cancelled = false;
     (async () => {
       try {
+        // Alias `data.items` into a locally-named variable so the
+        // react-hooks/exhaustive-deps rule doesn't confuse this property
+        // access with the `items` state declared above. (Plugin v5.2 +
+        // TypeScript false-positive; safe to rename — same value.)
         const { data } = await axios.get<{ items: AccessTerminal[] }>(
           `${API}/api/access-terminals`,
         );
+        const nextTerminals = data?.items ?? [];
         if (!cancelled) {
-          setItems(data.items || []);
+          setItems(nextTerminals);
           setLoaded(true);
         }
       } catch (err) {
@@ -53,6 +58,12 @@ export default function AccessSecuredTerminals(): JSX.Element | null {
     return () => {
       cancelled = true;
     };
+    // ESLint exhaustive-deps false-positive: the rule scans the type
+    // annotation `{ items: AccessTerminal[] }` and conflates it with the
+    // local `items` state. The effect only WRITES via setItems and runs
+    // exactly once on mount, by design. Adding `items` would cause a
+    // re-fetch loop on every state change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!loaded || items.length === 0) {

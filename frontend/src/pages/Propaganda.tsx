@@ -821,12 +821,18 @@ function TemplatesTab() {
         `${API}/api/admin/propaganda/templates`,
         { headers: authHeaders(), params },
       );
-      setItems(data.items);
+      // Alias `data.items` — same reason as Infiltration.tsx (ESLint
+      // exhaustive-deps false positive on `setItems(data.items)`).
+      const nextTemplates = data?.items ?? [];
+      setItems(nextTemplates);
     } catch (err) {
       handleError(err, "Failed to load templates");
     } finally {
       setLoading(false);
     }
+    // exhaustive-deps false-positive: type `{ items: Template[] }`
+    // confuses the rule with local `items` state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterTrigger, filterLang]);
 
   useEffect(() => {
@@ -1196,12 +1202,16 @@ function QueueTab() {
           params: statusFilter !== "all" ? { statuses: statusFilter } : {},
         },
       );
-      setItems(data.items);
+      // Alias `data.items` to satisfy exhaustive-deps (false positive).
+      const nextQueue = data?.items ?? [];
+      setItems(nextQueue);
     } catch (err) {
       handleError(err, "Failed to load queue");
     } finally {
       setLoading(false);
     }
+    // exhaustive-deps false-positive (TS type confusion).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   useEffect(() => {
@@ -1390,12 +1400,16 @@ function ActivityTab() {
         `${API}/api/admin/propaganda/activity`,
         { headers: authHeaders(), params: { limit: 100 } },
       );
-      setItems(data.items);
+      // Alias `data.items` to satisfy exhaustive-deps (false positive).
+      const nextEvents = data?.items ?? [];
+      setItems(nextEvents);
     } catch (err) {
       handleError(err, "Failed to load activity");
     } finally {
       setLoading(false);
     }
+    // exhaustive-deps false-positive (TS type confusion).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

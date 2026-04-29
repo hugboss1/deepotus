@@ -1,34 +1,42 @@
 [
   {
-    "content": "Créer frontend/.nvmrc (Node 20 LTS)",
+    "content": "Analyser AccessSecuredTerminals.tsx ligne 56 (useEffect missing 'items')",
     "status": "completed"
   },
   {
-    "content": "Créer frontend/vercel.json (force yarn + frozen-lockfile + framework CRA)",
+    "content": "Analyser RiddlesFlow.tsx ligne 288 (useCallback missing 'session.solvedAnswers')",
     "status": "completed"
   },
   {
-    "content": "Créer frontend/.npmrc (filet de sécurité avec legacy-peer-deps + engine-strict)",
+    "content": "Analyser Infiltration.tsx lignes 253 et 1148 (useCallback missing 'items')",
     "status": "completed"
   },
   {
-    "content": "Vérifier que le yarn.lock local est cohérent avec la prod (npm install dry-run pour simuler Vercel)",
+    "content": "Analyser Propaganda.tsx lignes 830, 1205, 1399 (useCallback missing 'items')",
     "status": "completed"
   },
   {
-    "content": "Re-tester yarn build local après modifs",
+    "content": "Fix AccessSecuredTerminals.tsx (alias data.items)",
     "status": "completed"
   },
   {
-    "content": "Mettre à jour plan.md avec phase Vercel-Deploy",
+    "content": "Fix RiddlesFlow.tsx submitAttempt (functional setSession)",
     "status": "completed"
   },
   {
-    "content": "Documenter dans /app/docs/VERCEL_DEPLOYMENT.md (guide changements dashboard)",
+    "content": "Fix Infiltration.tsx (2 callbacks - alias data.items)",
     "status": "completed"
   },
   {
-    "content": "Briefer l'utilisateur sur les actions dashboard Vercel à effectuer",
+    "content": "Fix Propaganda.tsx (3 callbacks - alias data.items)",
+    "status": "completed"
+  },
+  {
+    "content": "Re-tester yarn build SANS CI=false (mode strict)",
+    "status": "completed"
+  },
+  {
+    "content": "Mettre à jour plan.md avec ce nettoyage",
     "status": "completed"
   }
 ]
