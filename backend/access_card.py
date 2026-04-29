@@ -34,13 +34,71 @@ from pydantic import BaseModel, EmailStr, Field
 # ---------------------------------------------------------------------
 # Paths & constants
 # ---------------------------------------------------------------------
-TEMPLATE_PATH = Path("/app/backend/assets/access_card_template.png")
-CARDS_DIR = Path("/app/backend/assets/cards")
-CARDS_DIR.mkdir(parents=True, exist_ok=True)
+# Compute filesystem locations RELATIVE to this module so the code works
+# whether the project is laid out under ``/app/backend`` (Emergent dev),
+# ``/opt/render/project/src/backend`` (Render), Docker bind-mounts, or any
+# other deployment layout. The module file is canonical.
+_MODULE_DIR = Path(__file__).resolve().parent
+TEMPLATE_PATH = _MODULE_DIR / "assets" / "access_card_template.png"
+CARDS_DIR = _MODULE_DIR / "assets" / "cards"
 
-FONT_MONO_BOLD = "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf"
-FONT_MONO = "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf"
-FONT_SANS_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+
+def _ensure_cards_dir() -> Path:
+    """Lazily create the cards directory the first time we need to write
+    a card. Doing this at import time crashes the backend on read-only
+    filesystems (e.g. some Render instances when the project root is
+    mounted read-only); doing it at first use means a single failing
+    card-generation request is the worst case, not a boot-time crash.
+    """
+    try:
+        CARDS_DIR.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError) as exc:
+        # If the canonical location is read-only, fall back to /tmp which
+        # is always writable on Render (ephemeral but cards are also
+        # mailed to the recipient, so the on-disk copy is just a cache).
+        logger = logging.getLogger("deepotus.access_card")
+        logger.warning(
+            "[access-card] %s not writable (%s) — falling back to /tmp",
+            CARDS_DIR, exc,
+        )
+        fallback = Path("/tmp/deepotus_cards")
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+    return CARDS_DIR
+
+
+# Liberation Mono is the default in the Emergent dev image but is NOT
+# guaranteed on every Render image. We resolve to the first font that
+# actually exists on disk, falling back to DejaVu (ubiquitous on Debian
+# bases) and finally to PIL's built-in bitmap font (always available,
+# uglier but never crashes).
+_FONT_CANDIDATES_MONO_BOLD = [
+    "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+]
+_FONT_CANDIDATES_MONO = [
+    "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+]
+_FONT_CANDIDATES_SANS_BOLD = [
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+]
+
+
+def _first_existing(paths: list[str]) -> Optional[str]:
+    for p in paths:
+        if Path(p).is_file():
+            return p
+    return None
+
+
+# Resolved at import time so the first card request doesn't pay the IO
+# tax. Values may be ``None`` if no system font is available — the
+# generation code tolerates that and falls back to PIL's default.
+FONT_MONO_BOLD = _first_existing(_FONT_CANDIDATES_MONO_BOLD)
+FONT_MONO = _first_existing(_FONT_CANDIDATES_MONO)
+FONT_SANS_BOLD = _first_existing(_FONT_CANDIDATES_SANS_BOLD)
 
 # Template overlay zones, calibrated precisely from the generated template
 # (all coordinates are percentages of template width/height).
@@ -455,7 +513,7 @@ async def create_or_refresh_card(
         display_name = display_name or _derive_display_name(email)
         doc_id = str(uuid.uuid4())
 
-    output_path = CARDS_DIR / f"{accreditation}.png"
+    output_path = _ensure_cards_dir() / f"{accreditation}.png"
     qr_payload = (
         f"{base_url.rstrip('/')}/classified-vault?code={accreditation}"
         if base_url
