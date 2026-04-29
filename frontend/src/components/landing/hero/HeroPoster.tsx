@@ -3,6 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isMintConfigured } from "@/lib/links";
+import {
+  FADE_UP_12_INITIAL,
+  FADE_UP_ANIMATE,
+  FADE_UP_TRANSITION_HERO,
+  FADE_EXIT,
+} from "@/lib/motionVariants";
 import { HeroCountdown } from "./HeroCountdown";
 
 /**
@@ -12,6 +18,13 @@ import { HeroCountdown } from "./HeroCountdown";
  *
  * Self-contained — owns the variant cycle state and the hover-pause flag.
  */
+
+// Image cross-fade variants — slight scale-in ("Ken Burns") for cinema feel.
+// Defined at module scope to avoid recreating refs on every cycle tick.
+const POSTER_IMG_INITIAL = { opacity: 0, scale: 1.02 };
+const POSTER_IMG_ANIMATE = { opacity: 1, scale: 1 };
+const POSTER_IMG_TRANSITION = { duration: 0.9, ease: "easeInOut" as const };
+
 export const HERO_VARIANTS = [
   { src: "/deepotus_hero_serious.jpg", label: "SERIOUS" },
   { src: "/deepotus_hero_meme.jpg", label: "MEME" },
@@ -50,9 +63,9 @@ export function HeroPoster() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.1 }}
+      initial={FADE_UP_12_INITIAL}
+      animate={FADE_UP_ANIMATE}
+      transition={FADE_UP_TRANSITION_HERO}
       className="lg:col-span-5 order-1 lg:order-2"
     >
       <div
@@ -67,10 +80,10 @@ export function HeroPoster() {
               key={currentVariant.src}
               src={currentVariant.src}
               alt="AI Prophet Deep State Candidate"
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.9, ease: "easeInOut" }}
+              initial={POSTER_IMG_INITIAL}
+              animate={POSTER_IMG_ANIMATE}
+              exit={FADE_EXIT}
+              transition={POSTER_IMG_TRANSITION}
               className="absolute inset-0 w-full h-full object-cover poster-img"
               loading="eager"
               draggable={false}

@@ -1,34 +1,42 @@
 [
   {
-    "content": "Audit faux positifs : vérifier hook deps (API, types TS, globals = false positives)",
-    "status": "in_progress"
+    "content": "Audit faux positifs : vérifier hook deps",
+    "status": "completed"
   },
   {
-    "content": "Audit réel : ruff + lint sur backend pour vrais undefined variables",
-    "status": "pending"
+    "content": "Audit réel : ruff + lint sur backend",
+    "status": "completed"
   },
   {
-    "content": "Fix scripts_generate_redacted_dossier.py (random → secrets) si fichier existe",
-    "status": "pending"
+    "content": "Fix scripts_generate_redacted_dossier.py - VERDICT: faux positif",
+    "status": "completed"
   },
   {
-    "content": "Fix `is` vs `==` réels (audit ciblage strict literals 0/None/True/False)",
-    "status": "pending"
+    "content": "Fix `is` vs `==` - VERDICT: 0 vrai cas",
+    "status": "completed"
   },
   {
-    "content": "Audit localStorage : vérifier que sessionStorage est bien en place + theme = non-sensitive",
-    "status": "pending"
+    "content": "Audit localStorage - VERDICT: theme=non-sensible, adminAuth=déjà sessionStorage",
+    "status": "completed"
   },
   {
-    "content": "Fix vrais react-hooks/exhaustive-deps via CRA build (pas linter externe)",
-    "status": "pending"
+    "content": "Fix vrais react-hooks - VERDICT: 0 vrai warning",
+    "status": "completed"
   },
   {
-    "content": "Valider build + curl smoke tests après chaque batch",
-    "status": "pending"
+    "content": "[D] Audit inline motion objects dans GateView.tsx + AuthedVaultView.tsx",
+    "status": "completed"
   },
   {
-    "content": "Décider avec user : refactors majeurs (oversized components, complexity) - consent before action",
-    "status": "pending"
+    "content": "[D] Créer motionVariants.ts module commun + extraire 44 inline objects sur 7 fichiers",
+    "status": "completed"
+  },
+  {
+    "content": "[D] Build strict + smoke test (preview Prophete + admin)",
+    "status": "completed"
+  },
+  {
+    "content": "Mettre à jour plan.md avec phase 17.E (cleanup motion)",
+    "status": "completed"
   }
 ]

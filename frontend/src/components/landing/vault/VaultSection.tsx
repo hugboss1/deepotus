@@ -3,6 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Unlock, Shield, AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  FADE_UP_10_INITIAL,
+  FADE_UP_12_INITIAL,
+  FADE_UP_14_INITIAL,
+  FADE_UP_ANIMATE,
+  FADE_UP_TRANSITION,
+  FADE_UP_TRANSITION_SLOW,
+  FADE_UP_TRANSITION_STAGGER_1,
+  FADE_EXIT,
+  VIEWPORT_ONCE_M80,
+} from "@/lib/motionVariants";
 import CombinationDial from "./CombinationDial";
 import VaultActivityFeed from "./VaultActivityFeed";
 import VaultChassis from "./VaultChassis";
@@ -87,10 +98,10 @@ export default function VaultSection() {
         {/* Header */}
         <div className="max-w-3xl">
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
+            initial={FADE_UP_12_INITIAL}
+            whileInView={FADE_UP_ANIMATE}
+            viewport={VIEWPORT_ONCE_M80}
+            transition={FADE_UP_TRANSITION}
           >
             <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
               {t("vault.kicker")}
@@ -119,10 +130,10 @@ export default function VaultSection() {
 
         {/* CHASSIS (unified desktop+mobile) */}
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.6, delay: 0.05 }}
+          initial={FADE_UP_14_INITIAL}
+          whileInView={FADE_UP_ANIMATE}
+          viewport={VIEWPORT_ONCE_M80}
+          transition={FADE_UP_TRANSITION_SLOW}
           className="mt-10"
         >
           <VaultChassis
@@ -138,10 +149,10 @@ export default function VaultSection() {
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Description + status */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
+            initial={FADE_UP_12_INITIAL}
+            whileInView={FADE_UP_ANIMATE}
+            viewport={VIEWPORT_ONCE_M80}
+            transition={FADE_UP_TRANSITION}
             className="lg:col-span-5"
           >
             <p className="text-foreground/80 leading-relaxed text-sm">
@@ -213,10 +224,10 @@ export default function VaultSection() {
 
           {/* Activity feed */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: 0.08 }}
+            initial={FADE_UP_12_INITIAL}
+            whileInView={FADE_UP_ANIMATE}
+            viewport={VIEWPORT_ONCE_M80}
+            transition={FADE_UP_TRANSITION_STAGGER_1}
             className="lg:col-span-7"
           >
             <VaultActivityFeed events={state?.recent_events || []} />
@@ -225,9 +236,9 @@ export default function VaultSection() {
             <AnimatePresence>
               {stage === "DECLASSIFIED" && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
+                  initial={FADE_UP_10_INITIAL}
+                  animate={FADE_UP_ANIMATE}
+                  exit={FADE_EXIT}
                   className="mt-5 p-4 rounded-xl border border-[#18C964]/40 bg-[#18C964]/10"
                   data-testid="vault-declassified-cta"
                 >

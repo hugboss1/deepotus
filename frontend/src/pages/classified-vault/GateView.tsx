@@ -3,6 +3,14 @@ import { Lock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  KEYPAD_PULSE_ANIMATE,
+  KEYPAD_PULSE_TRANSITION,
+  VERIFY_FLASH_ANIMATE,
+  VERIFY_FLASH_TRANSITION,
+  FADE_INITIAL,
+  FADE_EXIT,
+} from "@/lib/motionVariants";
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
 
@@ -13,6 +21,7 @@ import Footer from "@/components/landing/Footer";
  * Renders the desktop overlay (LED display inside the keypad illustration) and
  * the mobile fallback (form below the door).
  */
+
 export function GateView({
   codeInput,
   setCodeInput,
@@ -77,8 +86,8 @@ export function GateView({
                 background: `radial-gradient(ellipse at center, ${statusColor}55, transparent 70%)`,
                 filter: "blur(6px)",
               }}
-              animate={{ opacity: [0.45, 0.9, 0.45] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+              animate={KEYPAD_PULSE_ANIMATE}
+              transition={KEYPAD_PULSE_TRANSITION}
             />
 
             {/* LED DISPLAY overlay — desktop only */}
@@ -146,10 +155,10 @@ export function GateView({
               {verifying && (
                 <motion.div
                   key="verify-pulse"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0.0, 0.18, 0.0] }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1.6, repeat: Infinity }}
+                  initial={FADE_INITIAL}
+                  animate={VERIFY_FLASH_ANIMATE}
+                  exit={FADE_EXIT}
+                  transition={VERIFY_FLASH_TRANSITION}
                   className="absolute inset-0 pointer-events-none"
                   style={{ background: "#F59E0B", mixBlendMode: "screen" }}
                 />

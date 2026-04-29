@@ -2,6 +2,13 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Check, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  FADE_UP_12_INITIAL,
+  FADE_UP_ANIMATE,
+  FADE_UP_TRANSITION,
+  FADE_UP_TRANSITION_STAGGER_2,
+  VIEWPORT_ONCE_M80,
+} from "@/lib/motionVariants";
 
 export default function Mission() {
   const { t } = useI18n();
@@ -16,10 +23,10 @@ export default function Mission() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
+            initial={FADE_UP_12_INITIAL}
+            whileInView={FADE_UP_ANIMATE}
+            viewport={VIEWPORT_ONCE_M80}
+            transition={FADE_UP_TRANSITION}
             className="lg:col-span-7"
           >
             <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -37,10 +44,10 @@ export default function Mission() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            initial={FADE_UP_12_INITIAL}
+            whileInView={FADE_UP_ANIMATE}
+            viewport={VIEWPORT_ONCE_M80}
+            transition={FADE_UP_TRANSITION_STAGGER_2}
             className="lg:col-span-5"
           >
             <div className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-[var(--shadow-elev-1)]">

@@ -4,9 +4,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCcw, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
+import { FADE_TRANSITION_DEFAULT } from "@/lib/motionVariants";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Prophecy text cross-fade: enters from below with a 6px blur, exits up
+// with a softer blur. Module-level so each new prophecy reuses the same
+// frames (which keeps framer-motion's internal interpolator stable).
+const PROPHECY_TEXT_INITIAL = { opacity: 0, y: 8, filter: "blur(6px)" };
+const PROPHECY_TEXT_ANIMATE = { opacity: 1, y: 0, filter: "blur(0px)" };
+const PROPHECY_TEXT_EXIT = { opacity: 0, y: -6, filter: "blur(4px)" };
 
 export default function PropheciesFeed() {
   const { t, lang } = useI18n();
@@ -101,10 +109,10 @@ export default function PropheciesFeed() {
             <AnimatePresence mode="wait">
               <motion.p
                 key={current || "loading"}
-                initial={{ opacity: 0, y: 8, filter: "blur(6px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
-                transition={{ duration: 0.5 }}
+                initial={PROPHECY_TEXT_INITIAL}
+                animate={PROPHECY_TEXT_ANIMATE}
+                exit={PROPHECY_TEXT_EXIT}
+                transition={FADE_TRANSITION_DEFAULT}
                 className="font-display text-2xl md:text-3xl lg:text-4xl text-white leading-tight max-w-4xl caret"
                 data-testid="prophecies-text"
               >

@@ -23,6 +23,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
+  FADE_UP_14_INITIAL,
+  FADE_UP_ANIMATE,
+  FADE_UP_TRANSITION_ROI,
+  VIEWPORT_ONCE_M60,
+} from "@/lib/motionVariants";
+import {
   CHART_DAYS,
   LAUNCH_PRICE_EUR,
   SCENARIO_COLORS,
@@ -134,10 +140,10 @@ export default function ROISimulator() {
           />
 
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.55 }}
+            initial={FADE_UP_14_INITIAL}
+            whileInView={FADE_UP_ANIMATE}
+            viewport={VIEWPORT_ONCE_M60}
+            transition={FADE_UP_TRANSITION_ROI}
             className="lg:col-span-7"
           >
             <PriceChart
@@ -176,10 +182,10 @@ function CalculatorPanel({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.55 }}
+      initial={FADE_UP_14_INITIAL}
+      whileInView={FADE_UP_ANIMATE}
+      viewport={VIEWPORT_ONCE_M60}
+      transition={FADE_UP_TRANSITION_ROI}
       className="lg:col-span-5"
     >
       <div

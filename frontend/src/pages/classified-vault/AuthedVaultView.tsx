@@ -10,6 +10,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  FADE_UP_SCALE_INITIAL,
+  FADE_UP_SCALE_ANIMATE,
+  FADE_UP_SCALE_EXIT,
+  FADE_TRANSITION_DEFAULT,
+  HALO_PULSE_ANIMATE,
+  HALO_PULSE_TRANSITION,
+  CTA_BREATHE_INITIAL,
+  CTA_BREATHE_ANIMATE,
+  CTA_BREATHE_TRANSITION,
+} from "@/lib/motionVariants";
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
 import VaultChassis from "@/components/landing/vault/VaultChassis";
@@ -23,6 +34,7 @@ import VaultActivityFeed from "@/components/landing/vault/VaultActivityFeed";
  * Pure presentational: receives session + vault state + logout from the
  * orchestrator hook.
  */
+
 export function AuthedVaultView({ session, vault, logout }) {
   const { t } = useI18n();
 
@@ -109,10 +121,10 @@ export function AuthedVaultView({ session, vault, logout }) {
           <AnimatePresence>
             {isDeclassified && (
               <motion.div
-                initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
+                initial={FADE_UP_SCALE_INITIAL}
+                animate={FADE_UP_SCALE_ANIMATE}
+                exit={FADE_UP_SCALE_EXIT}
+                transition={FADE_TRANSITION_DEFAULT}
                 className="mt-6 p-5 rounded-2xl border border-[#18C964]/50 bg-[#18C964]/10 backdrop-blur relative overflow-hidden"
                 data-testid="classified-declassified-cta"
               >
@@ -123,8 +135,8 @@ export function AuthedVaultView({ session, vault, logout }) {
                     background:
                       "radial-gradient(circle at 50% 50%, rgba(24,201,100,0.25), transparent 70%)",
                   }}
-                  animate={{ opacity: [0.4, 0.9, 0.4] }}
-                  transition={{ duration: 2.2, repeat: Infinity }}
+                  animate={HALO_PULSE_ANIMATE}
+                  transition={HALO_PULSE_TRANSITION}
                 />
                 <div className="relative flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
                   <div>
@@ -142,9 +154,9 @@ export function AuthedVaultView({ session, vault, logout }) {
                     </div>
                   </div>
                   <motion.div
-                    initial={{ scale: 1 }}
-                    animate={{ scale: [1, 1.04, 1] }}
-                    transition={{ duration: 1.8, repeat: Infinity }}
+                    initial={CTA_BREATHE_INITIAL}
+                    animate={CTA_BREATHE_ANIMATE}
+                    transition={CTA_BREATHE_TRANSITION}
                   >
                     <Button
                       asChild
