@@ -1,30 +1,34 @@
 [
   {
-    "content": "16.1 — Credentials provisionnés backend/.env (Telegram bot token, X creds, BonkBot ref). Trojan stub vide.",
+    "content": "Créer frontend/.nvmrc (Node 20 LTS)",
     "status": "completed"
   },
   {
-    "content": "16.2 — Founder Buy Disclosure : trigger founder_buy + endpoint admin + dialog manuel + 4 templates (EN/FR × 2 variants)",
+    "content": "Créer frontend/vercel.json (force yarn + frozen-lockfile + framework CRA)",
     "status": "completed"
   },
   {
-    "content": "16.3 — Affiliate refs : public endpoint + secret_provider helpers + section landing 'Access Secured Terminals' rendue OK",
+    "content": "Créer frontend/.npmrc (filet de sécurité avec legacy-peer-deps + engine-strict)",
     "status": "completed"
   },
   {
-    "content": "16.4 — KOL Mention Listener foundation : module + trigger kol_mention + 4 templates + admin endpoints + APScheduler tick (poll DISABLED jusqu'à confirmation tier X API)",
+    "content": "Vérifier que le yarn.lock local est cohérent avec la prod (npm install dry-run pour simuler Vercel)",
     "status": "completed"
   },
   {
-    "content": "16.5 — Pre-export hygiene : .gitignore couvre .env à 2 niveaux + grep secrets sur fichiers tracked = 0 fuite",
+    "content": "Re-tester yarn build local après modifs",
     "status": "completed"
   },
   {
-    "content": "Frontend : section landing OK + dialogs admin propaganda étendus pour founder_buy + kol_mention",
+    "content": "Mettre à jour plan.md avec phase Vercel-Deploy",
     "status": "completed"
   },
   {
-    "content": "Build + lint + tests E2E + memo de rotation final",
+    "content": "Documenter dans /app/docs/VERCEL_DEPLOYMENT.md (guide changements dashboard)",
+    "status": "completed"
+  },
+  {
+    "content": "Briefer l'utilisateur sur les actions dashboard Vercel à effectuer",
     "status": "completed"
   }
 ]

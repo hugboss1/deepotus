@@ -1,4 +1,4 @@
-# DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ** (Sprints 6 → 13.3 + Infiltration 14.1 + Brain Connect 15.x)
+# DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ** (Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17)
 
 ## 1) Objectives
 - Stabiliser et clarifier le code (split des gros composants, réduction de complexité) **avant** migration d’hébergement (Vercel/Render).
@@ -10,13 +10,16 @@
 - **PROTOCOL ΔΣ — Propaganda Engine** : automatiser une logique “scenario-based” (triggers marché → message → queue → dispatch) pour réagir au marché avec garde-fous anti-slop, **testable pré-mint** via Manual Fire, et opérable via UI admin.
 - **PROTOCOL ΔΣ — Infiltration Brain** : livrer l’expérience publique “Proof of Intelligence” (5 énigmes Terminal → Clearance Level 3 → lien wallet Solana) + surface admin (riddles/clearance/sleeper cell/audit) conforme à la posture sécurité.
 - **Sprint 15 — Brain Connect & Treasury Architecture (MiCA)** : relier l’indexation on-chain (Helius) au Lore du site **sans logique de trading**, publier une politique de trésorerie transparente, et fournir l’outillage admin de disclosure.
+- **Phase 17 — Déploiement Vercel (P0)** : fiabiliser le build CRA5 en environnement Vercel (Node + install toolchain) et éliminer le crash `ajv/dist/compile/codegen`.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing agent) avant activation en prod.
 
 ### État actuel (mise à jour)
 - Couverture TS/TSX : **~94% du frontend** migré (reste quelques gros JSX stables : `AdminBots.jsx`, `AdminVault.jsx` — migration différée post-déploiement).
 - Sécurité session : migration `localStorage` → **`sessionStorage`** effectuée.
-- Build : **`yarn build` OK** + doc déploiement (`DEPLOY.md`).
+- Backend : prêt Render (suppression libs propriétaires + chemins relatifs + wrapper LLM natif).
+- Frontend : **`yarn build` OK** en local.
+- **Blocage actuel** : déploiement frontend sur Vercel (tooling incorrect : npm + Node 24) → crash AJV.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
@@ -43,13 +46,16 @@
 - ✅ Public UX : intégration “Proof of Intelligence” dans le Terminal (landing) via `TerminalPopup.tsx` + composant dédié `RiddlesFlow.tsx`.
 - ✅ Correction backend critique : index wallet MongoDB sur `clearance_levels` (unique) migré vers **partial index** (unique uniquement quand `wallet_address` est un string) + suppression du `wallet_address: null` à la création.
 
+#### Whale Watcher & disclosures (Sprint 15/16) — ✅ BASE LIVRÉE
+- ✅ `TOKENOMICS_TREASURY_POLICY.md` créé.
+- ✅ Intégration Helius webhooks + worker (`whale_watcher.py`) + UI admin.
+- ✅ Seeds triggers/templates pour `founder_buy` et `kol_mention`.
+- ✅ UI landing `AccessSecuredTerminals.tsx` pour liens BonkBot/Trojan.
+
 #### Qualité code (post-review) — ✅ PASS SAFE FIXES
 - ✅ Remplacement des `catch {}` silencieux par logs debug (frontend).
 - ✅ Remplacement de ternaires imbriqués (Propaganda/Infiltration/CabinetVault) pour lisibilité.
 - ✅ Remplacement `random` → `secrets.SystemRandom()` là où pertinent (tone_engine/templates_repo/propaganda_engine).
-- ✅ Audits confirmés :
-  - “missing hook deps” et “is vs ==” = faux positifs dans la codebase actuelle.
-  - Pylint `E0601/E0602` : 0 undefined variables.
 
 #### Tests automatisés & validations
 - **Iteration 16** : backend Cabinet Vault (12.3.E2E backend) ✅.
@@ -57,13 +63,18 @@
 - **Iteration 18** : Sprint 12.5 Import/Export (22/22) ✅.
 - **Sprint 13.2** : smoke tests backend (9/9) + screenshots frontend (5 tabs + Tone tab) ✅.
 - **Sprint 14.1** :
-  - ✅ E2E manuel (Playwright screenshot_tool) : intro → play → claim → wallet → complete (FR/EN), hint après 3 échecs, wrong answer, persistance sessionStorage.
+  - ✅ E2E manuel : intro → play → claim → wallet → complete (FR/EN), hint après 3 échecs, wrong answer, persistance sessionStorage.
   - ✅ Curls backend : attempt, clearance, link-wallet OK.
-  - ⚠️ Testing agent Playwright : difficulté avec l’animation d’intro (DEEPSTATE.SYS) ; privilégier screenshots manuels pour ce module.
+  - ⚠️ Playwright : difficulté avec l’animation d’intro (DEEPSTATE.SYS) ; privilégier screenshots manuels.
+- **Phase 17 (Vercel)** :
+  - ✅ `yarn build` local : SUCCESS.
+  - ✅ `yarn install --frozen-lockfile` : lockfile valide.
+  - ✅ `npm install --legacy-peer-deps` : reproduit le bug `ajv/dist/compile/codegen`.
 
 #### Restant
-- **Sprint 13.3** : dispatchers réels (Telegram/X) + worker cron + rate limiting + onboarding credentials (bloqué par credentials Telegram/X).
-- **Sprint 15.x** : Brain Connect & Treasury Architecture (MiCA) — **NEXT**.
+- **P0** : Phase 17 (Vercel build) — attente changement dashboard Vercel + redeploy.
+- **NEXT** : Sprint 13.3 (dispatchers réels Telegram/X) — dépend credentials API et worker cron.
+- **Upcoming** : Sprint 14.2 (KOL Infiltration auto-DMs + validation clearance levels 1/2).
 
 ---
 
@@ -140,16 +151,24 @@
 #### Phase 13.2 (P1) — Triggers complets + Tone Engine ✅ **COMPLETED**
 (identique)
 
-#### Phase 13.3 (P2) — Dispatchers réels + Worker cron + Rate limiting + Onboarding (**NEXT**)
-(identique)
+#### Phase 13.3 (P2) — Dispatchers réels + Worker cron + Rate limiting + Onboarding (**NEXT**) 
+**Objectif** : exécuter réellement les posts X/TG depuis la `propaganda_queue`.
+- Worker cron/queue runner (APS cheduler ou job dédié).
+- Intégration X API + Telegram Bot API.
+- Rate limiting + retry/backoff.
+- Secrets : credentials dans Cabinet Vault (`x_twitter`, `telegram`).
 
 ---
 
 ### Phase 14 — **Pre-Launch Infiltration Brain (PROTOCOL ΔΣ)**
-(identique)
 
 #### Phase 14.1 (P0) — Backend + Admin UI + Public Terminal flow ✅ **COMPLETED**
 (identique)
+
+#### Phase 14.2 (P2) — KOL Infiltration Logic (X/Twitter) (**UPCOMING**) 
+- Automatisation “Mirror” et “Recruitment” (auto-DMs).
+- Validation Clearance Levels 1 & 2 (Follow X / Join TG).
+- Garde-fous : anti-spam + quotas.
 
 ---
 
@@ -160,131 +179,80 @@ Objectif : connecter l’indexation on-chain (Helius) au Lore (Propaganda Engine
 - **Wallet_TEAM_VESTING (15%)** : Streamflow public, vesting **12 mois** (protéger réputation).
 - **Wallet_TREASURY (30%)** : Squads multisig, politique de take-profit **transparente** pour financer projet MiCA.
 - **Founder buy** : achat personnel au launch (skin in the game) + disclosure publique outillée (Propaganda approval queue).
-- **Whale Watcher** : 100% *observer/narrator*, intégré aux **webhooks Helius** + Propaganda Engine (latence minimale).
-- **Performance** : APScheduler isolé + **queue Mongo-backed** (résilience, pas d’impact sur requêtes users).
+- **Whale Watcher** : 100% *observer/narrator*, intégré aux **webhooks Helius** + Propaganda Engine.
+- **Performance** : APScheduler isolé + **queue Mongo-backed**.
 - **Hors scope explicite** : ❌ aucun trading/snipe/floor/wash, ❌ aucune clé privée.
 
----
-
-#### Phase 15.1 (P0) — Tokenomics & Treasury Policy (docs publiques)
-**Livrable**
-- `/app/docs/TOKENOMICS_TREASURY_POLICY.md`
-
-**Contenu minimum**
-- Répartition supply (Treasury 30%, Team vesting 15%, Airdrops, Marketing, etc.).
-- Vesting team (Streamflow) : paramètres publics (cliff/durée).
-- Politique Treasury (Squads multisig) :
-  - phases x5/x15/post-Raydium “green candle”
-  - garde-fous : limites max/jour, pas d’actions pendant panic, logs.
-  - transparence : chaque mouvement annoncé et traçable.
-- “Founder disclosure protocol” : format public, wallet(s), signature tx, timing.
-
-**Validation gate**
-- Doc revue + cohérence MiCA (transparence et absence de promesses trompeuses).
+(Phases 15.1–15.5 : identiques, déjà alignées avec l’implémentation actuelle ; mise à jour fine possible post-déploiement)
 
 ---
 
-#### Phase 15.2 (P0) — Whale Watcher Core (backend, queue + worker APScheduler)
-**Objectif** : absorber des rafales d’événements whales sans ralentir FastAPI.
+### Phase 17 — Déploiement Vercel : Fix build CRA5 / AJV (P0) — **IN PROGRESS**
 
-**DB**
-- Nouvelle collection `whale_alerts` avec FSM :
-  - `status`: `detected → analyzed → propaganda_proposed → notified | skipped | error`
-  - champs : `buyer`, `amount_sol`, `tx_signature`, `mint`, `ts`, `tier`, `source`, `error`
-  - indexes :
-    - unique sur `tx_signature` (idempotence)
-    - index sur `status, ts`
+#### Problème
+- Vercel est configuré avec :
+  - **Install Command** override : `npm install --legacy-peer-deps`
+  - **Node.js 24.x**
+- CRA5 + `schema-utils`/`ajv-keywords@5` sont sensibles au hoisting npm :
+  - npm hoiste `ajv@6` au root (attendu par CRA/fork-ts-checker)
+  - mais `ajv-keywords@5` exige `ajv@8` et tente `require("ajv/dist/compile/codegen")`
+  - => `MODULE_NOT_FOUND: ajv/dist/compile/codegen`
+- **Reproduit localement** : `npm install --legacy-peer-deps` + `craco build` => même crash.
 
-**Code (nouveau)**
-- `core/whale_watcher.py` :
-  - `enqueue_alert(buyer, amount_sol, tx_sig, mint, source)`
-  - `tier_for(amount_sol)` → `T1 (5–15) / T2 (15–50) / T3 (>50)`
-  - `process_pending_alerts(limit=1)` : pop atomique (findOneAndUpdate), enrichit payload, propose Propaganda item via `trigger_key="whale_buy"` (policy actuelle), marque `propaganda_proposed`.
+#### Fix appliqué (repo)
+- ✅ `/app/frontend/.nvmrc` : `20` (Node 20 LTS, compatible CRA5).
+- ✅ `/app/frontend/vercel.json` :
+  - force `yarn install --frozen-lockfile` + `yarn build`
+  - `framework=create-react-app`
+  - SPA rewrites vers `/index.html`
+  - headers cache long pour `/static/*`.
+- ✅ `/app/frontend/.npmrc` : filet de sécurité (`legacy-peer-deps=true`) si Vercel retombe sur npm.
 
-**Intégrations existantes à étendre**
-- `helius.ingest_enhanced_transactions(...)` :
-  - extraire `amount_sol` (SOL dépensés par buyer) depuis `nativeTransfers` (Helius enhanced schema)
-  - appeler `whale_watcher.enqueue_alert(...)` dès `amount_sol ≥ 5`.
-- `core/market_analytics.current_market_snapshot()` : inclure `last_buy` (buyer/amount_sol/tx_sig) lu depuis `whale_alerts` (dernier `analyzed`), pour compatibilité trigger `whale_buy`.
-- `core/triggers/whale_buy.py` : rendre le payload tier-aware (buyer_short, whale_amount, tier).
+#### Actions requises (utilisateur — dashboard Vercel)
+1) **Build & Development Settings → Install Command**
+   - Désactiver l’override `npm install --legacy-peer-deps` **ou** remplacer par :
+     - `yarn install --frozen-lockfile`
+2) **Runtime Settings → Node.js Version**
+   - Passer de **24.x** à **20.x**
 
-**APScheduler isolation**
-- Extension `core/bot_scheduler.py` : job `whale_watcher_tick` toutes les 5s
-  - `max_instances=1`, `coalesce=True`, `misfire_grace_time=30`
-  - exécution dans un executor isolé (ne pas bloquer loop d’API)
-
-**Validation gate**
-- Test en démo : endpoint simulate (15.3) + vérification propagation vers `propaganda_queue`.
-- Charge : injection 20 alerts simultanées → API reste réactive + queue drainée.
-
----
-
-#### Phase 15.3 (P1) — Routes + Admin UI (audit + simulate)
-**Routes (nouveau router : `routers/whale_watcher.py`)**
-- `GET /api/admin/whale-watcher/alerts?status=&tier=&limit=`
-- `POST /api/admin/whale-watcher/simulate` (crée une alerte fake)
-- `GET /api/public/whale-watcher/recent?limit=10` (feed public anonymisé : tier + montant (bucket) + timestamp, **pas** de wallet)
-
-**Admin UI**
-- Option A (reco) : nouvelle page `/admin/whale-watcher` avec table (status/tier/amount/time/txsig).
-- Option B : tab additionnel dans `pages/Propaganda.tsx`.
-
-**Validation gate**
-- Auth admin + 2FA : simulate (admin-only, peut exiger 2FA selon politique) ; listing admin simple.
-
----
-
-#### Phase 15.4 (P2) — Public Lore Feed (landing)
-**Livrable**
-- Section landing “Cabinet detected” : 5 dernières whales (badge tier + montant + temps relatif).
-- Polling 30s (MVP). WebSocket optionnel plus tard.
-
----
-
-#### Phase 15.5 (P2) — Founder buy disclosure tool (admin + Propaganda)
-**Backend**
-- `POST /api/admin/founder/disclose-buy` : payload `wallet_pubkey`, `sol_amount`, `mc_usd`, `tx_signature`.
-- Génère un message EN+FR via Propaganda (tone engine possible) → pousse en `approval queue`.
-- Exige admin JWT + 2FA (pour éviter faux communiqués).
-
-**Frontend**
-- Bouton “Disclose buy” dans Propaganda admin (ou page dédiée).
+#### Validation gate
+- Déclencher un redeploy et vérifier :
+  - build log : `yarn install` + `yarn build`
+  - absence d’erreur `ajv/dist/compile/codegen`
 
 ---
 
 ## 4) Success Criteria
 - Phases 1–14 : inchangé, déjà atteint.
-- **Sprint 15.1** : un document public source de vérité Treasury/Tokenomics/disclosure.
-- **Sprint 15.2** : Whale Watcher résilient (queue DB), idempotent, isolé, alimente Propaganda sans latence perceptible.
-- **Sprint 15.3** : simulate + audit admin + feed public anonymisé.
-- **Sprint 15.4/15.5** : Lore feed visible + disclosure tool opérationnel (approval queue + 2FA).
+- **Phase 17** : déploiement Vercel stable (Node 20 + yarn) ; build prod OK.
+- **Sprint 13.3** : dispatchers réels (Telegram/X) opérationnels (queue → dispatch) avec rate limiting.
+- **Sprint 14.2** : KOL infiltration + validation clearance 1/2 (sans spam).
+- **Sprint 15.x** : transparence MiCA (policy publique) + outillage disclosure + feed public anonymisé.
 
 ---
 
-## 5) Notes d’architecture (Phase 13–15)
+## 5) Notes d’architecture (Phase 13–17)
 
 **Backend**
 - ✅ Propaganda : orchestrateur + triggers + queue + templates + tone engine.
 - ⏳ 13.3 : dispatchers réels + worker cron + rate limiting + onboarding.
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
-- ⏳ Sprint 15 : `whale_alerts` queue + worker APScheduler isolé + routes admin/public + simulate.
+- ✅ Whale watcher : Helius webhooks + monitoring admin (base).
 
 **Frontend**
 - ✅ `pages/Propaganda.tsx` : panel admin complet.
 - ✅ `pages/Infiltration.tsx` : panel admin infiltration.
 - ✅ Terminal : `TerminalPopup.tsx` + `RiddlesFlow.tsx`.
-- ⏳ Sprint 15 : page admin Whale Watcher + section landing “Cabinet detected” + modal/CTA disclosure.
+- ✅ Phase 17 : fichiers Vercel/Node ajoutés pour garantir le build.
 
 **DB Collections**
 - Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
 - Infiltration : `riddles`, `riddle_attempts` (TTL 24h), `clearance_levels`, `sleeper_cell`.
-- Sprint 15 : `whale_alerts` (+ indexes), option `founder_disclosures` (audit) si nécessaire.
+- Whale watcher / disclosure : selon implémentation courante + indexes (cf. docs).
 
 **Sécurité**
 - Propaganda : lecture/édition templates = admin JWT ; panic/approve/reject = admin JWT + 2FA.
 - Infiltration : endpoints publics rate-limit ; mutations admin = 2FA.
-- Sprint 15 :
-  - Whale watcher feed public **anonymisé**.
-  - simulate/admin listing = admin JWT (2FA optionnel selon exposition).
-  - disclosure founder = admin JWT + 2FA.
-- Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`).
+- Whale watcher feed public : **anonymisé**.
+- Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`, `x_twitter`).
+- **Déploiement** : CRA5 doit rester sur Node LTS (20) ; éviter Node 24+ tant que migration Vite non réalisée.
