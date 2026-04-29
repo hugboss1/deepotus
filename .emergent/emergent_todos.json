@@ -1,42 +1,38 @@
 [
   {
-    "content": "Analyser AccessSecuredTerminals.tsx ligne 56 (useEffect missing 'items')",
+    "content": "Explorer code vault existant (router, init UI, status flow)",
     "status": "completed"
   },
   {
-    "content": "Analyser RiddlesFlow.tsx ligne 288 (useCallback missing 'session.solvedAnswers')",
+    "content": "[B] Backend: ajouter factory_reset_vault() dans core/cabinet_vault.py",
     "status": "completed"
   },
   {
-    "content": "Analyser Infiltration.tsx lignes 253 et 1148 (useCallback missing 'items')",
+    "content": "[B] Backend: ajouter route POST /factory-reset dans routers/cabinet_vault.py (locked + password + 2FA + confirm string)",
     "status": "completed"
   },
   {
-    "content": "Analyser Propaganda.tsx lignes 830, 1205, 1399 (useCallback missing 'items')",
+    "content": "[B] Backend: tester via curl (cas locked + cas unlocked + cas confirm wrong)",
     "status": "completed"
   },
   {
-    "content": "Fix AccessSecuredTerminals.tsx (alias data.items)",
+    "content": "[B] Frontend: ajouter section Danger Zone + modal de confirmation",
     "status": "completed"
   },
   {
-    "content": "Fix RiddlesFlow.tsx submitAttempt (functional setSession)",
+    "content": "[A] Frontend: renforcer SetupWizard (4 mots + phrase magique + délai 5s)",
     "status": "completed"
   },
   {
-    "content": "Fix Infiltration.tsx (2 callbacks - alias data.items)",
+    "content": "[A] Tester E2E via screenshots: init -> quiz -> confirm -> seal",
     "status": "completed"
   },
   {
-    "content": "Fix Propaganda.tsx (3 callbacks - alias data.items)",
+    "content": "Re-tester yarn build mode strict",
     "status": "completed"
   },
   {
-    "content": "Re-tester yarn build SANS CI=false (mode strict)",
-    "status": "completed"
-  },
-  {
-    "content": "Mettre à jour plan.md avec ce nettoyage",
+    "content": "Mettre à jour plan.md avec phase 17.C (anti-récidive vault)",
     "status": "completed"
   }
 ]

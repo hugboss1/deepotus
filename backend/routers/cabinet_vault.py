@@ -28,10 +28,18 @@ Backup
 Audit
 -----
     GET    /api/admin/cabinet-vault/audit?limit=100
+
+Recovery (DESTRUCTIVE)
+----------------------
+    POST   /api/admin/cabinet-vault/factory-reset
+        Wipe the vault back to a pristine pre-init state. Used when the
+        mnemonic is lost. Requires: vault LOCKED + admin password recheck
+        + 2FA TOTP (if enabled) + literal confirm string.
 """
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -39,8 +47,13 @@ from pydantic import BaseModel, Field
 
 from core import cabinet_vault as vault
 from core import secret_provider
+from core.admin_password import verify_admin_password
 from core.config import db
-from core.security import get_twofa_config, require_admin
+from core.security import (
+    get_twofa_config,
+    require_admin,
+    verify_totp_or_backup,
+)
 
 router = APIRouter(prefix="/api/admin/cabinet-vault", tags=["cabinet-vault"])
 
@@ -278,3 +291,127 @@ async def vault_audit(limit: int = 100,
     if limit < 1 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit must be 1-1000")
     return {"items": await vault.get_audit_log(limit=limit)}
+
+
+# ---- Factory reset (DESTRUCTIVE) ------------------------------------------
+class FactoryResetRequest(BaseModel):
+    """Strong, multi-factor confirmation for the destructive reset.
+
+    All four guards are cumulative:
+
+    1. Admin password must be re-entered (``password``).
+    2. If 2FA is enabled on the admin account, ``totp_code`` is required.
+    3. ``confirm_text`` must match the magic string EXACTLY (case-sensitive).
+    4. The vault must currently be **locked** (enforced separately in the
+       handler). We refuse the reset while a session is unlocked so an
+       attacker who hijacks an active admin tab cannot trivially nuke the
+       vault — they'd at least have to lock it first, which buys us a
+       window for detection.
+    """
+    password: str = Field(..., min_length=1)
+    totp_code: Optional[str] = None
+    confirm_text: str = Field(..., min_length=1)
+
+
+# Magic string the operator must literally type. Kept short enough to
+# read aloud in a recovery call but distinctive enough to never appear
+# as muscle-memory typing.
+FACTORY_RESET_MAGIC = "FACTORY RESET DEEPOTUS"
+
+
+@router.post("/factory-reset")
+async def vault_factory_reset(
+    req: FactoryResetRequest,
+    request: Request,
+    p: dict = Depends(require_admin),
+):
+    """**DESTRUCTIVE** — wipe the vault back to pristine pre-init state.
+
+    Use case: the operator lost the BIP39 mnemonic and the vault is
+    therefore inaccessible. Without this endpoint the only recovery path
+    would be a manual MongoDB drop. With it, the operator can reset the
+    vault from the admin UI provided they:
+
+      • re-prove they own the admin password,
+      • clear the 2FA second factor (if enabled),
+      • literally type the magic string ``FACTORY RESET DEEPOTUS``,
+      • and have the vault currently locked (no active unlock session).
+
+    The audit log entry is written BEFORE the wipe so the trace
+    survives. Caller's IP and JTI are recorded.
+
+    Returns:
+        ``{ ok, deleted_meta, deleted_secrets, reset_at }``
+    """
+    # 1) Vault must be in locked state (refuse during an active session).
+    status = await vault.get_status()
+    if not status.get("locked", True):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "VAULT_UNLOCKED",
+                "message": (
+                    "Lock the vault first. Factory reset is only "
+                    "allowed when the vault is currently locked."
+                ),
+            },
+        )
+
+    # 2) Re-verify the admin password (defence-in-depth on top of the JWT).
+    if not await verify_admin_password(req.password):
+        # Audit failed attempt so brute-forcing leaves a trail.
+        await vault._audit(  # noqa: SLF001 (private but intentional)
+            "factory_reset_failed",
+            jti=p["jti"],
+            ip=_client_ip(request),
+            extra={"reason": "bad_password"},
+        )
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # 3) If 2FA is enabled, require a fresh TOTP / backup code.
+    twofa_doc = await get_twofa_config()
+    if twofa_doc and twofa_doc.get("enabled"):
+        code = (req.totp_code or "").strip()
+        if not code:
+            raise HTTPException(
+                status_code=401,
+                detail="2FA code required",
+                headers={"x-2fa-required": "true"},
+            )
+        ok = await verify_totp_or_backup(twofa_doc, code, code)
+        if not ok:
+            await vault._audit(  # noqa: SLF001
+                "factory_reset_failed",
+                jti=p["jti"],
+                ip=_client_ip(request),
+                extra={"reason": "bad_totp"},
+            )
+            raise HTTPException(status_code=401, detail="Invalid 2FA code")
+
+    # 4) Magic confirm string. Case-sensitive and exact-match to defeat
+    # accidental clicks from a "click anywhere to continue" interaction.
+    if req.confirm_text != FACTORY_RESET_MAGIC:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "BAD_CONFIRM_STRING",
+                "message": (
+                    f"Confirmation string must be exactly: "
+                    f"\"{FACTORY_RESET_MAGIC}\""
+                ),
+            },
+        )
+
+    # All guards passed → wipe.
+    logging.warning(
+        "[cabinet-vault] factory-reset authorised — jti=%s ip=%s",
+        p["jti"], _client_ip(request),
+    )
+    result = await vault.factory_reset_vault(
+        jti=p["jti"],
+        ip=_client_ip(request),
+        extra={"twofa_enabled_at_reset": bool(twofa_doc and twofa_doc.get("enabled"))},
+    )
+    # Drop secret_provider cache too so any in-flight callers re-fetch.
+    secret_provider.invalidate_cache()
+    return result

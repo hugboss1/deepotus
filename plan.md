@@ -13,6 +13,7 @@
 - **Sprint 15 — Brain Connect & Treasury Architecture (MiCA)** : relier l’indexation on-chain (Helius) au Lore du site **sans logique de trading**, publier une politique de trésorerie transparente, et fournir l’outillage admin de disclosure.
 - **Phase 17 — Déploiement Vercel (P0)** : fiabiliser le build CRA5 en environnement Vercel (Node + install toolchain) et éliminer le crash `ajv/dist/compile/codegen`.
 - **Phase 17.B — Qualité build strict (P1)** : permettre le build Vercel en mode strict **sans** workaround `CI=false` (zéro warnings `react-hooks/exhaustive-deps`).
+- **Phase 17.C — Vault anti-récidive (P1)** : empêcher la récurrence du scénario “vault init → mnemonic skippé → vault inaccessible” et fournir une recovery autonome et auditée.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing agent) avant activation en prod.
 
@@ -23,6 +24,7 @@
 - Frontend : **`yarn build` OK** en local.
 - **Blocage actuel** : déploiement frontend sur Vercel (tooling incorrect : npm + Node 24) → crash AJV.
 - **Nouveau** : build strict nettoyé — **`CI=true yarn build` compile sans warnings** (plus besoin de `CI=false`).
+- **Nouveau** : Vault recovery autonome + hardening du wizard (Phase 17.C) — empêche l’oubli du mnemonic et permet un reset sécurisé.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
@@ -76,6 +78,10 @@
 - **Phase 17.B (Strict build)** :
   - ✅ `CI=true yarn build` : **Compiled successfully** (zéro warning ESLint).
   - ✅ Taille build (gzip) : **446.6 kB** JS principal.
+- **Phase 17.C (Vault anti-récidive)** :
+  - ✅ Backend : tests curl **9/9** (guards + success path + audit).
+  - ✅ Frontend : build strict OK, bundle contient magic strings + test ids.
+  - ✅ Taille build (gzip) : **448.29 kB** JS principal (+~1.7 kB).
 
 #### Restant
 - **P0** : Phase 17 (Vercel build) — attente changement dashboard Vercel + redeploy.
@@ -252,10 +258,64 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 
 ---
 
+### Phase 17.C — Cabinet Vault anti-récidive (P1) — ✅ **COMPLETED**
+
+**Objectif** : empêcher que le vault puisse être “init” puis rendu inaccessible suite à un skip / oubli de mnemonic ; fournir une recovery **autonome** avec audit.
+
+#### B — Factory Reset Endpoint (recovery autonome)
+
+**Backend**
+- `core/cabinet_vault.py`
+  - Ajout `factory_reset_vault(jti, ip, extra)`.
+  - Snapshot du nombre de secrets + présence du meta AVANT suppression.
+  - Écriture d’un audit `factory_reset` **avant** le wipe (la trace survit même si échec partiel).
+  - Purge `_state` mémoire.
+  - Suppression complète de la collection `cabinet_vault` (meta + secrets). L’audit log est conservé.
+  - Retour : `{ ok, deleted_meta, deleted_secrets, reset_at }`.
+- `routers/cabinet_vault.py`
+  - Ajout `POST /api/admin/cabinet-vault/factory-reset` avec **4 garde-fous cumulatifs** :
+    1. Vault doit être **LOCKED** (sinon 409 `VAULT_UNLOCKED`).
+    2. Re-vérification du mot de passe admin (`verify_admin_password()`), et audit sur échec.
+    3. 2FA (TOTP/backup) **uniquement si** activée.
+    4. Confirm string EXACTE (case-sensitive) : `FACTORY RESET DEEPOTUS`.
+
+**Validation backend**
+- Tests curl : **9/9** OK
+  - mauvais password → 401 + audit
+  - mauvaise confirm string → 400
+  - body vide → 422
+  - vault unlocked → 409
+  - locked + valide → succès + audit `factory_reset`
+
+**Frontend**
+- `pages/CabinetVault.tsx`
+  - `UnlockForm` : ajout `FactoryResetSection` (Danger Zone) **repliée par défaut**.
+  - `FactoryResetDialog` (Shadcn Dialog) : champs `password`, `totp` (optionnel), `confirm_text`.
+  - Bouton “Wipe vault” désactivé tant que : password non vide + confirm string exacte.
+  - Reset des champs à chaque ouverture du dialog (aucune persistance de credentials en state).
+  - Succès → toast + rafraîchissement de status pour revenir au SetupWizard.
+
+#### A — Hardening du Setup Wizard (prévention)
+- `pages/CabinetVault.tsx` — `SetupWizard`
+  - Quiz : 3 → **4 mots** aléatoires.
+  - Ajout d’une phrase d’accusé de réception : `I HAVE WRITTEN MY 24 WORDS OFFLINE` (case-insensitive) **requise**.
+  - **Timer 5 s** lors du Reveal : le bouton “I wrote it down — verify” est désactivé et affiche `Read carefully… Ns`.
+  - Timer se réinitialise à chaque cycle Hide/Reveal (non skippable).
+  - “Seal the vault” requiert : 4 champs de mots remplis + ack phrase valide.
+
+#### Validation
+- ✅ `CI=true yarn build` : **Compiled successfully**
+- ✅ Taille build (gzip) : **448.29 kB** JS principal (+~1.7 kB)
+- ✅ Ruff lint clean (backend)
+- ✅ Bundle contient les identifiants / magic strings.
+
+---
+
 ## 4) Success Criteria
 - Phases 1–14 : inchangé, déjà atteint.
 - **Phase 17** : déploiement Vercel stable (Node 20 + yarn) ; build prod OK.
 - **Phase 17.B** : build strict sans `CI=false` (zéro warning `react-hooks/exhaustive-deps`).
+- **Phase 17.C** : vault non-brickable par skip + recovery autonome, auditée, avec garde-fous.
 - **Sprint 13.3** : dispatchers réels (Telegram/X) opérationnels (queue → dispatch) avec rate limiting.
 - **Sprint 14.2** : KOL infiltration + validation clearance 1/2 (sans spam).
 - **Sprint 15.x** : transparence MiCA (policy publique) + outillage disclosure + feed public anonymisé.
@@ -269,6 +329,7 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 - ⏳ 13.3 : dispatchers réels + worker cron + rate limiting + onboarding.
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
 - ✅ Whale watcher : Helius webhooks + monitoring admin (base).
+- ✅ Vault recovery : `factory_reset_vault()` + route sécurisée.
 
 **Frontend**
 - ✅ `pages/Propaganda.tsx` : panel admin complet.
@@ -276,15 +337,18 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 - ✅ Terminal : `TerminalPopup.tsx` + `RiddlesFlow.tsx`.
 - ✅ Phase 17 : fichiers Vercel/Node ajoutés pour garantir le build.
 - ✅ Phase 17.B : build strict nettoyé, suppression warnings hooks.
+- ✅ Phase 17.C : Danger Zone + hardening wizard (timer + 4 mots + ack phrase).
 
 **DB Collections**
 - Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
 - Infiltration : `riddles`, `riddle_attempts` (TTL 24h), `clearance_levels`, `sleeper_cell`.
 - Whale watcher / disclosure : selon implémentation courante + indexes (cf. docs).
+- Vault : `cabinet_vault`, `cabinet_vault_audit`, `admin_2fa`.
 
 **Sécurité**
 - Propaganda : lecture/édition templates = admin JWT ; panic/approve/reject = admin JWT + 2FA.
 - Infiltration : endpoints publics rate-limit ; mutations admin = 2FA.
 - Whale watcher feed public : **anonymisé**.
-- Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`, `x_twitter`).
+- Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`).
 - **Déploiement** : CRA5 doit rester sur Node LTS (20) ; éviter Node 24+ tant que migration Vite non réalisée.
+- **Recovery** : Factory reset exige vault LOCKED + password + 2FA (si active) + confirm string.

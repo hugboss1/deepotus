@@ -313,6 +313,75 @@ async def lock_and_audit(*, jti: str, ip: Optional[str] = None) -> None:
     await _audit("lock", jti=jti, ip=ip)
 
 
+# ---- Factory reset (DESTRUCTIVE) ------------------------------------------
+async def factory_reset_vault(
+    *,
+    jti: str,
+    ip: Optional[str] = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Wipe the vault back to a pristine pre-init state.
+
+    *DESTRUCTIVE*: removes the meta doc + every encrypted secret. The
+    audit log is kept (we even append a final ``factory_reset`` entry
+    BEFORE the wipe so the trace survives) so post-mortem investigation
+    is still possible.
+
+    Caller is responsible for enforcing strong guards at the router
+    layer (admin password recheck, 2FA, confirm string, vault-locked
+    state). This module function only performs the destructive write
+    and the audit trail — it does NOT verify auth/permissions.
+
+    Returns counts for the UI to display:
+        {
+          "ok": true,
+          "deleted_meta": 1,
+          "deleted_secrets": <int>,
+          "reset_at": <iso>,
+        }
+    """
+    # Snapshot counts BEFORE deletion (for the audit + UI feedback)
+    secret_count = await db.cabinet_vault.count_documents(
+        {"_id": {"$ne": META_DOC_ID}}
+    )
+    had_meta = await is_initialised()
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Audit FIRST so the trace exists even if the wipe partially fails.
+    await _audit(
+        "factory_reset",
+        jti=jti,
+        ip=ip,
+        extra={
+            "secret_count_at_reset": secret_count,
+            "had_meta": had_meta,
+            "reset_at": now,
+            **(extra or {}),
+        },
+    )
+
+    # Drop the in-memory unlocked session (defensive — router should
+    # already refuse the call when unlocked, but belt-and-braces).
+    _state.clear()
+
+    # Wipe everything in cabinet_vault (meta + secrets). Audit log is
+    # explicitly preserved.
+    res = await db.cabinet_vault.delete_many({})
+
+    logging.warning(
+        "[cabinet-vault] FACTORY RESET executed by jti=%s ip=%s "
+        "(deleted=%d, had_meta=%s, secrets=%d)",
+        jti, ip, res.deleted_count, had_meta, secret_count,
+    )
+
+    return {
+        "ok": True,
+        "deleted_meta": 1 if had_meta else 0,
+        "deleted_secrets": secret_count,
+        "reset_at": now,
+    }
+
+
 def _require_unlocked() -> _UnlockedSession:
     sess = _state.get()
     if not sess:
