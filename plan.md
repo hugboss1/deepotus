@@ -14,17 +14,17 @@
 - **Phase 17 — Déploiement Vercel (P0)** : fiabiliser le build CRA5 en environnement Vercel (Node + install toolchain) et éliminer le crash `ajv/dist/compile/codegen`.
 - **Phase 17.B — Qualité build strict (P1)** : permettre le build Vercel en mode strict **sans** workaround `CI=false` (zéro warnings `react-hooks/exhaustive-deps`).
 - **Phase 17.C — Vault anti-récidive (P1)** : empêcher la récurrence du scénario “vault init → mnemonic skippé → vault inaccessible” et fournir une recovery autonome et auditée.
+- **Phase 17.D — Hotfix LLM routing (P0)** : garantir que la Preview Emergent continue de fonctionner avec `EMERGENT_LLM_KEY`, tout en conservant la compatibilité Render via clés natives.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing agent) avant activation en prod.
 
 ### État actuel (mise à jour)
 - Couverture TS/TSX : **~94% du frontend** migré (reste quelques gros JSX stables : `AdminBots.jsx`, `AdminVault.jsx` — migration différée post-déploiement).
 - Sécurité session : migration `localStorage` → **`sessionStorage`** effectuée.
-- Backend : prêt Render (suppression libs propriétaires + chemins relatifs + wrapper LLM natif).
-- Frontend : **`yarn build` OK** en local.
-- **Blocage actuel** : déploiement frontend sur Vercel (tooling incorrect : npm + Node 24) → crash AJV.
-- **Nouveau** : build strict nettoyé — **`CI=true yarn build` compile sans warnings** (plus besoin de `CI=false`).
-- **Nouveau** : Vault recovery autonome + hardening du wizard (Phase 17.C) — empêche l’oubli du mnemonic et permet un reset sécurisé.
+- Backend : prêt Render (suppression libs propriétaires + chemins relatifs + wrapper LLM). **+ routing hybride LLM (Phase 17.D)**.
+- Frontend : `yarn build` OK en local + `CI=true yarn build` OK.
+- **Blocage actuel** : déploiement frontend sur Vercel (tooling incorrect : npm + Node 24) → crash AJV (Phase 17 toujours en attente côté dashboard).
+- **Nouveau** : Preview Emergent restaurée : **Prophète + preview bots** fonctionnels grâce au routing Mode A via `emergentintegrations`.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
@@ -82,6 +82,10 @@
   - ✅ Backend : tests curl **9/9** (guards + success path + audit).
   - ✅ Frontend : build strict OK, bundle contient magic strings + test ids.
   - ✅ Taille build (gzip) : **448.29 kB** JS principal (+~1.7 kB).
+- **Phase 17.D (LLM routing hotfix)** :
+  - ✅ `core/llm_compat.py` : détection Mode A/Mode B.
+  - ✅ Import probe : `_USING_EMERGENT_PROXY = True` en Preview ; `LlmChat.__module__ == emergentintegrations.llm.chat`.
+  - ✅ API test : `POST /api/admin/bots/generate-preview` → contenu généré via provider=anthropic (proxy Emergent) sans 401.
 
 #### Restant
 - **P0** : Phase 17 (Vercel build) — attente changement dashboard Vercel + redeploy.
@@ -260,54 +264,40 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 
 ### Phase 17.C — Cabinet Vault anti-récidive (P1) — ✅ **COMPLETED**
 
-**Objectif** : empêcher que le vault puisse être “init” puis rendu inaccessible suite à un skip / oubli de mnemonic ; fournir une recovery **autonome** avec audit.
+(identique au plan précédent ; déjà consolidé)
 
-#### B — Factory Reset Endpoint (recovery autonome)
+---
+
+### Phase 17.D — Hotfix LLM routing (P0) — ✅ **COMPLETED**
+
+#### Problème observé
+L’utilisateur a rapporté que :
+- le Prophète (landing) ne se lançait plus en Preview,
+- et le preview des bots côté admin ne générait plus de contenu.
+
+L’investigation a montré deux causes cumulées :
+1) **Frontend** : accumulation d’erreurs fork-ts-checker (phantom) et pattern `useEffect` early-return non compatible avec `noImplicitReturns` strict.
+2) **Backend / LLM** : `/api/admin/bots/generate-preview` échouait avec `llm_failure: 401 invalid x-api-key` car `EMERGENT_LLM_KEY=sk-emergent-...` n’est pas une clé Anthropic native ; elle doit passer par le proxy Emergent.
+
+#### Fix appliqué
+**Frontend**
+- Correction du timer (SetupWizard) : l’effet retourne désormais **toujours** une cleanup function (`() => void`), y compris en early return.
+- Purge cache webpack : suppression `frontend/node_modules/.cache` + restart dev server.
 
 **Backend**
-- `core/cabinet_vault.py`
-  - Ajout `factory_reset_vault(jti, ip, extra)`.
-  - Snapshot du nombre de secrets + présence du meta AVANT suppression.
-  - Écriture d’un audit `factory_reset` **avant** le wipe (la trace survit même si échec partiel).
-  - Purge `_state` mémoire.
-  - Suppression complète de la collection `cabinet_vault` (meta + secrets). L’audit log est conservé.
-  - Retour : `{ ok, deleted_meta, deleted_secrets, reset_at }`.
-- `routers/cabinet_vault.py`
-  - Ajout `POST /api/admin/cabinet-vault/factory-reset` avec **4 garde-fous cumulatifs** :
-    1. Vault doit être **LOCKED** (sinon 409 `VAULT_UNLOCKED`).
-    2. Re-vérification du mot de passe admin (`verify_admin_password()`), et audit sur échec.
-    3. 2FA (TOTP/backup) **uniquement si** activée.
-    4. Confirm string EXACTE (case-sensitive) : `FACTORY RESET DEEPOTUS`.
-
-**Validation backend**
-- Tests curl : **9/9** OK
-  - mauvais password → 401 + audit
-  - mauvaise confirm string → 400
-  - body vide → 422
-  - vault unlocked → 409
-  - locked + valide → succès + audit `factory_reset`
-
-**Frontend**
-- `pages/CabinetVault.tsx`
-  - `UnlockForm` : ajout `FactoryResetSection` (Danger Zone) **repliée par défaut**.
-  - `FactoryResetDialog` (Shadcn Dialog) : champs `password`, `totp` (optionnel), `confirm_text`.
-  - Bouton “Wipe vault” désactivé tant que : password non vide + confirm string exacte.
-  - Reset des champs à chaque ouverture du dialog (aucune persistance de credentials en state).
-  - Succès → toast + rafraîchissement de status pour revenir au SetupWizard.
-
-#### A — Hardening du Setup Wizard (prévention)
-- `pages/CabinetVault.tsx` — `SetupWizard`
-  - Quiz : 3 → **4 mots** aléatoires.
-  - Ajout d’une phrase d’accusé de réception : `I HAVE WRITTEN MY 24 WORDS OFFLINE` (case-insensitive) **requise**.
-  - **Timer 5 s** lors du Reveal : le bouton “I wrote it down — verify” est désactivé et affiche `Read carefully… Ns`.
-  - Timer se réinitialise à chaque cycle Hide/Reveal (non skippable).
-  - “Seal the vault” requiert : 4 champs de mots remplis + ack phrase valide.
+- Refactor `core/llm_compat.py` en wrapper **HYBRIDE** :
+  - **Mode A (preferred)** : si `emergentintegrations` est importable, re-export direct `LlmChat`/`UserMessage` du package → `EMERGENT_LLM_KEY` fonctionne via proxy.
+  - **Mode B (fallback)** : si import échoue (Render), utilisation des SDKs natifs OpenAI/Anthropic/Gemini avec résolution de clés env/vault.
+- `LlmCompatNoKeyError` reste toujours défini (API stable).
 
 #### Validation
-- ✅ `CI=true yarn build` : **Compiled successfully**
-- ✅ Taille build (gzip) : **448.29 kB** JS principal (+~1.7 kB)
-- ✅ Ruff lint clean (backend)
-- ✅ Bundle contient les identifiants / magic strings.
+- ✅ Import probe : `_USING_EMERGENT_PROXY = True` en Preview ; `LlmChat.__module__ == emergentintegrations.llm.chat`.
+- ✅ Test réel : `POST /api/admin/bots/generate-preview` → contenu LLM généré (provider=anthropic) sans 401.
+- ✅ Logs : `[llm_compat] Mode A active` + `[llm_router] route=EMERGENT`.
+
+#### Notes Render (follow-up P3)
+- Recommandé : fournir des **clés natives** (OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY) → Mode B.
+- Alternative : installer `emergentintegrations==0.1.0` via `PIP_EXTRA_INDEX_URL=https://d33sy5i8bnduwe.cloudfront.net/simple/` → Mode A sur Render.
 
 ---
 
@@ -316,6 +306,7 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 - **Phase 17** : déploiement Vercel stable (Node 20 + yarn) ; build prod OK.
 - **Phase 17.B** : build strict sans `CI=false` (zéro warning `react-hooks/exhaustive-deps`).
 - **Phase 17.C** : vault non-brickable par skip + recovery autonome, auditée, avec garde-fous.
+- **Phase 17.D** : Preview Emergent stable (Prophète + bots preview OK via EMERGENT_LLM_KEY) + Render compatible via fallback natif.
 - **Sprint 13.3** : dispatchers réels (Telegram/X) opérationnels (queue → dispatch) avec rate limiting.
 - **Sprint 14.2** : KOL infiltration + validation clearance 1/2 (sans spam).
 - **Sprint 15.x** : transparence MiCA (policy publique) + outillage disclosure + feed public anonymisé.
@@ -330,6 +321,7 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
 - ✅ Whale watcher : Helius webhooks + monitoring admin (base).
 - ✅ Vault recovery : `factory_reset_vault()` + route sécurisée.
+- ✅ LLM routing hybride (17.D) : Mode A (proxy Emergent) / Mode B (SDK natif).
 
 **Frontend**
 - ✅ `pages/Propaganda.tsx` : panel admin complet.
@@ -352,3 +344,4 @@ Permettre le build Vercel en mode strict **sans** forcer `CI=false` en suppriman
 - Secrets dispatchers : Cabinet Vault (catégories `telegram`, `x_twitter`, `trading_refs`).
 - **Déploiement** : CRA5 doit rester sur Node LTS (20) ; éviter Node 24+ tant que migration Vite non réalisée.
 - **Recovery** : Factory reset exige vault LOCKED + password + 2FA (si active) + confirm string.
+- **LLM** : Preview utilise proxy Emergent (EMERGENT_LLM_KEY) ; prod Render préfère clés natives (Mode B).

@@ -330,9 +330,14 @@ const SetupWizard: React.FC<SetupProps> = ({ headers, onDone }) => {
   // backgrounding the tab).
   const [readSecondsLeft, setReadSecondsLeft] = useState<number>(0);
   useEffect(() => {
+    // Always return a cleanup function (even a no-op) so all paths
+    // satisfy `noImplicitReturns` strict-mode of the dev server's
+    // fork-ts-checker (which is stricter than CRA's prod build).
     if (step !== "show" || !revealed) {
       setReadSecondsLeft(0);
-      return undefined;
+      return () => {
+        /* no-op cleanup */
+      };
     }
     setReadSecondsLeft(5);
     const id = setInterval(() => {
