@@ -94,6 +94,13 @@ export default function AdminBots() {
   const [previewBusy, setPreviewBusy] = useState(false);
   const [includeImage, setIncludeImage] = useState(false);
   const [imageAspect, setImageAspect] = useState("16:9");
+  // Which image backend to call when include_image=true.
+  // Default "gemini" (Nano Banana — fast, free). User can re-trigger
+  // generation with "openai" (gpt-image-1) via the "Try OpenAI variant"
+  // button to compare interpretations. We track which provider generated
+  // the CURRENT preview so the "Try OpenAI variant" button can be hidden
+  // once an OpenAI image is already being shown.
+  const [imageProvider, setImageProvider] = useState("gemini");
 
   // ---- Manual Prophet inspiration ----
   // `previewKeywords` is a comma-separated string in the input; we split + trim
@@ -317,18 +324,29 @@ export default function AdminBots() {
     }
   }
 
-  async function generatePreview() {
+  async function generatePreview(overrideProvider = null) {
     if (previewType === "kol_reply" && !kolPost.trim()) {
       toast.error("kol_post required for KOL reply");
       return;
     }
+    // Use the argument if caller explicitly forced a provider (e.g.
+    // "Try OpenAI variant" button), otherwise fall back to the state.
+    const effectiveProvider = overrideProvider || imageProvider;
     setPreviewBusy(true);
-    setPreview(null);
+    if (!overrideProvider) {
+      // Only wipe the preview when starting a fresh generation. The
+      // "Try OpenAI variant" path re-generates AND REPLACES so we also
+      // clear, but keep the aspect setting visible.
+      setPreview(null);
+    } else {
+      setPreview(null);
+    }
     try {
       const body = {
         content_type: previewType,
         platform: previewPlatform,
         include_image: includeImage,
+        image_provider: effectiveProvider,
         image_aspect_ratio: imageAspect,
         use_news_context: useNewsContext,
       };
@@ -339,20 +357,33 @@ export default function AdminBots() {
         .filter(Boolean);
       if (cleanedKw.length) body.keywords = cleanedKw;
 
+      // OpenAI image gen can take up to ~60 s per the Emergent playbook.
+      // We bump the axios timeout when the caller asks for OpenAI so the
+      // request doesn't abort mid-flight. Gemini stays on the default.
       const { data } = await axios.post(
         `${API}/api/admin/bots/generate-preview`,
         body,
-        { headers },
+        {
+          headers,
+          timeout: effectiveProvider === "openai" ? 120_000 : 45_000,
+        },
       );
       setPreview(data);
+      // Keep the tracked provider in sync with what we actually got —
+      // so the UI can reflect it in the download filename + banner.
+      if (data?.image?.provider) {
+        setImageProvider(data.image.provider);
+      }
       const sparkParts = [];
       if (cleanedKw.length) sparkParts.push(`${cleanedKw.length} keyword(s)`);
       if (useNewsContext) sparkParts.push("latest news");
       const spark = sparkParts.length ? ` (spark: ${sparkParts.join(" + ")})` : "";
+      const providerLabel =
+        data?.image?.provider === "openai" ? "OpenAI gpt-image-1" : "Nano Banana";
       if (data.image_error) {
         toast.warning(`Image failed${spark}: ${data.image_error}`);
       } else if (data.image) {
-        toast.success(`Prophet generated ${previewType} + Nano Banana${spark}`);
+        toast.success(`Prophet generated ${previewType} + ${providerLabel}${spark}`);
       } else {
         toast.success(`Prophet generated a ${previewType} preview${spark}`);
       }
@@ -366,12 +397,15 @@ export default function AdminBots() {
 
   function downloadPreviewImage() {
     if (!preview?.image?.image_base64) return;
-    const { image_base64, mime_type, aspect_ratio, content_type } = preview.image;
+    const { image_base64, mime_type, aspect_ratio, content_type, provider } = preview.image;
     const a = document.createElement("a");
     a.href = `data:${mime_type};base64,${image_base64}`;
     const ext = mime_type?.includes("jpeg") ? "jpg" : "png";
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
-    a.download = `deepotus_${content_type}_${aspect_ratio.replace(":", "x")}_${ts}.${ext}`;
+    // Provider suffix helps the admin distinguish A/B comparisons on disk
+    // (useful when generating multiple variants of the same post).
+    const providerSuffix = provider === "openai" ? "_openai" : "_gemini";
+    a.download = `deepotus_${content_type}_${aspect_ratio.replace(":", "x")}${providerSuffix}_${ts}.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1080,31 +1114,36 @@ export default function AdminBots() {
                         </SelectContent>
                       </Select>
                       <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-                        Uses Gemini Nano Banana via{" "}
-                        <code className="font-mono text-[10px]">EMERGENT_IMAGE_LLM_KEY</code>{" "}
-                        if set, else falls back to{" "}
+                        <strong className="text-foreground/80">Default provider:</strong>{" "}
+                        Gemini Nano Banana — fast (~8–20s), free via{" "}
                         <code className="font-mono text-[10px]">EMERGENT_LLM_KEY</code>.
-                        Gen takes ~8–20s.
+                        Use the{" "}
+                        <strong className="text-[#F59E0B]">Try OpenAI variant</strong>{" "}
+                        button below the preview to regenerate with{" "}
+                        <code className="font-mono text-[10px]">gpt-image-1</code>{" "}
+                        (~60s, better text rendering, ~$0.03/img).
                       </p>
                     </div>
                   )}
                 </div>
 
                 <Button
-                  onClick={generatePreview}
+                  onClick={() => generatePreview("gemini")}
                   disabled={previewBusy}
                   className="w-full rounded-[var(--btn-radius)] btn-press font-semibold"
                   data-testid="preview-generate-button"
                 >
-                  {previewBusy ? (
+                  {previewBusy && imageProvider === "gemini" ? (
                     <>
                       <RefreshCcw size={14} className="mr-2 animate-spin" />
-                      {includeImage ? "Generating text + image…" : "Generating…"}
+                      {includeImage ? "Generating text + Nano Banana…" : "Generating…"}
                     </>
                   ) : (
                     <>
                       <Sparkles size={14} className="mr-2" />
-                      {includeImage ? "Generate text + illustration" : "Generate preview"}
+                      {includeImage
+                        ? "Generate text + Nano Banana"
+                        : "Generate preview"}
                     </>
                   )}
                 </Button>
@@ -1186,7 +1225,7 @@ export default function AdminBots() {
                       ))}
                     </div>
 
-                    {/* Nano Banana illustration */}
+                    {/* Illustration block — shown regardless of which provider generated it */}
                     {preview.image && (
                       <div
                         className="rounded-lg border border-border/80 bg-background/40 p-4 space-y-3"
@@ -1194,10 +1233,30 @@ export default function AdminBots() {
                       >
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <div className="flex items-center gap-2">
-                            <ImageIcon size={14} className="text-[#F59E0B]" />
+                            <ImageIcon
+                              size={14}
+                              className={
+                                preview.image.provider === "openai"
+                                  ? "text-[#10B981]"
+                                  : "text-[#F59E0B]"
+                              }
+                            />
                             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                               Illustration · {preview.image.aspect_ratio} · {Math.round((preview.image.size_bytes || 0) / 1024)} KB
                             </div>
+                            <Badge
+                              variant="outline"
+                              className={
+                                preview.image.provider === "openai"
+                                  ? "text-[10px] border-[#10B981]/50 text-[#10B981]"
+                                  : "text-[10px] border-[#F59E0B]/50 text-[#F59E0B]"
+                              }
+                              data-testid="preview-output-image-provider"
+                            >
+                              {preview.image.provider === "openai"
+                                ? "OpenAI gpt-image-1"
+                                : "Nano Banana"}
+                            </Badge>
                           </div>
                           <Button
                             size="sm"
@@ -1217,8 +1276,53 @@ export default function AdminBots() {
                             data-testid="preview-output-image"
                           />
                         </div>
-                        <div className="font-mono text-[10px] text-muted-foreground">
-                          via {preview.image.provider}/{preview.image.model}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="font-mono text-[10px] text-muted-foreground">
+                            via {preview.image.provider}/{preview.image.model}
+                          </div>
+                          {/*
+                            "Try OpenAI variant" button — only visible when the
+                            CURRENT preview was generated by Gemini AND the user
+                            asked for an image. Clicking re-runs the SAME text
+                            generation flow but forces the OpenAI image backend
+                            so the admin can A/B compare on the fly. The current
+                            preview is replaced; earlier downloads preserved on
+                            disk with the provider suffix.
+                          */}
+                          {preview.image.provider === "gemini" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generatePreview("openai")}
+                              disabled={previewBusy}
+                              className="h-7 rounded-[var(--btn-radius)] border-[#10B981]/50 text-[#10B981] hover:bg-[#10B981]/10"
+                              data-testid="preview-try-openai-variant"
+                            >
+                              {previewBusy ? (
+                                <RefreshCcw size={11} className="mr-1 animate-spin" />
+                              ) : (
+                                <Sparkles size={11} className="mr-1" />
+                              )}
+                              Try OpenAI variant (~60s)
+                            </Button>
+                          )}
+                          {preview.image.provider === "openai" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generatePreview("gemini")}
+                              disabled={previewBusy}
+                              className="h-7 rounded-[var(--btn-radius)] border-[#F59E0B]/50 text-[#F59E0B] hover:bg-[#F59E0B]/10"
+                              data-testid="preview-try-gemini-variant"
+                            >
+                              {previewBusy ? (
+                                <RefreshCcw size={11} className="mr-1 animate-spin" />
+                              ) : (
+                                <Sparkles size={11} className="mr-1" />
+                              )}
+                              Try Gemini variant
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}

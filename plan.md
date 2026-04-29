@@ -16,6 +16,7 @@
 - **Phase 17.C — Vault anti-récidive (P1)** : empêcher le scénario “vault init → mnemonic skippé → vault inaccessible” + recovery autonome.
 - **Phase 17.D — Hotfix LLM routing (P0)** : garantir Preview Emergent OK avec `EMERGENT_LLM_KEY` tout en conservant compat Render via clés natives.
 - **Phase 17.E — Code review hygiene (D only) (P2)** : appliquer uniquement le cleanup “motion inline objects” (perf/memo), sans refactors structurels.
+- **Phase 17.F — OpenAI image (gpt-image-1) pour preview bots (P1)** : ajouter un provider image alternatif on-demand, sans changer le dispatch réel (reste dry-run pré-mint).
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing agent) avant activation en prod.
 
@@ -24,8 +25,9 @@
 - Sécurité session : migration `localStorage` → **`sessionStorage`** effectuée.
 - Backend : prêt Render (suppression libs propriétaires + chemins relatifs + wrapper LLM). **+ routing hybride LLM (Phase 17.D)**.
 - Frontend : `yarn build` OK en local + `CI=true yarn build` OK.
-- **Blocage actuel** : déploiement frontend sur Vercel (tooling incorrect : npm + Node 24) → crash AJV (Phase 17 en attente côté dashboard).
+- **Blocage actuel** : déploiement frontend sur Vercel (tooling incorrect : npm + Node 24) → crash AJV (**Phase 17 en attente côté dashboard**).
 - **Preview Emergent** : Prophète + preview bots fonctionnels (Mode A via `emergentintegrations`).
+- **Bots preview** : illustrations via **Gemini Nano Banana** (default) + **OpenAI gpt-image-1** (variant on-demand) (Phase 17.F).
 - **Code review externe (374 “issues”)** : audit confirmé → majorité faux positifs ; seules actions retenues : **Phase 17.E (motion cleanup)**.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
@@ -72,7 +74,8 @@
 - Phase 17.B : `CI=true yarn build` ✅.
 - Phase 17.C : tests curl 9/9 ✅.
 - Phase 17.D : tests preview bots + prophète ✅.
-- **Phase 17.E** : `CI=true yarn build` ✅ + smoke tests preview ✅.
+- Phase 17.E : `CI=true yarn build` ✅ + smoke tests preview ✅.
+- **Phase 17.F** : curl tests image providers (Gemini + OpenAI) ✅ + `CI=true yarn build` ✅.
 
 #### Restant
 - **P0** : Phase 17 (Vercel build) — attente changement dashboard Vercel + redeploy.
@@ -218,38 +221,64 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 ---
 
 ### Phase 17.E — Code review hygiene cleanup (D only) (P2) — ✅ **COMPLETED**
+(identique)
+
+---
+
+### Phase 17.F — OpenAI image (gpt-image-1) pour preview bots (P1) — ✅ **COMPLETED**
 
 #### Contexte
-Un rapport externe a signalé ~374 “issues”. Audit avec les outils **sources de vérité** :
-- CRA ESLint : 0 `react-hooks/exhaustive-deps`.
-- Ruff : `F821` / `E711` / `E712` / `F632` clean.
-- localStorage : thèmes (non-sensible) OK ; adminAuth déjà migré vers sessionStorage.
-- `scripts_generate_redacted_dossier.py` : `random` seedé intentionnellement pour builds PNG byte-stables (`# noqa: S311`).
+L’admin “preview bots” générait déjà des illustrations via **Gemini Nano Banana** (provider `gemini`, modèle `gemini-3.1-flash-image-preview`). L’utilisateur a demandé “OpenAI image 2.0”.
 
-Décision utilisateur : **A** (pas de refactors majeurs maintenant) + **D** (motion cleanup uniquement).
+Après vérifications :
+- Le proxy Emergent route l’OpenAI image via **`gpt-image-1`** (pas de “2.0” supporté côté proxy aujourd’hui).
+- L’API image OpenAI via Emergent n’utilise pas `LlmChat` multimodal ; elle passe par :
+  `emergentintegrations.llm.openai.image_generation.OpenAIImageGeneration`.
 
-#### Implémentation (D)
-- ✅ Nouveau module `src/lib/motionVariants.ts`
-  - 30+ constantes nommées pour `initial/animate/exit/transition/viewport`.
-  - JSDoc : rationalise la perf (identité stable → évite restart des tweens) + conventions de nommage.
-- ✅ Migration de 7 fichiers à fort trafic vers des variants stables (inline motion objects → 0) :
-  - `components/landing/vault/VaultSection.tsx`
-  - `components/landing/hero/HeroPoster.tsx`
-  - `components/landing/Mission.tsx`
-  - `components/landing/PropheciesFeed.tsx` (blur variants module-local + transition commune)
-  - `components/landing/ROISimulator.tsx`
-  - `pages/classified-vault/GateView.tsx`
-  - `pages/classified-vault/AuthedVaultView.tsx`
-- ✅ Total : **44 inline motion objects** extraits en références stables.
+Décision UX (reco acceptée) :
+- **Gemini reste le default** (rapide, gratuit)
+- Ajout d’un bouton **“Try OpenAI variant (~60s)”** après une preview Gemini
+- Bouton miroir **“Try Gemini variant”** quand la preview courante est OpenAI
+- Scope : **preview admin uniquement** (pas de dispatch réel X/TG tant que Sprint 13.3 non activé)
 
-#### Non inclus (déféré explicitement)
-- Refactor gros composants (`AdminBots.jsx`, `TerminalPopup.tsx`, etc.) → post-launch.
-- Refactor complexité backend (ex: `cabinet_vault.import_encrypted`) → post-launch.
-- Migration de tous les autres fichiers motion (Operation, TerminalPopup, HowToBuy, PublicStats…) → incrémental si nécessaire.
+#### Implémentation backend
+- ✅ **NEW** `core/openai_image_gen.py`
+  - `generate_image_openai(content_type, aspect_ratio, text_hint)`
+  - Réutilise `_build_image_prompt()` pour cohérence style (palette Matrix, watermark ΔΣ, hard rules).
+  - Réutilise `get_emergent_image_llm_key()` (compatible EMERGENT_LLM_KEY).
+  - Mapping ratio → size OpenAI :
+    - `1:1` → `1024x1024`
+    - `3:4` → `1024x1536`
+    - `16:9` → `1536x1024` (closest accepted landscape)
+  - Fallback compat : si `size=` non supporté par la version SDK → retry sans `size`.
+  - Retourne le même contrat que `prophet_studio.generate_image` : `{provider, model, mime_type, image_base64, size_bytes, ...}`.
+- ✅ `routers/bots.py`
+  - Ajout `image_provider: str = "gemini"` à `GeneratePreviewRequest`.
+  - Dispatch :
+    - `openai` → `generate_image_openai()`
+    - sinon → `generate_image()` (Gemini)
+  - Provider inconnu → fallback gemini + log info (non-fatal).
+  - Ajout `import logging` (requis par log fallback).
+
+#### Implémentation frontend
+- ✅ `pages/AdminBots.jsx` (surgical edit, pas de refactor)
+  - Ajout state `imageProvider` (sync depuis `preview.image.provider`).
+  - `generatePreview(overrideProvider=null)` : force gemini/openai à la demande.
+  - Timeout axios : **120s** si provider openai (sinon 45s).
+  - Bouton “Try OpenAI variant (~60s)” visible si image courante = gemini.
+  - Bouton “Try Gemini variant” visible si image courante = openai.
+  - Badge provider (vert OpenAI / ambre Gemini).
+  - Download filename inclut suffix `_openai`/`_gemini` pour A/B comparisons.
 
 #### Validation
-- ✅ `CI=true yarn build` : Compiled successfully.
-- ✅ Smoke tests : preview URL 200, prophète OK, bots preview OK (Mode A Emergent).
+- ✅ Gemini default 1:1 : ~765 KB PNG
+- ✅ OpenAI gpt-image-1 :
+  - 1:1 : ~1111 KB PNG
+  - 16:9 : ~1684 KB PNG
+  - 3:4 : ~1987 KB PNG
+- ✅ provider inconnu : fallback gemini
+- ✅ `CI=true yarn build` : Compiled successfully
+- ✅ preview texte-only inchangé
 
 ---
 
@@ -260,6 +289,7 @@ Décision utilisateur : **A** (pas de refactors majeurs maintenant) + **D** (mot
 - **Phase 17.C** : vault non-brickable + recovery autonome.
 - **Phase 17.D** : Preview Emergent stable + Render compatible via fallback natif.
 - **Phase 17.E** : réduction des inline motion objects sur les surfaces critiques (home + classified vault) sans régression.
+- **Phase 17.F** : preview bots supporte A/B image (Gemini default + OpenAI gpt-image-1 variant) avec timeouts et UX safe.
 - **Sprint 13.3** : dispatchers réels (Telegram/X) opérationnels.
 - **Sprint 14.2** : KOL infiltration + validation clearance 1/2.
 - **Sprint 15.x** : transparence MiCA (policy publique) + outillage disclosure.
@@ -275,6 +305,9 @@ Décision utilisateur : **A** (pas de refactors majeurs maintenant) + **D** (mot
 - ✅ Whale watcher : Helius webhooks + monitoring admin (base).
 - ✅ Vault recovery : `factory_reset_vault()` + route sécurisée.
 - ✅ LLM routing hybride (17.D) : Mode A (proxy Emergent) / Mode B (SDK natif).
+- ✅ Image routing bots preview (17.F) :
+  - Gemini : `prophet_studio.generate_image()` via `LlmChat` multimodal
+  - OpenAI : `core/openai_image_gen.generate_image_openai()` via `OpenAIImageGeneration`.
 
 **Frontend**
 - ✅ Panels admin : `pages/Propaganda.tsx`, `pages/Infiltration.tsx`.
@@ -283,6 +316,7 @@ Décision utilisateur : **A** (pas de refactors majeurs maintenant) + **D** (mot
 - ✅ Phase 17.B : build strict nettoyé.
 - ✅ Phase 17.C : Danger Zone + hardening wizard.
 - ✅ Phase 17.E : `motionVariants.ts` + extraction de 44 inline objects sur surfaces critiques.
+- ✅ Phase 17.F : UI A/B image dans `AdminBots.jsx` via bouton variant.
 
 **DB Collections**
 - Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
@@ -298,3 +332,4 @@ Décision utilisateur : **A** (pas de refactors majeurs maintenant) + **D** (mot
 - Déploiement : CRA5 doit rester sur Node LTS (20) ; éviter Node 24+ tant que migration Vite non réalisée.
 - Recovery : Factory reset exige vault LOCKED + password + 2FA (si active) + confirm string.
 - LLM : Preview utilise proxy Emergent (EMERGENT_LLM_KEY) ; prod Render préfère clés natives (Mode B).
+- Images : OpenAI gpt-image-1 via proxy Emergent (admin preview uniquement) ; coût et latence plus élevés, usage volontaire via bouton variant.

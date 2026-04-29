@@ -13,6 +13,7 @@ All endpoints are JWT-protected via `require_admin`. No public access.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -134,7 +135,16 @@ class GeneratePreviewRequest(BaseModel):
     platform: str = Field(default="x", description="x | telegram")
     kol_post: Optional[str] = Field(default=None, max_length=600)
     extra_context: Optional[str] = Field(default=None, max_length=1000)
-    include_image: bool = Field(default=False, description="Also generate an X illustration via Nano Banana")
+    include_image: bool = Field(default=False, description="Also generate an X illustration")
+    image_provider: str = Field(
+        default="gemini",
+        description=(
+            "Which image backend to use when include_image=true. "
+            "'gemini' = Nano Banana (default, fast, free via EMERGENT_LLM_KEY). "
+            "'openai' = gpt-image-1 (slower, ~$0.03/img, better text rendering). "
+            "Only honoured when include_image is true."
+        ),
+    )
     image_aspect_ratio: str = Field(default="16:9", description="16:9 | 3:4 | 1:1")
     keywords: Optional[List[str]] = Field(
         default=None,
@@ -592,15 +602,36 @@ async def generate_preview(
         raise HTTPException(status_code=502, detail=str(exc))
 
     # Optional image generation — failure is non-fatal for text preview.
+    # `image_provider` selects the backend:
+    #   - "gemini" (default) → Nano Banana via LlmChat multimodal
+    #   - "openai"           → gpt-image-1 via OpenAIImageGeneration
+    # Unknown values fall back to gemini with an info log so the admin
+    # still gets an image instead of a hard error.
     image_payload: Optional[GeneratedImage] = None
     image_error: Optional[str] = None
     if payload.include_image:
+        requested_provider = (payload.image_provider or "gemini").strip().lower()
         try:
-            img = await generate_image(
-                content_type=payload.content_type,
-                aspect_ratio=payload.image_aspect_ratio,
-                text_hint=result.get("content_en"),
-            )
+            if requested_provider == "openai":
+                from core.openai_image_gen import generate_image_openai
+
+                img = await generate_image_openai(
+                    content_type=payload.content_type,
+                    aspect_ratio=payload.image_aspect_ratio,
+                    text_hint=result.get("content_en"),
+                )
+            else:
+                if requested_provider not in ("gemini", ""):
+                    logging.info(
+                        "[bots.generate-preview] unknown image_provider=%r — "
+                        "falling back to gemini",
+                        requested_provider,
+                    )
+                img = await generate_image(
+                    content_type=payload.content_type,
+                    aspect_ratio=payload.image_aspect_ratio,
+                    text_hint=result.get("content_en"),
+                )
             image_payload = GeneratedImage(
                 content_type=img["content_type"],
                 aspect_ratio=img["aspect_ratio"],

@@ -1,42 +1,34 @@
 [
   {
-    "content": "Audit faux positifs : vérifier hook deps",
+    "content": "Recon : localiser AdminBots preview UI",
     "status": "completed"
   },
   {
-    "content": "Audit réel : ruff + lint sur backend",
+    "content": "[BE] Créer core/openai_image_gen.py",
     "status": "completed"
   },
   {
-    "content": "Fix scripts_generate_redacted_dossier.py - VERDICT: faux positif",
+    "content": "[BE] Brancher dans routers/bots.py",
     "status": "completed"
   },
   {
-    "content": "Fix `is` vs `==` - VERDICT: 0 vrai cas",
+    "content": "[BE] Test curl : Gemini + OpenAI + 3 aspect ratios + fallback",
     "status": "completed"
   },
   {
-    "content": "Audit localStorage - VERDICT: theme=non-sensible, adminAuth=déjà sessionStorage",
+    "content": "[FE] Ajouter bouton 'Generate OpenAI variant' dans AdminBots preview UI",
     "status": "completed"
   },
   {
-    "content": "Fix vrais react-hooks - VERDICT: 0 vrai warning",
+    "content": "[FE] Gestion loading state différent (OpenAI plus lent)",
     "status": "completed"
   },
   {
-    "content": "[D] Audit inline motion objects dans GateView.tsx + AuthedVaultView.tsx",
+    "content": "Build strict + smoke test",
     "status": "completed"
   },
   {
-    "content": "[D] Créer motionVariants.ts module commun + extraire 44 inline objects sur 7 fichiers",
-    "status": "completed"
-  },
-  {
-    "content": "[D] Build strict + smoke test (preview Prophete + admin)",
-    "status": "completed"
-  },
-  {
-    "content": "Mettre à jour plan.md avec phase 17.E (cleanup motion)",
+    "content": "Mettre à jour plan.md (17.F)",
     "status": "completed"
   }
 ]
