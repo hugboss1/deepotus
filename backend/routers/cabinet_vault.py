@@ -114,33 +114,97 @@ async def require_2fa_or_bootstrap(p: dict = Depends(require_admin)) -> dict:
 
     Rationale: an admin who hasn't enrolled 2FA yet still needs to be able
     to walk through the very first SetupWizard — generating their seed
-    phrase and unlocking the vault — without being stuck on a chicken-and-egg
-    403. Once 2FA is active, the regular guard kicks in everywhere.
+    phrase, unlocking the vault, populating it, locking it and re-unlocking
+    it — without being stuck on a chicken-and-egg 403. Once 2FA is active,
+    the regular guard kicks in everywhere.
 
-    *CRUD endpoints* (set/get/delete/export/import) keep ``require_2fa_enabled``
-    so the second factor is strictly required before any secret is read or
-    persisted. We further refuse this loose mode if the vault already
-    contains real secrets: an existing vault must be protected by 2FA before
-    we let anyone re-unlock it via this endpoint.
+    *Read endpoints* (get/export/import) keep ``require_2fa_enabled`` strict
+    so secret values can never leave the vault without a second factor.
+    *Write endpoints* (set/delete) use ``require_2fa_or_bootstrap_for_writes``
+    which permits the very first batch of secrets (≤ ``BOOTSTRAP_WRITE_LIMIT``)
+    without 2FA, so the admin can finish populating the vault right after
+    init, then enable 2FA. This avoids the dead-end "vault unlocked but
+    save fails with TWOFA_REQUIRED" UX.
+
+    This guard mirrors the bootstrap-write threshold so that lock/unlock
+    keep working WHILE the admin is still in bootstrap (otherwise after
+    the first write, ``lock_now`` would 403 and they'd lose access to
+    their own session).
     """
     cfg = await get_twofa_config()
     if cfg and cfg.get("enabled"):
         return p
-    # 2FA not active → only allow when vault is in a fresh / bootstrap state.
-    # We tolerate the presence of `_meta` (initialised but no secrets) so the
-    # admin can finish the setup → first unlock → then enable 2FA → then start
-    # writing secrets.
+    # 2FA not active → only allow as long as the vault is still in
+    # bootstrap territory. Past ``BOOTSTRAP_WRITE_LIMIT`` we hard-require
+    # 2FA for every endpoint (including lifecycle).
     secret_count = await db.cabinet_vault.count_documents(
         {"_id": {"$ne": "_meta"}}
     )
-    if secret_count > 0:
+    if secret_count >= BOOTSTRAP_WRITE_LIMIT:
         raise HTTPException(
             status_code=403,
             detail={
                 "code": "TWOFA_REQUIRED",
                 "message": (
-                    "This vault already holds secrets. Enable 2FA "
-                    "before re-unlocking it."
+                    f"Vault holds {secret_count} secrets. Enable 2FA "
+                    "from /admin/security before re-unlocking or "
+                    "modifying it."
+                ),
+            },
+        )
+    return p
+
+
+#: Maximum number of secrets the admin may store BEFORE enabling 2FA. Once
+#: this threshold is reached, ``require_2fa_or_bootstrap_for_writes`` flips
+#: to strict 2FA for any further write. Tuned to comfortably cover an
+#: initial deployment (LLM keys, Resend, Helius, Telegram bot creds, X bot
+#: creds × 4, public URL, BonkBot ref, etc.) without becoming a permanent
+#: backdoor.
+BOOTSTRAP_WRITE_LIMIT = 30
+
+
+async def require_2fa_or_bootstrap_for_writes(
+    p: dict = Depends(require_admin),
+) -> dict:
+    """Permit PUT / DELETE on secrets without 2FA during the bootstrap
+    window, then flip to strict 2FA once the vault is meaningfully
+    populated.
+
+    Why this exists: forcing 2FA enrolment BEFORE the very first secret
+    is stored creates a chicken-and-egg dead-end. The admin unlocks a
+    fresh vault, tries to add the first key, gets a 403 ``TWOFA_REQUIRED``,
+    and the only feedback shown by the UI was a generic "Save failed"
+    toast. With this guard:
+
+      * 2FA enabled                     → write allowed.
+      * 2FA disabled, secrets ≤ limit   → write allowed (BOOTSTRAP_WRITE).
+      * 2FA disabled, secrets > limit   → 403 TWOFA_REQUIRED.
+
+    Read endpoints (``get_secret``, ``export``, ``import``) intentionally
+    keep ``require_2fa_enabled`` so secret VALUES never leave without a
+    second factor — only WRITES are relaxed during bootstrap.
+    """
+    cfg = await get_twofa_config()
+    if cfg and cfg.get("enabled"):
+        return p
+    secret_count = await db.cabinet_vault.count_documents(
+        {"_id": {"$ne": "_meta"}}
+    )
+    if secret_count >= BOOTSTRAP_WRITE_LIMIT:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TWOFA_REQUIRED",
+                "message": (
+                    f"Vault already holds {secret_count} secrets. "
+                    "Enable 2FA from /admin/security before storing "
+                    "more."
+                ),
+                "hint": (
+                    "Bootstrap writes are limited to keep an "
+                    "unenrolled admin from leaving the vault wide "
+                    "open indefinitely."
                 ),
             },
         )
@@ -188,6 +252,9 @@ async def vault_unlock(req: UnlockRequest, request: Request,
         # invalidate so service callers refetch from the freshly-unlocked vault.
         secret_provider.invalidate_cache()
         return result
+    except (vault.MnemonicError, vault.VaultMismatchError) as e:
+        # Structured error → UI displays code-specific hint.
+        raise HTTPException(status_code=401, detail=e.to_detail()) from e
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e)) from e
 
@@ -224,7 +291,8 @@ async def vault_get(category: str, key: str, request: Request,
 
 @router.put("/secret/{category}/{key}")
 async def vault_set(category: str, key: str, req: SetSecretRequest,
-                    request: Request, p: dict = Depends(require_2fa_enabled)):
+                    request: Request,
+                    p: dict = Depends(require_2fa_or_bootstrap_for_writes)):
     try:
         result = await vault.set_secret(category, key, req.value,
                                         jti=p["jti"], ip=_client_ip(request))
@@ -240,7 +308,7 @@ async def vault_set(category: str, key: str, req: SetSecretRequest,
 
 @router.delete("/secret/{category}/{key}")
 async def vault_delete(category: str, key: str, request: Request,
-                       p: dict = Depends(require_2fa_enabled)):
+                       p: dict = Depends(require_2fa_or_bootstrap_for_writes)):
     try:
         result = await vault.delete_secret(category, key,
                                            jti=p["jti"], ip=_client_ip(request))

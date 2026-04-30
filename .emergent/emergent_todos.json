@@ -1,38 +1,26 @@
 [
   {
-    "content": "Phase 1 - Valider build Vercel local + confirmer rewrites SPA",
+    "content": "Bug 1 - Investiguer 'Save failed' sur ajout de secret",
     "status": "completed"
   },
   {
-    "content": "Phase 1 - Guider utilisateur: Save to GitHub + Trigger Deploy Hook + tester routes /admin /how-to-buy",
+    "content": "Bug 1 - Reproduire et fixer 'Save failed'",
     "status": "completed"
   },
   {
-    "content": "Phase 2 - Ajouter endpoint diagnostic Resend (/api/admin/email/diagnostics)",
+    "content": "Bug 2 - Investiguer rejet mnemonic valide a l'unlock",
     "status": "completed"
   },
   {
-    "content": "Phase 2 - Guider utilisateur: appeler /email/diagnostics depuis Render pour identifier la diff config",
+    "content": "Bug 2 - Reproduire et fixer rejet mnemonic",
     "status": "completed"
   },
   {
-    "content": "Phase 3 - Sprint 13.3.x: ajouter transient_failure + retry counter + exponential backoff",
+    "content": "Tests backend complets sur les 2 fixes",
     "status": "completed"
   },
   {
-    "content": "Phase 3 - Sprint 13.3.x: endpoint preflight /api/admin/propaganda/dispatch/preflight",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3 - Sprint 13.3.x: banniere LIVE/DRYRUN UI dans Propaganda.tsx",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3 - Test backend dispatchers (curl + worker tick)",
-    "status": "completed"
-  },
-  {
-    "content": "Update plan.md - Sprint 13.3.x done + email diagnostics endpoint",
+    "content": "Build frontend prod + restart services",
     "status": "completed"
   }
 ]

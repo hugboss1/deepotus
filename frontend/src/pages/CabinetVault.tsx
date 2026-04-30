@@ -49,6 +49,7 @@ import {
   Plus,
 } from "lucide-react";
 import { getAdminToken, clearAdminToken } from "@/lib/adminAuth";
+import { extractErrorMsg, getErrorCode } from "@/lib/apiError";
 import { logger } from "@/lib/logger";
 import ThemeToggle from "@/components/landing/ThemeToggle";
 
@@ -363,11 +364,7 @@ const SetupWizard: React.FC<SetupProps> = ({ headers, onDone }) => {
       setPhrase(data.mnemonic);
       setStep("show");
     } catch (err: unknown) {
-      // eslint-disable-next-line
-      const detail = (err as any)?.response?.data?.detail;
-      toast.error(
-        typeof detail === "string" ? detail : "Vault init failed.",
-      );
+      toast.error(extractErrorMsg(err, "Vault init failed."));
       logger.error(err);
     } finally {
       setBusy(false);
@@ -690,9 +687,9 @@ const UnlockForm: React.FC<{
       setPhrase("");
       onUnlocked();
     } catch (err: unknown) {
-      // eslint-disable-next-line
-      const detail = (err as any)?.response?.data?.detail;
-      toast.error(typeof detail === "string" ? detail : "Unlock failed.");
+      toast.error(extractErrorMsg(err, "Unlock failed."), {
+        duration: 8000, // give the user time to read the hint for bad_checksum / vault_mismatch
+      });
       logger.error(err);
     } finally {
       setBusy(false);
@@ -1069,6 +1066,7 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
   const [auditOpen, setAuditOpen] = useState<boolean>(false);
   const [exportOpen, setExportOpen] = useState<boolean>(false);
   const [importOpen, setImportOpen] = useState<boolean>(false);
+  const [twofaEnabled, setTwofaEnabled] = useState<boolean | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(
     status.expires_in_seconds ?? 900,
   );
@@ -1107,6 +1105,30 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
   useEffect(() => {
     loadList();
   }, [loadList]);
+
+  // Fetch the live 2FA status so the bootstrap banner only shows when
+  // 2FA is actually still off. Cabinet Vault writes are gated by a
+  // ``BOOTSTRAP_WRITE_LIMIT`` (~30 secrets); past that, the backend
+  // hard-requires 2FA. Surfacing this in the panel turns "Save failed"
+  // surprises into a deterministic, user-actionable message.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await axios.get<{ enabled: boolean }>(
+          `${API}/api/admin/2fa/status`,
+          { headers },
+        );
+        if (!cancelled) setTwofaEnabled(Boolean(data?.enabled));
+      } catch (err) {
+        // Non-fatal — banner just stays hidden if the probe fails.
+        logger.debug("[cabinet-vault] 2fa status probe failed", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [headers]);
 
   // Live countdown ticker
   useEffect(() => {
@@ -1260,6 +1282,43 @@ const UnlockedPanel: React.FC<UnlockedProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* 2FA bootstrap notice — surfaces the security trade-off the
+          backend allows during the very first secrets load, so the
+          admin doesn't think "Save failed" is a bug when they cross
+          the BOOTSTRAP_WRITE_LIMIT. */}
+      {twofaEnabled === false && (
+        <div
+          className="rounded-md border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-4 mb-6"
+          data-testid="cabinet-bootstrap-notice"
+          role="alert"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={16} className="mt-0.5 text-[#F59E0B] shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#F59E0B]">
+                Bootstrap mode — 2FA not enabled
+              </div>
+              <p className="text-xs text-foreground/80 mt-1.5 leading-relaxed">
+                Writes are temporarily allowed without a second factor so
+                you can populate the vault right after init.{" "}
+                <strong>Reads, exports and imports still require 2FA.</strong>{" "}
+                Once the vault holds 30+ secrets, writes will also lock
+                behind 2FA.
+              </p>
+              <div className="mt-2.5">
+                <Link
+                  to="/admin/security"
+                  className="text-[11px] font-mono uppercase tracking-widest text-[#F59E0B] hover:underline"
+                  data-testid="cabinet-bootstrap-2fa-link"
+                >
+                  → Enable 2FA from Admin → Security
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Categorised secrets */}
       {list && (
@@ -1519,9 +1578,14 @@ const SecretEditDialog: React.FC<{
       toast.success(isNew ? `${keyName} stored.` : `${keyName} rotated.`);
       onSaved();
     } catch (err: unknown) {
-      // eslint-disable-next-line
-      const detail = (err as any)?.response?.data?.detail;
-      toast.error(typeof detail === "string" ? detail : "Save failed.");
+      const code = getErrorCode(err);
+      toast.error(extractErrorMsg(err, "Save failed."), {
+        duration: code === "TWOFA_REQUIRED" ? 10000 : 6000,
+        description:
+          code === "TWOFA_REQUIRED"
+            ? "Open Admin → Security to enable 2FA, then return here."
+            : undefined,
+      });
       logger.error(err);
     } finally {
       setBusy(false);
@@ -1797,10 +1861,8 @@ function ImportDialog({
         `Restored ${data.imported + data.replaced}/${data.total_in_bundle} secrets.`,
       );
     } catch (err: unknown) {
-      // eslint-disable-next-line
-      const detail = (err as any)?.response?.data?.detail;
       toast.error(
-        typeof detail === "string" ? detail : "Import failed — wrong passphrase or tampered backup.",
+        extractErrorMsg(err, "Import failed — wrong passphrase or tampered backup."),
       );
       logger.error(err);
     } finally {
