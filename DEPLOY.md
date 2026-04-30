@@ -1,7 +1,7 @@
 # DEEPOTUS · Guide de déploiement
 
 > **Cible** : Vercel (frontend React) + Render (backend FastAPI) + MongoDB Atlas (DB)
-> **Statut au 26/04/2026** : ✅ Build production validé (`yarn build` clean), env vars paramétrées.
+> **Statut au 29/04/2026** : ✅ Build prod validé (yarn build strict CI=true). Infrastructure dispatchers Telegram/X scaffold ready (cf. `docs/SPRINT_13_3_DISPATCHERS.md`).
 
 ---
 
@@ -11,7 +11,7 @@
 ┌──────────────────────┐      ┌──────────────────────┐      ┌──────────────────────┐
 │   Vercel (static)    │ ───▶ │   Render (FastAPI)   │ ───▶ │  MongoDB Atlas       │
 │   Frontend React     │      │   Backend Python     │      │  Free tier M0        │
-│   408 kB gzipped     │      │   /api/*             │      │                      │
+│   ~450 kB gzipped    │      │   /api/*             │      │                      │
 └──────────────────────┘      └──────────────────────┘      └──────────────────────┘
         ↓ webhooks                      ↓ webhooks
    Resend → /api/webhooks/resend   Helius → /api/webhooks/helius
@@ -26,27 +26,37 @@
 1. Connecter votre repo GitHub via [vercel.com/new](https://vercel.com/new)
 2. **Root Directory** → `frontend/`
 3. **Framework Preset** → `Create React App`
-4. **Build Command** → `yarn build` (laisser auto)
-5. **Output Directory** → `build` (laisser auto)
-6. **Install Command** → `yarn install`
+4. **Build Command** → (laisser auto — `vercel.json` définit `yarn build`)
+5. **Output Directory** → (laisser auto — `build`)
+6. **Install Command** → **DÉSACTIVER l'override** (le `vercel.json` versionné fait le job)
 
-### Étape 2 : Variables d'environnement Vercel
+> 📘 Setup dashboard détaillé : [`docs/VERCEL_DASHBOARD_SETUP.md`](./docs/VERCEL_DASHBOARD_SETUP.md) (3 étapes, mockups ASCII, FAQ).
+
+### Étape 2 : Node.js Version (CRITIQUE)
+
+Settings → Build and Deployment → **Node.js Version** → **`20.x`** (pas 22, pas 24 — CRA5 incompat).
+
+### Étape 3 : Variables d'environnement Vercel
 
 Dans **Settings → Environment Variables**, ajouter (Production scope) :
 
 | Variable | Exemple | Description |
 |---|---|---|
-| `REACT_APP_BACKEND_URL` | `https://deepotus-api.onrender.com` | URL publique du backend Render (sans `/api`) |
-| `REACT_APP_SITE_URL` | `https://deepotus.com` | Domaine final du site (utilisé pour SEO meta tags : og:url, canonical, twitter, JSON-LD) |
-| `REACT_APP_PUMPFUN_URL` | `https://pump.fun/coin/<MINT>` | (optionnel) Lien direct Pump.fun |
-| `REACT_APP_RAYDIUM_URL` | `https://raydium.io/swap?...` | (optionnel) Lien Raydium |
-| `REACT_APP_TEAM_LOCK_URL` | `https://team.finance/...` | (optionnel) Lien team-token lock |
-| `REACT_APP_TREASURY_LOCK_URL` | `https://...` | (optionnel) Lien treasury-lock proof |
-| `CI` | `false` | ⚠️ **Crucial** — empêche Vercel de traiter les warnings ESLint comme errors |
+| **`REACT_APP_BACKEND_URL`** | `https://deepotus.onrender.com` | **OBLIGATOIRE.** URL publique du backend Render (sans `/api`, sans `/` final) |
+| `REACT_APP_SITE_URL` | `https://deepotus.com` | Domaine final du site (SEO meta tags : og:url, canonical, twitter, JSON-LD) |
+| `REACT_APP_DEEPOTUS_MINT` | `<mint Solana>` | Post-mint |
+| `REACT_APP_PUMPFUN_URL` | `https://pump.fun/coin/<MINT>` | Optionnel — HowToBuy |
+| `REACT_APP_RAYDIUM_URL` | `https://raydium.io/swap?...` | Optionnel — HowToBuy |
+| `REACT_APP_TEAM_LOCK_URL` | `https://team.finance/...` | Optionnel — Transparency panel |
+| `REACT_APP_TREASURY_LOCK_URL` | `https://...` | Optionnel — Transparency panel |
 
-> ℹ️ La variable `WDS_SOCKET_PORT=443` ne concerne que le dev local, ne pas la renseigner sur Vercel.
+> ⚠️ **Le seul préfixe accepté par CRA5 est `REACT_APP_`.** Pas de `VITE_*` ni `NEXT_PUBLIC_*` — ils sont ignorés par le build et polluent la config.
 
-### Étape 3 : Custom Domain (optionnel)
+> ℹ️ **`CI=false` n'est plus nécessaire** depuis Phase 17.B (build strict clean). Peut être laissé pour rétrocompat mais superflu.
+
+> 🔴 Si vous voyez `undefined/api/...` dans le browser : la var n'existait pas AU BUILD. Fix = ajouter la var + redeploy **sans** Build Cache.
+
+### Étape 4 : Custom Domain (optionnel)
 
 1. **Settings → Domains** → ajouter `deepotus.com` (ou autre)
 2. Pointer le DNS A/CNAME vers `cname.vercel-dns.com`
@@ -81,9 +91,8 @@ Dans **Environment**, ajouter chaque variable (toutes obligatoires sauf indicati
 |---|---|---|
 | `MONGO_URL` | URI MongoDB Atlas (`mongodb+srv://...`) | Atlas → Connect → Drivers |
 | `DB_NAME` | Nom de la base (ex: `deepotus_prod`) | Choix libre |
-| `CORS_ORIGINS` | URLs Vercel séparés par virgule (ex: `https://deepotus.com,https://www.deepotus.com`) | Domaine Vercel |
+| `CORS_ORIGINS` | URLs Vercel séparés par virgule (ex: `https://deepotus.com,https://www.deepotus.com`) | Domaine Vercel (doit inclure le domaine final ET les preview URLs `*.vercel.app` si vous testez les PRs) |
 | `EMERGENT_LLM_KEY` | Clé universelle Emergent (texte + image) | Profile → Universal Key sur Emergent |
-| `EMERGENT_IMAGE_LLM_KEY` | (optionnel) Clé séparée pour Nano Banana | Idem (pour facturation séparée image) |
 | `ADMIN_PASSWORD` | Mot de passe admin (default: `deepotus2026`) | Choisir un fort |
 | `JWT_SECRET` | Auto-généré au 1er démarrage si absent | Optionnel |
 | `RESEND_API_KEY` | Clé API Resend pour emails | resend.com |
@@ -94,6 +103,13 @@ Dans **Environment**, ajouter chaque variable (toutes obligatoires sauf indicati
 | `HELIUS_WEBHOOK_AUTH` | Secret webhook Helius (header Authorization) | Choisir un fort |
 | `DEEPOTUS_LAUNCH_ISO` | Date launch ISO (ex: `2026-07-04T17:00:00Z`) | À définir |
 | `SECRETS_KEK_KEY` | Fernet AES-128 key pour chiffrer les LLM keys customs | `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+
+> ⚠️ **`emergentintegrations` sur Render** : le package est distribué via un extra-index Cloudfront privé, pas via PyPI public. Si le build Render échoue avec `No matching distribution found for emergentintegrations`, deux options :
+>
+> 1. **Recommandé (prod)** : fournir des clés natives `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` et laisser `llm_compat.py` basculer en **Mode B** (SDKs natifs — aucune dép sur la lib Emergent).
+> 2. **Alternatif** : ajouter à la config Render → Environment → `PIP_EXTRA_INDEX_URL=https://d33sy5i8bnduwe.cloudfront.net/simple/` puis pinner `emergentintegrations==0.1.0` dans `requirements.txt`. Garde `EMERGENT_LLM_KEY` comme passthrough universel.
+>
+> Détails : [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md).
 
 ### Étape 3 : Webhooks externes
 
@@ -169,7 +185,7 @@ python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().
 
 1. **Helius mode démo** : par défaut le backend utilise un mint démo. Pour passer en réel post-launch Pump.fun, mettre à jour via l'admin `/admin/vault → Helius section → Save config + Register webhook`.
 
-2. **Bots Telegram/X** : restent en **dry-run** tant que `TELEGRAM_BOT_TOKEN` / `X_API_KEY` ne sont pas définis dans Render env. Les bots loggent en DB sans poster.
+2. **Propaganda Dispatchers (Telegram/X)** : scaffold ready (Sprint 13.3). **Restent en dry-run par défaut** (`dispatch_enabled=False`, `dispatch_dry_run=True` dans `propaganda_settings`). Pour passer en live : voir [`docs/SPRINT_13_3_DISPATCHERS.md`](./docs/SPRINT_13_3_DISPATCHERS.md) — credentials à vaulter dans `telegram/*` et `x_twitter/*`.
 
 3. **Resend SENDER_EMAIL** : doit être un email d'un domaine vérifié dans Resend (ou utiliser `onboarding@resend.dev` pour test). Le DNS du domaine final doit avoir les enregistrements SPF/DKIM Resend pour la délivrabilité.
 
@@ -177,7 +193,9 @@ python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().
 
 5. **MongoDB Atlas Free Tier** : 512 MB. Largement suffisant pour MVP. Si croissance forte, upgrade.
 
-6. **Logs** : Render fournit les logs runtime. Pour prod sérieuse, brancher Sentry (à ajouter dans `core/config.py`).
+6. **`emergentintegrations` sur Render** : package hosted on private Cloudfront extra-index. Si build fail avec "No matching distribution", utiliser Mode B de `llm_compat.py` (clés natives) ou configurer `PIP_EXTRA_INDEX_URL` — détails dans `docs/RENDER_DEPLOYMENT.md`.
+
+7. **Logs** : Render fournit les logs runtime. Pour prod sérieuse, brancher Sentry (à ajouter dans `core/config.py`).
 
 ---
 

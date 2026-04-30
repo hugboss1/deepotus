@@ -1,5 +1,24 @@
 # 🛸 $DEEPOTUS · Guide complet de mint, déploiement, finition & administration
 
+> ⚠️ **DOCUMENT PARTIELLEMENT OBSOLÈTE** *(dernière MAJ : 25/04/2026)*
+>
+> Les sections **Déploiement** (8-12) ont été remplacées par des docs plus précises et à jour suite aux Phases 17.A/B/D/G et Sprint 13.3. **Pour déployer en 2026/04+, lire à la place** :
+>
+> | Besoin | Document à jour |
+> |---|---|
+> | Vercel — setup complet dashboard (incl. la section ENV VARS critique) | [`docs/VERCEL_DASHBOARD_SETUP.md`](./docs/VERCEL_DASHBOARD_SETUP.md) |
+> | Vercel — redeploy routine | [`docs/VERCEL_REDEPLOY_QUICK.md`](./docs/VERCEL_REDEPLOY_QUICK.md) |
+> | Vercel — RCA technique (AJV, plan B npm) | [`docs/VERCEL_DEPLOYMENT.md`](./docs/VERCEL_DEPLOYMENT.md) |
+> | Render — backend + llm_compat Mode A/B + Sprint 13.3 vars | [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md) |
+> | Propaganda Dispatchers (Telegram/X) — scaffold live | [`docs/SPRINT_13_3_DISPATCHERS.md`](./docs/SPRINT_13_3_DISPATCHERS.md) |
+> | Checklist deployment ultra-condensée | [`DEPLOY.md`](./DEPLOY.md) |
+>
+> Les sections **1-7** (pré-requis, countdown, mint Pump.fun, bots) **restent valables**. Les sections **13-18** (admin, sécurité, post-deploy, coûts) restent également valables mais peuvent avoir des détails à vérifier dans les docs pointées ci-dessus.
+>
+> Ce document sera **fusionné/nettoyé** post-launch. En attendant, il reste utile comme référence pré-mint.
+
+---
+
 > **Document maître séquentiel.** Tout est lié et numéroté pour que tu puisses suivre dans l'ordre. Légende :
 > - 🟢 **NEO** = code que je peux/vais écrire
 > - 🟡 **TOI** = action manuelle (création de compte, copie de credentials, paiement)

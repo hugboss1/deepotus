@@ -4,21 +4,21 @@
 
 ---
 
-## ✅ Pré-requis (une seule fois — Phase 17)
+## ✅ Pré-requis (une seule fois — cf. [`VERCEL_DASHBOARD_SETUP.md`](./VERCEL_DASHBOARD_SETUP.md))
 
-Avant le premier redeploy, vérifiez que le **dashboard Vercel** a ces 2 réglages.
-Si vous voyez encore le crash AJV, c'est que ces 2 settings n'ont pas été appliqués :
+Avant le premier redeploy, vérifiez que le **dashboard Vercel** a ces 3 réglages :
 
-| Réglage | Endroit | Valeur |
+| Réglage | Endroit | Valeur attendue |
 |---|---|---|
-| **Install Command** | Settings → Build & Development Settings | `yarn install --frozen-lockfile` (ou désactiver l'override) |
+| **Install Command** | Settings → Build & Development Settings | `yarn install --frozen-lockfile` (ou override OFF) |
 | **Node.js Version** | Settings → Build & Development Settings → Node.js Version | **`20.x`** (pas 22, pas 24) |
+| **`REACT_APP_BACKEND_URL`** | Settings → Environment Variables | `https://deepotus.onrender.com` |
 
 > ✋ Une fois que c'est OK, ne plus y toucher. Les fichiers `frontend/.nvmrc`, `frontend/.npmrc` et `frontend/vercel.json` versionnés dans le repo prennent le relais.
 
 ---
 
-## 🚀 Routine de redeploy (3 façons)
+## 🚀 Routine de redeploy
 
 ### A. Automatique (recommandé — 0 effort)
 
@@ -31,7 +31,7 @@ git commit -m "deploy: <ce que tu veux>"
 git push origin main   # ou ta branche prod
 ```
 
-Vercel détecte le push et redéploie automatiquement (~2 min).
+Vercel détecte le push et redéploie automatiquement (~80s).
 
 ---
 
@@ -40,8 +40,17 @@ Vercel détecte le push et redéploie automatiquement (~2 min).
 1. Vercel dashboard → ton projet
 2. Onglet **Deployments**
 3. À droite du déploiement le plus récent : `…` → **Redeploy**
-4. Coche `Use existing Build Cache` (pour gagner ~30s)
-5. Clique **Redeploy**
+
+**Dans la modal** :
+
+| Cas | Cocher `Use existing Build Cache` ? |
+|---|---|
+| Simple push de code | ✅ Coché — gagne ~30s |
+| Changement d'ENV VAR | ⛔ **DÉCOCHER** — le cache contient l'ancien build |
+| Fix d'un bug de déploiement | ⛔ **DÉCOCHER** — build propre |
+| Après MAJ de `yarn.lock` | ⛔ **DÉCOCHER** — nouvelles deps |
+
+4. Clique **Redeploy**.
 
 ---
 
@@ -60,18 +69,31 @@ npx vercel --prod
 
 ## 🔍 Vérification post-deploy
 
-Dans la **dernière minute du build log**, vous devez voir :
+### Dans le build log Vercel
 
 ```
-✓ Detected Yarn 1.x lockfile
-✓ Running "install" command: `yarn install --frozen-lockfile`
-✓ ...
+✓ Running "install" command: `yarn install --frozen-lockfile`   ← yarn (pas npm)
+✓ [1/4] Resolving packages...
+✓ [2/4] Fetching packages...
+✓ [3/4] Linking dependencies...
+✓ [4/4] Building fresh packages...
 ✓ Running "build" command: `yarn build`
-✓ Compiled successfully.
+✓ Compiled successfully.                                         ← sans warning
+✓ The build folder is ready to be deployed.
 ```
 
-Si vous voyez `Running "install" command: 'npm install --legacy-peer-deps'` :
-→ retournez dans `Settings` et désactivez l'override Install Command (cf. pré-requis).
+### Sur le site live (F12 → Network tab)
+
+✅ Les appels API doivent pointer vers Render :
+```
+GET https://deepotus.onrender.com/api/prophecy   → 200
+```
+
+❌ Si tu vois :
+```
+GET https://undefined/api/prophecy               → DNS ERROR
+```
+→ Ton `REACT_APP_BACKEND_URL` n'était pas set au moment du build. Refais le redeploy en **décochant** Build Cache.
 
 ---
 
@@ -89,10 +111,12 @@ Si vous voyez `Running "install" command: 'npm install --legacy-peer-deps'` :
 
 | Symptôme | Diagnostic | Fix |
 |---|---|---|
+| `undefined` dans les URLs réseau | ENV VAR pas set ou cachée par l'ancien build | Étape 1 de [`VERCEL_DASHBOARD_SETUP.md`](./VERCEL_DASHBOARD_SETUP.md) + redeploy SANS cache |
 | `Cannot find module 'ajv/dist/compile/codegen'` | Settings dashboard regressed (npm + Node 24 revenus) | Re-vérifier les pré-requis |
 | `error TS2304: Cannot find name 'X'` | Vraie erreur TS dans le code | `cd /app/frontend && CI=true yarn build` localement, fixer, repush |
 | `Module not found: Can't resolve '...'` | Import cassé | Idem |
-| Site déployé mais blanc | API URL pas configurée | `Settings → Environment Variables` : ajouter `REACT_APP_BACKEND_URL=<URL Render>` |
+| Site déployé mais page blanche | API URL pointe sur preview Emergent au lieu de Render, OU erreur JS | F12 → Console, vérifier l'URL appelée et l'erreur |
+| CORS error | Pas un bug Vercel — `CORS_ORIGINS` Render doit contenir l'URL Vercel | Render dashboard → env vars |
 
 ---
 
@@ -105,14 +129,15 @@ yarn install --frozen-lockfile
 CI=true yarn build
 
 # Doit afficher "Compiled successfully." en moins de 35s.
-# Si OK localement → OK sur Vercel (à condition que les 2 settings ci-dessus soient bons).
+# Si OK localement → OK sur Vercel (à condition d'avoir bien fait les pré-requis).
 ```
 
 ---
 
-## 📚 Références plus détaillées
+## 📚 Références
 
-- `/app/docs/VERCEL_DEPLOYMENT.md` — guide initial complet (RCA AJV, plan B npm, migration Vite)
-- `/app/frontend/vercel.json` — config Vercel versionnée
-- `/app/frontend/.nvmrc` — pin Node 20
-- `/app/frontend/.npmrc` — fallback si Vercel utilise npm malgré tout
+- [`VERCEL_DASHBOARD_SETUP.md`](./VERCEL_DASHBOARD_SETUP.md) — **Setup complet du dashboard (ENV + Install + Node).** Lire en premier si premier déploiement ou si ça casse.
+- [`VERCEL_DEPLOYMENT.md`](./VERCEL_DEPLOYMENT.md) — RCA technique AJV + plan B npm overrides + migration Vite future.
+- `/app/frontend/vercel.json` — config Vercel versionnée (force yarn, SPA rewrites, cache headers).
+- `/app/frontend/.nvmrc` — pin Node 20.
+- `/app/frontend/.npmrc` — fallback si Vercel utilise npm malgré tout.

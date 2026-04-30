@@ -1,46 +1,46 @@
 [
   {
-    "content": "[V-a] Guide pas-à-pas dashboard Vercel",
+    "content": "Répondre à la question : variable = REACT_APP_BACKEND_URL (CRA)",
     "status": "completed"
   },
   {
-    "content": "[V-b] Dry-run Vercel CLI : install + vercel build local",
+    "content": "Inventaire des docs Vercel/deploy existantes",
     "status": "completed"
   },
   {
-    "content": "[V-c] README court /app/docs/VERCEL_REDEPLOY_QUICK.md",
+    "content": "Identifier les docs obsolètes ou contradictoires",
     "status": "completed"
   },
   {
-    "content": "[13.3-1] Schéma : architecture dispatcher + toggles config",
+    "content": "VERCEL_DASHBOARD_SETUP.md réécrit (ENV VARS = étape 1 critique)",
     "status": "completed"
   },
   {
-    "content": "[13.3-2] Créer core/dispatchers/__init__.py + telegram.py + x.py",
+    "content": "VERCEL_DEPLOYMENT.md corrigé (CI=false obsolète, full ENV VARS matrix)",
     "status": "completed"
   },
   {
-    "content": "[13.3-3] Créer core/dispatch_worker.py",
+    "content": "VERCEL_REDEPLOY_QUICK.md corrigé (cache decision matrix)",
     "status": "completed"
   },
   {
-    "content": "[13.3-4] Wire propaganda_settings",
+    "content": "DEPLOY.md mis à jour (Install Command + Node 20 + ENV VARS + RENDER emergentintegrations)",
     "status": "completed"
   },
   {
-    "content": "[13.3-5] Wire dans bot_scheduler.py + routes admin",
+    "content": "RENDER_DEPLOYMENT.md réécrit (Mode A/B hybride + Sprint 13.3 creds)",
     "status": "completed"
   },
   {
-    "content": "[13.3-6] Doc : SPRINT_13_3_DISPATCHERS.md",
+    "content": "DEPLOYMENT_AND_PHASES_GUIDE.md : header de statut obsolète",
     "status": "completed"
   },
   {
-    "content": "[13.3-7] Tests curl + APScheduler live tick validation",
+    "content": "Index docs/README.md créé",
     "status": "completed"
   },
   {
-    "content": "Build strict + smoke test global + plan.md update",
+    "content": "Final smoke test : build OK, backend OK, APIs OK",
     "status": "completed"
   }
 ]
