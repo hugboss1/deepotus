@@ -1,46 +1,30 @@
 [
   {
-    "content": "Répondre à la question : variable = REACT_APP_BACKEND_URL (CRA)",
+    "content": "Phase 1 - Valider build Vercel local + confirmer rewrites SPA",
     "status": "completed"
   },
   {
-    "content": "Inventaire des docs Vercel/deploy existantes",
-    "status": "completed"
+    "content": "Phase 1 - Guider utilisateur: Save to GitHub + Trigger Deploy Hook + tester routes /admin /how-to-buy",
+    "status": "in_progress"
   },
   {
-    "content": "Identifier les docs obsolètes ou contradictoires",
-    "status": "completed"
+    "content": "Phase 2 - Clarifier adresse email + emplacement des liens mailto",
+    "status": "in_progress"
   },
   {
-    "content": "VERCEL_DASHBOARD_SETUP.md réécrit (ENV VARS = étape 1 critique)",
-    "status": "completed"
+    "content": "Phase 2 - Ajouter liens mailto dans Footer + How-To-Buy avec data-testid",
+    "status": "pending"
   },
   {
-    "content": "VERCEL_DEPLOYMENT.md corrigé (CI=false obsolète, full ENV VARS matrix)",
-    "status": "completed"
+    "content": "Phase 3 - Sprint 13.3: implementer real Telegram dispatcher (sendMessage live)",
+    "status": "pending"
   },
   {
-    "content": "VERCEL_REDEPLOY_QUICK.md corrigé (cache decision matrix)",
-    "status": "completed"
+    "content": "Phase 3 - Sprint 13.3: implementer real X dispatcher (POST /2/tweets OAuth1.0a)",
+    "status": "pending"
   },
   {
-    "content": "DEPLOY.md mis à jour (Install Command + Node 20 + ENV VARS + RENDER emergentintegrations)",
-    "status": "completed"
-  },
-  {
-    "content": "RENDER_DEPLOYMENT.md réécrit (Mode A/B hybride + Sprint 13.3 creds)",
-    "status": "completed"
-  },
-  {
-    "content": "DEPLOYMENT_AND_PHASES_GUIDE.md : header de statut obsolète",
-    "status": "completed"
-  },
-  {
-    "content": "Index docs/README.md créé",
-    "status": "completed"
-  },
-  {
-    "content": "Final smoke test : build OK, backend OK, APIs OK",
-    "status": "completed"
+    "content": "Phase 3 - Tester dispatchers en mode dry-run + live + retry/backoff",
+    "status": "pending"
   }
 ]
