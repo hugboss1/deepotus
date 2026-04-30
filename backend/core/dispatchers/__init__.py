@@ -56,6 +56,12 @@ class DispatchResult:
     dry_run: bool = False
     duration_ms: int = 0
     response_snippet: Optional[str] = None  # first ~200 chars for diagnostics
+    #: ``True`` for retry-eligible failures (network timeout, 429, 5xx).
+    #: The worker will re-schedule the item with exponential backoff
+    #: instead of marking it terminally failed. Default ``False`` —
+    #: only set explicitly by dispatchers when they detect a known
+    #: transient class of error.
+    transient_failure: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -65,6 +71,7 @@ class DispatchResult:
             "dry_run": self.dry_run,
             "duration_ms": self.duration_ms,
             "response_snippet": self.response_snippet,
+            "transient_failure": self.transient_failure,
         }
 
 

@@ -120,11 +120,18 @@ async def send(
             resp = await client.post(url, json=body)
         snippet = resp.text[:200] if resp.text else None
         if resp.status_code >= 400:
+            # Telegram doesn't use 429 standard but flooding triggers
+            # 429 with "Too Many Requests" + Retry-After. Treat 429
+            # and 5xx as retry-eligible; 4xx (other) = permanent
+            # (bad chat_id, blocked bot, banned chat, unparseable
+            # markdown — admin must re-edit before retrying).
+            transient = resp.status_code == 429 or resp.status_code >= 500
             return DispatchResult(
                 outcome=DispatchOutcome.FAILED,
                 error=f"http_{resp.status_code}",
                 duration_ms=_elapsed_ms(started),
                 response_snippet=snippet,
+                transient_failure=transient,
             )
         data = resp.json()
         if not data.get("ok"):
@@ -150,6 +157,7 @@ async def send(
             outcome=DispatchOutcome.FAILED,
             error="timeout",
             duration_ms=_elapsed_ms(started),
+            transient_failure=True,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("[telegram] dispatch crashed")
@@ -157,6 +165,7 @@ async def send(
             outcome=DispatchOutcome.FAILED,
             error=f"network_error: {exc}",
             duration_ms=_elapsed_ms(started),
+            transient_failure=True,
         )
 
 

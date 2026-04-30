@@ -222,6 +222,77 @@ async def dispatch_tick_now(p: dict = Depends(require_2fa_for_send)):
     return summary
 
 
+@router.get("/dispatch/preflight")
+async def dispatch_preflight(_p: dict = Depends(require_admin)):
+    """Non-destructive credentials probe (Sprint 13.3.x).
+
+    Reports — for each platform — whether all required secrets are
+    resolvable (vault → env). NEVER returns the actual values; only
+    presence flags + source. Use this BEFORE flipping
+    ``dispatch_dry_run`` to ``false`` to confirm everything is wired
+    up.
+
+    Output shape::
+        {
+          "telegram": {"ready": bool, "missing": [...], "details": {...}},
+          "x":        {"ready": bool, "missing": [...], "details": {...}},
+          "current_settings": {"dispatch_enabled": bool, "dispatch_dry_run": bool}
+        }
+    """
+    from core.secret_provider import describe_resolution
+
+    # ---- Telegram ----
+    tg_token = await describe_resolution(
+        "telegram", "TELEGRAM_BOT_TOKEN"
+    )
+    tg_chat = await describe_resolution(
+        "telegram", "TELEGRAM_CHAT_ID"
+    )
+    tg_missing = []
+    if not tg_token["set"]:
+        tg_missing.append("TELEGRAM_BOT_TOKEN")
+    if not tg_chat["set"]:
+        tg_missing.append("TELEGRAM_CHAT_ID")
+
+    # ---- X (Twitter) ----
+    x_keys = ("X_API_KEY", "X_API_SECRET",
+              "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET")
+    x_details: Dict[str, Any] = {}
+    x_missing: List[str] = []
+    for k in x_keys:
+        info = await describe_resolution("x_twitter", k)
+        x_details[k] = info
+        if not info["set"]:
+            x_missing.append(k)
+
+    settings = await propaganda_engine.get_settings()
+    return {
+        "telegram": {
+            "ready": len(tg_missing) == 0,
+            "missing": tg_missing,
+            "details": {
+                "TELEGRAM_BOT_TOKEN": tg_token,
+                "TELEGRAM_CHAT_ID": tg_chat,
+            },
+        },
+        "x": {
+            "ready": len(x_missing) == 0,
+            "missing": x_missing,
+            "details": x_details,
+        },
+        "current_settings": {
+            "dispatch_enabled": settings.get("dispatch_enabled", False),
+            "dispatch_dry_run": settings.get("dispatch_dry_run", True),
+            "panic": settings.get("panic", False),
+        },
+        "next_step_hint": (
+            "All ready → POST /dispatch/toggle {enabled:true, dry_run:true} → "
+            "POST /dispatch/tick-now → check 'recent_events' → if OK then "
+            "{dry_run:false} for live mode."
+        ),
+    }
+
+
 # ---- Triggers --------------------------------------------------------------
 @router.get("/triggers")
 async def list_triggers(_p: dict = Depends(require_admin)):

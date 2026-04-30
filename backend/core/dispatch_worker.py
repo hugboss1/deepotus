@@ -18,13 +18,16 @@ Safety gates (in order)
 4. **dispatch_dry_run** — when True the dispatchers short-circuit
    the HTTP call and just log. Default: True (until live creds OK'd).
 
-Failure handling
-----------------
-For now we treat every dispatcher failure as terminal — item moves
-to ``status=failed`` with the per-platform error stored in
-``results``. The admin re-approves the original item to retry. This
-keeps the scaffold simple; a retry counter + backoff is a 13.3.x
-follow-up.
+Failure handling (Sprint 13.3.x)
+--------------------------------
+Failures are now classified as:
+    * **transient** — network timeout, 429 rate limit, 5xx server
+      error. The item is rescheduled with exponential backoff
+      (60s, 120s, 240s) up to ``MAX_RETRIES`` attempts before
+      finally moving to ``status=failed``.
+    * **permanent** — 401/403/400/422, bad payload, invalid chat,
+      missing creds. Item is marked failed immediately. Admin must
+      re-edit & re-approve.
 
 Idempotency
 -----------
@@ -59,6 +62,16 @@ DISPATCH_TICK_SECONDS = 30
 #: incrementally instead.
 MAX_ITEMS_PER_TICK = 5
 
+#: Number of automatic retries for transient failures before an item
+#: is finally moved to ``status=failed``. After that, admin must
+#: re-approve manually.
+MAX_RETRIES = 3
+
+#: Exponential backoff schedule, in seconds — index = retry attempt
+#: (0-based). Attempt 0 (first failure) → wait 60s; attempt 1 →
+#: 120s; attempt 2 → 240s. Beyond ``MAX_RETRIES`` we stop retrying.
+_RETRY_BACKOFF_S = [60, 120, 240]
+
 #: Default settings used if the propaganda_settings doc is missing
 #: a key. Mirrors what the admin UI exposes.
 _DEFAULT_RATE_LIMITS = {
@@ -89,6 +102,7 @@ async def run_tick() -> Dict[str, Any]:
         "rate_limited": 0,
         "dispatched": 0,
         "failed": 0,
+        "retried": 0,
         "errors": [],
     }
     try:
@@ -152,6 +166,8 @@ async def run_tick() -> Dict[str, Any]:
 
             if report.get("status") == "sent":
                 summary["dispatched"] += 1
+            elif report.get("status") == "retry_scheduled":
+                summary["retried"] += 1
             else:
                 summary["failed"] += 1
 
@@ -246,6 +262,7 @@ async def _dispatch_item(
 
     results: Dict[str, Any] = {}
     all_ok = True
+    any_transient = False
     for platform in platforms:
         send_fn = get_dispatcher(platform)
         if send_fn is None:
@@ -264,24 +281,64 @@ async def _dispatch_item(
                 outcome=DispatchOutcome.FAILED,
                 error=f"crash: {exc}",
                 dry_run=dry_run,
+                transient_failure=True,
             )
         results[platform] = res.to_dict()
         if res.outcome != DispatchOutcome.SENT:
             all_ok = False
+            if res.transient_failure:
+                any_transient = True
 
-    final_status = "sent" if all_ok else "failed"
+    if all_ok:
+        update = {
+            "status": "sent",
+            "results": results,
+            "sent_at": _now_iso(),
+            "error": None,
+        }
+        await db.propaganda_queue.update_one({"_id": item_id}, {"$set": update})
+        logger.info(
+            "[dispatch_worker] item=%s status=sent (platforms=%s, dry_run=%s)",
+            item_id, platforms, dry_run,
+        )
+        return {"status": "sent", "results": results}
+
+    # ---- Failure path: maybe retry, maybe fail terminally ----
+    retry_count = int(claimed.get("retry_count") or 0)
+    if any_transient and retry_count < MAX_RETRIES:
+        backoff_s = _RETRY_BACKOFF_S[min(retry_count, len(_RETRY_BACKOFF_S) - 1)]
+        next_at = (
+            datetime.now(timezone.utc) + timedelta(seconds=backoff_s)
+        ).isoformat()
+        update = {
+            "status": "approved",  # re-eligible; gated by scheduled_for
+            "scheduled_for": next_at,
+            "retry_count": retry_count + 1,
+            "last_retry_at": _now_iso(),
+            "results": results,
+            "error": _summarise_errors(results),
+        }
+        await db.propaganda_queue.update_one({"_id": item_id}, {"$set": update})
+        logger.info(
+            "[dispatch_worker] item=%s transient → retry %d/%d in %ds",
+            item_id, retry_count + 1, MAX_RETRIES, backoff_s,
+        )
+        return {"status": "retry_scheduled", "retry_count": retry_count + 1}
+
+    # Permanent failure (or retries exhausted).
     update = {
-        "status": final_status,
+        "status": "failed",
         "results": results,
-        "sent_at": _now_iso() if all_ok else None,
-        "error": None if all_ok else _summarise_errors(results),
+        "sent_at": None,
+        "error": _summarise_errors(results),
+        "retry_count": retry_count,
     }
     await db.propaganda_queue.update_one({"_id": item_id}, {"$set": update})
     logger.info(
-        "[dispatch_worker] item=%s status=%s (platforms=%s, dry_run=%s)",
-        item_id, final_status, platforms, dry_run,
+        "[dispatch_worker] item=%s status=failed (platforms=%s, dry_run=%s, retries=%d)",
+        item_id, platforms, dry_run, retry_count,
     )
-    return {"status": final_status, "results": results}
+    return {"status": "failed", "results": results}
 
 
 async def _finalise_failed(

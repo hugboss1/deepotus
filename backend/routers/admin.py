@@ -46,10 +46,12 @@ from core.config import (
     db,
 )
 from core.secret_provider import (
+    describe_resolution,
     get_public_base_url,
     get_resend_api_key,
     get_sender_email,
 )
+from core import cabinet_vault as _vault_state  # for unlock-status only
 from core.models import (
     AdminLoginRequest,
     AdminLoginResponse,
@@ -919,3 +921,98 @@ async def admin_test_email(
     except Exception as e:
         logging.exception(f"[admin/test-email] failed for {recipient}: {e}")
         raise HTTPException(status_code=502, detail=f"Resend error: {str(e)[:300]}")
+
+
+# ---------------------------------------------------------------------
+# Email pipeline diagnostics (non-destructive)
+# ---------------------------------------------------------------------
+@router.get("/email/diagnostics")
+async def admin_email_diagnostics(_p: dict = Depends(require_admin)):
+    """Report the live state of the Resend pipeline without sending mail.
+
+    Use this from production (Render) to debug why welcome / test emails
+    are not being delivered. Secret values are NEVER returned — only
+    presence flags, source (vault | env | miss), value lengths, and
+    recent ``email_events`` counts.
+    """
+    api_key_info = await describe_resolution(
+        "email_resend", "RESEND_API_KEY"
+    )
+    sender_info = await describe_resolution(
+        "email_resend", "SENDER_EMAIL"
+    )
+    webhook_info = await describe_resolution(
+        "email_resend", "RESEND_WEBHOOK_SECRET"
+    )
+    base_url_info = await describe_resolution(
+        "site", "PUBLIC_BASE_URL"
+    )
+
+    # Resolved sender (with default fallback) — safe to expose: it's
+    # already visible in the email "From:" header for any recipient.
+    resolved_sender = await get_sender_email()
+    resolved_base_url = await get_public_base_url()
+
+    # Pull the last 20 email_events so the admin can see whether
+    # send attempts are actually reaching Resend (or failing silently).
+    events: list[dict] = []
+    try:
+        cursor = (
+            db.email_events.find({})
+            .sort("received_at", -1)
+            .limit(20)
+        )
+        async for row in cursor:
+            events.append({
+                "id": row.get("_id"),
+                "type": row.get("type"),
+                "email_id": row.get("email_id"),
+                "recipient": row.get("recipient"),
+                "received_at": row.get("received_at"),
+            })
+    except Exception:
+        logging.exception("[admin/email/diagnostics] events fetch failed")
+
+    # Whitelist: failed-delivery counter to surface bouncing flows.
+    failed_whitelist: int = 0
+    sent_whitelist: int = 0
+    try:
+        failed_whitelist = await db.whitelist.count_documents(
+            {"email_status": "failed"}
+        )
+        sent_whitelist = await db.whitelist.count_documents(
+            {"email_status": "sent"}
+        )
+    except Exception:
+        logging.exception("[admin/email/diagnostics] whitelist count failed")
+
+    return {
+        "api_key": api_key_info,
+        "sender": sender_info,
+        "resolved_sender": resolved_sender,
+        "webhook_secret": webhook_info,
+        "public_base_url": base_url_info,
+        "resolved_base_url": resolved_base_url,
+        "vault_unlocked": _vault_state.is_unlocked(),
+        "strict_vault_only": (
+            __import__("core.secret_provider", fromlist=["STRICT_VAULT_ONLY"])
+            .STRICT_VAULT_ONLY
+        ),
+        "whitelist": {
+            "sent": sent_whitelist,
+            "failed": failed_whitelist,
+        },
+        "recent_events": events,
+        "hints": [
+            "If api_key.set is false → set RESEND_API_KEY in Render env "
+            "OR store it in Cabinet Vault under email_resend/RESEND_API_KEY.",
+            "If resolved_sender == 'onboarding@resend.dev' → Resend will "
+            "only deliver to addresses you OWN on the Resend account. "
+            "Set SENDER_EMAIL to a verified domain address.",
+            "If api_key.source == 'env' but you expected 'vault' → unlock "
+            "the Cabinet Vault and rotate the secret into it.",
+            "If recent_events is empty AND whitelist.failed > 0 → check "
+            "Render logs for 'Failed to send welcome email' tracebacks.",
+        ],
+    }
+

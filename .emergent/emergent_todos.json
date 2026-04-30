@@ -5,26 +5,34 @@
   },
   {
     "content": "Phase 1 - Guider utilisateur: Save to GitHub + Trigger Deploy Hook + tester routes /admin /how-to-buy",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
-    "content": "Phase 2 - Clarifier adresse email + emplacement des liens mailto",
-    "status": "in_progress"
+    "content": "Phase 2 - Ajouter endpoint diagnostic Resend (/api/admin/email/diagnostics)",
+    "status": "completed"
   },
   {
-    "content": "Phase 2 - Ajouter liens mailto dans Footer + How-To-Buy avec data-testid",
-    "status": "pending"
+    "content": "Phase 2 - Guider utilisateur: appeler /email/diagnostics depuis Render pour identifier la diff config",
+    "status": "completed"
   },
   {
-    "content": "Phase 3 - Sprint 13.3: implementer real Telegram dispatcher (sendMessage live)",
-    "status": "pending"
+    "content": "Phase 3 - Sprint 13.3.x: ajouter transient_failure + retry counter + exponential backoff",
+    "status": "completed"
   },
   {
-    "content": "Phase 3 - Sprint 13.3: implementer real X dispatcher (POST /2/tweets OAuth1.0a)",
-    "status": "pending"
+    "content": "Phase 3 - Sprint 13.3.x: endpoint preflight /api/admin/propaganda/dispatch/preflight",
+    "status": "completed"
   },
   {
-    "content": "Phase 3 - Tester dispatchers en mode dry-run + live + retry/backoff",
-    "status": "pending"
+    "content": "Phase 3 - Sprint 13.3.x: banniere LIVE/DRYRUN UI dans Propaganda.tsx",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 3 - Test backend dispatchers (curl + worker tick)",
+    "status": "completed"
+  },
+  {
+    "content": "Update plan.md - Sprint 13.3.x done + email diagnostics endpoint",
+    "status": "completed"
   }
 ]

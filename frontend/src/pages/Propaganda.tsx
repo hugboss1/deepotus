@@ -29,6 +29,7 @@ import {
   ListChecks,
   Loader2,
   MessageSquareText,
+  Pause,
   Pencil,
   Plus,
   Power,
@@ -37,6 +38,7 @@ import {
   ShieldOff,
   Trash2,
   X,
+  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -151,6 +153,9 @@ interface Settings {
   personality_prompt: string;
   llm_provider: string;
   llm_model: string;
+  // Sprint 13.3 — Dispatch worker
+  dispatch_enabled?: boolean;
+  dispatch_dry_run?: boolean;
 }
 
 // ---------------------------------------------------------------------
@@ -272,6 +277,12 @@ export default function Propaganda() {
         </div>
       </header>
 
+      <DispatchModeBanner
+        enabled={settings.dispatch_enabled ?? false}
+        dryRun={settings.dispatch_dry_run ?? true}
+        panic={settings.panic}
+      />
+
       <main className="max-w-6xl mx-auto">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
           <TabsList className="grid grid-cols-6 w-full md:w-auto">
@@ -315,6 +326,90 @@ export default function Propaganda() {
           </TabsContent>
         </Tabs>
       </main>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Dispatch mode banner (Sprint 13.3.x)
+// ---------------------------------------------------------------------
+interface DispatchModeBannerProps {
+  enabled: boolean;
+  dryRun: boolean;
+  panic: boolean;
+}
+
+/**
+ * Read-only at-a-glance status strip telling the operator whether the
+ * dispatch worker is actually moving items to X / Telegram.
+ *
+ * Three meaningful states:
+ *   • PAUSED  → enabled=false             (worker reads queue, does nothing)
+ *   • DRYRUN  → enabled=true, dryRun=true (full pipeline, no HTTP calls)
+ *   • LIVE    → enabled=true, dryRun=false (real posts go out)
+ *
+ * Panic supersedes all three when ON. We surface that here too rather
+ * than rely on the user noticing the PanicCard above.
+ */
+function DispatchModeBanner({ enabled, dryRun, panic }: DispatchModeBannerProps) {
+  let state: "panic" | "paused" | "dryrun" | "live";
+  if (panic) state = "panic";
+  else if (!enabled) state = "paused";
+  else if (dryRun) state = "dryrun";
+  else state = "live";
+
+  const config: Record<
+    typeof state,
+    { label: string; subtitle: string; icon: JSX.Element; cls: string }
+  > = {
+    panic: {
+      label: "PANIC — DISPATCH FROZEN",
+      subtitle: "Kill-switch is ON. No outbound message will be sent.",
+      icon: <ShieldOff size={14} />,
+      cls: "border-[#FF4D4D]/60 bg-[#FF4D4D]/10 text-[#FF4D4D]",
+    },
+    paused: {
+      label: "PAUSED — Worker idle",
+      subtitle:
+        "Dispatch worker is disabled. Approved items wait in queue until you flip 'enabled' ON.",
+      icon: <Pause size={14} />,
+      cls: "border-zinc-700 bg-zinc-900/40 text-zinc-300",
+    },
+    dryrun: {
+      label: "DRY-RUN — Pipeline test",
+      subtitle:
+        "Full pipeline runs, but dispatchers short-circuit the HTTP call. Items move to 'sent' so you can validate before going live.",
+      icon: <RadioTower size={14} />,
+      cls: "border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#F59E0B]",
+    },
+    live: {
+      label: "LIVE — Posts go out for real",
+      subtitle:
+        "Dispatchers will hit X & Telegram with real HTTP calls. Approved items become live posts.",
+      icon: <Zap size={14} />,
+      cls: "border-[#18C964]/40 bg-[#18C964]/10 text-[#18C964]",
+    },
+  };
+  const c = config[state];
+
+  return (
+    <div
+      className={`max-w-6xl mx-auto mb-6 rounded-md border px-4 py-3 ${c.cls}`}
+      data-testid="propaganda-dispatch-banner"
+      data-dispatch-state={state}
+      role="status"
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 shrink-0">{c.icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] tracking-[0.3em] uppercase font-mono">
+            {c.label}
+          </div>
+          <p className="text-[11px] text-foreground/70 mt-1 leading-relaxed">
+            {c.subtitle}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

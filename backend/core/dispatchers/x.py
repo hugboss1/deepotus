@@ -149,13 +149,19 @@ async def send(
                 error="x_rate_limited",
                 duration_ms=_elapsed_ms(started),
                 response_snippet=snippet,
+                transient_failure=True,
             )
         if resp.status_code >= 400:
+            # 5xx are transient (X gateway issue); 4xx other than the
+            # ones already handled above (401/403/429) are permanent
+            # (bad payload, invalid chars, etc.).
+            transient = resp.status_code >= 500
             return DispatchResult(
                 outcome=DispatchOutcome.FAILED,
                 error=f"http_{resp.status_code}",
                 duration_ms=_elapsed_ms(started),
                 response_snippet=snippet,
+                transient_failure=transient,
             )
         data = resp.json()
         tweet_id = (data.get("data") or {}).get("id")
@@ -176,6 +182,7 @@ async def send(
             outcome=DispatchOutcome.FAILED,
             error="timeout",
             duration_ms=_elapsed_ms(started),
+            transient_failure=True,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("[x] dispatch crashed")
@@ -183,6 +190,7 @@ async def send(
             outcome=DispatchOutcome.FAILED,
             error=f"network_error: {exc}",
             duration_ms=_elapsed_ms(started),
+            transient_failure=True,
         )
 
 
