@@ -591,13 +591,25 @@ def render_loyalty_email(
     by the Emergent LLM on demand so each user gets a slightly varied
     deniable note. We avoid naming any future token, never promise a date,
     and never quote an amount.
+
+    Hero illustration: ``{base_url}/api/assets/loyalty_hero.jpg``. The asset
+    is generated offline by ``backend/scripts/generate_loyalty_hero.py``
+    using OpenAI gpt-image-1, optimised to 960×540 JPG (~50 KB) and
+    served by FastAPI's StaticFiles mount on /api/assets. Email clients
+    fetch it once and cache it. Alt text falls back gracefully when
+    images are blocked (Outlook default).
     """
     site_url = base_url.rstrip("/")
     classified_url = f"{site_url}/classified-vault?code={accreditation_number}"
+    hero_url = f"{site_url}/api/assets/loyalty_hero.jpg"
 
     if lang == "fr":
         badge = "— CLASSIFIED · LOYAUTÉ · PROTOCOL ΔΣ"
         title = "Votre allégeance a été notée."
+        hero_alt = (
+            "Bureau de coordination du Deep State — registre classifié, "
+            "sceau ΔΣ, lampe d'archive."
+        )
         lead = (
             f"Agent <strong>{display_name}</strong>, le bureau central a "
             "consigné votre élévation au Niveau 02. Le registre des fidèles "
@@ -621,6 +633,10 @@ def render_loyalty_email(
     else:
         badge = "— CLASSIFIED · LOYALTY · PROTOCOL ΔΣ"
         title = "Your allegiance has been noted."
+        hero_alt = (
+            "Deep State coordination office — classified ledger, ΔΣ wax "
+            "seal, archive desk lamp."
+        )
         lead = (
             f"Agent <strong>{display_name}</strong>, the central office has "
             "logged your Level 02 clearance. The ledger of the loyal is now "
@@ -660,6 +676,15 @@ def render_loyalty_email(
           <td align="center" style="padding:28px 28px 12px 28px;">
             <div style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;color:#F59E0B;">{badge}</div>
             <h1 style="margin:12px 0 0 0;font-size:26px;line-height:1.25;color:#FFFFFF;font-weight:600;">{title}</h1>
+          </td>
+        </tr>
+
+        <!-- Hero illustration (gpt-image-1, classified-bureau aesthetic) -->
+        <tr>
+          <td align="center" style="padding:6px 28px 14px 28px;">
+            <a href="{classified_url}" style="text-decoration:none;display:block;">
+              <img src="{hero_url}" alt="{hero_alt}" width="584" style="display:block;width:100%;max-width:584px;height:auto;border:0;outline:none;border-radius:10px;border:1px solid #2A2A2E;" />
+            </a>
           </td>
         </tr>
 

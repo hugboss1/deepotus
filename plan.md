@@ -18,18 +18,18 @@
 - **Phase 17.E — Code review hygiene (D only) (P2)** : appliquer uniquement le cleanup “motion inline objects” (perf/memo), sans refactors structurels.
 - **Phase 17.F — OpenAI image (gpt-image-1) pour preview bots (P1)** : ajouter un provider image alternatif on-demand, sans changer le dispatch réel (reste dry-run pré-mint).
 - **Phase 17.G — Vercel deploy package (P1)** : livrer le trio de docs + validation pipeline locale pour que l’utilisateur finalise le déploiement en autonomie.
+- **Nouvel objectif (post-prod)** : opérationnaliser l’onboarding post-déploiement (Helius/dispatch/email) via docs et assets statiques (emails) pour accélérer la mise en live et réduire les erreurs humaines.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
 
 ### État actuel (mise à jour)
-- Couverture TS/TSX : ~94% du frontend migré (reste quelques gros JSX stables : `AdminBots.jsx`, `AdminVault.jsx` — migration différée post-déploiement).
-- Sécurité session : migration `localStorage` → **`sessionStorage`** effectuée.
-- Backend : prêt Render (suppression libs propriétaires + chemins relatifs + wrapper LLM). **+ routing hybride LLM (Phase 17.D)**.
-- Frontend : `yarn build` OK en local + `CI=true yarn build` OK.
-- **Blocage/risque actuel** : déploiement frontend Vercel — nécessite que les derniers commits soient **poussés sur GitHub** puis redéployés via **Deploy Hook**.
-- **Vercel SPA routing** : `vercel.json` contient déjà les **rewrites SPA** ; les 404 sur navigation directe (`/admin`, `/how-to-buy`) indiquent un déploiement Vercel sur un commit ancien.
-- **Emails Resend (prod)** : ajout d’un endpoint diagnostic admin pour comparer configuration Preview vs Render.
-- **Propaganda Engine** : Sprint 13.3.x livré (retry/backoff, preflight creds, bannière UI) — améliore l’opérationnalité pré-live.
+- **PRODUCTION LIVE** : `https://www.deepotus.xyz` sur Vercel (frontend) + Render (backend).
+- Admin : **mot de passe modifié** (rotation effectuée), **2FA activée**, vault accessible.
+- **Cabinet Vault** : déverrouillé en prod ; secrets déjà saisis : **LLM / Resend / Helius**.
+- **Reste à saisir** : credentials **Telegram** (bot token + chat ID) et **X** (4 secrets OAuth1.0a) dans le vault.
+- Frontend : `yarn build` OK ; correction UX **Prophétie Live** (hold 5 secondes) livrée.
+- Backend : ajout d’un serveur d’assets statiques `/api/assets` pour les emails (hero image).
+- Ops : documentation post-déploiement Helius + documentation de fonctionnement des bots livrées.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
@@ -42,22 +42,15 @@
 #### Propaganda Engine (Sprints 13.1–13.2) — ✅ LIVRÉ end-to-end
 - **Sprint 13.1 MVP** ✅ : orchestrateur + templates DB + approval queue + panic kill-switch + UI admin (Triggers/Templates/Queue/Activity).
 - **Sprint 13.2 COMPLET** ✅ :
-  - 5 triggers : `mint`, `mc_milestone`, `jeet_dip`, `whale_buy`, `raydium_migration`.
-  - `market_analytics.py` : snapshots prix/MC (TTL 1h), dip detection.
-  - `tone_engine.py` : LLM hybride 70/30 (configurable), persona, post-processor.
-  - FR optionnel : templates FR seedés.
-  - `PATCH /api/admin/propaganda/settings` : settings LLM.
-  - Frontend : tab **Tone & LLM**.
+  - Triggers + analytics + tone engine (LLM).
+  - Templates FR/EN.
+  - Settings LLM + tab UI.
 
-#### Sprint 13.3 — Dispatchers & Worker cron (scaffold) — ✅ COMPLET
+#### Sprint 13.3 — Dispatchers & Worker cron — ✅ COMPLET
 - Worker APScheduler (tick toutes les 30s) : claim atomique `approved → in_flight → sent|failed`.
 - Dispatchers : `telegram.sendMessage` + `X POST /2/tweets` (OAuth1.0a) + mode dry-run.
 - Garde-fous : `dispatch_enabled` (default false) + `dispatch_dry_run` (default true) + rate limits.
-- Routes admin :
-  - `GET /api/admin/propaganda/dispatch/status` (observabilité)
-  - `POST /api/admin/propaganda/dispatch/toggle` (2FA)
-  - `POST /api/admin/propaganda/dispatch/tick-now` (2FA)
-- Doc ops : `/app/docs/SPRINT_13_3_DISPATCHERS.md`.
+- Routes admin + doc ops.
 
 #### Sprint 13.3.x — Robustesse opérationnelle (pré-live) — ✅ COMPLET
 - Retry/backoff exponentiel pour erreurs transientes (429/5xx/timeout/network) : **60s / 120s / 240s**, **max 3 tentatives** (`MAX_RETRIES=3`).
@@ -70,43 +63,34 @@
 - Seeds 5 énigmes + anti-bruteforce.
 - Admin UI : `/app/frontend/src/pages/Infiltration.tsx`.
 - Public UX : intégration “Proof of Intelligence” via `TerminalPopup.tsx` + `RiddlesFlow.tsx`.
-- Fix index wallet MongoDB (partial unique index).
 
 #### Whale Watcher & disclosures (Sprint 15/16) — ✅ BASE LIVRÉE
 - `TOKENOMICS_TREASURY_POLICY.md` créé.
 - Helius webhooks + worker + UI admin.
 - Seeds triggers/templates : `founder_buy`, `kol_mention`.
-- UI landing `AccessSecuredTerminals.tsx`.
+- **Doc post-déploiement Helius** livré : `/app/docs/HELIUS_POST_DEPLOY.md`.
 
-#### Emails transactionnels (Resend) — ✅ Diagnostics livrés
-- Nouvel endpoint : `GET /api/admin/email/diagnostics` (présence des secrets, source vault/env, sender résolu, aperçu événements récents, compteurs whitelist sent/failed).
-- But : debug rapide en production Render sans exposer de secret.
+#### Emails transactionnels (Resend)
+- ✅ Diagnostics livrés : `GET /api/admin/email/diagnostics`.
+- ✅ **Email loyauté** amélioré : hero illustration IA servie depuis `/api/assets/loyalty_hero.jpg`.
 
-#### Tests automatisés & validations
-- Cabinet Vault : E2E backend ✅ ; import/export ✅.
-- Propaganda Engine : smoke tests backend + UI ✅.
-- Infiltration Brain : E2E manuel + curls backend ✅.
-- Phase 17 : reproduction bug AJV npm ✅ ; yarn build ✅.
-- Phase 17.B : `CI=true yarn build` ✅.
-- Phase 17.C : tests curl 9/9 ✅.
-- Phase 17.D : tests preview bots + prophète ✅.
-- Phase 17.E : `CI=true yarn build` ✅ + smoke tests preview ✅.
-- Phase 17.F : curl tests image providers (Gemini + OpenAI) ✅ + `CI=true yarn build` ✅.
-- **Phase 17.G** : validation pipeline Vercel local (install+build) ✅ + docs ✅.
-- **Sprint 13.3.x** :
-  - Build frontend prod OK (taille +624B) ✅
-  - Tick worker simulé (1 item dispatched en dry-run Telegram+X) ✅
-  - Preflight : Telegram READY / X MISSING creds ✅
-  - Screenshot UI : bannière dispatch visible ✅
-- **Email diagnostics** : endpoint testé et fonctionnel ✅
+#### Documentation Ops / Produit — ✅ LIVRÉE
+- ✅ Helius post-deploy : `/app/docs/HELIUS_POST_DEPLOY.md` (deepotus.xyz + Render).
+- ✅ Fonctionnement bots infiltration + propagande : `/app/docs/BOTS_OPERATIONS.md`.
 
-#### Restant
-- **P0** : Phase 17 — confirmer que le dernier commit est sur GitHub et **redeploy Vercel** (Deploy Hook) ; valider fin des 404 SPA sur `/admin` et `/how-to-buy`.
-- **P1 (activation live)** : Propaganda dispatch LIVE :
-  - Telegram : prêt (creds détectés en env sur preview) → à migrer dans Vault si souhaité.
-  - X : credentials manquants (nécessite tier Elevated/Pro) + secret vault/env.
-- **P1** : Debug Resend sur Render : appeler `/api/admin/email/diagnostics` sur l’URL Render pour comparer (vault/env, sender, events) et corriger la config.
-- **Upcoming** : Sprint 14.2 (KOL Infiltration auto-DMs + validation clearance levels 1/2).
+#### Assets email — ✅ LIVRÉ
+- ✅ `backend/static/loyalty_hero.jpg` (gpt-image-1), optimisé **960×540**, ~**50KB** + meta JSON.
+- ✅ `server.py` monte `StaticFiles` sur `/api/assets`.
+- ✅ `email_templates.render_loyalty_email()` inclut l’image + alt bilingue + lien vers `classified-vault`.
+
+#### UX Landing — ✅ Hotfix
+- ✅ `PropheciesFeed.tsx` : maintien de la prophétie live **5 secondes** après clic sur “Nouvelle prophétie” (`LIVE_HOLD_MS=5000`).
+
+#### Restant (post-prod)
+- **P0** : saisir et valider les creds Telegram + X dans le vault et passer Propaganda en LIVE progressivement.
+- **P1** : Sprint 14.2 (KOL Infiltration auto-DMs + validation clearance L1/L2) — dépend du tier X API.
+- **P1** : Sprint 15 (Brain Connect MiCA / Helius live) — dépend du mint + pool address.
+- **P2/P3** : migration CRA→Vite (optionnel, stabilisation toolchain) — Phase 17.H.
 
 ---
 
@@ -172,8 +156,6 @@
 
 ---
 
-## 3) Next Actions
-
 ### Phase 13 — **PROTOCOL ΔΣ : Propaganda Engine**
 
 #### Phase 13.1 (P0) — MVP Squelette ✅ **COMPLETED**
@@ -183,31 +165,21 @@
 (identique)
 
 #### Phase 13.3 (P2) — Dispatchers + Worker cron + Rate limiting + Onboarding ✅ **COMPLETED**
-**Objectif** : exécuter réellement les posts X/TG depuis la `propaganda_queue`.
-
-✅ Livré :
-- Worker cron (APScheduler 30s tick) + claim atomique.
-- Dispatchers Telegram/X + dry-run.
-- Settings `dispatch_enabled` + `dispatch_dry_run`.
-- Routes admin + doc ops.
+(identique)
 
 #### Phase 13.3.x (P1) — Robustesse + opérabilité ✅ **COMPLETED**
-✅ Livré :
-- Retry/backoff exponentiel sur erreurs transientes (max 3) et re-scheduling via `scheduled_for`.
-- `GET /api/admin/propaganda/dispatch/preflight` (audit secrets, prêt à basculer).
-- Bannière UI mode dispatch (PAUSED/DRYRUN/LIVE/PANIC).
+(identique)
 
-⏳ Pour passer en LIVE (user-side) :
-1) Vérifier les secrets via `GET /api/admin/propaganda/dispatch/preflight`.
-2) Activer worker en dry-run (2FA) : `POST /api/admin/propaganda/dispatch/toggle` `{enabled:true, dry_run:true}`.
-3) Forcer un tick (2FA) : `POST /api/admin/propaganda/dispatch/tick-now` et vérifier résultats.
-4) Basculer LIVE : `POST /api/admin/propaganda/dispatch/toggle` `{dry_run:false}`.
-
-Notes :
-- Telegram est généralement activable immédiatement si bot token + chat_id sont prêts.
-- X requiert 4 secrets OAuth1 + tier Elevated/Pro.
-
-Backlog 13.3.y (optionnel) : threads/replies, métriques avancées, UI “preflight” intégré, auto-pause sur répétition d’échecs.
+**Post-prod activation checklist (mise à jour)**
+1) Vérifier secrets via `GET /api/admin/propaganda/dispatch/preflight`.
+2) Renseigner secrets manquants dans le vault :
+   - Telegram : `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+   - X : `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`
+3) Activer worker en dry-run (2FA) : `POST /api/admin/propaganda/dispatch/toggle` `{enabled:true, dry_run:true}`.
+4) Forcer un tick (2FA) : `POST /api/admin/propaganda/dispatch/tick-now`.
+5) Vérifier que les items passent `approved → sent` avec `dry_run:true`.
+6) Passer LIVE d’abord Telegram (dry_run=false, X encore off possible si creds manquants) ; puis X.
+7) Sur incident : `panic=true` immédiatement.
 
 ---
 
@@ -216,86 +188,60 @@ Backlog 13.3.y (optionnel) : threads/replies, métriques avancées, UI “prefli
 #### Phase 14.1 (P0) — Backend + Admin UI + Public Terminal flow ✅ **COMPLETED**
 (identique)
 
-#### Phase 14.2 (P2) — KOL Infiltration Logic (X/Twitter) (**UPCOMING**)
+#### Phase 14.2 (P2) — KOL Infiltration Logic (X/Twitter) (**UPCOMING**) 
 - Automatisation “Mirror” et “Recruitment” (auto-DMs).
 - Validation Clearance Levels 1 & 2 (Follow X / Join TG).
 - Garde-fous : anti-spam + quotas.
+- **Dépendance** : tier X API (Basic/Elevated) + endpoints follow/search/DM autorisés.
 
 ---
 
 ### Phase 15 — **Brain Connect & Treasury Architecture (MiCA) — NEXT**
 Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine) **sans logique de trading**, publier une politique publique de trésorerie conforme MiCA, et ajouter l’outillage admin de disclosure.
 
-(Phases 15.1–15.5 : identiques ; mise à jour fine possible post-déploiement)
+- **Dépendances** : mint `$DEEPOTUS` + pool address DEX (Raydium/Orca) + passage Helius en mode live.
+- **Doc ops** : `/app/docs/HELIUS_POST_DEPLOY.md` (procédure webhook + auth + smoke test).
 
 ---
 
-### Phase 17 — Déploiement Vercel : Fix build CRA5 / AJV (P0) — **IN PROGRESS (user dashboard pending)**
+### Phase 17 — Déploiement Vercel : Fix build CRA5 / AJV (P0) — ✅ **COMPLETED (prod live)**
+- Les étapes Node20/yarn/vercel.json/rewrites sont en prod.
 
-#### Problèmes identifiés
-- Toolchain Vercel (npm/Node24) cause crash AJV.
-- Navigation directe sur routes SPA (`/admin`, `/how-to-buy`) renvoie 404 si les rewrites ne sont pas déployés.
-
-#### Fix appliqué (repo)
-- ✅ `/app/frontend/.nvmrc` : `20`.
-- ✅ `/app/frontend/vercel.json` : force yarn + SPA rewrites + cache headers.
-- ✅ `/app/frontend/.npmrc` : filet de sécurité.
-- ✅ Docs : `/app/docs/VERCEL_DASHBOARD_SETUP.md`, `/app/docs/VERCEL_REDEPLOY_QUICK.md`, `/app/docs/VERCEL_DEPLOYMENT.md`.
-
-#### Actions requises (utilisateur — dashboard Vercel)
-1) **Save to GitHub** depuis Emergent (pour pousser `vercel.json` et le reste).
-2) Configurer Vercel : Node 20, install yarn (`yarn install --frozen-lockfile`), pas d’override npm.
-3) Redeploy via **Deploy Hook**.
-4) Valider :
-   - `GET /admin` (direct URL) = 200 + app React
-   - `GET /how-to-buy` (direct URL) = 200 + landing
+### Phase 17.H (P3/P4) — Migration CRA → Vite (optionnel)
+- But : éliminer la dette CRA5 (AJV / toolchain) et accélérer builds.
+- À faire uniquement après stabilisation post-mint.
 
 ---
 
-### Phase 17.B — Ménage “Strict CI” (P1) — ✅ **COMPLETED**
-(identique)
+## 3) Next Actions
 
----
+### Priorité immédiate (P0) — Finaliser dispatch LIVE
+- Ajouter dans Cabinet Vault :
+  - Telegram : `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+  - X : `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`
+- Vérifier `GET /api/admin/propaganda/dispatch/preflight` → `ready=true`.
+- Basculer dispatch : dry-run → live, plateforme par plateforme.
 
-### Phase 17.C — Cabinet Vault anti-récidive (P1) — ✅ **COMPLETED**
-(identique)
+### P1 — Helius live post-mint
+- Suivre `/app/docs/HELIUS_POST_DEPLOY.md`.
+- Enregistrer webhook sur Render backend ; supprimer ancien webhook preview.
+- Renseigner `mint` + `pool_address` dès disponibles.
 
----
+### P1 — Infiltration 14.2
+- Activer KOL polling (tier X) + auto-validation L1/L2.
 
-### Phase 17.D — Hotfix LLM routing (P0) — ✅ **COMPLETED**
-(identique)
-
----
-
-### Phase 17.E — Code review hygiene cleanup (D only) (P2) — ✅ **COMPLETED**
-(identique)
-
----
-
-### Phase 17.F — OpenAI image (gpt-image-1) pour preview bots (P1) — ✅ **COMPLETED**
-(identique)
-
----
-
-### Phase 17.G — Vercel deploy package (P1) — ✅ **COMPLETED**
-(identique)
+### P2 — Qualité 
+- Régression tests simples (smoke) + scripts de préflight et diag.
 
 ---
 
 ## 4) Success Criteria
-- Phases 1–14 : inchangé, déjà atteint.
-- **Phase 17** : déploiement Vercel stable (Node 20 + yarn) ; build prod OK ; **plus de 404 SPA** sur refresh/direct navigation.
-- **Phase 17.B** : build strict sans `CI=false`.
-- **Phase 17.C** : vault non-brickable + recovery autonome.
-- **Phase 17.D** : Preview Emergent stable + Render compatible via fallback natif.
-- **Phase 17.E** : réduction des inline motion objects sur les surfaces critiques (home + classified vault) sans régression.
-- **Phase 17.F** : preview bots supporte A/B image (Gemini default + OpenAI gpt-image-1 variant) avec timeouts et UX safe.
-- **Phase 17.G** : docs + validation pipeline locale permettant au user de redeploy Vercel en autonomie.
-- **Sprint 13.3 + 13.3.x** :
-  - Dispatchers opérationnels (dry-run) + robustesse retry/backoff.
-  - Preflight creds disponible.
-  - UI surfacing clair du mode PAUSED/DRYRUN/LIVE/PANIC.
-- **Emails (Resend)** : endpoint diagnostic permet d’isoler la cause (secrets absents, sender non vérifié, events manquants) sur Render.
+- Site prod stable sur deepotus.xyz.
+- Cabinet Vault : secrets centralisés, 2FA active, rotations possibles.
+- Helius : webhook prod enregistré, ingestion on-chain stable.
+- Propaganda : dispatch live contrôlé (rate limit + panic + audit) avec 0 fuites.
+- Emails : loyauté rendu cohérent (hero asset servie) + diagnostics Resend utilisables.
+- Infiltration : riddles + clearance fonctionnels ; auto-validation 14.2 prête quand tier X OK.
 
 ---
 
@@ -310,19 +256,14 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - ✅ Whale watcher : Helius webhooks + monitoring admin (base).
 - ✅ Vault recovery : `factory_reset_vault()` + route sécurisée.
 - ✅ LLM routing hybride (17.D) : Mode A (proxy Emergent) / Mode B (SDK natif).
-- ✅ Image routing bots preview (17.F) :
-  - Gemini : `prophet_studio.generate_image()` via `LlmChat` multimodal
-  - OpenAI : `core/openai_image_gen.generate_image_openai()` via `OpenAIImageGeneration`.
+- ✅ Assets email : `/api/assets` via `StaticFiles` (ex: `loyalty_hero.jpg`).
+- ✅ IA illustration loyauté : `scripts/generate_loyalty_hero.py` + `backend/static/loyalty_hero.jpg`.
 
 **Frontend**
-- ✅ Panels admin : `pages/Propaganda.tsx`, `pages/Infiltration.tsx`.
+- ✅ Panels admin : `pages/Propaganda.tsx`, `pages/Infiltration.tsx`, `pages/CabinetVault.tsx`.
 - ✅ Propaganda UI : bannière d’état dispatch (PAUSED/DRYRUN/LIVE/PANIC).
 - ✅ Terminal : `TerminalPopup.tsx` + `RiddlesFlow.tsx`.
-- ✅ Phase 17 : fichiers Vercel/Node ajoutés.
-- ✅ Phase 17.B : build strict nettoyé.
-- ✅ Phase 17.C : Danger Zone + hardening wizard.
-- ✅ Phase 17.E : `motionVariants.ts` + extraction d’inline objects.
-- ✅ Phase 17.F : UI A/B image dans `AdminBots.jsx` via bouton variant.
+- ✅ UX prophétie : hold 5s sur “Nouvelle prophétie” (`PropheciesFeed.tsx`).
 
 **DB Collections**
 - Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
@@ -336,7 +277,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Infiltration : endpoints publics rate-limit ; mutations admin = 2FA.
 - Whale watcher feed public : anonymisé.
 - Secrets dispatchers : Cabinet Vault (recommandé) avec fallback env.
-- Déploiement : CRA5 doit rester sur Node LTS (20) ; éviter Node 24+ tant que migration Vite non réalisée.
+- Déploiement : CRA5 doit rester sur Node LTS (20) tant que Vite pas migré.
 - Recovery : Factory reset exige vault LOCKED + password + 2FA (si active) + confirm string.
 - LLM : Preview utilise proxy Emergent (EMERGENT_LLM_KEY) ; prod Render préfère clés natives (Mode B).
-- Images : OpenAI gpt-image-1 via proxy Emergent (admin preview uniquement) ; coût et latence plus élevés, usage volontaire via bouton variant.
+- Images : gpt-image-1 utilisé pour assets email (offline) et bots preview (optionnel).

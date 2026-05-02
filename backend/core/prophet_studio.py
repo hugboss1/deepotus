@@ -57,6 +57,7 @@ VALID_CONTENT_TYPES = {
     "market_commentary",
     "vault_update",
     "kol_reply",
+    "loyalty_hero",
 }
 
 # ---------------------------------------------------------------------
@@ -472,6 +473,25 @@ IMAGE_STYLE_BRIEFS: Dict[str, str] = {
         "circuit traces. Wearing a black presidential suit, glitched flag "
         "lapel pin. Background: dark war room with soft cyan bokeh. Direct "
         "eye-contact with the viewer. Cynical, oracular, mentor-mocking vibe."
+    ),
+    "loyalty_hero": (
+        "Editorial header illustration for a confidential Deep-State "
+        "bureau letter — NOT a portrait. Centered composition: an "
+        "antique classified dossier spread open on a dark mahogany desk, "
+        "lit by a single warm-gold (#F59E0B) desk lamp beam cutting "
+        "through thin grey haze. A worn red wax seal stamped 'ΔΣ' (Greek "
+        "Delta-Sigma) cracks across a top-right corner of the folder. "
+        "Subtle ledger rows visible on the paper: dashed columns, "
+        "handwritten tick marks, rubber-stamped 'CLASSIFIED — LEVEL 02' "
+        "in faded black ink. A heavy brass fountain pen rests diagonally, "
+        "a single thin teal (#2DD4BF) luminous thread connecting the pen "
+        "tip to the wax seal — hint at cryptographic continuity. In the "
+        "extreme background, out-of-focus Matrix digits (#33FF33) rain "
+        "very softly behind a frosted glass panel, barely visible. "
+        "Atmosphere: sacred archive, bureaucratic mystery, quiet menace — "
+        "the mood of a ledger that remembers. Shot on 35mm, shallow "
+        "depth-of-field, brushed film grain, cinematic noir. No human "
+        "figures, no faces, no recognisable logos."
     ),
 }
 

@@ -72,6 +72,26 @@ app.include_router(founder_router.public_router)
 app.include_router(founder_router.admin_router)
 app.include_router(kol_listener_router.admin_router)
 
+# ---------------------------------------------------------------------
+# Static assets (email hero illustrations, etc.)
+# ---------------------------------------------------------------------
+# Mount backend/static/* at /api/assets so Kubernetes ingress routes it
+# to the backend (the /api prefix is mandatory). Used primarily by:
+#
+#   * loyalty_hero.png — embedded as <img src="{base_url}/api/assets/loyalty_hero.png">
+#     in the Level 02 loyalty email (see core/loyalty_email.py).
+#
+# Files are generated offline by scripts/generate_loyalty_hero.py and
+# committed into the repo. The mount is read-only by design — the
+# backend never writes here at request time, so Render's ephemeral
+# disk is a non-issue.
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_STATIC_DIR = _Path(__file__).resolve().parent / "static"
+_STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/api/assets", StaticFiles(directory=str(_STATIC_DIR)), name="assets")
+
 # CORS
 app.add_middleware(
     CORSMiddleware,

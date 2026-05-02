@@ -1,26 +1,18 @@
 [
   {
-    "content": "Bug 1 - Investiguer 'Save failed' sur ajout de secret",
+    "content": "Tache 1 - docs/HELIUS_POST_DEPLOY.md",
     "status": "completed"
   },
   {
-    "content": "Bug 1 - Reproduire et fixer 'Save failed'",
+    "content": "Tache 2 - docs/BOTS_OPERATIONS.md",
     "status": "completed"
   },
   {
-    "content": "Bug 2 - Investiguer rejet mnemonic valide a l'unlock",
+    "content": "Tache 3 - Illustration IA loyalty + integration email",
     "status": "completed"
   },
   {
-    "content": "Bug 2 - Reproduire et fixer rejet mnemonic",
-    "status": "completed"
-  },
-  {
-    "content": "Tests backend complets sur les 2 fixes",
-    "status": "completed"
-  },
-  {
-    "content": "Build frontend prod + restart services",
+    "content": "Tache 4 - Lister sprints restants + demander inputs manquants",
     "status": "completed"
   }
 ]
