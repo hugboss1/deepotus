@@ -1,18 +1,18 @@
 [
   {
-    "content": "Tache 1 - docs/HELIUS_POST_DEPLOY.md",
+    "content": "1 - 4 illustrations email generees + integrees (loyalty/welcome/accreditation/prophet_update)",
     "status": "completed"
   },
   {
-    "content": "Tache 2 - docs/BOTS_OPERATIONS.md",
+    "content": "2 - Sprint 14.2 backend scaffold (infiltration_auto.py + endpoints admin/public)",
     "status": "completed"
   },
   {
-    "content": "Tache 3 - Illustration IA loyalty + integration email",
+    "content": "3 - Watermark 'Made with Emergent' retire de index.html",
     "status": "completed"
   },
   {
-    "content": "Tache 4 - Lister sprints restants + demander inputs manquants",
+    "content": "4 - docs/GITHUB_PUSH_MANUAL.md - contournement Vercel Hobby + Deploy Hook",
     "status": "completed"
   }
 ]

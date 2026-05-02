@@ -58,6 +58,9 @@ VALID_CONTENT_TYPES = {
     "vault_update",
     "kol_reply",
     "loyalty_hero",
+    "welcome_hero",
+    "accreditation_hero",
+    "prophet_update_hero",
 }
 
 # ---------------------------------------------------------------------
@@ -492,6 +495,63 @@ IMAGE_STYLE_BRIEFS: Dict[str, str] = {
         "the mood of a ledger that remembers. Shot on 35mm, shallow "
         "depth-of-field, brushed film grain, cinematic noir. No human "
         "figures, no faces, no recognisable logos."
+    ),
+    "welcome_hero": (
+        "Editorial header illustration for a first-contact Deep-State "
+        "enrolment letter — NOT a portrait. Centered composition: a "
+        "freshly-stamped blue-ink 'CLEARED — LEVEL 01 · OBSERVER' rubber "
+        "stamp impression still wet on a thick cream dossier page, lying "
+        "on a dark slate-grey metal desk. Next to the stamp: a worn "
+        "manila personnel file labelled with a redacted black bar, and a "
+        "new brass ID tag hanging from a thin steel chain. Warm gold "
+        "(#F59E0B) reading-lamp glow from the top-left, casting the "
+        "stamp and the chain in sharp relief. In the deep background: "
+        "out-of-focus ledger rows, a dim typewriter, and a single teal "
+        "(#2DD4BF) indicator LED barely glowing on an antique radio "
+        "receiver. The mood: induction ceremony, hushed archive, the "
+        "moment just after a new recruit is signed in. Shot on 35mm, "
+        "shallow depth-of-field, fine film grain, cinematic noir. "
+        "No human figures, no faces, no recognisable logos, no legible "
+        "text except the 'LEVEL 01 · OBSERVER' rubber-stamp impression."
+    ),
+    "accreditation_hero": (
+        "Product photography hero for a high-security access credential "
+        "reveal email — NOT a portrait. Three-quarter overhead shot of "
+        "a matte-black brushed-metal access card resting on deep black "
+        "velvet. The card is embossed with an understated Greek "
+        "Delta-Sigma (ΔΣ) monogram in warm gold (#F59E0B) foil, a "
+        "micro-perforated barcode stripe, and a tiny serial number "
+        "engraved in a fine sans-serif on the bottom-right. A thin "
+        "black leather lanyard coils loosely beside the card. A narrow "
+        "teal (#2DD4BF) accent light rim-lights the card's top edge "
+        "like a halo. In the background, blurred out-of-focus filing "
+        "cabinet drawers with brass handles. The atmosphere is sober, "
+        "institutional, premium — the feeling of receiving an "
+        "embassy-grade credential, not a toy. Shot on 35mm, very "
+        "shallow depth-of-field, polished tonality, no film grain, "
+        "cinematic product-still. No human figures, no faces, no "
+        "recognisable logos, no company names. The card must carry "
+        "NO readable text — the ΔΣ monogram is the only symbol visible."
+    ),
+    "prophet_update_hero": (
+        "Editorial header illustration for a Prophet broadcast update "
+        "— NOT a portrait. Wide cinematic shot of an empty high-ceiling "
+        "command room at night: a single unmarked leather executive "
+        "chair turned away from the viewer, facing a bank of three "
+        "tall monitors, each rendered in deep darkness with just a "
+        "faint teal (#2DD4BF) glow of abstract waveforms and ledger "
+        "graphs — no text legible. The room is lit almost entirely by "
+        "that monitor glow plus a single warm-gold (#F59E0B) desk lamp "
+        "casting a long diagonal beam across an empty carved mahogany "
+        "desk. A half-full crystal tumbler of amber liquor sits on "
+        "the desk edge; a thin curl of smoke rises from an unseen "
+        "source. In the extreme background, barely-visible Matrix "
+        "green (#33FF33) digits drift very softly behind a frosted "
+        "glass partition. Mood: the moment before the Oracle speaks, "
+        "the command post at 3 a.m., watchful solitude. Shot on 35mm, "
+        "wide-angle, shallow depth-of-field, subtle film grain, "
+        "cinematic noir. No human figures, no faces, no recognisable "
+        "logos, no legible text anywhere in the frame."
     ),
 }
 

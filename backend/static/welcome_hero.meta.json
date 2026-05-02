@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-02T19:53:29.709558+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "welcome_hero",
+  "aspect_ratio": "16:9",
+  "size_bytes": 53462,
+  "sha256_prefix": "1bcb767fcca01d6e",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial header illustration for a first-contact Deep-State enrolment letter — NOT a portrait. Centered composition: a freshly-stamped blue-ink 'CLEARED — LEVEL 01 · OBSERVER' rubber stamp impression still wet on a thick cream dossier page, lying on a dark slate-grey metal desk. Next to the stamp: a worn manila personnel file labelled with a redacted black bar, and a new brass ID tag hanging from a thin steel chain. Warm gold (#F59E0B) reading-lamp glow from the top-left, casting the stamp and the chain in sharp relief. In the deep background: out-of-focus ledger rows, a dim typewriter, and a single teal (#2DD4BF) indicator LED barely glowing on an antique radio receiver. The mood: induction ceremony, hushed archive, the moment just after a new recruit is signed in. Shot on 35mm, shallow depth-of-field, fine film grain, cinematic noir. No human figures, no faces, no recognisable logos, no legible text except the 'LEVEL 01 · OBSERVER' rubber-stamp impression.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"A new observer has been enrolled into the classified registry. Level 01 clearance granted. The bureau has begun to watch back.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

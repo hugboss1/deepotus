@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-02T19:53:51.376932+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "accreditation_hero",
+  "aspect_ratio": "16:9",
+  "size_bytes": 25329,
+  "sha256_prefix": "225f2537568bcc5b",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nProduct photography hero for a high-security access credential reveal email — NOT a portrait. Three-quarter overhead shot of a matte-black brushed-metal access card resting on deep black velvet. The card is embossed with an understated Greek Delta-Sigma (ΔΣ) monogram in warm gold (#F59E0B) foil, a micro-perforated barcode stripe, and a tiny serial number engraved in a fine sans-serif on the bottom-right. A thin black leather lanyard coils loosely beside the card. A narrow teal (#2DD4BF) accent light rim-lights the card's top edge like a halo. In the background, blurred out-of-focus filing cabinet drawers with brass handles. The atmosphere is sober, institutional, premium — the feeling of receiving an embassy-grade credential, not a toy. Shot on 35mm, very shallow depth-of-field, polished tonality, no film grain, cinematic product-still. No human figures, no faces, no recognisable logos, no company names. The card must carry NO readable text — the ΔΣ monogram is the only symbol visible.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"A heavy brushed-metal access credential has been issued. Sober, institutional, embassy-grade. Not a toy; an instrument.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

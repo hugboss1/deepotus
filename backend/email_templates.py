@@ -103,7 +103,7 @@ def render_welcome_email(
         - _bullets_html(bullets): list rendering helper
         - this function: assembles URLs and inlines the strings into the HTML.
     """
-    hero_url = f"{base_url.rstrip('/')}/deepotus_email_hero.jpg"
+    hero_url = f"{base_url.rstrip('/')}/api/assets/welcome_hero.jpg"
     site_url = base_url.rstrip("/")
     unsubscribe_url = f"{site_url}/?unsub={email}"
 
@@ -241,7 +241,7 @@ def render_genesis_broadcast_email(
     references "the moment $DEEPOTUS hits the chain" without a date.
     """
     site_url = base_url.rstrip("/")
-    hero_url = f"{site_url}/deepotus_email_hero.jpg"
+    hero_url = f"{site_url}/api/assets/prophet_update_hero.jpg"
     eta_line = ""
 
     if lang == "fr":
@@ -419,9 +419,12 @@ def render_access_card_email(
 
     The card image is inlined as a CID attachment (Resend supports attachments
     with filename + content_id so emails can reference cid:access-card).
+    A separate hosted hero image — accreditation_hero.jpg — opens the email
+    above the card to set the embassy-grade mood.
     """
     site_url = base_url.rstrip("/")
     classified_url = f"{site_url}/classified-vault?code={accreditation_number}"
+    hero_url = f"{site_url}/api/assets/accreditation_hero.jpg"
 
     if lang == "fr":
         badge = "— CLASSIFIED · NIVEAU 02 · PROTOCOL ΔΣ"
@@ -496,6 +499,14 @@ def render_access_card_email(
             <h1 style="margin:12px 0 0 0;font-size:26px;line-height:1.25;color:#FFFFFF;font-weight:600;">{title}</h1>
           </td>
         </tr>
+
+        <!-- Accreditation hero (gpt-image-1, brushed-metal card mood) -->
+        <tr>
+          <td align="center" style="padding:4px 28px 12px 28px;">
+            <img src="{hero_url}" alt="Deep State access credential — brushed-metal card on velvet" width="584" style="display:block;width:100%;max-width:584px;height:auto;border:0;outline:none;border-radius:10px;border:1px solid #2A2A2E;" />
+          </td>
+        </tr>
+
         <tr>
           <td style="padding:0 28px 8px 28px;">
             <p style="margin:0;font-size:15px;line-height:1.65;color:#D0D0D0;">{lead}</p>

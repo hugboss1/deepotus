@@ -37,7 +37,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
 
-from core import clearance_levels, riddles, sleeper_cell
+from core import clearance_levels, infiltration_auto, riddles, sleeper_cell
 from core.security import get_twofa_config, require_admin
 
 public_router = APIRouter(prefix="/api/infiltration", tags=["infiltration"])
@@ -337,3 +337,143 @@ async def admin_list_attempts(
 ) -> Dict[str, Any]:
     items = await riddles.recent_attempts(email=email, slug=slug, limit=limit)
     return {"items": items}
+
+
+
+# ---------------------------------------------------------------------
+# Sprint 14.2 — Auto-validation L1/L2 + KOL DM drafts
+# ---------------------------------------------------------------------
+class VerifyTelegramRequest(BaseModel):
+    email: EmailStr
+    tg_user_id: str = Field(..., min_length=4, max_length=20)
+
+
+class SubmitShareRequest(BaseModel):
+    email: EmailStr
+    share_url: str = Field(..., min_length=20, max_length=500)
+
+
+class ReviewShareRequest(BaseModel):
+    approve: bool
+    reviewer_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class ApproveKolDmRequest(BaseModel):
+    final_body: Optional[str] = Field(default=None, max_length=1000)
+
+
+@public_router.post("/verify/telegram")
+async def infiltration_verify_tg(req: VerifyTelegramRequest) -> Dict[str, Any]:
+    """Public endpoint — user provides their email + numeric Telegram
+    user_id. We ping Bot API's getChatMember to confirm they're in the
+    group, then auto-promote to Level 1.
+
+    Returns a structured code (``ok``, ``tg_not_member``, ``tg_timeout``,
+    ``tg_creds_missing``, ``invalid_tg_id``, ``x_tier_required``) so the
+    frontend can render the right hint.
+    """
+    ok, code, detail = await infiltration_auto.verify_telegram_member(
+        email=req.email,
+        tg_user_id=req.tg_user_id,
+    )
+    status_code = 200 if ok else 400
+    return {
+        "ok": ok,
+        "code": code,
+        "detail": detail,
+        "http_status": status_code,
+    }
+
+
+@public_router.post("/verify/x-follow")
+async def infiltration_verify_x_follow(
+    email: EmailStr, x_handle: str,
+) -> Dict[str, Any]:
+    """Public endpoint — placeholder for Level 1 via X follow check.
+    Currently always returns ``x_tier_required`` because the live
+    implementation depends on X API Basic. The frontend uses this
+    response to show a "feature coming soon" state while still
+    offering the Telegram verification path."""
+    ok, code, detail = await infiltration_auto.verify_x_follow(
+        email=email, x_handle=x_handle,
+    )
+    return {"ok": ok, "code": code, "detail": detail}
+
+
+@public_router.post("/verify/share")
+async def infiltration_submit_share(req: SubmitShareRequest) -> Dict[str, Any]:
+    """Public endpoint — user pastes the URL of their post mentioning
+    $DEEPOTUS. Submission goes to admin review queue. The user is told
+    they'll get promoted within 24h if approved."""
+    ok, code, detail = await infiltration_auto.submit_share_for_review(
+        email=req.email, share_url=req.share_url,
+    )
+    return {"ok": ok, "code": code, "detail": detail}
+
+
+# ----- Admin surface -------------------------------------------------
+@admin_router.get("/auto/status")
+async def admin_auto_status(_p: dict = Depends(require_admin)) -> Dict[str, Any]:
+    """Which auto-verifiers are live vs blocked, and how many items
+    are awaiting review. Drives the admin UI's feature chips."""
+    return await infiltration_auto.feature_status()
+
+
+@admin_router.get("/shares")
+async def admin_list_shares(
+    status: Optional[str] = None,
+    limit: int = 100,
+    _p: dict = Depends(require_admin),
+) -> Dict[str, Any]:
+    """List Level 2 share submissions (defaults to all statuses;
+    admin UI typically filters on ``status=pending_review``)."""
+    items = await infiltration_auto.list_share_submissions(
+        status=status, limit=min(max(limit, 1), 500),
+    )
+    return {"items": items, "count": len(items)}
+
+
+@admin_router.post("/shares/{submission_id}/review")
+async def admin_review_share(
+    submission_id: str,
+    req: ReviewShareRequest,
+    p: dict = Depends(require_admin),
+) -> Dict[str, Any]:
+    ok, status, detail = await infiltration_auto.review_share_submission(
+        submission_id,
+        approve=req.approve,
+        reviewer_note=req.reviewer_note,
+        jti=p.get("jti") or "admin",
+    )
+    if not ok and status == "not_found":
+        raise HTTPException(status_code=404, detail="submission not found")
+    return {"ok": ok, "status": status, "detail": detail}
+
+
+@admin_router.get("/kol-dm-drafts")
+async def admin_list_kol_drafts(
+    status: Optional[str] = None,
+    limit: int = 100,
+    _p: dict = Depends(require_admin),
+) -> Dict[str, Any]:
+    items = await infiltration_auto.list_kol_dm_drafts(
+        status=status, limit=min(max(limit, 1), 500),
+    )
+    return {"items": items, "count": len(items)}
+
+
+@admin_router.post("/kol-dm-drafts/{draft_id}/approve")
+async def admin_approve_kol_dm(
+    draft_id: str,
+    req: ApproveKolDmRequest,
+    p: dict = Depends(require_admin),
+) -> Dict[str, Any]:
+    ok, status, detail = await infiltration_auto.approve_kol_dm(
+        draft_id,
+        jti=p.get("jti") or "admin",
+        final_body=req.final_body,
+    )
+    if not ok and status == "not_found":
+        raise HTTPException(status_code=404, detail="draft not found")
+    return {"ok": ok, "status": status, "detail": detail}
+
