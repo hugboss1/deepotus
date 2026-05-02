@@ -9,6 +9,18 @@ import { FADE_TRANSITION_DEFAULT } from "@/lib/motionVariants";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Display cadence
+// ---------------
+// AUTO_ROTATE_MS  → time between two automatic (cached pool) prophecies
+//                   when the user is just watching the ticker.
+// LIVE_HOLD_MS    → minimum time the manually-requested LIVE prophecy
+//                   stays on screen before auto-rotation resumes. Without
+//                   this guard the next 9 s tick could land 100 ms after
+//                   the click and overwrite the live prophecy
+//                   instantaneously — that was the user-reported bug.
+const AUTO_ROTATE_MS = 9000;
+const LIVE_HOLD_MS = 5000;
+
 // Prophecy text cross-fade: enters from below with a 6px blur, exits up
 // with a softer blur. Module-level so each new prophecy reuses the same
 // frames (which keeps framer-motion's internal interpolator stable).
@@ -21,8 +33,12 @@ export default function PropheciesFeed() {
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [counter, setCounter] = useState(0);
+  // We use a single chained setTimeout (instead of setInterval) so the
+  // cadence can be reset whenever the user manually fetches a live
+  // prophecy. clearTimeout handles both lifecycle paths cleanly.
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
+  const reduceMotionRef = useRef(false);
 
   const fetchOne = useCallback(
     async (live = false) => {
@@ -44,25 +60,51 @@ export default function PropheciesFeed() {
     [lang],
   );
 
-  // Auto-rotate every 9s using seeded (non-live) pool to avoid LLM costs
+  // Schedule the NEXT auto-rotation. Replaces any pending timer so the
+  // cadence is always anchored on the most recent prophecy display.
+  // ``delayMs`` lets the caller pick a custom hold window — used by
+  // ``refreshLive`` to guarantee LIVE_HOLD_MS visibility regardless of
+  // where we were in the previous 9 s cycle.
+  const scheduleNext = useCallback(
+    (delayMs) => {
+      if (reduceMotionRef.current) return; // honour OS preference
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
+        fetchOne(false).finally(() => {
+          if (mountedRef.current) scheduleNext(AUTO_ROTATE_MS);
+        });
+      }, delayMs);
+    },
+    [fetchOne],
+  );
+
+  // Initial load + recurring auto-rotation (skipped when the user has
+  // 'prefers-reduced-motion' enabled — no surprise text swaps).
   useEffect(() => {
     mountedRef.current = true;
-    fetchOne(false);
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    )?.matches;
-    if (!reduceMotion) {
-      timerRef.current = setInterval(() => {
-        fetchOne(false);
-      }, 9000);
-    }
+    reduceMotionRef.current = Boolean(
+      window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+    fetchOne(false).finally(() => {
+      if (mountedRef.current) scheduleNext(AUTO_ROTATE_MS);
+    });
     return () => {
       mountedRef.current = false;
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [fetchOne]);
+  }, [fetchOne, scheduleNext]);
 
-  const refreshLive = () => fetchOne(true);
+  // Manual refresh — fetch a fresh LIVE prophecy and HOLD it on screen
+  // for at least LIVE_HOLD_MS before the auto-rotation resumes. This
+  // fixes the previous "click → text appears then disappears almost
+  // immediately" bug (the 9 s setInterval was decoupled from clicks).
+  const refreshLive = useCallback(async () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    await fetchOne(true);
+    if (mountedRef.current) scheduleNext(LIVE_HOLD_MS);
+  }, [fetchOne, scheduleNext]);
 
   return (
     <section
