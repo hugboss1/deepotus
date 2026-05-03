@@ -1,34 +1,42 @@
 [
   {
-    "content": "1 - Ajouter 4 content_types tokenomics + briefs visuels persona-aligned",
-    "status": "completed"
+    "content": "Cartes Tokenomics - identifier style typo 'Allocation & Discipline' et adapter titre section",
+    "status": "in_progress"
   },
   {
-    "content": "2 - Generaliser script generate_email_asset (--all-tokenomics)",
-    "status": "completed"
+    "content": "Cartes Tokenomics - aligner illustrations a la meme hauteur (zone texte fixe)",
+    "status": "pending"
   },
   {
-    "content": "3 - Generer 4 illustrations gpt-image-1 optimisees (28-47 KB)",
-    "status": "completed"
+    "content": "Cartes Tokenomics - animations entrance + hover (framer-motion)",
+    "status": "pending"
   },
   {
-    "content": "4 - Refondre TokenomicsCards (4 cartes uniformes 1/3 texte + 2/3 image)",
-    "status": "completed"
+    "content": "Cartes Tokenomics - glow shadow par couleur dominante (vert/gold/amber/red)",
+    "status": "pending"
   },
   {
-    "content": "5 - Integrer BurnCounter comme 4e carte dans le grid",
-    "status": "completed"
+    "content": "Transparency - examiner TransparencyTimeline existant pour reprendre le pattern",
+    "status": "pending"
   },
   {
-    "content": "6 - Translations FR/EN titres satiriques",
-    "status": "completed"
+    "content": "Transparency - generer 3 illustrations IA 'ecrans de visualisation' (distribution/rugcheck/operations)",
+    "status": "pending"
   },
   {
-    "content": "7 - Build + screenshot validation",
-    "status": "completed"
+    "content": "Transparency - refondre Wallets en carrousel responsive (Embla ou shadcn)",
+    "status": "pending"
   },
   {
-    "content": "Cleanup orphans + final build",
-    "status": "completed"
+    "content": "Transparency - integrer les screens IA en frame autour BubbleMaps/RugCheck/OpsLog",
+    "status": "pending"
+  },
+  {
+    "content": "Transparency - titres cohérents avec le site (typo style)",
+    "status": "pending"
+  },
+  {
+    "content": "Build + screenshot validation",
+    "status": "pending"
   }
 ]
