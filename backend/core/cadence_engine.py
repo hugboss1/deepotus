@@ -298,6 +298,31 @@ async def _fire_v2_post(
 # =====================================================================
 # Tick — daily schedule
 # =====================================================================
+def _iter_due_slots(
+    daily: Dict[str, Any],
+    fired_today: Dict[str, Dict[str, str]],
+    cur_hhmm: str,
+    today_iso: str,
+):
+    """Yield ``(platform, archetype)`` tuples whose slot fires this minute.
+
+    Pure generator — no I/O, no LLM, no DB. Trivially unit-testable.
+    Skips platforms that are not enabled, slots not configured at the
+    current minute, and slots already dedup'd today.
+    """
+    for plat in ("x", "telegram"):
+        entry = daily.get(plat) or {}
+        if not entry.get("enabled"):
+            continue
+        slots = list(entry.get("post_times_utc") or [])
+        if cur_hhmm not in slots:
+            continue
+        # Per-day dedup guard
+        if (fired_today.get(plat) or {}).get(cur_hhmm) == today_iso:
+            continue
+        yield plat, pick_archetype(list(entry.get("archetypes") or []))
+
+
 async def cadence_daily_tick(now_utc: Optional[datetime] = None) -> Dict[str, Any]:
     """Process the daily schedule once. Designed to run every minute.
 
@@ -326,19 +351,7 @@ async def cadence_daily_tick(now_utc: Optional[datetime] = None) -> Dict[str, An
     fired_summary: List[Dict[str, Any]] = []
     persist_patch: Dict[str, Any] = {}
 
-    for plat in ("x", "telegram"):
-        entry = daily.get(plat) or {}
-        if not entry.get("enabled"):
-            continue
-        slots = list(entry.get("post_times_utc") or [])
-        if cur_hhmm not in slots:
-            continue
-        # Per-day dedup
-        last = (fired_today.get(plat) or {}).get(cur_hhmm)
-        if last == today_iso:
-            continue
-
-        archetype = pick_archetype(list(entry.get("archetypes") or []))
+    for plat, archetype in _iter_due_slots(daily, fired_today, cur_hhmm, today_iso):
         item = await _fire_v2_post(
             trigger_key=TRIGGER_DAILY,
             platform=plat,
@@ -376,6 +389,101 @@ async def cadence_daily_tick(now_utc: Optional[datetime] = None) -> Dict[str, An
 # =====================================================================
 # Tick — reactive milestones (holders + marketcap)
 # =====================================================================
+def _crossed_milestone(
+    current: Optional[float],
+    targets: List[int],
+    already_fired: set,
+) -> Optional[int]:
+    """Return the highest milestone the ``current`` value just crossed.
+
+    Returns ``None`` when:
+      - ``current`` is None (no live data yet),
+      - no target tier is at-or-below ``current``,
+      - every crossed tier is already in ``already_fired``.
+
+    Pure function — easy to unit-test.
+    """
+    if current is None:
+        return None
+    sorted_targets = sorted(int(t) for t in targets if t and int(t) > 0)
+    crossed = [t for t in sorted_targets if t <= current and t not in already_fired]
+    return max(crossed) if crossed else None
+
+
+async def _tick_marketcap_milestones(
+    snapshot: Dict[str, Any],
+    rt: Dict[str, Any],
+    fired_m: set,
+) -> Dict[str, Any]:
+    """Fire at most ONE V2 post for the highest newly-crossed MC milestone.
+
+    Returns ``{"item": <queue_doc> | None, "milestone": int | None}``.
+    Caller is responsible for persisting `fired_m` if a milestone is
+    appended to it (we mutate the set in place when we successfully fire).
+    """
+    mc = snapshot.get("marketcap_usd")
+    top = _crossed_milestone(
+        mc, rt.get("marketcap_milestones_usd") or [], fired_m,
+    )
+    if top is None:
+        return {"item": None, "milestone": None}
+
+    ctx = (
+        f"Marketcap just crossed {format_mc_label(top)}. The Cabinet "
+        f"observes this milestone — reflect that gravity in your "
+        f"prophecy without quoting the exact number verbatim."
+    )
+    item = await _fire_v2_post(
+        trigger_key=TRIGGER_MARKETCAP,
+        platform="x",
+        archetype="prophecy",
+        extra_context=ctx,
+        payload_extras={
+            "mc_usd": int(mc),
+            "mc_milestone": top,
+            "mc_label": format_mc_label(top),
+        },
+        idempotency_key=f"mc:{top}",
+    )
+    if item:
+        fired_m.add(top)
+    return {"item": item, "milestone": top}
+
+
+async def _tick_holder_milestones(
+    snapshot: Dict[str, Any],
+    rt: Dict[str, Any],
+    fired_h: set,
+) -> Dict[str, Any]:
+    """Fire at most ONE V2 post for the highest newly-crossed holder tier."""
+    holders = snapshot.get("holders")
+    top = _crossed_milestone(
+        holders, rt.get("holder_milestones") or [], fired_h,
+    )
+    if top is None:
+        return {"item": None, "milestone": None}
+
+    ctx = (
+        f"The faithful crowd just passed {top:,} holders. The "
+        f"Cabinet records this expansion — frame it as inevitable, "
+        f"never as a prediction of price."
+    )
+    item = await _fire_v2_post(
+        trigger_key=TRIGGER_HOLDER,
+        platform="x",
+        archetype="stats",
+        extra_context=ctx,
+        payload_extras={
+            "holders": int(holders),
+            "holder_milestone": top,
+        },
+        idempotency_key=f"holders:{top}",
+    )
+    if item:
+        fired_h.add(top)
+    return {"item": item, "milestone": top}
+
+
 async def cadence_reactive_tick(
     now_utc: Optional[datetime] = None,
 ) -> Dict[str, Any]:
@@ -384,6 +492,11 @@ async def cadence_reactive_tick(
     Designed to share the minute tick with `cadence_daily_tick`. Skipped
     silently when kill-switch is on, quiet hours are active, or
     `reactive_triggers.enabled` is false.
+
+    Sprint-21 refactor: the per-kind logic lives in
+    ``_tick_marketcap_milestones`` and ``_tick_holder_milestones``; this
+    function is now a thin orchestrator that handles the gating, market
+    snapshot read, and persistence.
     """
     now = now_utc or datetime.now(timezone.utc)
     cfg = await get_bot_config()
@@ -403,88 +516,30 @@ async def cadence_reactive_tick(
     fired_h = set(int(x) for x in (fired.get("holders") or []))
     fired_m = set(int(x) for x in (fired.get("marketcap_usd") or []))
 
-    # ---- Marketcap milestones ----
     fired_summary: List[Dict[str, Any]] = []
     persist_patch: Dict[str, Any] = {}
 
-    mc = snapshot.get("marketcap_usd")
-    if mc is not None:
-        target_tiers = sorted(
-            int(t) for t in (rt.get("marketcap_milestones_usd") or []) if t > 0
+    mc_res = await _tick_marketcap_milestones(snapshot, rt, fired_m)
+    if mc_res["item"]:
+        persist_patch["cadence._state.fired_milestones.marketcap_usd"] = sorted(fired_m)
+        fired_summary.append(
+            {
+                "kind": "marketcap",
+                "milestone": mc_res["milestone"],
+                "queue_id": mc_res["item"].get("id"),
+            },
         )
-        crossed = [t for t in target_tiers if t <= mc and t not in fired_m]
-        if crossed:
-            top = max(crossed)
-            ctx = (
-                f"Marketcap just crossed {format_mc_label(top)}. The Cabinet "
-                f"observes this milestone — reflect that gravity in your "
-                f"prophecy without quoting the exact number verbatim."
-            )
-            # Default to X here; the platform fan-out is intentionally
-            # narrow to keep cadence posts predictable. Tg can be added
-            # by simply duplicating this block once we want it.
-            item = await _fire_v2_post(
-                trigger_key=TRIGGER_MARKETCAP,
-                platform="x",
-                archetype="prophecy",  # MC milestone → solemn prophecy
-                extra_context=ctx,
-                payload_extras={
-                    "mc_usd": int(mc),
-                    "mc_milestone": top,
-                    "mc_label": format_mc_label(top),
-                },
-                idempotency_key=f"mc:{top}",
-            )
-            if item:
-                fired_m.add(top)
-                persist_patch["cadence._state.fired_milestones.marketcap_usd"] = sorted(
-                    fired_m,
-                )
-                fired_summary.append(
-                    {
-                        "kind": "marketcap",
-                        "milestone": top,
-                        "queue_id": item.get("id"),
-                    },
-                )
 
-    # ---- Holder milestones ----
-    holders = snapshot.get("holders")
-    if holders is not None:
-        target_h = sorted(
-            int(t) for t in (rt.get("holder_milestones") or []) if t > 0
+    h_res = await _tick_holder_milestones(snapshot, rt, fired_h)
+    if h_res["item"]:
+        persist_patch["cadence._state.fired_milestones.holders"] = sorted(fired_h)
+        fired_summary.append(
+            {
+                "kind": "holders",
+                "milestone": h_res["milestone"],
+                "queue_id": h_res["item"].get("id"),
+            },
         )
-        crossed_h = [t for t in target_h if t <= holders and t not in fired_h]
-        if crossed_h:
-            top = max(crossed_h)
-            ctx = (
-                f"The faithful crowd just passed {top:,} holders. The "
-                f"Cabinet records this expansion — frame it as inevitable, "
-                f"never as a prediction of price."
-            )
-            item = await _fire_v2_post(
-                trigger_key=TRIGGER_HOLDER,
-                platform="x",
-                archetype="stats",  # holder count → fits the stats archetype
-                extra_context=ctx,
-                payload_extras={
-                    "holders": int(holders),
-                    "holder_milestone": top,
-                },
-                idempotency_key=f"holders:{top}",
-            )
-            if item:
-                fired_h.add(top)
-                persist_patch["cadence._state.fired_milestones.holders"] = sorted(
-                    fired_h,
-                )
-                fired_summary.append(
-                    {
-                        "kind": "holders",
-                        "milestone": top,
-                        "queue_id": item.get("id"),
-                    },
-                )
 
     if persist_patch:
         await _persist_state_patch(persist_patch)

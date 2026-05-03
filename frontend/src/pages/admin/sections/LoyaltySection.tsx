@@ -13,7 +13,8 @@
  * data-testids are unchanged so existing E2E tests keep passing.
  */
 import { useCallback, useEffect, useState } from "react";
-import axios, { AxiosRequestHeaders } from "axios";
+import axios from "axios";
+// Sprint 22 — `AxiosRequestHeaders` was too strict for our useMemo header object.
 import { RefreshCw, Newspaper, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ interface LoyaltyPatchBody {
 
 interface Props {
   api: string;
-  headers: AxiosRequestHeaders;
+  headers: Record<string, string>;
 }
 
 export default function LoyaltySection({ api, headers }: Props) {

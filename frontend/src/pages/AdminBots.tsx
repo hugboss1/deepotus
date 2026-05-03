@@ -53,6 +53,9 @@ import LoyaltySection from "@/pages/admin/sections/LoyaltySection";
 import NewsRepostSection from "@/pages/admin/sections/NewsRepostSection";
 import NewsFeedSection from "@/pages/admin/sections/NewsFeedSection";
 import AdminCadenceSection from "@/pages/admin/sections/AdminCadenceSection";
+import AdminJobsSection from "@/pages/admin/sections/AdminJobsSection";
+import AdminLogsSection from "@/pages/admin/sections/AdminLogsSection";
+import AdminPreviewSection from "@/pages/admin/sections/AdminPreviewSection";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -78,45 +81,37 @@ const LLM_PRESETS = [
   { id: "gemini-2-5-pro", label: "Gemini 2.5 Pro (Google)", provider: "gemini", model: "gemini-2.5-pro" },
 ];
 
+/**
+ * AdminBots — Prophet fleet control dashboard.
+ *
+ * Sprint 22 — migrated `.jsx` → `.tsx`. Type strictness is intentionally
+ * soft for this file (tsconfig has `strict: false` / `noImplicitAny:
+ * false`) because most of the React state here is a single big mutable
+ * config object that's already validated by the Pydantic schema on the
+ * backend. We keep top-level interfaces (BotConfig, ContentTypeMeta)
+ * to lock the shape that matters, and leave inner sub-doc state as
+ * implicit `any` until a future hardening pass.
+ */
+interface ContentTypeMeta {
+  id: string;
+  label_en: string;
+  description_en: string;
+}
+
+// eslint-disable-next-line
+type BotConfig = any; // Pydantic-validated server-side; loose on the FE.
+
 export default function AdminBots() {
   const navigate = useNavigate();
-  const [token] = useState(() => getAdminToken());
-  const [config, setConfig] = useState(null);
-  const [jobs, setJobs] = useState([]);
-  const [posts, setPosts] = useState(null);
-  const [contentTypes, setContentTypes] = useState([]);
+  const [token] = useState<string | null>(() => getAdminToken());
+  const [config, setConfig] = useState<BotConfig | null>(null);
+  const [contentTypes, setContentTypes] = useState<ContentTypeMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  // Preview panel state
-  const [previewType, setPreviewType] = useState("prophecy");
-  const [previewPlatform, setPreviewPlatform] = useState("x");
-  const [kolPost, setKolPost] = useState("");
-  const [preview, setPreview] = useState(null);
-  const [previewBusy, setPreviewBusy] = useState(false);
-  const [includeImage, setIncludeImage] = useState(false);
-  const [imageAspect, setImageAspect] = useState("16:9");
-  // Which image backend to call when include_image=true.
-  // Default "gemini" (Nano Banana — fast, free). User can re-trigger
-  // generation with "openai" (gpt-image-1) via the "Try OpenAI variant"
-  // button to compare interpretations. We track which provider generated
-  // the CURRENT preview so the "Try OpenAI variant" button can be hidden
-  // once an OpenAI image is already being shown.
-  const [imageProvider, setImageProvider] = useState("gemini");
-
-  // ---- Manual Prophet inspiration ----
-  // `previewKeywords` is a comma-separated string in the input; we split + trim
-  // before sending so admins can type "powell, china tariffs, opec" naturally.
-  const [previewKeywords, setPreviewKeywords] = useState("");
-  const [useNewsContext, setUseNewsContext] = useState(false);
-
-  // ---- Sprint 18 — Prompt v2 toggles for the Preview tab ----
-  // useV2Preview routes the request through generate_post_v2 (5 weighted
-  // templates). When ON, content_type / kol_post are ignored server-side
-  // and `forceTemplateV2` (optional) overrides the random pick.
-  const [useV2Preview, setUseV2Preview] = useState(false);
-  const [forceTemplateV2, setForceTemplateV2] = useState(""); // "" = random
-  const [v2Templates, setV2Templates] = useState([]);
+  // Preview / V2 / image state moved to <AdminPreviewSection /> in Sprint 21.
+  // Jobs + Logs (post_attempts) state moved to their respective sections —
+  // each section owns its own polling + filter state for fault isolation.
 
   // ---- News-feed aggregator state (Config tab "News Feed" section) ----
   // News feed state has moved to <NewsFeedSection /> (Sprint 6 split).
@@ -136,9 +131,7 @@ export default function AdminBots() {
   const [llmSecretBusy, setLlmSecretBusy] = useState(false);
   const [llmSecretError, setLlmSecretError] = useState(null);
 
-  // Filters for post log
-  const [platformFilter, setPlatformFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // Filters for post log moved to <AdminLogsSection />.
 
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -148,31 +141,15 @@ export default function AdminBots() {
       return;
     }
     bootstrap();
-    const id = setInterval(() => {
-      loadJobs();
-      loadPosts();
-    }, 10000);
-    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    loadPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [platformFilter, statusFilter]);
 
   // Sync the news-feed text-area drafts has moved into <NewsFeedSection />.
   // (Sprint 6 split — see /pages/admin/sections/NewsFeedSection.tsx.)
 
   async function bootstrap() {
     try {
-      await Promise.all([
-        loadConfig(),
-        loadJobs(),
-        loadPosts(),
-        loadContentTypes(),
-        loadV2Templates(),
-      ]);
+      await Promise.all([loadConfig(), loadContentTypes()]);
     } finally {
       setLoading(false);
     }
@@ -193,27 +170,6 @@ export default function AdminBots() {
     }
   }
 
-  async function loadJobs() {
-    try {
-      const { data } = await axios.get(`${API}/api/admin/bots/jobs`, { headers });
-      setJobs(Array.isArray(data) ? data : []);
-    } catch (err) {
-      logger.error(err);
-    }
-  }
-
-  async function loadPosts() {
-    try {
-      const params = new URLSearchParams({ limit: "30", skip: "0" });
-      if (platformFilter && platformFilter !== "all") params.set("platform", platformFilter);
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
-      const { data } = await axios.get(`${API}/api/admin/bots/posts?${params.toString()}`, { headers });
-      setPosts(data);
-    } catch (err) {
-      logger.error(err);
-    }
-  }
-
   async function loadContentTypes() {
     try {
       const { data } = await axios.get(`${API}/api/admin/bots/content-types`, { headers });
@@ -223,19 +179,7 @@ export default function AdminBots() {
     }
   }
 
-  // ---- Sprint 18 — V2 templates metadata for the Preview tab dropdown ----
-  async function loadV2Templates() {
-    try {
-      const { data } = await axios.get(
-        `${API}/api/admin/bots/v2-templates`,
-        { headers },
-      );
-      setV2Templates(Array.isArray(data) ? data : []);
-    } catch (err) {
-      logger.error(err);
-    }
-  }
-
+  // loadJobs / loadPosts / loadV2Templates moved to their respective sections.
   // loadNews() and refreshNewsNow() moved to <NewsFeedSection /> (Sprint 6 split).
 
   function openLlmSecretDialog(provider) {
@@ -307,7 +251,7 @@ export default function AdminBots() {
       const { data } = await axios.put(`${API}/api/admin/bots/config`, patch, { headers });
       setConfig(data);
       if (successMsg) toast.success(successMsg);
-      loadJobs();
+      // Jobs section auto-polls every 10 s, no manual refresh needed.
     } catch (err) {
       logger.error(err);
       toast.error(err?.response?.data?.detail || "Config update failed");
@@ -328,7 +272,7 @@ export default function AdminBots() {
       toast[active ? "warning" : "success"](
         active ? "Kill-switch ARMED — all bot jobs blocked" : "Kill-switch released — bots live",
       );
-      loadJobs();
+      // Jobs section auto-polls every 10 s, no manual refresh needed.
     } catch (err) {
       logger.error(err);
       toast.error("Kill-switch toggle failed");
@@ -341,105 +285,15 @@ export default function AdminBots() {
     try {
       await axios.post(`${API}/api/admin/bots/heartbeat`, {}, { headers });
       toast.success("Heartbeat pinged");
-      loadPosts();
+      // Logs section auto-polls every 10 s, no manual refresh needed.
     } catch (err) {
       logger.error(err);
       toast.error("Heartbeat failed");
     }
   }
 
-  async function generatePreview(overrideProvider = null) {
-    if (previewType === "kol_reply" && !kolPost.trim()) {
-      toast.error("kol_post required for KOL reply");
-      return;
-    }
-    // Use the argument if caller explicitly forced a provider (e.g.
-    // "Try OpenAI variant" button), otherwise fall back to the state.
-    const effectiveProvider = overrideProvider || imageProvider;
-    setPreviewBusy(true);
-    if (!overrideProvider) {
-      // Only wipe the preview when starting a fresh generation. The
-      // "Try OpenAI variant" path re-generates AND REPLACES so we also
-      // clear, but keep the aspect setting visible.
-      setPreview(null);
-    } else {
-      setPreview(null);
-    }
-    try {
-      const body = {
-        content_type: previewType,
-        platform: previewPlatform,
-        include_image: includeImage,
-        image_provider: effectiveProvider,
-        image_aspect_ratio: imageAspect,
-        use_news_context: useNewsContext,
-        use_v2: useV2Preview,
-      };
-      if (useV2Preview && forceTemplateV2) {
-        body.force_template_v2 = forceTemplateV2;
-      }
-      if (previewType === "kol_reply" && !useV2Preview) {
-        body.kol_post = kolPost.trim();
-      }
-      const cleanedKw = (previewKeywords || "")
-        .split(",")
-        .map((k) => k.trim())
-        .filter(Boolean);
-      if (cleanedKw.length) body.keywords = cleanedKw;
-
-      // OpenAI image gen can take up to ~60 s per the Emergent playbook.
-      // We bump the axios timeout when the caller asks for OpenAI so the
-      // request doesn't abort mid-flight. Gemini stays on the default.
-      const { data } = await axios.post(
-        `${API}/api/admin/bots/generate-preview`,
-        body,
-        {
-          headers,
-          timeout: effectiveProvider === "openai" ? 120_000 : 45_000,
-        },
-      );
-      setPreview(data);
-      // Keep the tracked provider in sync with what we actually got —
-      // so the UI can reflect it in the download filename + banner.
-      if (data?.image?.provider) {
-        setImageProvider(data.image.provider);
-      }
-      const sparkParts = [];
-      if (cleanedKw.length) sparkParts.push(`${cleanedKw.length} keyword(s)`);
-      if (useNewsContext) sparkParts.push("latest news");
-      const spark = sparkParts.length ? ` (spark: ${sparkParts.join(" + ")})` : "";
-      const providerLabel =
-        data?.image?.provider === "openai" ? "OpenAI gpt-image-1" : "Nano Banana";
-      if (data.image_error) {
-        toast.warning(`Image failed${spark}: ${data.image_error}`);
-      } else if (data.image) {
-        toast.success(`Prophet generated ${previewType} + ${providerLabel}${spark}`);
-      } else {
-        toast.success(`Prophet generated a ${previewType} preview${spark}`);
-      }
-    } catch (err) {
-      logger.error(err);
-      toast.error(err?.response?.data?.detail || "Generation failed");
-    } finally {
-      setPreviewBusy(false);
-    }
-  }
-
-  function downloadPreviewImage() {
-    if (!preview?.image?.image_base64) return;
-    const { image_base64, mime_type, aspect_ratio, content_type, provider } = preview.image;
-    const a = document.createElement("a");
-    a.href = `data:${mime_type};base64,${image_base64}`;
-    const ext = mime_type?.includes("jpeg") ? "jpg" : "png";
-    const ts = new Date().toISOString().replace(/[:.]/g, "-");
-    // Provider suffix helps the admin distinguish A/B comparisons on disk
-    // (useful when generating multiple variants of the same post).
-    const providerSuffix = provider === "openai" ? "_openai" : "_gemini";
-    a.download = `deepotus_${content_type}_${aspect_ratio.replace(":", "x")}${providerSuffix}_${ts}.${ext}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
+  // generatePreview() and downloadPreviewImage() moved to <AdminPreviewSection />
+  // along with the entire preview state. (Sprint 21 split.)
 
   if (loading) {
     return (
@@ -453,7 +307,6 @@ export default function AdminBots() {
   const currentLlmId = LLM_PRESETS.find(
     (p) => p.provider === config?.llm?.provider && p.model === config?.llm?.model,
   )?.id || "custom";
-  const statusCounts = posts?.status_counts || {};
 
   return (
     <div className="min-h-screen" data-testid="admin-bots-page">
@@ -492,8 +345,6 @@ export default function AdminBots() {
               size="sm"
               onClick={() => {
                 loadConfig();
-                loadJobs();
-                loadPosts();
               }}
               className="rounded-[var(--btn-radius)]"
               data-testid="admin-bots-refresh"
@@ -1030,454 +881,13 @@ export default function AdminBots() {
           </TabsContent>
 
           {/* -------------------- PREVIEW TAB -------------------- */}
+          {/* -------------------- PREVIEW TAB -------------------- */}
           <TabsContent value="preview" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-              <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Wand2 size={16} className="text-[#2DD4BF]" />
-                  <div className="font-display font-semibold">Studio input</div>
-                </div>
-
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                    Content type
-                  </Label>
-                  <Select value={previewType} onValueChange={setPreviewType}>
-                    <SelectTrigger className="mt-2" data-testid="preview-type-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contentTypes.map((ct) => (
-                        <SelectItem key={ct.id} value={ct.id}>
-                          {CONTENT_TYPE_ICONS[ct.id] || "•"} {ct.label_en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {contentTypes.find((c) => c.id === previewType) && (
-                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                      {contentTypes.find((c) => c.id === previewType).description_en}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                    Platform
-                  </Label>
-                  <Select value={previewPlatform} onValueChange={setPreviewPlatform}>
-                    <SelectTrigger className="mt-2" data-testid="preview-platform-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="x">X · 270 chars</SelectItem>
-                      <SelectItem value="telegram">Telegram · 800 chars</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {previewType === "kol_reply" && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                      KOL tweet body
-                    </Label>
-                    <Textarea
-                      rows={4}
-                      placeholder="Paste the tweet the Prophet should reply to…"
-                      value={kolPost}
-                      onChange={(e) => setKolPost(e.target.value)}
-                      className="mt-2 font-mono text-xs"
-                      data-testid="preview-kol-input"
-                    />
-                  </div>
-                )}
-
-                {/* ============== INSPIRATION SOURCES ==============
-                    Two manual ways for the admin to seed the Prophet:
-                    1) `keywords` — a comma-separated list weaved into the post
-                    2) `use_news_context` — inject the freshest geopolitics/macro
-                       headlines (top 5) from the RSS aggregator. */}
-                <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-[#2DD4BF]" />
-                    <Label className="font-medium text-sm">
-                      Prophet inspiration
-                    </Label>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                      Keywords (comma separated)
-                    </Label>
-                    <Input
-                      value={previewKeywords}
-                      onChange={(e) => setPreviewKeywords(e.target.value)}
-                      placeholder="e.g. powell, tariffs, OPEC squeeze"
-                      className="mt-2 font-mono text-xs"
-                      data-testid="preview-keywords-input"
-                    />
-                    <p className="mt-1 text-[10.5px] text-muted-foreground leading-relaxed">
-                      The Prophet weaves at least one of these into its
-                      cynical commentary — without quoting them verbatim.
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center gap-2">
-                      <Newspaper size={14} className="text-[#F59E0B]" />
-                      <Label className="text-sm">
-                        Use latest news headlines
-                      </Label>
-                    </div>
-                    <Switch
-                      checked={useNewsContext}
-                      onCheckedChange={setUseNewsContext}
-                      data-testid="preview-news-toggle"
-                    />
-                  </div>
-                  {useNewsContext && (
-                    <p className="text-[10.5px] text-muted-foreground leading-relaxed">
-                      Top 5 geopolitics/macro headlines from the RSS
-                      aggregator are injected as inspiration. Configure
-                      feeds + keywords in the Config tab.
-                    </p>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* ---- Sprint 18 — Prompt v2 controls ---- */}
-                <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles size={14} className="text-[#F59E0B]" />
-                      <Label className="font-medium text-sm">
-                        Use Prompt V2 (5 weighted templates)
-                      </Label>
-                    </div>
-                    <Switch
-                      checked={useV2Preview}
-                      onCheckedChange={setUseV2Preview}
-                      data-testid="preview-v2-toggle"
-                    />
-                  </div>
-                  {useV2Preview && (
-                    <>
-                      <p className="text-[10.5px] text-muted-foreground leading-relaxed">
-                        Routes through <span className="font-mono">generate_post_v2()</span>.
-                        The content type / KOL post above are ignored. Pick a specific
-                        template below to override the weighted random pick.
-                      </p>
-                      <div>
-                        <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                          Force template (optional)
-                        </Label>
-                        <Select
-                          value={forceTemplateV2 || "__random__"}
-                          onValueChange={(v) =>
-                            setForceTemplateV2(v === "__random__" ? "" : v)
-                          }
-                        >
-                          <SelectTrigger className="mt-2" data-testid="preview-v2-template-select">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__random__">
-                              ⚖ Weighted random (4·3·1·1·1)
-                            </SelectItem>
-                            {v2Templates.map((tpl) => (
-                              <SelectItem key={tpl.id} value={tpl.id}>
-                                {tpl.id} · weight {tpl.weight} — {tpl.label_en}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Nano Banana image toggle */}
-                <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <ImageIcon size={14} className="text-[#F59E0B]" />
-                      <Label className="font-medium text-sm">Nano Banana illustration</Label>
-                    </div>
-                    <Switch
-                      checked={includeImage}
-                      onCheckedChange={setIncludeImage}
-                      data-testid="preview-image-toggle"
-                    />
-                  </div>
-                  {includeImage && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                        Aspect ratio
-                      </Label>
-                      <Select value={imageAspect} onValueChange={setImageAspect}>
-                        <SelectTrigger className="mt-2" data-testid="preview-image-ratio">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="16:9">16:9 · X landscape</SelectItem>
-                          <SelectItem value="3:4">3:4 · X portrait</SelectItem>
-                          <SelectItem value="1:1">1:1 · Square</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-                        <strong className="text-foreground/80">Default provider:</strong>{" "}
-                        Gemini Nano Banana — fast (~8–20s), free via{" "}
-                        <code className="font-mono text-[10px]">EMERGENT_LLM_KEY</code>.
-                        Use the{" "}
-                        <strong className="text-[#F59E0B]">Try OpenAI variant</strong>{" "}
-                        button below the preview to regenerate with{" "}
-                        <code className="font-mono text-[10px]">gpt-image-1</code>{" "}
-                        (~60s, better text rendering, ~$0.03/img).
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <Button
-                  onClick={() => generatePreview("gemini")}
-                  disabled={previewBusy}
-                  className="w-full rounded-[var(--btn-radius)] btn-press font-semibold"
-                  data-testid="preview-generate-button"
-                >
-                  {previewBusy && imageProvider === "gemini" ? (
-                    <>
-                      <RefreshCcw size={14} className="mr-2 animate-spin" />
-                      {includeImage ? "Generating text + Nano Banana…" : "Generating…"}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={14} className="mr-2" />
-                      {includeImage
-                        ? "Generate text + Nano Banana"
-                        : "Generate preview"}
-                    </>
-                  )}
-                </Button>
-
-                <div className="font-mono text-[10px] text-muted-foreground">
-                  Preview uses LLM:{" "}
-                  <span className="text-foreground/80">
-                    {config?.llm?.provider}/{config?.llm?.model}
-                  </span>
-                </div>
-              </div>
-
-              <div className="lg:col-span-3 rounded-xl border border-border bg-card p-5 space-y-4 min-h-[320px]">
-                <div className="flex items-center gap-2">
-                  <Languages size={16} className="text-muted-foreground" />
-                  <div className="font-display font-semibold">Prophet output</div>
-                  {preview && (
-                    <Badge
-                      variant="outline"
-                      className="ml-auto font-mono text-[10px] uppercase tracking-widest"
-                      data-testid="preview-output-badge"
-                    >
-                      {preview.char_budget} chars · {preview.platform}
-                    </Badge>
-                  )}
-                </div>
-
-                {!preview && !previewBusy && (
-                  <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground">
-                    <Wand2 size={24} />
-                    <div className="font-mono text-xs uppercase tracking-widest">
-                      Awaiting generation
-                    </div>
-                    <div className="text-xs max-w-xs">
-                      Pick a content type + platform on the left, then hit &quot;Generate
-                      preview&quot;. Nothing is posted — pure dry-run.
-                    </div>
-                  </div>
-                )}
-
-                {preview && (
-                  <div className="space-y-4">
-                    {preview.template_used && (
-                      <div
-                        className="rounded-md border border-[#F59E0B]/30 bg-[#F59E0B]/5 px-3 py-2 flex items-center gap-2"
-                        data-testid="preview-v2-template-badge"
-                      >
-                        <Sparkles size={13} className="text-[#F59E0B]" />
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#F59E0B]">
-                          V2 Template
-                        </span>
-                        <span className="font-mono text-[11px]">
-                          {preview.template_used}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {preview.template_label}
-                        </span>
-                      </div>
-                    )}
-                    <div className="rounded-lg border border-border/80 bg-background/40 p-4">
-                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-                        FR · {preview.content_fr.length}/{preview.char_budget}
-                      </div>
-                      <p
-                        className="text-sm leading-relaxed whitespace-pre-wrap"
-                        data-testid="preview-output-fr"
-                      >
-                        {preview.content_fr}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-border/80 bg-background/40 p-4">
-                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-                        EN · {preview.content_en.length}/{preview.char_budget}
-                      </div>
-                      <p
-                        className="text-sm leading-relaxed whitespace-pre-wrap"
-                        data-testid="preview-output-en"
-                      >
-                        {preview.content_en}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {preview.primary_emoji && (
-                        <span className="text-2xl leading-none" aria-label="primary emoji">
-                          {preview.primary_emoji}
-                        </span>
-                      )}
-                      {(preview.hashtags || []).map((h) => (
-                        <Badge
-                          key={h}
-                          variant="secondary"
-                          className="font-mono text-[10px] uppercase tracking-widest"
-                        >
-                          #{h}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Illustration block — shown regardless of which provider generated it */}
-                    {preview.image && (
-                      <div
-                        className="rounded-lg border border-border/80 bg-background/40 p-4 space-y-3"
-                        data-testid="preview-output-image-block"
-                      >
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <ImageIcon
-                              size={14}
-                              className={
-                                preview.image.provider === "openai"
-                                  ? "text-[#10B981]"
-                                  : "text-[#F59E0B]"
-                              }
-                            />
-                            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                              Illustration · {preview.image.aspect_ratio} · {Math.round((preview.image.size_bytes || 0) / 1024)} KB
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={
-                                preview.image.provider === "openai"
-                                  ? "text-[10px] border-[#10B981]/50 text-[#10B981]"
-                                  : "text-[10px] border-[#F59E0B]/50 text-[#F59E0B]"
-                              }
-                              data-testid="preview-output-image-provider"
-                            >
-                              {preview.image.provider === "openai"
-                                ? "OpenAI gpt-image-1"
-                                : "Nano Banana"}
-                            </Badge>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={downloadPreviewImage}
-                            className="h-7 rounded-[var(--btn-radius)]"
-                            data-testid="preview-output-image-download"
-                          >
-                            <Download size={12} className="mr-1" /> Download
-                          </Button>
-                        </div>
-                        <div className="rounded-md overflow-hidden border border-border/60 bg-black">
-                          <img
-                            src={`data:${preview.image.mime_type};base64,${preview.image.image_base64}`}
-                            alt="Prophet Studio illustration"
-                            className="w-full h-auto block"
-                            data-testid="preview-output-image"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="font-mono text-[10px] text-muted-foreground">
-                            via {preview.image.provider}/{preview.image.model}
-                          </div>
-                          {/*
-                            "Try OpenAI variant" button — only visible when the
-                            CURRENT preview was generated by Gemini AND the user
-                            asked for an image. Clicking re-runs the SAME text
-                            generation flow but forces the OpenAI image backend
-                            so the admin can A/B compare on the fly. The current
-                            preview is replaced; earlier downloads preserved on
-                            disk with the provider suffix.
-                          */}
-                          {preview.image.provider === "gemini" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => generatePreview("openai")}
-                              disabled={previewBusy}
-                              className="h-7 rounded-[var(--btn-radius)] border-[#10B981]/50 text-[#10B981] hover:bg-[#10B981]/10"
-                              data-testid="preview-try-openai-variant"
-                            >
-                              {previewBusy ? (
-                                <RefreshCcw size={11} className="mr-1 animate-spin" />
-                              ) : (
-                                <Sparkles size={11} className="mr-1" />
-                              )}
-                              Try OpenAI variant (~60s)
-                            </Button>
-                          )}
-                          {preview.image.provider === "openai" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => generatePreview("gemini")}
-                              disabled={previewBusy}
-                              className="h-7 rounded-[var(--btn-radius)] border-[#F59E0B]/50 text-[#F59E0B] hover:bg-[#F59E0B]/10"
-                              data-testid="preview-try-gemini-variant"
-                            >
-                              {previewBusy ? (
-                                <RefreshCcw size={11} className="mr-1 animate-spin" />
-                              ) : (
-                                <Sparkles size={11} className="mr-1" />
-                              )}
-                              Try Gemini variant
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {preview.image_error && !preview.image && (
-                      <div
-                        className="rounded-md border border-[#E11D48]/40 bg-[#E11D48]/5 p-3 flex items-start gap-2"
-                        data-testid="preview-output-image-error"
-                      >
-                        <AlertTriangle size={14} className="text-[#E11D48] shrink-0 mt-0.5" />
-                        <div className="text-xs">
-                          <div className="font-mono text-[10px] uppercase tracking-widest text-[#E11D48]">
-                            Image generation failed
-                          </div>
-                          <div className="text-foreground/80 mt-1">{preview.image_error}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="font-mono text-[10px] text-muted-foreground">
-                      text via {preview.provider}/{preview.model}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <AdminPreviewSection
+              api={API}
+              headers={headers}
+              llmInfo={{ provider: config?.llm?.provider, model: config?.llm?.model }}
+            />
           </TabsContent>
 
           {/* -------------------- CADENCE TAB -------------------- */}
@@ -1486,185 +896,15 @@ export default function AdminBots() {
           </TabsContent>
 
           {/* -------------------- JOBS TAB -------------------- */}
+          {/* -------------------- JOBS TAB -------------------- */}
           <TabsContent value="jobs" className="mt-6">
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Clock size={16} className="text-muted-foreground" />
-                <div className="font-display font-semibold">Live scheduler jobs</div>
-                <Badge
-                  variant="outline"
-                  className="ml-auto font-mono text-[10px] uppercase tracking-widest"
-                >
-                  {jobs.length} job{jobs.length > 1 ? "s" : ""}
-                </Badge>
-              </div>
-              {jobs.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  No jobs registered.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm font-mono">
-                    <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-                        <th className="py-2 pr-4">ID</th>
-                        <th className="py-2 pr-4">Trigger</th>
-                        <th className="py-2 pr-4">Next run</th>
-                        <th className="py-2 pr-4">Max inst</th>
-                        <th className="py-2">Coalesce</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jobs.map((j) => (
-                        <tr
-                          key={j.id}
-                          className="border-b border-border/50 hover:bg-background/40"
-                          data-testid={`jobs-row-${j.id}`}
-                        >
-                          <td className="py-2 pr-4 text-foreground">{j.id}</td>
-                          <td className="py-2 pr-4 text-foreground/70">{j.trigger}</td>
-                          <td className="py-2 pr-4 text-foreground/70">
-                            {j.next_run_time
-                              ? new Date(j.next_run_time).toLocaleString()
-                              : "—"}
-                          </td>
-                          <td className="py-2 pr-4 text-foreground/70">{j.max_instances}</td>
-                          <td className="py-2 text-foreground/70">
-                            {j.coalesce ? "yes" : "no"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <AdminJobsSection api={API} headers={headers} />
           </TabsContent>
 
           {/* -------------------- LOGS TAB -------------------- */}
+          {/* -------------------- LOGS TAB -------------------- */}
           <TabsContent value="logs" className="mt-6 space-y-4">
-            {/* Status histogram */}
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(statusCounts).map(([s, n]) => (
-                <Badge
-                  key={s}
-                  variant="outline"
-                  className="font-mono text-[10px] uppercase tracking-widest"
-                  style={{
-                    borderColor: `${STATUS_COLOR[s] || "#888"}66`,
-                    color: STATUS_COLOR[s] || "#888",
-                  }}
-                  data-testid={`logs-count-${s}`}
-                >
-                  <TrendingUp size={10} className="mr-1" /> {s} · {n}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Platform</Label>
-                <Select value={platformFilter} onValueChange={setPlatformFilter}>
-                  <SelectTrigger className="w-36 h-8" data-testid="logs-platform-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="x">X</SelectItem>
-                    <SelectItem value="telegram">Telegram</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Status</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-36 h-8" data-testid="logs-status-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="heartbeat">Heartbeat</SelectItem>
-                    <SelectItem value="posted">Posted</SelectItem>
-                    <SelectItem value="killed">Killed</SelectItem>
-                    <SelectItem value="skipped">Skipped</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Post log table */}
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-background/40">
-                    <tr className="text-left text-[10px] uppercase tracking-widest text-muted-foreground">
-                      <th className="py-2.5 px-4">When</th>
-                      <th className="py-2.5 px-4">Platform</th>
-                      <th className="py-2.5 px-4">Type</th>
-                      <th className="py-2.5 px-4">Status</th>
-                      <th className="py-2.5 px-4">Content / error</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(posts?.items || []).length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="py-10 text-center text-muted-foreground font-mono text-xs"
-                        >
-                          No entries match the filters yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      (posts?.items || []).map((p) => (
-                        <tr
-                          key={p.id}
-                          className="border-t border-border/50 hover:bg-background/40"
-                          data-testid={`logs-row-${p.id}`}
-                        >
-                          <td className="py-2 px-4 font-mono text-[11px] text-foreground/70 whitespace-nowrap">
-                            {p.created_at
-                              ? new Date(p.created_at).toLocaleTimeString()
-                              : "—"}
-                          </td>
-                          <td className="py-2 px-4 font-mono text-xs text-foreground/80 uppercase tracking-widest">
-                            {p.platform}
-                          </td>
-                          <td className="py-2 px-4 font-mono text-xs text-foreground/80">
-                            {p.content_type}
-                          </td>
-                          <td className="py-2 px-4">
-                            <span
-                              className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border"
-                              style={{
-                                borderColor: `${STATUS_COLOR[p.status] || "#888"}66`,
-                                color: STATUS_COLOR[p.status] || "#888",
-                              }}
-                            >
-                              {p.status}
-                            </span>
-                          </td>
-                          <td className="py-2 px-4 text-xs text-foreground/75 max-w-sm truncate">
-                            {p.error ? (
-                              <span className="text-[#E11D48]">{p.error}</span>
-                            ) : (
-                              p.content || "—"
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="font-mono text-[10px] text-muted-foreground">
-              showing {(posts?.items || []).length} of {posts?.total ?? 0} · auto-refresh
-              every 10 s
-            </div>
+            <AdminLogsSection api={API} headers={headers} />
           </TabsContent>
         </Tabs>
       </main>

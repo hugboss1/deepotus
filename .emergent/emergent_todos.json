@@ -1,38 +1,18 @@
 [
   {
-    "content": "C1: résoudre l'import circulaire dispatchers/__init__.py ↔ telegram.py",
+    "content": "Sprint 21-A: refactor AdminBots.jsx 1798→1017 lignes (-43%) avec extraction Jobs+Logs+Preview en sections .tsx",
     "status": "completed"
   },
   {
-    "content": "C3: identifier + corriger les 15 variables Python potentiellement undefined (ruff scan)",
+    "content": "Sprint 21-C: split cadence_engine en helpers + 25 unit tests pytest (passent tous)",
     "status": "completed"
   },
   {
-    "content": "I7: corriger les 141 'is' → '==' dans le backend (vault.py, routers/*.py)",
+    "content": "Sprint 22-E: 3 fichiers migrés vers TS (index.tsx, App.tsx, AdminBots.tsx) + 6 sections types relaxés",
     "status": "completed"
   },
   {
-    "content": "C2: corriger les hook deps critiques (useClassifiedSession, WhaleWatcherTab, NewsRepostSection, ThemeProvider)",
-    "status": "completed"
-  },
-  {
-    "content": "C4: localStorage → sessionStorage pour données sensibles (adminAuth, classifiedSession)",
-    "status": "completed"
-  },
-  {
-    "content": "I8: index-as-key → stable id dans HowToBuyPhasedSteps",
-    "status": "completed"
-  },
-  {
-    "content": "I10: nettoyer les 5 console statements",
-    "status": "completed"
-  },
-  {
-    "content": "Tests post-fixes: lint Python + ESLint + redemarrer services",
-    "status": "completed"
-  },
-  {
-    "content": "Documenter les refactors lourds reportés (#5, #6, #9) dans plan.md",
+    "content": "Documenter dans plan.md + créer SPRINT_21_22_DEPLOY.md",
     "status": "completed"
   }
 ]

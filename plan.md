@@ -241,6 +241,33 @@
   - Cleanup final : kill_switch ON + reactive disabled + test mint retiré.
 - ✅ `_read_market_snapshot()` dans `cadence_engine.py` corrigé : utilise `VAULT_DOC_ID = "protocol_delta_sigma"` (était `"deepotus_protocol"` — incorrect) → l'engine lit maintenant le bon doc.
 
+#### Sprint 21 — Refactor (zero new feature) — ✅ COMPLET
+- ✅ **AdminBots.jsx 1798 → 1017 lignes (-43%)** :
+  - Extract Preview tab → `frontend/src/pages/admin/sections/AdminPreviewSection.tsx` (586 lignes — V1 + V2 + image gen, charge ses propres contentTypes/v2Templates).
+  - Extract Jobs tab → `AdminJobsSection.tsx` (~110 lignes, auto-refresh 10s).
+  - Extract Logs tab → `AdminLogsSection.tsx` (~210 lignes, status histogram + filters + table).
+  - Page mère devient un router shell : auth + status banner + 5 tabs + LLM keys dialog. Cadence (ex-Sprint 18) + Loyalty/NewsRepost/NewsFeed déjà extraits.
+  - States supprimés du shell : `previewType`, `previewPlatform`, `kolPost`, `previewKeywords`, `useNewsContext`, `useV2Preview`, `forceTemplateV2`, `v2Templates`, `imageProvider`, `imageAspect`, `includeImage`, `preview`, `previewBusy`, `jobs`, `posts`, `platformFilter`, `statusFilter` → tous ré-instanciés dans leurs sections respectives.
+  - Helpers supprimés : `loadJobs`, `loadPosts`, `loadV2Templates`, `generatePreview`, `downloadPreviewImage`.
+  - Validation visuelle : 5 onglets actifs + 9 jobs scheduler listés (incl. `cadence_tick` 1min + `holders_poll` 5min) + status histogram (17 heartbeat OK + 261 killed). Aucune régression.
+- ✅ **cadence_engine.py — split functions complexes** :
+  - `cadence_reactive_tick` (cyclo 28 → ~10) : extrait `_tick_marketcap_milestones`, `_tick_holder_milestones` + helper pur `_crossed_milestone`. Le tick principal est désormais un thin orchestrator.
+  - `cadence_daily_tick` (cyclo 18 → ~8) : extrait `_iter_due_slots` (générateur pur, zero I/O).
+  - **25 unit tests** dans `backend/tests/test_cadence_engine_helpers.py` couvrant `parse_hhmm`, `is_in_quiet_hours` (windows same-day + wrap past midnight + zero-length + malformed), `pick_archetype` (allowed list + fallback), `_iter_due_slots` (4 scénarios), `_crossed_milestone` (6 scénarios), `format_mc_label`. **Tous passent en 1.60s**.
+- ✅ **Risk-vs-benefit decisions documented** : `import_encrypted` (security-critical) + `sync_jobs_from_config` (orchestrator stable) NON touchés cette session — voir `docs/CODE_REVIEW_RESPONSE.md` §5.
+
+#### Sprint 22.1 — Migration TypeScript pilote — ✅ COMPLET
+- ✅ **3 fichiers migrés** :
+  - `src/index.js` → `src/index.tsx` (11 lignes — entry point typé avec cast `HTMLElement` sécurisé pour `getElementById('root')`).
+  - `src/App.js` → `src/App.tsx` (60 lignes — router shell, `JSX.Element` return typé).
+  - `src/pages/AdminBots.jsx` → `src/pages/AdminBots.tsx` (1017 lignes — interfaces minimales `BotConfig` + `ContentTypeMeta` ajoutées en haut, état interne reste implicit-any selon tsconfig `strict: false`).
+- ✅ **6 sections relaxées** : `AdminCadenceSection.tsx`, `AdminJobsSection.tsx`, `AdminLogsSection.tsx`, `AdminPreviewSection.tsx`, `LoyaltySection.tsx`, `NewsRepostSection.tsx` passent de `headers: AxiosRequestHeaders` à `headers: Record<string, string>` → le `useMemo(() => ({ Authorization: "Bearer ..." }))` du parent devient assignable sans cast.
+- ✅ **Validation visuelle** : `webpack compiled successfully · No issues found`. Screenshot AdminBots.tsx affiche tous les composants comme avant (Platforms, Content & LLM, Prompt V2, LLM Preset, Custom LLM keys vault).
+- ✅ **Pas de breaking change** : tsconfig garde `strict: false`. Migration "soft" — futurs sprints peuvent durcir progressivement.
+- ✅ **Reste à migrer** : `pages/AdminVault.jsx` (665 lignes — Sprint 22.2), Custom LLM keys dialog (~250 lignes inside AdminBots.tsx — Sprint 22.3 si voulu).
+
+- ✅ **Doc** : `/app/docs/SPRINT_21_22_DEPLOY.md` (guide push + verify + rollback).
+
 ---
 
 ## 2) Implementation Steps

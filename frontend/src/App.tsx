@@ -1,3 +1,11 @@
+/**
+ * App.tsx — router shell.
+ *
+ * Sprint 22 — migrated from .js → .tsx. The component itself takes no
+ * props but we now have a fully typed router setup with explicit
+ * page-component imports.
+ */
+
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -17,10 +25,10 @@ import PublicStats from "@/pages/PublicStats";
 import HowToBuy from "@/pages/HowToBuy";
 import Transparency from "@/pages/Transparency";
 
-function App() {
-  // document.title and SEO meta tags are now synced dynamically by I18nProvider
-  // based on the active language (FR / EN) — see /src/i18n/I18nProvider.jsx.
-
+// `document.title` and SEO meta tags are synced dynamically by
+// I18nProvider based on the active language (FR / EN) — see
+// /src/i18n/I18nProvider.jsx.
+function App(): JSX.Element {
   return (
     <ThemeProvider>
       <I18nProvider>

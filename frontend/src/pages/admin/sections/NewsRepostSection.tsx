@@ -13,7 +13,8 @@
  * data-testids are unchanged.
  */
 import { useCallback, useEffect, useState } from "react";
-import axios, { AxiosRequestHeaders } from "axios";
+import axios from "axios";
+// Sprint 22 — `AxiosRequestHeaders` was too strict for our useMemo header object.
 import { RefreshCw, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ interface RepostPatchBody {
 
 interface Props {
   api: string;
-  headers: AxiosRequestHeaders;
+  headers: Record<string, string>;
 }
 
 type Platform = "telegram" | "x";

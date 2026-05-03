@@ -21,7 +21,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import type { AxiosRequestHeaders } from "axios";
+// Sprint 22 — relaxed `AxiosRequestHeaders` to plain Record so the
+// parent's `useMemo(() => ({ Authorization: ... }))` is assignable
+// without an unsafe cast.
 import {
   Calendar,
   Clock,
@@ -77,7 +79,7 @@ interface V2Template {
 
 interface Props {
   api: string;
-  headers: AxiosRequestHeaders;
+  headers: Record<string, string>;
 }
 
 const HHMM_RE = /^\d{2}:\d{2}$/;
