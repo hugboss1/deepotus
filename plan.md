@@ -13,6 +13,7 @@
 - **Sprint 14.2 — Infiltration Automation** : ajouter des vérifications semi-automatiques **sans dépendre du tier X** (TG live, X en review queue), + préparation KOL DM drafts (approval mode).
 - **Sprint 15 — Brain Connect & Treasury Architecture (MiCA)** : relier l’indexation on-chain (Helius) au lore **sans logique de trading**, publier une politique de trésorerie transparente, outillage admin de disclosure + tokenomics tracker public.
 - **Ops post-prod** : réduire les erreurs humaines (déploiement, secrets, webhooks) via docs exécutables, endpoints diagnostics, et assets email hébergés.
+- **Nouvel objectif (Pre-mint/Mint UX)** : aligner landing + pages publiques sur une stratégie **3 phases env-driven** (pre-mint / live / graduated), + page `/transparency` MiCA-style, + logs Treasury publics.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
 
@@ -21,11 +22,10 @@
 - Admin : **mot de passe modifié** (rotation effectuée), **2FA activée**, vault accessible.
 - **Cabinet Vault** : déverrouillé en prod ; secrets déjà saisis : **LLM / Resend / Helius**.
 - **Reste à saisir** : credentials **Telegram** (bot token + chat ID) et **X** (4 secrets OAuth1.0a) dans le vault.
-- Frontend : `yarn build` OK ; correction UX **Prophétie Live** (hold 5 secondes) livrée.
-- Backend : serveur d’assets statiques `/api/assets` pour emails (hero images), et génération IA des assets email.
-- Ops : documentation post-déploiement Helius + documentation de fonctionnement des bots livrées.
 - Branding : watermark **“Made with Emergent” supprimé** (frontend `public/index.html`).
 - Déploiement : doc **push GitHub + Deploy Hook Vercel** livrée (Hobby plan).
+- Emails : 4 hero images IA (25–55KB) servies via `/api/assets`, intégrées aux templates.
+- **Grosse MAJ pre-mint/mint (8/10 tasks)** : système phases env-driven + `/transparency` + Hero/Tokenomics/HowToBuy/Roadmap/BurnCounter.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend BIP39 + PBKDF2 + AES-256-GCM + audit.
@@ -85,6 +85,7 @@
 - ✅ Helius post-deploy : `/app/docs/HELIUS_POST_DEPLOY.md`.
 - ✅ Fonctionnement bots infiltration + propagande : `/app/docs/BOTS_OPERATIONS.md`.
 - ✅ Push GitHub / Vercel Hobby contournement : `/app/docs/GITHUB_PUSH_MANUAL.md`.
+- ✅ Phases env-driven : `/app/docs/PHASES_ENV_DRIVEN.md`.
 
 #### Assets email — ✅ LIVRÉ (4 illustrations IA)
 - ✅ `backend/static/loyalty_hero.jpg` + meta JSON.
@@ -101,6 +102,28 @@
 
 #### UX Landing — ✅ Hotfix
 - ✅ `PropheciesFeed.tsx` : maintien de la prophétie live **5 secondes** après clic sur “Nouvelle prophétie” (`LIVE_HOLD_MS=5000`).
+
+#### Grosse MAJ pre-mint/mint phases — ✅ 8/10 tasks LIVRÉS
+- ✅ **TASK 10** : `frontend/src/lib/launchPhase.ts` (source of truth env-driven)
+  - `getLaunchPhase()` + `URLS` + `getWallets()` + `hasMint()` + `getLaunchTimestamp()` + `getMint()`.
+- ✅ **TASK 6** : backend `routers/treasury.py`
+  - `GET /api/treasury/operations` + `GET /api/treasury/burns`
+  - admin `POST/GET/DELETE /api/admin/treasury/operations`.
+  - validation Pydantic stricte (base58 wallet + signature).
+- ✅ **TASK 1** : page `frontend/src/pages/Transparency.tsx` + route `/transparency`
+  - 5 wallets (env-driven placeholders)
+  - lock cards (env-driven, placeholder si vide)
+  - BubbleMaps iframe (post-mint only)
+  - RugCheck fetch (post-mint only)
+  - Treasury operations table (from TASK 6).
+- ✅ **TASK 2** : Hero 3 phases (pre/live/graduated)
+  - badge + countdown (`REACT_APP_LAUNCH_TS`) + CTAs phase-aware.
+- ✅ **TASK 3** : `TokenomicsLockBadges` (3 buckets) + lien `/transparency`.
+- ✅ **TASK 4** : `HowToBuyPhasedSteps` (4 steps par phase + BonkBot CTA).
+- ✅ **TASK 5** : Roadmap 6 phases + `deriveStatuses()` env-driven.
+- ✅ **TASK 9** : `BurnCounter` widget (fetch `/api/treasury/burns`).
+- ✅ Nav + Footer : lien `/transparency`.
+- ✅ Doc : `/app/docs/PHASES_ENV_DRIVEN.md` + index docs mis à jour.
 
 ---
 
@@ -202,16 +225,12 @@
 **Backend scaffold livré** ; reste l’UI admin + wiring KOL mention → DM drafts.
 
 - ✅ Backend livré (voir section état actuel).
-- ⏳ **UI Admin à livrer** :
-  - Sur `/admin/clearance` ou `/admin/infiltration` :
-    - Liste des `x_share_submissions` (pending_review) + boutons Approve/Reject.
-    - Liste des `kol_dm_drafts` + bouton Approve + champ edit DM.
-    - Chip d’état `auto/status` (telegram live, x follow blocked, share review count, dm drafts count).
+- ⏳ **UI Admin à livrer** (session future) :
+  - Review queue `x_share_submissions` (pending_review) + Approve/Reject.
+  - Review queue `kol_dm_drafts` + Approve + champ edit.
+  - Chips `auto/status` (telegram live, x follow blocked, pending counts).
 - ⏳ **Branchement KOL Listener** (safe) : quand une mention KOL est détectée, créer un draft DM (`prepare_kol_dm_draft`) au lieu (ou en plus) de déclencher la propagande.
-- ⏳ **Activation tier X** (future) : 
-  - follow check live (L1)
-  - share mention live (L2)
-  - DM dispatch live
+- ⏳ **Activation tier X** (future) : follow check live (L1), share mention live (L2), DM dispatch live.
 
 ---
 
@@ -220,6 +239,8 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 
 - **Dépendances** : mint `$DEEPOTUS` + pool address DEX (Raydium/Orca) + passage Helius en mode live.
 - **Doc ops** : `/app/docs/HELIUS_POST_DEPLOY.md` (procédure webhook + auth + smoke test).
+- ✅ **Pré-work livré** : treasury ops endpoints + burn summary + page `/transparency` + phases env-driven.
+- ⏳ **Reste en Phase 15** : tokenomics tracker public + admin dashboard Treasury (UI logging) + disclosure pages MiCA.
 
 ---
 
@@ -242,10 +263,14 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Vérifier `GET /api/admin/propaganda/dispatch/preflight` → `ready=true`.
 - Basculer dispatch : dry-run → live, plateforme par plateforme.
 
+### P1 — Finir la grosse MAJ pre-mint/mint (2 tasks restantes)
+- ⏳ **TASK 7** : `prophet_studio.py` V2 templates pondérés + toggle “Use V2” dans AdminBots.
+- ⏳ **TASK 8** : AdminBots onglet “Cadence” + config quiet hours + triggers reactifs.
+
 ### P1 — Terminer Sprint 14.2 (UI + wiring)
-- Ajouter UI admin review queue : shares L2 + drafts KOL DM.
+- Ajouter UI admin review queue : shares L2 + approve KOL DM drafts.
 - Branchement `kol_listener` → `prepare_kol_dm_draft`.
-- (Plus tard) activer follow/search/DM live quand tier X Basic est acquis.
+- (Plus tard) activer follow/search/DM live quand tier X est acquis.
 
 ### P1 — Helius live post-mint
 - Suivre `/app/docs/HELIUS_POST_DEPLOY.md`.
@@ -255,8 +280,8 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 ### P2 — Polish + Qualité
 - Refactor prudent (sans changement comportement) : `AdminBots.jsx`, `TerminalPopup.tsx` (à faire en étapes, derrière tests E2E).
 - Tests :
-  - Pytest backend (smoke endpoints + vault + propaganda queue)
-  - Playwright E2E (routing Vercel, login admin, vault unlock, queue approve, banner dispatch)
+  - Pytest backend (smoke endpoints + vault + propaganda queue + treasury ops)
+  - Playwright E2E (routing, login admin, vault unlock, transparency render, queue approve, banner dispatch)
 
 ---
 
@@ -267,6 +292,13 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Propaganda : dispatch live contrôlé (rate limit + panic + audit) avec 0 fuites.
 - Emails : 4 templates ont un hero asset fiable (25–55KB) servi par `/api/assets` + diagnostics Resend utilisables.
 - Infiltration : riddles + clearance fonctionnels ; 14.2 prêt (TG live, share review queue, KOL DM drafts) ; auto X activable quand tier OK.
+- **Pre-mint/Mint UX** :
+  - Les phases (pre/live/graduated) changent **uniquement via env vars**.
+  - `/transparency` fonctionne en pre-mint (placeholders), et s’enrichit post-mint (BubbleMaps/RugCheck/ops).
+  - Tokenomics affiche clairement locks pending/active + lien vers transparency.
+  - HowToBuy affiche un guide “scan” phase-aware + BonkBot CTA.
+  - Roadmap reflète l’état automatiquement.
+  - BurnCounter s’alimente depuis `treasury_operations`.
 
 ---
 
@@ -282,26 +314,32 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - ✅ Whale watcher : Helius webhooks + monitoring admin (base).
 - ✅ Assets email : `/api/assets` via `StaticFiles`.
 - ✅ Génération IA email assets : `scripts/generate_email_asset.py` (gpt-image-1) + JPG optimisés.
+- ✅ Treasury : `routers/treasury.py` (ops log + burns aggregates).
 
 **Frontend**
-- ✅ Panels admin : `pages/Propaganda.tsx`, `pages/Infiltration.tsx`, `pages/CabinetVault.tsx`.
+- ✅ Pages admin : `pages/Propaganda.tsx`, `pages/Infiltration.tsx`, `pages/CabinetVault.tsx`.
 - ✅ Propaganda UI : bannière d’état dispatch (PAUSED/DRYRUN/LIVE/PANIC).
 - ✅ Terminal : `TerminalPopup.tsx` + `RiddlesFlow.tsx`.
 - ✅ UX prophétie : hold 5s sur “Nouvelle prophétie” (`PropheciesFeed.tsx`).
-- ⏳ Sprint 14.2 UI : review shares + approve KOL DM drafts (à livrer).
+- ✅ Phases env-driven : `src/lib/launchPhase.ts` (utilisé par Hero/HowToBuy/Tokenomics/Roadmap/Transparency).
+- ✅ Nouvelle page : `pages/Transparency.tsx` + route `/transparency`.
+- ✅ Tokenomics : `TokenomicsLockBadges` + `BurnCounter`.
+- ✅ HowToBuy : `HowToBuyPhasedSteps`.
+- ✅ Nav/Footer : liens `/transparency`.
+- ⏳ Sprint 14.2 UI : review shares + approve KOL DM drafts.
 
 **DB Collections**
 - Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
 - Infiltration : `riddles`, `riddle_attempts` (TTL 24h), `clearance_levels`, `sleeper_cell`, `infiltration_audit`.
 - Sprint 14.2 : `x_share_submissions`, `kol_dm_drafts`.
+- Treasury : `treasury_operations`.
 - Email : `email_events` + champs email dans `whitelist` (`email_status`, `email_error`, etc.).
-- Whale watcher / disclosure : selon implémentation courante + indexes (cf. docs).
 - Vault : `cabinet_vault`, `cabinet_vault_audit`, `admin_2fa`.
 
 **Sécurité**
 - Propaganda : lecture/édition templates = admin JWT ; panic/approve/reject/toggles dispatch = admin JWT + 2FA.
 - Infiltration : endpoints publics rate-limit ; mutations admin = 2FA.
-- Whale watcher feed public : anonymisé.
+- Treasury admin logging : admin JWT (2FA déjà actif côté opérateur).
 - Secrets dispatchers : Cabinet Vault (recommandé) avec fallback env.
 - Déploiement : CRA5 doit rester sur Node LTS (20) tant que Vite pas migré.
 - Recovery : Factory reset exige vault LOCKED + password + 2FA (si active) + confirm string.

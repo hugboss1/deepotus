@@ -1,18 +1,46 @@
 [
   {
-    "content": "1 - 4 illustrations email generees + integrees (loyalty/welcome/accreditation/prophet_update)",
+    "content": "TASK 10 - lib/launchPhase.ts helper centralise",
     "status": "completed"
   },
   {
-    "content": "2 - Sprint 14.2 backend scaffold (infiltration_auto.py + endpoints admin/public)",
+    "content": "TASK 6 - Backend treasury operations endpoints + Mongo collection",
     "status": "completed"
   },
   {
-    "content": "3 - Watermark 'Made with Emergent' retire de index.html",
+    "content": "TASK 1 - Page /transparency",
     "status": "completed"
   },
   {
-    "content": "4 - docs/GITHUB_PUSH_MANUAL.md - contournement Vercel Hobby + Deploy Hook",
+    "content": "TASK 2 - Hero 3 phases env-driven (pre/live/graduated)",
+    "status": "completed"
+  },
+  {
+    "content": "TASK 3 - Tokenomics badges 3 slices avec lock URLs",
+    "status": "completed"
+  },
+  {
+    "content": "TASK 4 - HowToBuy 3 phases",
+    "status": "completed"
+  },
+  {
+    "content": "TASK 5 - Roadmap update 6 phases avec status dynamique",
+    "status": "completed"
+  },
+  {
+    "content": "TASK 9 - Burn counter widget",
+    "status": "completed"
+  },
+  {
+    "content": "Lien 'Transparency' dans footer + nav",
+    "status": "completed"
+  },
+  {
+    "content": "docs/PHASES_ENV_DRIVEN.md - section Pre-mint/Mint phases doc env-driven",
+    "status": "completed"
+  },
+  {
+    "content": "Build prod + service restart + tests health checks",
     "status": "completed"
   }
 ]

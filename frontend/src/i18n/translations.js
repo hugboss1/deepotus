@@ -65,6 +65,19 @@ export const translations = {
       mintCopy: "Copier",
       mintCopied: "✓ Copié",
       mintGuideCta: "Je ne sais pas comment acheter",
+      phaseBadge: {
+        pre: "🟡 PRE-LAUNCH · Whitelist OUVERTE",
+        live: "🟢 LIVE · BONDING CURVE",
+        graduated: "🚀 GRADUATED · PROTOCOL ΔΣ PHASE 2",
+      },
+      countdownPrefix: "Mint dans :",
+      cta: {
+        viewTokenomics: "Voir la Tokenomics",
+        buyPumpfun: "Acheter sur Pump.fun",
+        dexscreener: "Chart DexScreener",
+        tradePumpswap: "Trader sur PumpSwap",
+        tradeRaydium: "Trader sur Raydium",
+      },
     },
 
     // ---- Manifesto ----
@@ -443,6 +456,22 @@ export const translations = {
       buyCtaPrimary: "Acheter $DEEPOTUS",
       buyCtaGuide: "Je suis un novice — Guide d'achat",
       buyPrelaunchNote: "Pump.fun n'est pas encore ouvert. Le bouton d'achat redirige vers la liste d'attente jusqu'au 07/09/26.",
+      buckets: {
+        public: {
+          name: "Public",
+          terms: "Bonding curve",
+        },
+        treasury: {
+          name: "Treasury",
+          locked: "🔒 Verrouillé 6 mois",
+        },
+        team: {
+          name: "Team",
+          locked: "🔒 6mo cliff + 12mo vesting",
+        },
+        lockPending: "🔒 Lock activé après mint",
+        summary: "45% verrouillés · 5 portefeuilles transparents · Voir /transparency",
+      },
     },
 
     // ---- Transparency / Liquidity timeline ----
@@ -587,8 +616,10 @@ export const translations = {
       kicker: "— FEUILLE DE ROUTE",
       title: "Campagne du Candidat IA",
       subtitle:
-        "Quatre dossiers opérationnels. Aucune date promise. Le Prophète déclassifie au rythme du circuit.",
+        "Six dossiers opérationnels. Aucune date promise. Le Prophète déclassifie au rythme du circuit.",
       legend: {
+        done: "TERMINÉ",
+        active: "EN COURS",
         next: "PROCHAINE",
         queued: "EN ATTENTE",
         encrypted: "CHIFFRÉ",
@@ -601,51 +632,75 @@ export const translations = {
       },
       phases: [
         {
-          tag: "Phase 01",
-          code: "ΔΣ-01",
-          status: "next",
-          title: "The Bonding Curve Trial — Lancement Pump.fun",
-          subtitle: "Premier test de foi sur la courbe.",
+          tag: "Phase 0",
+          code: "ΔΣ-00",
+          status: "done",
+          title: "Foundation",
+          subtitle: "Le site est en ligne. Les sceaux sont posés.",
           bullets: [
-            "Mint 1B tokens sur Pump.fun · 0% Tax Protocol",
-            "Le Prophète teste la foi de ses disciples sur la Bonding Curve",
-            "Objectif : atteindre 100% de la courbe (≈ 60k$ MC)",
+            "Site live · Whitelist active · Tokenomics publiée",
+            "Cinq portefeuilles transparents · Locks préparés",
+            "Cabinet ΔΣ · Bots Prophète · Coffre Helius scellé",
           ],
         },
         {
-          tag: "Phase 02",
+          tag: "Phase 1",
+          code: "ΔΣ-01",
+          status: "active",
+          title: "Mint",
+          subtitle: "Le Prophète ouvre la courbe.",
+          bullets: [
+            "Mint Pump.fun · 0% taxe protocol",
+            "Bonding curve · objectif 69k$ MC",
+            "Telegram + X live · Bot Prophète activé",
+          ],
+        },
+        {
+          tag: "Phase 2",
           code: "ΔΣ-02",
           status: "queued",
-          title: "Raydium Ascension — Migration automatique",
+          title: "Graduation",
           subtitle: "La LP brûle, le marché ouvre.",
           bullets: [
-            "LP automatiquement brûlée et migrée vers Raydium par Pump.fun",
-            "Renforcement stratégique de la LP pour stabiliser le prix cible ≈ 0,0005€",
-            "Tokens équipe lockés publiquement via Streamflow (vesting 12m + cliff 3m)",
+            "Graduation Pump.fun · migration PumpSwap",
+            "DexScreener Enhanced · CoinGecko listing",
+            "LP automatique · cycle ouvert",
           ],
         },
         {
-          tag: "Phase 03",
+          tag: "Phase 3",
           code: "ΔΣ-03",
           status: "encrypted",
-          title: "PROTOCOL ΔΣ · premières molettes",
-          subtitle: "Les cadrans tournent. Le Coffre écoute.",
+          title: "Expansion",
+          subtitle: "J+30 · le Cabinet recrute.",
           bullets: [
-            "Premières molettes verrouillées au fil des achats",
-            "Allocations Trésor vers préparation du projet MiCA-compliant",
-            "Transmissions prophétiques intensifiées (X + Telegram)",
+            "NFT Carte Agent · top holder rewards",
+            "Premier burn ΔΣ",
+            "Partenariats KOL ciblés",
           ],
         },
         {
-          tag: "Phase 04",
+          tag: "Phase 4",
           code: "ΔΣ-04",
-          status: "classified",
-          title: "Déclassification",
-          subtitle: "La Black Op s'ouvre. Le Prophète parle clair.",
+          status: "encrypted",
+          title: "Charity",
+          subtitle: "J+60 · le Cabinet rembourse.",
           bullets: [
-            "Six molettes verrouillées · Coffre ouvert",
-            "Audit sécurité publié",
-            "La Black Op est révélée — transition vers la phase MiCA",
+            "Partenariat caritatif confirmé",
+            "Évent UNICEF / Téléthon-style",
+            "Donation publique tracée on-chain",
+          ],
+        },
+        {
+          tag: "Phase 5",
+          code: "ΔΣ-05",
+          status: "classified",
+          title: "Protocol ΔΣ",
+          subtitle: "J+90 · la surprise est scellée.",
+          bullets: [
+            "Surprise feature · classifiée jusqu'à activation",
+            "Cross-chain expansion (TBD)",
+            "Le circuit se referme. Le registre se souvient.",
           ],
         },
       ],
@@ -870,6 +925,105 @@ export const translations = {
     common: {
       loading: "Chargement…",
       retry: "Réessayer",
+      backHome: "Retour à l'accueil",
+    },
+
+    // ---- /how-to-buy phased steps strip ----
+    howToBuyPhased: {
+      title: "Récap rapide selon la phase",
+      bannerPre: "🟡 Phase Pre-Mint",
+      bannerLive: "🟢 Phase Live",
+      bannerGraduated: "🚀 Phase Graduated",
+      bonkbotCta: "Trader sur Telegram (BonkBot)",
+      pre: {
+        s1: "Installer un wallet Phantom (phantom.app)",
+        s2: "Charger en SOL via Coinbase, Binance, Kraken ou MoonPay",
+        s3: "S'inscrire sur la whitelist du Cabinet",
+        s4: "Attendre l'annonce mint (email + Telegram + X)",
+      },
+      live: {
+        s1: "Ouvrir la page Pump.fun de $DEEPOTUS",
+        s2: "Connecter votre wallet Phantom",
+        s3: "Saisir un montant en SOL puis confirmer",
+        s4: "Suivre la progression de la bonding curve",
+        note: "Les trades passent contre la bonding curve Pump.fun jusqu'à la graduation (~69 K$ de market cap).",
+      },
+      graduated: {
+        s1: "Ouvrir le pool PumpSwap",
+        s2: "Connecter votre wallet Phantom",
+        s3: "Swap SOL → $DEEPOTUS",
+        s4_raydium: "Optionnel — également tradable sur Raydium",
+      },
+    },
+
+    // ---- Burn counter ----
+    burnCounter: {
+      title: "🔥 TOTAL BURNED",
+      empty: "Phase 1 active · Premier burn à J+30 post-graduation",
+      ofSupply: "du supply",
+      lastBurn: "Dernier burn",
+    },
+
+    // ---- Standalone /transparency page (Sprint 15) ----
+    transparencyPage: {
+      kicker: "TRANSPARENCY · PROTOCOL ΔΣ",
+      title: "Cinq portefeuilles. Adresses publiques. Aucun sac caché.",
+      tagline:
+        "Chaque flux $DEEPOTUS est tracé. Le Council ΔΣ publie ses adresses, ses locks et ses opérations de Trésor avant de les exécuter. La transparence n'est pas un argument marketing — c'est l'épine dorsale du protocole.",
+      walletsTitle: "Cinq portefeuilles",
+      wallets: {
+        deployer: {
+          name: "Deployer",
+          purpose:
+            "Déploiement du mint uniquement · 0% d'allocation · Vidé après le lancement",
+        },
+        treasury: {
+          name: "Treasury",
+          purpose:
+            "30% du supply · Cliff 6 mois · Opérations & rachats publics",
+        },
+        team: {
+          name: "Team",
+          purpose: "15% du supply · Cliff 6 mois + vesting linéaire 12 mois",
+        },
+        creator_fees: {
+          name: "Creator Fees",
+          purpose:
+            "Flux Pump.fun · 60% rachats / 30% opérations / 10% communauté",
+        },
+        community: {
+          name: "Community Rewards",
+          purpose: "Flux mensuel distribué aux top holders",
+        },
+      },
+      locksTitle: "Preuves de lock",
+      locks: {
+        team: {
+          terms: "Cliff 6 mois + vesting linéaire 12 mois",
+        },
+        treasury: {
+          terms: "Cliff 6 mois — déblocage progressif sur résolution publique",
+        },
+        pending: "Lock activé après le mint",
+      },
+      bubblemapsTitle: "Distribution des holders",
+      bubblemapsPlaceholder:
+        "🗺 Carte de distribution · Disponible après le mint",
+      rugcheckTitle: "Score RugCheck en direct",
+      rugcheck: {
+        loading: "Lecture du score…",
+        good: "GOOD · Profil bas risque",
+        warning: "WARNING · Audit recommandé",
+        danger: "DANGER · Profil haut risque",
+        error: "Score indisponible — essayez plus tard",
+        missing: "🛡 Score live · Disponible après le mint",
+      },
+      opsTitle: "Journal des opérations Treasury",
+      opsLoading: "Chargement du journal…",
+      opsEmpty: "Aucune opération journalisée · Phase 1 active",
+      opsError: "Impossible de charger le journal — réessayez plus tard",
+      footer:
+        "Toutes les adresses, locks et opérations sont vérifiables on-chain. PROTOCOL ΔΣ s'engage à une transparence totale.",
     },
   },
 
@@ -932,6 +1086,19 @@ export const translations = {
       mintCopy: "Copy",
       mintCopied: "✓ Copied",
       mintGuideCta: "I don't know how to buy",
+      phaseBadge: {
+        pre: "🟡 PRE-LAUNCH · Whitelist OPEN",
+        live: "🟢 LIVE · BONDING CURVE",
+        graduated: "🚀 GRADUATED · PROTOCOL ΔΣ PHASE 2",
+      },
+      countdownPrefix: "Mint in:",
+      cta: {
+        viewTokenomics: "View Tokenomics",
+        buyPumpfun: "Buy on Pump.fun",
+        dexscreener: "DexScreener Chart",
+        tradePumpswap: "Trade on PumpSwap",
+        tradeRaydium: "Trade on Raydium",
+      },
     },
 
     manifesto: {
@@ -1300,6 +1467,22 @@ export const translations = {
       buyCtaPrimary: "Buy $DEEPOTUS",
       buyCtaGuide: "I'm a normie — Buy guide",
       buyPrelaunchNote: "Pump.fun is not open yet. The Buy button points to the waitlist until 07/09/26.",
+      buckets: {
+        public: {
+          name: "Public",
+          terms: "Bonding curve",
+        },
+        treasury: {
+          name: "Treasury",
+          locked: "🔒 Locked 6mo",
+        },
+        team: {
+          name: "Team",
+          locked: "🔒 6mo cliff + 12mo vesting",
+        },
+        lockPending: "🔒 Lock pending — activated post-mint",
+        summary: "45% locked · 5 wallets transparent · See /transparency",
+      },
     },
 
     transparency: {
@@ -1441,8 +1624,10 @@ export const translations = {
       kicker: "— ROADMAP",
       title: "The AI Candidate Campaign",
       subtitle:
-        "Four operational dossiers. No date promised. The Prophet declassifies on the circuit's tempo.",
+        "Six operational dossiers. No date promised. The Prophet declassifies on the circuit's tempo.",
       legend: {
+        done: "DONE",
+        active: "ACTIVE",
         next: "NEXT",
         queued: "QUEUED",
         encrypted: "ENCRYPTED",
@@ -1455,51 +1640,75 @@ export const translations = {
       },
       phases: [
         {
-          tag: "Phase 01",
-          code: "ΔΣ-01",
-          status: "next",
-          title: "The Bonding Curve Trial — Pump.fun Launch",
-          subtitle: "First test of faith on the curve.",
+          tag: "Phase 0",
+          code: "ΔΣ-00",
+          status: "done",
+          title: "Foundation",
+          subtitle: "The site is live. The seals are set.",
           bullets: [
-            "Mint 1B tokens on Pump.fun · 0% Tax Protocol",
-            "The Prophet tests his disciples' faith on the Bonding Curve",
-            "Target: complete 100% of the curve (≈ $60k MC)",
+            "Site live · Whitelist active · Tokenomics published",
+            "Five wallets transparent · Locks prepared",
+            "Cabinet ΔΣ · Prophet bots · Helius vault sealed",
           ],
         },
         {
-          tag: "Phase 02",
+          tag: "Phase 1",
+          code: "ΔΣ-01",
+          status: "active",
+          title: "Mint",
+          subtitle: "The Prophet opens the curve.",
+          bullets: [
+            "Pump.fun mint · 0% protocol tax",
+            "Bonding curve · target $69K MC",
+            "Telegram + X live · Prophet bot activated",
+          ],
+        },
+        {
+          tag: "Phase 2",
           code: "ΔΣ-02",
           status: "queued",
-          title: "Raydium Ascension — Automatic Migration",
+          title: "Graduation",
           subtitle: "LP burns, the market opens.",
           bullets: [
-            "LP auto-burned and migrated to Raydium by Pump.fun",
-            "Strategic LP reinforcement to stabilize target price ≈ €0.0005",
-            "Team tokens publicly locked via Streamflow (12-month vesting + 3-month cliff)",
+            "Pump.fun graduation · PumpSwap migration",
+            "DexScreener Enhanced · CoinGecko listing",
+            "Auto LP · open cycle",
           ],
         },
         {
-          tag: "Phase 03",
+          tag: "Phase 3",
           code: "ΔΣ-03",
           status: "encrypted",
-          title: "PROTOCOL ΔΣ · first dials",
-          subtitle: "Dials turn. The Vault listens.",
+          title: "Expansion",
+          subtitle: "J+30 · the Cabinet recruits.",
           bullets: [
-            "First dials lock as buys accumulate",
-            "Treasury allocations towards MiCA-compliant project prep",
-            "Prophetic transmissions intensified (X + Telegram)",
+            "NFT Agent Card · top holder rewards",
+            "First ΔΣ burn",
+            "Targeted KOL partnerships",
           ],
         },
         {
-          tag: "Phase 04",
+          tag: "Phase 4",
           code: "ΔΣ-04",
-          status: "classified",
-          title: "Declassification",
-          subtitle: "The Black Op opens. The Prophet speaks plainly.",
+          status: "encrypted",
+          title: "Charity",
+          subtitle: "J+60 · the Cabinet gives back.",
           bullets: [
-            "Six dials locked · Vault open",
-            "Security audit published",
-            "The Black Op is revealed — transition to MiCA phase",
+            "Confirmed charity partnership",
+            "UNICEF / Telethon-style event",
+            "Public donation traced on-chain",
+          ],
+        },
+        {
+          tag: "Phase 5",
+          code: "ΔΣ-05",
+          status: "classified",
+          title: "Protocol ΔΣ",
+          subtitle: "J+90 · the surprise is sealed.",
+          bullets: [
+            "Surprise feature · classified until activation",
+            "Cross-chain expansion (TBD)",
+            "The circuit closes. The ledger remembers.",
           ],
         },
       ],
@@ -1717,6 +1926,104 @@ export const translations = {
     common: {
       loading: "Loading…",
       retry: "Retry",
+      backHome: "Back to home",
+    },
+
+    // ---- /how-to-buy phased steps strip ----
+    howToBuyPhased: {
+      title: "Quick recap by phase",
+      bannerPre: "🟡 Pre-Mint Phase",
+      bannerLive: "🟢 Live Phase",
+      bannerGraduated: "🚀 Graduated Phase",
+      bonkbotCta: "Trade on Telegram (BonkBot)",
+      pre: {
+        s1: "Install a Phantom wallet (phantom.app)",
+        s2: "Fund with SOL via Coinbase, Binance, Kraken or MoonPay",
+        s3: "Join the Cabinet whitelist",
+        s4: "Wait for the mint announcement (email + Telegram + X)",
+      },
+      live: {
+        s1: "Open the $DEEPOTUS Pump.fun page",
+        s2: "Connect your Phantom wallet",
+        s3: "Enter SOL amount and confirm",
+        s4: "Watch bonding curve progress",
+        note: "Trades execute against the Pump.fun bonding curve until graduation at ~$69K market cap.",
+      },
+      graduated: {
+        s1: "Open the PumpSwap pool",
+        s2: "Connect your Phantom wallet",
+        s3: "Swap SOL → $DEEPOTUS",
+        s4_raydium: "Optional — also tradable on Raydium",
+      },
+    },
+
+    // ---- Burn counter ----
+    burnCounter: {
+      title: "🔥 TOTAL BURNED",
+      empty: "Phase 1 active · First burn at J+30 post-graduation",
+      ofSupply: "of supply",
+      lastBurn: "Last burn",
+    },
+
+    // ---- Standalone /transparency page (Sprint 15) ----
+    transparencyPage: {
+      kicker: "TRANSPARENCY · PROTOCOL ΔΣ",
+      title: "Five wallets. Public addresses. No hidden bags.",
+      tagline:
+        "Every $DEEPOTUS flow is traceable. The Council ΔΣ publishes its addresses, its locks and its Treasury operations before it executes them. Transparency is not a marketing argument — it's the spine of the protocol.",
+      walletsTitle: "Five wallets",
+      wallets: {
+        deployer: {
+          name: "Deployer",
+          purpose:
+            "Mint deployment only · 0% supply allocation · Wallet drained post-launch",
+        },
+        treasury: {
+          name: "Treasury",
+          purpose:
+            "30% supply · 6-month cliff · Operations & public buybacks",
+        },
+        team: {
+          name: "Team",
+          purpose: "15% supply · 6-month cliff + 12-month linear vesting",
+        },
+        creator_fees: {
+          name: "Creator Fees",
+          purpose:
+            "Pump.fun flux · 60% buybacks / 30% operations / 10% community",
+        },
+        community: {
+          name: "Community Rewards",
+          purpose: "Monthly distributions to top holders",
+        },
+      },
+      locksTitle: "Lock proofs",
+      locks: {
+        team: {
+          terms: "6-month cliff + 12-month linear vesting",
+        },
+        treasury: {
+          terms: "6-month cliff — progressive release on public resolution",
+        },
+        pending: "Lock will be activated post-mint",
+      },
+      bubblemapsTitle: "Holder distribution",
+      bubblemapsPlaceholder: "🗺 Holder distribution map · Available post-mint",
+      rugcheckTitle: "Live RugCheck score",
+      rugcheck: {
+        loading: "Reading score…",
+        good: "GOOD · Low-risk profile",
+        warning: "WARNING · Audit recommended",
+        danger: "DANGER · High-risk profile",
+        error: "Score unavailable — try again later",
+        missing: "🛡 Live score · Available post-mint",
+      },
+      opsTitle: "Treasury operations log",
+      opsLoading: "Loading log…",
+      opsEmpty: "No operations logged yet · Phase 1 active",
+      opsError: "Unable to load log — please retry",
+      footer:
+        "All addresses, locks, and operations are publicly verifiable on-chain. PROTOCOL ΔΣ is committed to full transparency.",
     },
   },
 };

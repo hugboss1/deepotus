@@ -28,6 +28,10 @@
 
 | Doc | Statut | Usage |
 |---|---|---|
+| [`PHASES_ENV_DRIVEN.md`](./PHASES_ENV_DRIVEN.md) | 🟢 current | **Système 3 phases env-driven** (pre-mint / live / graduated). Vars Vercel, smoke tests, switching playbook. |
+| [`HELIUS_POST_DEPLOY.md`](./HELIUS_POST_DEPLOY.md) | 🟢 current | Helius webhook + API key sur deepotus.xyz, étape par étape. |
+| [`BOTS_OPERATIONS.md`](./BOTS_OPERATIONS.md) | 🟢 current | Manuel d'opération bots Propagande + Infiltration. |
+| [`GITHUB_PUSH_MANUAL.md`](./GITHUB_PUSH_MANUAL.md) | 🟢 current | Pousser le code Emergent → GitHub → Vercel via Deploy Hook. |
 | [`../README.md`](../README.md) | 🟢 current | Overview projet, tech stack, commandes dev. |
 | [`../plan.md`](../plan.md) | 🟢 current | Plan séquentiel des phases (17.A→17.G, Sprint 13.3, etc.) — auto-mis à jour par les agents. |
 | [`../design_guidelines.md`](../design_guidelines.md) | 🟢 current | UI/UX guidelines Matrix/Deep State. |

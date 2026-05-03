@@ -15,6 +15,7 @@ import Operation from "@/pages/Operation";
 import ClassifiedVault from "@/pages/ClassifiedVault";
 import PublicStats from "@/pages/PublicStats";
 import HowToBuy from "@/pages/HowToBuy";
+import Transparency from "@/pages/Transparency";
 
 function App() {
   // document.title and SEO meta tags are now synced dynamically by I18nProvider
@@ -28,6 +29,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/how-to-buy" element={<HowToBuy />} />
+              <Route path="/transparency" element={<Transparency />} />
               <Route path="/operation" element={<Operation />} />
               <Route path="/classified-vault" element={<ClassifiedVault />} />
               <Route path="/admin" element={<Admin />} />

@@ -48,6 +48,13 @@ export default function Footer() {
           <div>{t("footer.copyright")}</div>
           <div className="flex items-center gap-4">
             <a
+              href="/transparency"
+              className="uppercase tracking-widest hover:text-zinc-200 transition-colors"
+              data-testid="footer-transparency-link"
+            >
+              → transparency
+            </a>
+            <a
               href="/stats"
               className="uppercase tracking-widest hover:text-zinc-200 transition-colors"
               data-testid="footer-public-stats-link"

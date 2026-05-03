@@ -14,6 +14,8 @@ import { ALLOCATIONS } from "./tokenomics/allocations";
 import { TokenomicsChart } from "./tokenomics/TokenomicsChart";
 import { TokenomicsLegend } from "./tokenomics/TokenomicsLegend";
 import { TokenomicsTaxAndBuy } from "./tokenomics/TokenomicsTaxAndBuy";
+import { TokenomicsLockBadges } from "./tokenomics/TokenomicsLockBadges";
+import { BurnCounter } from "./BurnCounter";
 
 export default function Tokenomics() {
   const { t } = useI18n();
@@ -62,6 +64,12 @@ export default function Tokenomics() {
             />
             <TokenomicsTaxAndBuy />
           </div>
+        </div>
+
+        <TokenomicsLockBadges />
+
+        <div className="mt-6 max-w-md">
+          <BurnCounter />
         </div>
       </div>
     </section>

@@ -11,6 +11,11 @@ import {
   isMintConfigured,
 } from "@/lib/links";
 import {
+  getLaunchPhase,
+  URLS as PHASE_URLS,
+  getLaunchTimestamp,
+} from "@/lib/launchPhase";
+import {
   Radio,
   ShieldAlert,
   Cpu,
@@ -18,8 +23,37 @@ import {
   Copy,
   Check,
   HelpCircle,
+  Zap,
+  Rocket,
+  ExternalLink,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+/**
+ * Returns the formatted ``Xd Yh Zm`` countdown to the launch timestamp,
+ * or ``null`` when the env var is missing / in the past. Re-computed
+ * via setInterval(60s) so the user sees the value tick down.
+ */
+function useLaunchCountdown(): string | null {
+  const target = useMemo(() => getLaunchTimestamp(), []);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!target) return undefined;
+    const id = window.setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, [target]);
+  if (!target) return null;
+  const ms = target.getTime() - Date.now();
+  if (ms <= 0) return null;
+  // tick is read here just to keep the linter happy about the dep —
+  // re-render every minute is the desired effect.
+  void tick;
+  const totalMin = Math.floor(ms / 60_000);
+  const days = Math.floor(totalMin / (60 * 24));
+  const hours = Math.floor((totalMin - days * 60 * 24) / 60);
+  const mins = totalMin - days * 60 * 24 - hours * 60;
+  return `${days}d ${hours}h ${mins}m`;
+}
 
 /**
  * Left column of the Hero — stamps, headline, subtitle, chip row, dual CTA,
@@ -31,8 +65,95 @@ import { useState } from "react";
 export function HeroHeadline() {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-
+  const phase = getLaunchPhase();
+  const countdown = useLaunchCountdown();
   const mintLive = isMintConfigured();
+
+  // Phase-driven badge (rendered above the existing stamps row).
+  const phaseBadge = useMemo(() => {
+    if (phase === "graduated") {
+      return {
+        icon: <Rocket size={11} />,
+        label: t("hero.phaseBadge.graduated") as string,
+        cls: "border-[#2DD4BF]/60 bg-[#2DD4BF]/10 text-[#2DD4BF]",
+        pulse: false,
+      };
+    }
+    if (phase === "live") {
+      return {
+        icon: <Zap size={11} />,
+        label: t("hero.phaseBadge.live") as string,
+        cls: "border-[#33FF33]/60 bg-[#33FF33]/10 text-[#33FF33]",
+        pulse: true,
+      };
+    }
+    return {
+      icon: <Radio size={11} />,
+      label: t("hero.phaseBadge.pre") as string,
+      cls: "border-[#F59E0B]/60 bg-[#F59E0B]/10 text-[#F59E0B]",
+      pulse: false,
+    };
+  }, [phase, t]);
+
+  // Phase-driven primary + secondary CTAs. When live/graduated, we want
+  // the primary CTA to drive trading; when pre-mint, the primary CTA
+  // drives whitelist enrolment. The "old" join-whitelist + buy buttons
+  // stay rendered in pre phase (existing onboarding flow), and are
+  // hidden once the token is live to avoid sending users to a stale
+  // form.
+  const ctas = useMemo((): {
+    primary: { label: string; href: string; external: boolean; testId: string };
+    secondary: { label: string; href: string; external: boolean; testId: string } | null;
+  } => {
+    if (phase === "graduated") {
+      return {
+        primary: {
+          label: t("hero.cta.tradePumpswap") as string,
+          href: PHASE_URLS.pumpswap || "#",
+          external: true,
+          testId: "hero-cta-pumpswap",
+        },
+        secondary: PHASE_URLS.raydium
+          ? {
+              label: t("hero.cta.tradeRaydium") as string,
+              href: PHASE_URLS.raydium,
+              external: true,
+              testId: "hero-cta-raydium",
+            }
+          : null,
+      };
+    }
+    if (phase === "live") {
+      return {
+        primary: {
+          label: t("hero.cta.buyPumpfun") as string,
+          href: PHASE_URLS.pumpfun || "#",
+          external: true,
+          testId: "hero-cta-pumpfun",
+        },
+        secondary: {
+          label: t("hero.cta.dexscreener") as string,
+          href: PHASE_URLS.dexscreener() || "#",
+          external: true,
+          testId: "hero-cta-dexscreener",
+        },
+      };
+    }
+    return {
+      primary: {
+        label: t("hero.joinCta") as string,
+        href: "#whitelist",
+        external: false,
+        testId: "hero-join-button",
+      },
+      secondary: {
+        label: t("hero.cta.viewTokenomics") as string,
+        href: "#tokenomics",
+        external: false,
+        testId: "hero-cta-tokenomics",
+      },
+    };
+  }, [phase, t]);
 
   const handleCopyMint = async () => {
     try {
@@ -69,6 +190,24 @@ export function HeroHeadline() {
       className="lg:col-span-7 order-2 lg:order-1"
     >
       <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono uppercase tracking-[0.25em] ${phaseBadge.cls} ${
+            phaseBadge.pulse ? "animate-pulse" : ""
+          }`}
+          data-testid="hero-phase-badge"
+          data-phase={phase}
+        >
+          {phaseBadge.icon}
+          {phaseBadge.label}
+        </span>
+        {phase === "pre" && countdown && (
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.25em] px-2.5 py-1 rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/10 text-[#F59E0B]"
+            data-testid="hero-launch-countdown"
+          >
+            {(t("hero.countdownPrefix") as string) || "Mint in:"} {countdown}
+          </span>
+        )}
         <span className="glitch-stamp" data-text={t("hero.stamp")}>
           <Radio size={12} />
           {t("hero.stamp")}
@@ -118,25 +257,60 @@ export function HeroHeadline() {
           asChild
           size="lg"
           className="rounded-[var(--btn-radius)] btn-press font-semibold"
-          data-testid="hero-join-button"
-        >
-          <a href="#whitelist">{t("hero.joinCta")}</a>
-        </Button>
-        <Button
-          asChild
-          size="lg"
-          variant="outline"
-          className="rounded-[var(--btn-radius)] btn-press font-semibold"
-          data-testid="hero-buy-button"
+          data-testid={ctas.primary.testId}
         >
           <a
-            href={getBuyUrl()}
-            target={isBuyUrlExternal() ? "_blank" : undefined}
-            rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
+            href={ctas.primary.href}
+            target={ctas.primary.external ? "_blank" : undefined}
+            rel={ctas.primary.external ? "noopener noreferrer" : undefined}
           >
-            {t("hero.buyCta")}
+            {ctas.primary.label}
+            {ctas.primary.external && (
+              <ExternalLink size={14} className="ml-1.5" />
+            )}
           </a>
         </Button>
+        {ctas.secondary && (
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="rounded-[var(--btn-radius)] btn-press font-semibold"
+            data-testid={ctas.secondary.testId}
+          >
+            <a
+              href={ctas.secondary.href}
+              target={ctas.secondary.external ? "_blank" : undefined}
+              rel={ctas.secondary.external ? "noopener noreferrer" : undefined}
+            >
+              {ctas.secondary.label}
+              {ctas.secondary.external && (
+                <ExternalLink size={14} className="ml-1.5" />
+              )}
+            </a>
+          </Button>
+        )}
+        {/* Legacy whitelist + buy CTAs, kept ONLY in pre phase to
+            preserve the existing onboarding funnel. Once the token
+            is live we hide them so users aren't tempted to fill a
+            form that is no longer the primary action. */}
+        {phase === "pre" && (
+          <Button
+            asChild
+            size="lg"
+            variant="ghost"
+            className="rounded-[var(--btn-radius)] btn-press font-semibold"
+            data-testid="hero-buy-button"
+          >
+            <a
+              href={getBuyUrl()}
+              target={isBuyUrlExternal() ? "_blank" : undefined}
+              rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
+            >
+              {t("hero.buyCta")}
+            </a>
+          </Button>
+        )}
       </div>
 
       {/* $DEEPOTUS mint address — copyable terminal block */}

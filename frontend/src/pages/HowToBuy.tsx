@@ -14,6 +14,7 @@ import {
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
 import AccessSecuredTerminals from "@/components/landing/AccessSecuredTerminals";
+import HowToBuyPhasedSteps from "@/components/landing/HowToBuyPhasedSteps";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -107,6 +108,10 @@ export default function HowToBuy() {
           data-testid="how-to-buy-hero"
           className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-14 md:pt-12 md:pb-20"
         >
+          <div className="mb-10">
+            <HowToBuyPhasedSteps />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             {/* Copy */}
             <motion.div

@@ -12,7 +12,10 @@ const NAV_ITEMS = [
   { id: "chat", key: "nav.chat" },
   { id: "mission", key: "nav.mission" },
   { id: "tokenomics", key: "nav.tokenomics" },
-  { id: "transparency", key: "nav.transparency" },
+  // The Transparency entry now points to the dedicated /transparency
+  // page rather than the in-landing TransparencyTimeline anchor — the
+  // page is richer (5 wallets, locks, BubbleMaps, RugCheck, ops log).
+  { id: "transparency", key: "nav.transparency", href: "/transparency" },
   { id: "roadmap", key: "nav.roadmap" },
   { id: "faq", key: "nav.faq" },
 ];
@@ -54,7 +57,7 @@ export default function TopNav() {
           {NAV_ITEMS.map((it) => (
             <a
               key={it.id}
-              href={`#${it.id}`}
+              href={it.href || `#${it.id}`}
               className="relative whitespace-nowrap py-1 hover:text-foreground transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-0.5 after:h-px after:w-0 after:bg-foreground after:transition-[width] after:duration-200 hover:after:w-full"
               data-testid={`nav-link-${it.id}`}
             >
@@ -97,7 +100,7 @@ export default function TopNav() {
             {NAV_ITEMS.map((it) => (
               <a
                 key={it.id}
-                href={`#${it.id}`}
+                href={it.href || `#${it.id}`}
                 onClick={() => setOpen(false)}
                 className="py-1 hover:text-foreground text-foreground/80"
                 data-testid={`nav-link-mobile-${it.id}`}

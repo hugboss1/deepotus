@@ -9,10 +9,14 @@ import {
   ShieldAlert,
   Lock,
   Radio,
+  Heart,
+  Sparkles,
+  CheckCheck,
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { getLaunchPhase, hasMint, URLS } from "@/lib/launchPhase";
 
-const ICONS = [Rocket, Layers, Banknote, Flag];
+const ICONS = [Rocket, Layers, Banknote, Flag, Heart, Sparkles];
 
 // ----------------------------------------------------------------------------
 // Status → visual mapping (color-coded "dossier" badges).
@@ -20,11 +24,27 @@ const ICONS = [Rocket, Layers, Banknote, Flag];
 // campaign-red for classified, ocean for queued/idle).
 // ----------------------------------------------------------------------------
 const STATUS_STYLES = {
+  done: {
+    color: "#33FF33",
+    softBg: "rgba(51,255,51,0.10)",
+    border: "rgba(51,255,51,0.55)",
+    glow: "0 0 0 1px rgba(51,255,51,0.25), 0 8px 32px rgba(51,255,51,0.12)",
+    Icon: CheckCheck,
+    pulse: false,
+  },
   next: {
     color: "#33FF33",
     softBg: "rgba(51,255,51,0.10)",
     border: "rgba(51,255,51,0.55)",
     glow: "0 0 0 1px rgba(51,255,51,0.25), 0 8px 32px rgba(51,255,51,0.12)",
+    Icon: Radio,
+    pulse: true,
+  },
+  active: {
+    color: "#F59E0B",
+    softBg: "rgba(245,158,11,0.10)",
+    border: "rgba(245,158,11,0.55)",
+    glow: "0 0 0 1px rgba(245,158,11,0.25), 0 8px 32px rgba(245,158,11,0.12)",
     Icon: Radio,
     pulse: true,
   },
@@ -53,6 +73,37 @@ const STATUS_STYLES = {
     pulse: false,
   },
 };
+
+/**
+ * Resolve the current status of each roadmap phase from the env-driven
+ * launch phase. Hardcoded fallbacks where on-chain progress cannot be
+ * detected automatically.
+ *
+ * Mapping:
+ *   Phase 0 (Foundation)   → always "done" (the site you're looking at)
+ *   Phase 1 (Mint)         → "active" if mint set, "next" otherwise
+ *   Phase 2 (Graduation)   → "done" if PUMPSWAP set, "next" if mint set
+ *                            but not graduated, "queued" otherwise
+ *   Phase 3-5              → "queued" (manual flip via REACT_APP_PHASE_*_DONE
+ *                            for future automation; "encrypted" by default).
+ *
+ * The status coming from i18n is treated as a default fallback so editors
+ * can still hand-author surprise states, but the env override always wins
+ * when set.
+ */
+function deriveStatuses() {
+  const phase = getLaunchPhase();
+  const mintSet = hasMint();
+  const graduated = phase === "graduated" || Boolean(URLS.pumpswap);
+  return [
+    "done", // Phase 0 — Foundation
+    mintSet ? (graduated ? "done" : "active") : "next", // Phase 1 — Mint
+    graduated ? "done" : mintSet ? "next" : "queued", // Phase 2 — Graduation
+    "encrypted", // Phase 3 — Expansion (J+30)
+    "encrypted", // Phase 4 — Charity (J+60)
+    "encrypted", // Phase 5 — Protocol ΔΣ (J+90)
+  ];
+}
 
 function StatusBadge({ status, label }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.queued;
@@ -92,6 +143,7 @@ export default function Roadmap() {
   const legend = t("roadmap.legend") || {};
   const stamps = t("roadmap.stamps") || {};
   const subtitle = t("roadmap.subtitle");
+  const dynamicStatuses = deriveStatuses();
 
   return (
     <section
@@ -162,12 +214,13 @@ export default function Roadmap() {
           />
 
           <ol
-            className="relative grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-5 list-none"
+            className="relative grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 md:gap-5 list-none"
             data-testid="roadmap-list"
           >
             {phases.map((p, i) => {
               const Icon = ICONS[i] || Rocket;
-              const status = p.status || "queued";
+              // Env-driven status overrides any value baked into i18n.
+              const status = dynamicStatuses[i] || p.status || "queued";
               const s = STATUS_STYLES[status] || STATUS_STYLES.queued;
               const statusLabel =
                 legend[status] || legend.queued || status.toUpperCase();

@@ -42,6 +42,7 @@ from routers import (
     propaganda as propaganda_router,
     public as public_router,
     public_stats as public_stats_router,
+    treasury as treasury_router,
     vault as vault_router,
     webhooks as webhooks_router,
     whale_watcher as whale_watcher_router,
@@ -71,6 +72,9 @@ app.include_router(whale_watcher_router.admin_router)
 app.include_router(founder_router.public_router)
 app.include_router(founder_router.admin_router)
 app.include_router(kol_listener_router.admin_router)
+# Sprint 15 — public Treasury Transparency feed + admin op-logging.
+app.include_router(treasury_router.router)
+app.include_router(treasury_router.admin_router)
 
 # ---------------------------------------------------------------------
 # Static assets (email hero illustrations, etc.)
