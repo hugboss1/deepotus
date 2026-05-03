@@ -26,6 +26,20 @@ const TONE_COLORS = {
 const CHAR_DELAY_MS = 22; // base typing speed
 const LINE_GAP_MS = 90;   // pause between lines
 
+interface TerminalLine {
+  text: string;
+  tone?: keyof typeof TONE_COLORS | string;
+}
+
+interface TerminalWindowProps {
+  title?: string;
+  lines?: TerminalLine[];
+  active?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  testId?: string;
+}
+
 export default function TerminalWindow({
   title = "shell",
   lines = [],
@@ -33,9 +47,9 @@ export default function TerminalWindow({
   className = "",
   style = {},
   testId = "intro-terminal",
-}) {
-  const [renderedLines, setRenderedLines] = useState([]);
-  const timersRef = useRef([]);
+}: TerminalWindowProps) {
+  const [renderedLines, setRenderedLines] = useState<TerminalLine[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     if (!active) {
@@ -109,14 +123,14 @@ export default function TerminalWindow({
             <div
               key={stableKey}
               className="whitespace-pre"
-              style={{ color: TONE_COLORS[l.tone] || TONE_COLORS.muted }}
+              style={{ color: TONE_COLORS[(l.tone as keyof typeof TONE_COLORS)] || TONE_COLORS.muted }}
             >
               {l.text}
               {i === renderedLines.length - 1 && (
                 <span
                   aria-hidden
                   className="inline-block w-[7px] h-[12px] align-[-1px] ml-0.5 motion-safe:animate-pulse"
-                  style={{ background: TONE_COLORS[l.tone] || "#9ca3af" }}
+                  style={{ background: TONE_COLORS[(l.tone as keyof typeof TONE_COLORS)] || "#9ca3af" }}
                 />
               )}
             </div>

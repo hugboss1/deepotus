@@ -175,9 +175,17 @@ Chromium binaries are **not** pre-installed — operators run
 
 ## Next up
 
-- Sprint 23 — finish the remaining 140 `noImplicitAny` errors (top
-  offenders: `TransparencyTimeline`, `Roadmap`, `AdminCadenceSection`,
-  `TerminalPopup`, `RiddlesFlow`, `TwoFASetupDialog`, `GateView`,
-  `ProphetChat`, `ConfirmDialog`). Then flip `noImplicitAny: true`.
-- Sprint 24 — wire Playwright to CI (GitHub Actions, preview URL as
-  `PLAYWRIGHT_BASE_URL`). Add phase-switching fixture coverage.
+- ✅ **Sprint 14.2 UI delivered** (next session) — `AutoReviewTab.tsx`
+  added as 5th tab on `/admin/infiltration` with status chips,
+  L2 share queue (Approve/Reject), KOL DM drafts (edit + Approve).
+- ✅ **Sprint 23 delivered** — finished the remaining 140
+  `noImplicitAny` errors (TransparencyTimeline, Roadmap,
+  AdminCadenceSection, TerminalPopup, RiddlesFlow, TwoFASetupDialog,
+  GateView, ProphetChat, ConfirmDialog, NewsRepostSection,
+  NewsFeedSection, LoyaltySection + 25 other smaller files).
+  `tsconfig.json` flipped to **`noImplicitAny: true`**.
+  `tsc --noEmit` clean.
+- ✅ **Sprint 24 delivered** — Playwright wired to CI via
+  `.github/workflows/e2e-smoke.yml` (PR + nightly + manual dispatch),
+  artifacts (HTML report + traces) uploaded on failure, secret matrix
+  documented in `.github/workflows/README.md`.

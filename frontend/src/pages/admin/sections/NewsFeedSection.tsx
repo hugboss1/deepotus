@@ -231,7 +231,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
             min="1"
             max="24"
             value={newsFeedConfig.fetch_interval_hours ?? 6}
-            onChange={(e) =>
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
               setConfig({
                 ...config,
                 news_feed: {
@@ -240,7 +240,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                 },
               })
             }
-            onBlur={(e) =>
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
               patchConfig(
                 {
                   news_feed: {
@@ -263,7 +263,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
             min="0"
             max="10"
             value={newsFeedConfig.headlines_per_post ?? 5}
-            onChange={(e) =>
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
               setConfig({
                 ...config,
                 news_feed: {
@@ -272,7 +272,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
                 },
               })
             }
-            onBlur={(e) =>
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
               patchConfig(
                 {
                   news_feed: {
@@ -314,7 +314,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
         </div>
         <textarea
           value={newsFeedsDraft}
-          onChange={(e) => setNewsFeedsDraft(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setNewsFeedsDraft(e.target.value)}
           onBlur={() =>
             patchConfig(
               {
@@ -362,7 +362,7 @@ export const NewsFeedSection: React.FC<NewsFeedSectionProps> = ({
         </div>
         <textarea
           value={newsKeywordsDraft}
-          onChange={(e) => setNewsKeywordsDraft(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setNewsKeywordsDraft(e.target.value)}
           onBlur={() =>
             patchConfig(
               {

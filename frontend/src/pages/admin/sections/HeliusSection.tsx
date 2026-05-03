@@ -203,7 +203,7 @@ export const HeliusSection: React.FC<HeliusSectionProps> = ({
           </Label>
           <Input
             value={heliusMint}
-            onChange={(e) => setHeliusMint(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setHeliusMint(e.target.value)}
             placeholder="e.g. 9Eb2…pump"
             className="font-mono text-xs mt-1"
             data-testid="admin-helius-mint"
@@ -215,7 +215,7 @@ export const HeliusSection: React.FC<HeliusSectionProps> = ({
           </Label>
           <Input
             value={heliusPool}
-            onChange={(e) => setHeliusPool(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setHeliusPool(e.target.value)}
             placeholder="PumpSwap/Orca pool address"
             className="font-mono text-xs mt-1"
             data-testid="admin-helius-pool"

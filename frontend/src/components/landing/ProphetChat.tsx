@@ -109,7 +109,7 @@ export default function ProphetChat() {
                 </span>
               </div>
               <ul className="space-y-2 text-sm text-foreground/80">
-                {(t("chat.rules") || []).map((r, i) => (
+                {(t("chat.rules") || []).map((r: string, i: number) => (
                   <li key={`rule-${i}-${(r || "").slice(0, 12)}`} className="flex gap-2">
                     <span className="text-[--terminal-green-dim] font-mono">
                       &gt;
@@ -126,7 +126,7 @@ export default function ProphetChat() {
                 {lang === "fr" ? "Essayez ces questions" : "Try these questions"}
               </div>
               <div className="flex flex-wrap gap-2">
-                {examples.map((q, i) => (
+                {examples.map((q: string, i: number) => (
                   <button
                     key={`example-${i}-${(q || "").slice(0, 12)}`}
                     onClick={() => send(q)}
@@ -220,7 +220,7 @@ export default function ProphetChat() {
                   <Textarea
                     data-testid="prophet-chat-input"
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
                     onKeyDown={onKey}
                     placeholder={t("chat.placeholder")}
                     className="min-h-[48px] max-h-36 resize-none bg-[#0e141b] border-[#1f2937] text-zinc-100 font-mono text-[13.5px] focus-visible:ring-[var(--ring)]"

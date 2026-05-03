@@ -173,7 +173,7 @@ export const PasswordCard: React.FC<PasswordCardProps> = ({ api, headers }) => {
             <Input
               type={revealCurrent ? "text" : "password"}
               value={currentPw}
-              onChange={(e) => setCurrentPw(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCurrentPw(e.target.value)}
               autoComplete="current-password"
               className="font-mono pr-10"
               data-testid="admin-password-current"
@@ -200,7 +200,7 @@ export const PasswordCard: React.FC<PasswordCardProps> = ({ api, headers }) => {
             <Input
               type={revealNew ? "text" : "password"}
               value={newPw}
-              onChange={(e) => setNewPw(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setNewPw(e.target.value)}
               autoComplete="new-password"
               className="font-mono pr-10"
               data-testid="admin-password-new"
@@ -252,7 +252,7 @@ export const PasswordCard: React.FC<PasswordCardProps> = ({ api, headers }) => {
           <Input
             type={revealNew ? "text" : "password"}
             value={confirmPw}
-            onChange={(e) => setConfirmPw(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setConfirmPw(e.target.value)}
             autoComplete="new-password"
             className="mt-1 font-mono"
             data-testid="admin-password-confirm"
@@ -276,7 +276,7 @@ export const PasswordCard: React.FC<PasswordCardProps> = ({ api, headers }) => {
               inputMode="numeric"
               autoComplete="one-time-code"
               value={totpCode}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
                 setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
               }
               placeholder="000000"

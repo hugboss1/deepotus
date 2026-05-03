@@ -223,7 +223,7 @@ export default function AdminEmails() {
                 type="text"
                 placeholder="Filter by recipient (exact email)"
                 value={recipientFilter}
-                onChange={(e) => setRecipientFilter(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setRecipientFilter(e.target.value)}
                 className="pl-9 font-mono text-sm"
                 data-testid="email-events-recipient-filter"
               />

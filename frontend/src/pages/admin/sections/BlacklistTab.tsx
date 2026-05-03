@@ -69,13 +69,13 @@ export const BlacklistTab: React.FC<BlacklistTabProps> = ({
           <div className="font-display font-semibold">Manual addition</div>
           <div className="mt-3">
             <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Email</label>
-            <Input type="email" required value={blEmail} onChange={(e) => setBlEmail(e.target.value)} placeholder="spam@example.com" className="mt-1 font-mono" data-testid="admin-blacklist-add-email" />
+            <Input type="email" required value={blEmail} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setBlEmail(e.target.value)} placeholder="spam@example.com" className="mt-1 font-mono" data-testid="admin-blacklist-add-email" />
           </div>
           <div className="mt-3">
             <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               Reason (optional)
             </label>
-            <Input type="text" value={blReason} onChange={(e) => setBlReason(e.target.value)} placeholder="bot, abuse, DoS…" className="mt-1 font-mono" data-testid="admin-blacklist-add-reason" />
+            <Input type="text" value={blReason} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setBlReason(e.target.value)} placeholder="bot, abuse, DoS…" className="mt-1 font-mono" data-testid="admin-blacklist-add-reason" />
           </div>
           <div className="mt-3">
             <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -86,7 +86,7 @@ export const BlacklistTab: React.FC<BlacklistTabProps> = ({
               min="0"
               max="365"
               value={blCooldown}
-              onChange={(e) => setBlCooldown(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setBlCooldown(e.target.value)}
               placeholder="0 = permanent"
               className="mt-1 font-mono tabular"
               data-testid="admin-blacklist-add-cooldown"
@@ -109,7 +109,7 @@ export const BlacklistTab: React.FC<BlacklistTabProps> = ({
               type="file"
               accept=".csv,.txt,text/csv,text/plain"
               className="hidden"
-              onChange={(e) => onCsvFile(e.target.files?.[0])}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onCsvFile(e.target.files?.[0])}
               data-testid="admin-blacklist-csv-file"
             />
             <Button
@@ -125,7 +125,7 @@ export const BlacklistTab: React.FC<BlacklistTabProps> = ({
           </div>
           <Textarea
             value={csvText}
-            onChange={(e) => setCsvText(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCsvText(e.target.value)}
             placeholder={"email,reason\nbot1@spam.io,bot\nbot2@spam.io,abuse"}
             className="mt-2 font-mono text-xs min-h-[120px]"
             data-testid="admin-blacklist-csv-text"
@@ -139,7 +139,7 @@ export const BlacklistTab: React.FC<BlacklistTabProps> = ({
               min="0"
               max="365"
               value={csvCooldown}
-              onChange={(e) => setCsvCooldown(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCsvCooldown(e.target.value)}
               placeholder="0 = permanent"
               className="mt-1 font-mono tabular"
               data-testid="admin-blacklist-csv-cooldown"

@@ -194,7 +194,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => null);
+        const err = await res.json().catch((): null => null);
         throw new Error(err?.detail || `HTTP ${res.status}`);
       }
       const data = await res.json();
@@ -229,7 +229,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
         },
         body: JSON.stringify({ accreditation_number: raw }),
       });
-      const data = await res.json().catch(() => null);
+      const data = await res.json().catch((): null => null);
       if (!data?.ok) {
         // Backend returns ok=false for "not recognized" / "expired" with a
         // human message — surface it back to the visitor.
@@ -581,7 +581,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                         id="terminal-genesis-email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEmail(e.target.value)}
                         placeholder={String(t("terminal.emailPlaceholder"))}
                         className="bg-black/60 border-[#F59E0B]/30 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
                         autoFocus
@@ -599,7 +599,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                         id="terminal-genesis-name"
                         type="text"
                         value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDisplayName(e.target.value)}
                         placeholder={String(t("terminal.namePlaceholder"))}
                         className="bg-black/60 border-[#F59E0B]/30 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
                         data-testid="terminal-genesis-name-input"
@@ -686,7 +686,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                       <Input
                         id="terminal-email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEmail(e.target.value)}
                         placeholder={t("terminal.emailPlaceholder")}
                         type="email"
                         required
@@ -705,7 +705,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                       <Input
                         id="terminal-name"
                         value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDisplayName(e.target.value)}
                         placeholder={t("terminal.namePlaceholder")}
                         className="bg-black border-[#18C964]/40 focus-visible:ring-[#18C964]/60 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
                         data-testid="terminal-name-input"
@@ -760,7 +760,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                       <Input
                         id="terminal-existing-code"
                         value={existingCode}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
                           setExistingCode(e.target.value.toUpperCase())
                         }
                         placeholder={t("terminal.codePlaceholder")}

@@ -11,6 +11,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface ConfirmDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm: () => void | Promise<void>;
+  destructive?: boolean;
+  testIdPrefix?: string;
+}
+
 export default function ConfirmDialog({
   open,
   onOpenChange,
@@ -21,7 +33,7 @@ export default function ConfirmDialog({
   onConfirm,
   destructive = false,
   testIdPrefix = "confirm",
-}) {
+}: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent data-testid={`${testIdPrefix}-dialog`}>

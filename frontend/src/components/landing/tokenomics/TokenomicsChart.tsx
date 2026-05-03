@@ -45,7 +45,14 @@ function CustomTooltip({ active, payload }: any) {
  *
  * Hover highlights are driven by the parent via `activeKey`.
  */
-export function TokenomicsChart({ data, activeKey }) {
+interface TokenomicsChartDatum {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export function TokenomicsChart({ data, activeKey }: { data: TokenomicsChartDatum[]; activeKey: string | null }) {
   const { t } = useI18n();
   const teamLocked = hasTeamLock();
   const treasuryLocked = hasTreasuryLock();
@@ -73,7 +80,7 @@ export function TokenomicsChart({ data, activeKey }) {
               stroke="hsl(var(--background))"
               strokeWidth={2}
             >
-              {data.map((d) => (
+              {data.map((d: TokenomicsChartDatum) => (
                 <Cell
                   key={d.key}
                   fill={d.color}

@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
-function useCountdown(targetIso) {
+function useCountdown(targetIso: string | null | undefined) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -227,7 +227,7 @@ export default function Operation() {
                     — {t("operation.loreTitle")}
                   </div>
                   <div className="mt-4 space-y-4 max-w-3xl text-foreground/85 leading-relaxed">
-                    {lore.map((line, i) => (
+                    {lore.map((line: string, i: number) => (
                       <motion.p
                         key={`lore-${lang}-${i}-${(line || "").slice(0, 16)}`}
                         initial={{ opacity: 0, x: -8 }}

@@ -22,13 +22,21 @@ import Footer from "@/components/landing/Footer";
  * the mobile fallback (form below the door).
  */
 
+interface GateViewProps {
+  codeInput: string;
+  setCodeInput: (v: string) => void;
+  verifying: boolean;
+  gateError: string | null;
+  verifyCode: () => void | Promise<void>;
+}
+
 export function GateView({
   codeInput,
   setCodeInput,
   verifying,
   gateError,
   verifyCode,
-}) {
+}: GateViewProps) {
   const { t } = useI18n();
   const statusColor = gateError
     ? "#EF4444"
@@ -101,7 +109,7 @@ export function GateView({
             >
               <input
                 value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCodeInput(e.target.value.toUpperCase())}
                 placeholder="DS-02-••••-••••-••"
                 className="w-full h-full bg-transparent border-0 outline-none text-center font-mono tracking-[0.1em] text-[clamp(9px,0.95vw,14px)] uppercase"
                 style={{
@@ -184,7 +192,7 @@ export function GateView({
               <Input
                 id="accred-input-mobile"
                 value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCodeInput(e.target.value.toUpperCase())}
                 placeholder="DS-02-XXXX-XXXX-XX"
                 className="font-mono bg-black border-[#F59E0B]/40 text-[#F59E0B] tracking-widest placeholder:text-white/20 focus-visible:ring-[#F59E0B]/60"
                 data-testid="classified-accred-input-mobile"

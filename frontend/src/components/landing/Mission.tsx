@@ -58,7 +58,7 @@ export default function Mission() {
                 </div>
               </div>
               <ul className="space-y-4">
-                {items.map((it, i) => (
+                {items.map((it: any, i: number) => (
                   <li
                     key={`mission-${i}-${(it?.label || "").slice(0, 20)}`}
                     className="flex items-start gap-3"

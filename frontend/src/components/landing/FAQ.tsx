@@ -27,7 +27,7 @@ export default function FAQ() {
 
         <div className="mt-6">
           <Accordion type="single" collapsible className="w-full">
-            {items.map((it, i) => (
+            {items.map((it: any, i: number) => (
               <AccordionItem
                 key={`faq-${i}-${(it?.q || "").slice(0, 24)}`}
                 value={`item-${i}`}

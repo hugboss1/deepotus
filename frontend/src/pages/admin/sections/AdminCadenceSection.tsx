@@ -211,7 +211,7 @@ export default function AdminCadenceSection({ api, headers }: Props) {
           </div>
           <Switch
             checked={cadence.reactive_triggers.enabled}
-            onCheckedChange={(v) =>
+            onCheckedChange={(v: boolean) =>
               persist(
                 { reactive_triggers: { enabled: v } },
                 `Reactive triggers ${v ? "enabled" : "disabled"}`,
@@ -281,7 +281,7 @@ export default function AdminCadenceSection({ api, headers }: Props) {
           </div>
           <Switch
             checked={cadence.quiet_hours.enabled}
-            onCheckedChange={(v) =>
+            onCheckedChange={(v: boolean) =>
               persist(
                 { quiet_hours: { enabled: v } },
                 `Quiet hours ${v ? "enabled" : "disabled"}`,
@@ -378,7 +378,7 @@ function PlatformDailySchedule({
         </Label>
         <Switch
           checked={entry.enabled}
-          onCheckedChange={(v) => onSave({ enabled: v })}
+          onCheckedChange={(v: boolean) => onSave({ enabled: v })}
           data-testid={`cadence-daily-${platform}-toggle`}
         />
       </div>
@@ -418,7 +418,7 @@ function PlatformDailySchedule({
           <Input
             type="time"
             value={draftSlot}
-            onChange={(e) => setDraftSlot(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraftSlot(e.target.value)}
             className="w-32 h-8 font-mono text-sm"
             data-testid={`cadence-daily-${platform}-time-input`}
           />
@@ -503,7 +503,7 @@ function NumberKnob({
         min={min}
         step={step ?? 1}
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft(e.target.value)}
         onBlur={() => {
           const n = Number(draft);
           if (!Number.isNaN(n)) onCommit(n);
@@ -536,7 +536,7 @@ function TimeKnob({
       <Input
         type="time"
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft(e.target.value)}
         onBlur={() => {
           if (HHMM_RE.test(draft)) onCommit(draft);
         }}
@@ -571,7 +571,7 @@ function NumberListEditor({
       <Input
         type="text"
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft(e.target.value)}
         placeholder={placeholder}
         onBlur={() => {
           const arr = draft

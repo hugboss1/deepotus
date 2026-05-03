@@ -313,7 +313,7 @@ export default function WhaleWatcherTab(): JSX.Element {
               min="0.1"
               step="0.5"
               value={simAmount}
-              onChange={(e) => setSimAmount(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setSimAmount(e.target.value)}
               disabled={simBusy}
               data-testid="whale-sim-amount"
             />
@@ -326,7 +326,7 @@ export default function WhaleWatcherTab(): JSX.Element {
               id="sim-buyer"
               placeholder="7gXkHxJzwy5oQGNh4tPmWqRsBnYxL8KvCfDz3dT2kQ4u"
               value={simBuyer}
-              onChange={(e) => setSimBuyer(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setSimBuyer(e.target.value)}
               disabled={simBusy}
               spellCheck={false}
               autoCapitalize="off"

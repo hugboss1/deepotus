@@ -307,7 +307,7 @@ export default function CustomLlmKeysSection({
       {/* Dialog: set / rotate a custom LLM API key */}
       <Dialog
         open={dialogOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           if (!busy) setDialogOpen(open);
         }}
       >
@@ -333,7 +333,7 @@ export default function CustomLlmKeysSection({
                 <Input
                   type={reveal ? "text" : "password"}
                   value={secretInput}
-                  onChange={(e) => setSecretInput(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setSecretInput(e.target.value)}
                   placeholder={hint.placeholder}
                   spellCheck={false}
                   autoComplete="off"
@@ -365,7 +365,7 @@ export default function CustomLlmKeysSection({
               </Label>
               <Input
                 value={labelInput}
-                onChange={(e) => setLabelInput(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setLabelInput(e.target.value)}
                 placeholder={`e.g. "Personal ${provider} account"`}
                 className="mt-2 font-mono text-xs"
                 data-testid="custom-llm-label-input"

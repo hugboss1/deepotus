@@ -30,7 +30,7 @@ export default function BrutalTruth() {
         <p className="mt-3 text-zinc-400 max-w-2xl">{t("truth.subtitle")}</p>
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {stats.map((s, i) => (
+          {stats.map((s: any, i: number) => (
             <motion.div
               key={`brutal-${i}-${(s?.label || "").slice(0, 16)}`}
               initial={{ opacity: 0, y: 14 }}

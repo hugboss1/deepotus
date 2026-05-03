@@ -23,7 +23,18 @@ const ICONS = [Rocket, Layers, Banknote, Flag, Heart, Sparkles];
 // Mirrors the rest of the site (terminal-green for "live", amber for warning,
 // campaign-red for classified, ocean for queued/idle).
 // ----------------------------------------------------------------------------
-const STATUS_STYLES = {
+type RoadmapStatus = "done" | "active" | "next" | "queued" | "encrypted" | "classified";
+
+interface RoadmapStyle {
+  color: string;
+  softBg: string;
+  border: string;
+  glow: string;
+  Icon: React.ElementType;
+  pulse: boolean;
+}
+
+const STATUS_STYLES: Record<RoadmapStatus, RoadmapStyle> = {
   done: {
     color: "#33FF33",
     softBg: "rgba(51,255,51,0.10)",
@@ -105,8 +116,8 @@ function deriveStatuses() {
   ];
 }
 
-function StatusBadge({ status, label }) {
-  const s = STATUS_STYLES[status] || STATUS_STYLES.queued;
+function StatusBadge({ status, label }: { status: string; label: string }) {
+  const s = STATUS_STYLES[status as RoadmapStatus] || STATUS_STYLES.queued;
   const Icon = s.Icon;
   return (
     <span
@@ -217,11 +228,11 @@ export default function Roadmap() {
             className="relative grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 md:gap-5 list-none"
             data-testid="roadmap-list"
           >
-            {phases.map((p, i) => {
+            {phases.map((p: any, i: number) => {
               const Icon = ICONS[i] || Rocket;
               // Env-driven status overrides any value baked into i18n.
               const status = dynamicStatuses[i] || p.status || "queued";
-              const s = STATUS_STYLES[status] || STATUS_STYLES.queued;
+              const s = STATUS_STYLES[status as RoadmapStatus] || STATUS_STYLES.queued;
               const statusLabel =
                 legend[status] || legend.queued || status.toUpperCase();
               const stampLabel =
@@ -306,7 +317,7 @@ export default function Roadmap() {
                     ) : null}
 
                     <ul className="mt-4 space-y-2 text-sm text-foreground/85">
-                      {(p.bullets || []).map((b, j) => (
+                      {(p.bullets || []).map((b: string, j: number) => (
                         <li
                           key={`${p.code || p.tag || i}-bullet-${j}-${(b || "").slice(0, 12)}`}
                           className="flex gap-2"

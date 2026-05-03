@@ -66,7 +66,7 @@ export default function PropheciesFeed() {
   // ``refreshLive`` to guarantee LIVE_HOLD_MS visibility regardless of
   // where we were in the previous 9 s cycle.
   const scheduleNext = useCallback(
-    (delayMs) => {
+    (delayMs: number) => {
       if (reduceMotionRef.current) return; // honour OS preference
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {

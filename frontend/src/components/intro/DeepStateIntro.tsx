@@ -134,7 +134,7 @@ export default function DeepStateIntro() {
     document.body.style.overflow = "hidden";
 
     startRef.current = performance.now();
-    function loop(now) {
+    function loop(now: number) {
       const t = now - startRef.current;
       setElapsed(t);
       if (t >= TOTAL_MS) {
@@ -145,7 +145,7 @@ export default function DeepStateIntro() {
     }
     tickRef.current = requestAnimationFrame(loop);
 
-    function onKey(e) {
+    function onKey(e: KeyboardEvent) {
       if (e.key === "Escape" || e.key === " ") {
         e.preventDefault();
         finish();

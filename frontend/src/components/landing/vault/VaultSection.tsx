@@ -69,7 +69,7 @@ export default function VaultSection() {
   }, []);
 
   const stage = state?.stage || "LOCKED";
-  const meta = STAGE_META[stage] || STAGE_META.LOCKED;
+  const meta = (STAGE_META as Record<string, typeof STAGE_META.LOCKED>)[stage] || STAGE_META.LOCKED;
   const locked = state?.digits_locked ?? 0;
   const total = state?.num_digits ?? 6;
   const combo = state?.current_combination || [0, 0, 0, 0, 0, 0];

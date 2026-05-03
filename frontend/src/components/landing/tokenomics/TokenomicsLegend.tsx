@@ -6,7 +6,26 @@ import { hasTeamLock, hasTreasuryLock } from "@/lib/links";
  * Right column legend list. Hovering an item lifts `activeKey` to the parent
  * which dims the rest of the donut chart on the left.
  */
-export function TokenomicsLegend({ data, activeKey, setActiveKey }) {
+interface TokenomicsLegendDatum {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+  detail?: string;
+  lockable?: boolean;
+}
+
+interface TokenomicsLegendProps {
+  data: TokenomicsLegendDatum[];
+  activeKey: string | null;
+  setActiveKey: (k: string | null) => void;
+}
+
+/**
+ * Right column legend list. Hovering an item lifts `activeKey` to the parent
+ * which dims the rest of the donut chart on the left.
+ */
+export function TokenomicsLegend({ data, activeKey, setActiveKey }: TokenomicsLegendProps) {
   const { t } = useI18n();
   const teamLocked = hasTeamLock();
   const treasuryLocked = hasTreasuryLock();
@@ -16,7 +35,7 @@ export function TokenomicsLegend({ data, activeKey, setActiveKey }) {
       className="grid grid-cols-1 sm:grid-cols-2 gap-3"
       data-testid="tokenomics-legend"
     >
-      {data.map((d) => {
+      {data.map((d: TokenomicsLegendDatum) => {
         const active = activeKey === d.key;
         const lockProven =
           (d.key === "team" && teamLocked) ||

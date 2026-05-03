@@ -193,14 +193,14 @@ export default function LoyaltySection({ api, headers }: Props) {
             max={168}
             step={1}
             value={loyalty?.email_delay_hours ?? 12}
-            onChange={(e) =>
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
               setLoyalty((prev) =>
                 prev
                   ? { ...prev, email_delay_hours: Number(e.target.value || 12) }
                   : prev,
               )
             }
-            onBlur={(e) =>
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
               patch({
                 email_delay_hours: Math.max(
                   1,
@@ -405,7 +405,7 @@ function EmailDispatchPanel({
           type="email"
           placeholder="email@example.com"
           value={testEmail}
-          onChange={(e) => setTestEmail(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTestEmail(e.target.value)}
           className="text-sm"
           data-testid="loyalty-test-email-input"
         />
@@ -413,7 +413,7 @@ function EmailDispatchPanel({
           type="text"
           placeholder="ACCRED-XXXX (optional)"
           value={testAccred}
-          onChange={(e) => setTestAccred(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTestAccred(e.target.value)}
           className="text-sm font-mono"
           data-testid="loyalty-test-accred-input"
         />

@@ -1,0 +1,95 @@
+name: e2e-smoke
+
+# Sprint 24 — minimal end-to-end smoke suite for DEEPOTUS.
+#
+# Triggers:
+#   - manual (workflow_dispatch) so the operator can re-run on demand
+#     against any deployed environment
+#   - on every PR that touches the React / Playwright surface
+#   - nightly cron at 03:00 UTC, hitting the preview deployment to
+#     catch silent regressions while we sleep
+#
+# Required repo secrets:
+#   - ADMIN_PASSWORD              → gates the admin spec (default: deepotus2026)
+#   - PLAYWRIGHT_BASE_URL_PREVIEW → preview deploy URL used by nightly run
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Target base URL (overrides env default)"
+        required: false
+        default: ""
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "e2e/**"
+      - ".github/workflows/e2e-smoke.yml"
+  schedule:
+    # 03:00 UTC every day — quiet hours for the preview env.
+    - cron: "0 3 * * *"
+
+jobs:
+  playwright:
+    name: Chromium · smoke
+    # Pin to a stable Ubuntu — Playwright ships system-deps assuming
+    # 22.04+, anything older breaks `playwright install --with-deps`.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      # Base URL resolution order: workflow input → secret → fallback to
+      # the public preview. The fallback keeps a manual run useful even
+      # before the secret is configured.
+      PLAYWRIGHT_BASE_URL: >-
+        ${{
+          inputs.base_url != ''
+            && inputs.base_url
+            || (secrets.PLAYWRIGHT_BASE_URL_PREVIEW
+                || 'https://prophet-ai-memecoin.preview.emergentagent.com')
+        }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'deepotus2026' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          # Cache against the e2e package so PR runs avoid yarn-fetch
+          # latency. The /app monorepo split keeps this folder small.
+          cache: yarn
+          cache-dependency-path: e2e/yarn.lock
+
+      - name: Install JS deps
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright Chromium + OS deps
+        # `--with-deps` pulls libnss3/libatk etc. once per runner.
+        run: yarn install-browsers
+
+      - name: Run Playwright smoke
+        # Single retry on CI is built into playwright.config.ts but we
+        # also run with --workers=1 to keep the admin login serialised.
+        run: yarn test --workers=1
+
+      - name: Upload Playwright HTML report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: e2e/playwright-report
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload trace + video on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ github.run_id }}
+          path: e2e/test-results
+          retention-days: 7
+          if-no-files-found: ignore

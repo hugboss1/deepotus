@@ -1,30 +1,22 @@
 [
   {
-    "content": "Status check: Sprint 22.2 (AdminVault.jsx → .tsx) — déjà terminé",
+    "content": "P1 / Sprint 14.2 UI — AutoReviewTab.tsx + 3 sections + test visuel validé",
     "status": "completed"
   },
   {
-    "content": "Task A / Sprint 22.3 — Extraire le dialog + section 'Custom LLM keys' de AdminBots.tsx vers CustomLlmKeysSection.tsx (1037 → 743 lignes, -28%)",
+    "content": "P3 / Sprint 23 — 140 erreurs noImplicitAny corrigées + tsconfig flip",
     "status": "completed"
   },
   {
-    "content": "Task A — Vérif compilation TS + test visuel /admin/bots (VALIDÉ)",
+    "content": "P4 / Sprint 24 — GitHub Actions e2e-smoke.yml + README secrets",
     "status": "completed"
   },
   {
-    "content": "Task C / Sprint 22.4 (allégée) — Corriger top 10 fichiers : 274 → 140 erreurs implicit-any (-49%)",
+    "content": "Doc : SPRINT_14_2_23_24_DEPLOY.md créé + plan.md mis à jour",
     "status": "completed"
   },
   {
-    "content": "Task C — Vérifier que le comportement reste intact (ROI calculator, admin LLM dialog)",
-    "status": "completed"
-  },
-  {
-    "content": "Task E / Sprint 22.5 — Pytest widen (25 → 57 tests, +32) + Playwright E2E bootstrap (3 specs, config + README)",
-    "status": "completed"
-  },
-  {
-    "content": "Doc : SPRINT_22_3_5_DEPLOY.md + plan.md mis à jour",
+    "content": "P3 / Helius live post-mint — BLOQUÉ sur mint, doc HELIUS_POST_DEPLOY.md déjà disponible",
     "status": "completed"
   }
 ]

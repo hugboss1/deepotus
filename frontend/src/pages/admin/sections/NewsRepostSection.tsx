@@ -321,13 +321,13 @@ function NumericControls({ repost, onPatch, onLiveUpdate }: NumericControlsProps
             min={min}
             max={max}
             value={repost?.config?.[field] ?? fallback}
-            onChange={(e) =>
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
               onLiveUpdate((cfg) => ({
                 ...cfg,
                 [field]: Number(e.target.value || fallback),
               }))
             }
-            onBlur={(e) =>
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
               onPatch({
                 [field]: Math.max(
                   min,
@@ -369,10 +369,10 @@ function PrefixControls({ repost, onPatch, onLiveUpdate }: PrefixControlsProps) 
               type="text"
               maxLength={80}
               value={repost?.config?.[field] ?? ""}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
                 onLiveUpdate((cfg) => ({ ...cfg, [field]: e.target.value }))
               }
-              onBlur={(e) => onPatch({ [field]: e.target.value })}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => onPatch({ [field]: e.target.value })}
               data-testid={`news-repost-prefix-${lng}`}
               className="font-mono text-sm"
             />

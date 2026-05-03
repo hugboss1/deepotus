@@ -16,7 +16,7 @@ export default function Whitelist() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const v = email.trim().toLowerCase();
     if (!v || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
@@ -78,7 +78,7 @@ export default function Whitelist() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 placeholder={t("whitelist.placeholder")}
                 aria-label={t("whitelist.emailLabel")}
                 className="h-12 pl-9 font-mono"

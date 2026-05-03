@@ -23,7 +23,7 @@ import {
   SCENARIO_MULTIPLIERS,
 } from "./constants";
 
-function mulberry32(seed) {
+function mulberry32(seed: number) {
   let t = seed >>> 0;
   return function () {
     t |= 0;
@@ -34,7 +34,7 @@ function mulberry32(seed) {
   };
 }
 
-function easeOutCubic(x) {
+function easeOutCubic(x: number) {
   return 1 - Math.pow(1 - x, 3);
 }
 
@@ -42,7 +42,7 @@ function easeOutCubic(x) {
  * Build a daily price series from the founder injection (J~0.15) to the
  * end of the window, ease-cubic toward `targetPrice`.
  */
-function buildOrganicTail({ targetPrice, days, seed }) {
+function buildOrganicTail({ targetPrice, days, seed }: { targetPrice: number; days: number; seed: number }) {
   const rng = mulberry32(seed);
   const out = [];
 
@@ -84,7 +84,7 @@ function buildOrganicTail({ targetPrice, days, seed }) {
  * Build the full deterministic price path for one scenario, including the
  * mint floor + founder injection visible at the start of the chart.
  */
-export function buildPricePath({ multiplier, days = 90, seed = 1 }) {
+export function buildPricePath({ multiplier, days = 90, seed = 1 }: { multiplier: number; days?: number; seed?: number }) {
   const targetPrice = INJECTION_PRICE_EUR * multiplier;
   const head = [
     // J0 — mint Pump.fun (bonding curve floor)
@@ -108,7 +108,7 @@ export function buildPricePath({ multiplier, days = 90, seed = 1 }) {
  * Note: the head (J0 + J0.15) is shared across scenarios because mint
  * and injection are deterministic events, not scenario-dependent.
  */
-export function buildChartDataset({ days = 90, tokensHeld = 0, activeKey }) {
+export function buildChartDataset({ days = 90, tokensHeld = 0, activeKey }: { days?: number; tokensHeld?: number; activeKey: string }) {
   const brutal = buildPricePath({
     multiplier: SCENARIO_MULTIPLIERS.brutal,
     days,

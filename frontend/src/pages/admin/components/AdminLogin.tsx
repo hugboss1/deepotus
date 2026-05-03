@@ -51,7 +51,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
             data-testid="admin-password-input"
             type="password"
             value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPwd(e.target.value)}
             placeholder="••••••••"
             className="mt-1 font-mono"
             autoFocus
@@ -79,7 +79,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
               inputMode="numeric"
               autoComplete="one-time-code"
               value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="000000"
               className="mt-1 font-mono tabular text-lg text-center"
               autoFocus

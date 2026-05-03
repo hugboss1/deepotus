@@ -44,7 +44,7 @@ export default function VaultChassis({
       textClass: "text-red-400",
     },
   };
-  const visuals = STAGE_VISUALS[stage] || STAGE_VISUALS.LOCKED;
+  const visuals = (STAGE_VISUALS as Record<string, typeof STAGE_VISUALS.LOCKED>)[stage] || STAGE_VISUALS.LOCKED;
   const haloColor = visuals.halo;
 
   return (

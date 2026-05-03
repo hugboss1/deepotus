@@ -18,15 +18,15 @@ import { ShieldAlert } from "lucide-react";
 
 const DOT = "·";
 
-export function DisclaimerMarquee({ t }) {
-  const messages = t("roi.marqueeMessages") || [];
+export function DisclaimerMarquee({ t }: { t: (key: string) => any }) {
+  const messages: string[] = t("roi.marqueeMessages") || [];
   const longRisk = t("roi.risk");
 
   // Build the rolling track content from the messages array, joined by a
   // monospace separator. We render it twice so the keyframe (-50%) loops.
   const track = (
     <div className="inline-flex items-center gap-6 px-6 font-mono text-[11px] uppercase tracking-[0.2em]">
-      {messages.map((m, i) => (
+      {messages.map((m: string, i: number) => (
         <span key={`m-${i}`} className="flex items-center gap-6 text-[#FECACA]">
           <ShieldAlert
             size={11}

@@ -15,12 +15,32 @@ const API = `${BACKEND_URL}/api`;
  *   step 1: show QR + secret + backup codes (generated via /2fa/setup)
  *   step 2: ask user to enter TOTP code -> POST /2fa/verify -> success
  */
-export default function TwoFASetupDialog({ open, onOpenChange, token, onCompleted }) {
-  const [step, setStep] = useState("start"); // start | scan | verify | done
-  const [loading, setLoading] = useState(false);
-  const [setup, setSetup] = useState(null);
-  const [code, setCode] = useState("");
-  const [copied, setCopied] = useState(false);
+interface TwoFASetupDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  token: string;
+  onCompleted?: () => void;
+}
+
+interface TwoFASetupPayload {
+  qr_data_url?: string;
+  qr_png_base64?: string;
+  otpauth_url?: string;
+  secret?: string;
+  backup_codes?: string[];
+}
+
+/**
+ * Full 2FA setup flow in one dialog:
+ *   step 1: show QR + secret + backup codes (generated via /2fa/setup)
+ *   step 2: ask user to enter TOTP code -> POST /2fa/verify -> success
+ */
+export default function TwoFASetupDialog({ open, onOpenChange, token, onCompleted }: TwoFASetupDialogProps) {
+  const [step, setStep] = useState<string>("start"); // start | scan | verify | done
+  const [loading, setLoading] = useState<boolean>(false);
+  const [setup, setSetup] = useState<TwoFASetupPayload | null>(null);
+  const [code, setCode] = useState<string>("");
+  const [copied, setCopied] = useState<boolean>(false);
 
   const H = { Authorization: `Bearer ${token}` };
 
@@ -37,7 +57,7 @@ export default function TwoFASetupDialog({ open, onOpenChange, token, onComplete
       const r = await axios.post(`${API}/admin/2fa/setup`, {}, { headers: H });
       setSetup(r.data);
       setStep("scan");
-    } catch (e) {
+    } catch (e: any) {
       toast.error(e?.response?.data?.detail || "Failed to start 2FA setup.");
     } finally {
       setLoading(false);
@@ -52,7 +72,7 @@ export default function TwoFASetupDialog({ open, onOpenChange, token, onComplete
       setStep("done");
       toast.success("2FA enabled. Keep your backup codes safe.");
       onCompleted?.();
-    } catch (e) {
+    } catch (e: any) {
       toast.error(e?.response?.data?.detail || "Invalid code.");
     } finally {
       setLoading(false);
@@ -87,7 +107,7 @@ ${setup.backup_codes.join("\n")}
     URL.revokeObjectURL(url);
   };
 
-  const close = (v) => {
+  const close = (v: boolean) => {
     if (!v) reset();
     onOpenChange?.(v);
   };
@@ -184,7 +204,7 @@ ${setup.backup_codes.join("\n")}
                 autoComplete="one-time-code"
                 placeholder="000000"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 className="font-mono text-xl tabular text-center"
                 data-testid="twofa-verify-input"
               />

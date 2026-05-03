@@ -76,7 +76,7 @@ export default function TransparencyTimeline() {
           className="w-full"
         >
           <CarouselContent className="px-4 sm:px-6 lg:px-12 -ml-4">
-            {timeline.map((phase, i) => {
+            {timeline.map((phase: any, i: number) => {
               const visual = PHASE_VISUALS[i] || PHASE_VISUALS[0];
               const Icon = visual.icon;
               const phaseLabel = `${String(i + 1).padStart(2, "0")} / ${String(timeline.length).padStart(2, "0")}`;
@@ -135,7 +135,8 @@ export default function TransparencyTimeline() {
 /*  Slide                                                                     */
 /* -------------------------------------------------------------------------- */
 
-function PhaseSlide({ phase, phaseLabel, visual, Icon, delay }) {
+// eslint-disable-next-line
+function PhaseSlide({ phase, phaseLabel, visual, Icon, delay }: any) {
   const { t } = useI18n();
 
   return (
@@ -208,7 +209,7 @@ function PhaseSlide({ phase, phaseLabel, visual, Icon, delay }) {
             className="mt-5 space-y-3 text-[15px] text-foreground/85"
             data-testid={`transparency-bullets-${phase.phase || phaseLabel}`}
           >
-            {(phase.bullets || []).map((b) => (
+            {(phase.bullets || []).map((b: string) => (
               <li key={b} className="flex gap-2.5 leading-relaxed">
                 <span
                   className="font-mono mt-1 shrink-0"

@@ -336,7 +336,7 @@ export default function AdminPreviewSection({ api, headers, llmInfo }: Props) {
               rows={4}
               placeholder="Paste the tweet the Prophet should reply to…"
               value={kolPost}
-              onChange={(e) => setKolPost(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setKolPost(e.target.value)}
               className="mt-2 font-mono text-xs"
               data-testid="preview-kol-input"
             />
@@ -355,7 +355,7 @@ export default function AdminPreviewSection({ api, headers, llmInfo }: Props) {
             </Label>
             <Input
               value={previewKeywords}
-              onChange={(e) => setPreviewKeywords(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPreviewKeywords(e.target.value)}
               placeholder="e.g. powell, tariffs, OPEC squeeze"
               className="mt-2 font-mono text-xs"
               data-testid="preview-keywords-input"
@@ -416,7 +416,7 @@ export default function AdminPreviewSection({ api, headers, llmInfo }: Props) {
                 </Label>
                 <Select
                   value={forceTemplateV2 || "__random__"}
-                  onValueChange={(v) =>
+                  onValueChange={(v: string) =>
                     setForceTemplateV2(v === "__random__" ? "" : v)
                   }
                 >

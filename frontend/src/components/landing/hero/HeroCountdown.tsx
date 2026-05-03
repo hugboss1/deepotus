@@ -13,7 +13,7 @@ import { GlitchNum } from "./useGlitchNumber";
  * The decision is taken by the parent via the `mintLive` boolean prop so
  * this component stays purely presentational.
  */
-export function HeroCountdown({ mintLive }) {
+export function HeroCountdown({ mintLive }: { mintLive: boolean }) {
   const { t } = useI18n();
 
   if (!mintLive) {

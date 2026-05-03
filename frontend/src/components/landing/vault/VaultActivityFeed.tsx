@@ -3,14 +3,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Radio } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 
+interface VaultEvent {
+  id: string;
+  kind: string;
+  agent_code?: string;
+  tokens_added: number;
+  digits_locked_before: number;
+  digits_locked_after: number;
+  created_at?: string;
+}
+
 /**
  * VaultActivityFeed — scrolling list of recent crack events.
  * Events are already sorted (most recent first) by the backend.
  */
-export default function VaultActivityFeed({ events = [] }) {
+export default function VaultActivityFeed({ events = [] }: { events?: VaultEvent[] }) {
   const { t, lang } = useI18n();
 
-  const rel = (iso) => {
+  const rel = (iso?: string) => {
     if (!iso) return "—";
     try {
       const then = new Date(iso).getTime();
@@ -25,7 +35,7 @@ export default function VaultActivityFeed({ events = [] }) {
     }
   };
 
-  const kindColor = (k) => {
+  const kindColor = (k: string) => {
     if (k === "admin_crack") return "text-[#F59E0B]";
     if (k === "purchase") return "text-[#2DD4BF]";
     if (k === "hourly_tick") return "text-muted-foreground";
@@ -33,8 +43,8 @@ export default function VaultActivityFeed({ events = [] }) {
     return "text-foreground/60";
   };
 
-  const kindLabel = (k) => {
-    const labels = t("vault.eventKinds") || {};
+  const kindLabel = (k: string) => {
+    const labels: Record<string, string> = (t("vault.eventKinds") as any) || {};
     return labels[k] || k;
   };
 

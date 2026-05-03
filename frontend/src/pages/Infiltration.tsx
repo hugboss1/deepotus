@@ -28,6 +28,7 @@ import {
   MoonStar,
   Pencil,
   Plus,
+  Radar,
   ShieldCheck,
   ShieldOff,
   Trash2,
@@ -65,6 +66,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { getAdminToken } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
+import AutoReviewTab from "@/pages/infiltration/AutoReviewTab";
 
 const API: string = process.env.REACT_APP_BACKEND_URL || "";
 
@@ -195,7 +197,7 @@ export default function Infiltration() {
 
       <main className="max-w-6xl mx-auto">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid grid-cols-4 w-full md:w-auto">
+          <TabsList className="grid grid-cols-5 w-full md:w-auto">
             <TabsTrigger value="riddles" data-testid="infiltration-tab-riddles">
               <BookLock size={14} className="mr-2" /> Riddles
             </TabsTrigger>
@@ -207,6 +209,9 @@ export default function Infiltration() {
             </TabsTrigger>
             <TabsTrigger value="attempts" data-testid="infiltration-tab-attempts">
               <Activity size={14} className="mr-2" /> Attempts
+            </TabsTrigger>
+            <TabsTrigger value="auto" data-testid="infiltration-tab-auto">
+              <Radar size={14} className="mr-2" /> Auto / Review
             </TabsTrigger>
           </TabsList>
 
@@ -221,6 +226,11 @@ export default function Infiltration() {
           </TabsContent>
           <TabsContent value="attempts" className="mt-6">
             <AttemptsTab />
+          </TabsContent>
+          <TabsContent value="auto" className="mt-6">
+            <AutoReviewTab
+              headers={token ? { Authorization: `Bearer ${token}` } : {}}
+            />
           </TabsContent>
         </Tabs>
       </main>

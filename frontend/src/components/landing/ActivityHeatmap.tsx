@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 const DAY_LABELS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_LABELS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-function rgb(intensity) {
+function rgb(intensity: number) {
   // intensity 0..1 → interpolate background
   // light theme: white → teal
   // dark theme: css handled via class; we inline color
@@ -15,7 +15,7 @@ function rgb(intensity) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-export default function ActivityHeatmap({ data, lang = "en" }) {
+export default function ActivityHeatmap({ data, lang = "en" }: { data: number[][]; lang?: "fr" | "en" }) {
   // data: 7 x 24 matrix
   const labels = lang === "fr" ? DAY_LABELS_FR : DAY_LABELS_EN;
   const max = useMemo(() => {
@@ -57,7 +57,7 @@ export default function ActivityHeatmap({ data, lang = "en" }) {
                 <td className="font-mono text-[10px] text-muted-foreground pr-2 text-right align-middle">
                   {labels[d]}
                 </td>
-                {row.map((v, h) => {
+                {row.map((v: number, h: number) => {
                   const intensity = max > 0 ? v / max : 0;
                   return (
                     <td

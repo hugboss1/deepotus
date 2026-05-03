@@ -311,7 +311,7 @@ export default function HowToBuy() {
                     data-testid={`how-to-buy-step-${s.id || idx}-actions`}
                   >
                     {Array.isArray(s.actions) &&
-                      s.actions.map((a, i) => (
+                      s.actions.map((a: string, i: number) => (
                         <li
                           key={`htb-${s.id || idx}-action-${i}-${(a || "").slice(0, 16)}`}
                           className="flex items-start gap-3 text-sm text-foreground/90"

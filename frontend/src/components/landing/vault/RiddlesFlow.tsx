@@ -250,7 +250,7 @@ export default function RiddlesFlow({
         return;
       }
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = await res.json().catch((): null => null);
         throw new Error(
           data?.detail?.error || data?.detail || `HTTP ${res.status}`,
         );
@@ -330,7 +330,7 @@ export default function RiddlesFlow({
         },
       );
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = await res.json().catch((): null => null);
         // FastAPI returns { detail: [{ type, loc, msg, ... }] } for Pydantic
         // validation errors (422). Surface the human message.
         let detailMsg: string | null = null;
@@ -396,7 +396,7 @@ export default function RiddlesFlow({
         },
       );
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = await res.json().catch((): null => null);
         let detailMsg: string | null = null;
         if (Array.isArray(data?.detail) && data.detail[0]?.msg) {
           detailMsg = String(data.detail[0].msg);
@@ -692,7 +692,7 @@ export default function RiddlesFlow({
             <Textarea
               id="riddle-answer"
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setAnswer(e.target.value)}
               placeholder={String(t("terminal.riddles.answerPlaceholder"))}
               maxLength={500}
               rows={2}
@@ -810,7 +810,7 @@ export default function RiddlesFlow({
             id="claim-email"
             type="email"
             value={claimEmail}
-            onChange={(e) => setClaimEmail(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setClaimEmail(e.target.value)}
             placeholder={String(t("terminal.emailPlaceholder"))}
             disabled={submitting}
             autoComplete="email"
@@ -879,7 +879,7 @@ export default function RiddlesFlow({
           <Input
             id="wallet-addr"
             value={walletInput}
-            onChange={(e) => setWalletInput(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setWalletInput(e.target.value)}
             placeholder={String(t("terminal.riddles.walletPlaceholder"))}
             disabled={submitting}
             spellCheck={false}
