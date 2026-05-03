@@ -160,7 +160,7 @@ export default function AdminVault(): JSX.Element {
     }
   }
 
-  async function toggleHourly(next) {
+  async function toggleHourly(next: boolean) {
     try {
       const { data } = await axios.post(
         `${API}/api/admin/vault/config`,
@@ -232,7 +232,7 @@ export default function AdminVault(): JSX.Element {
     }
   }
 
-  async function applyPreset(preset) {
+  async function applyPreset(preset: string) {
     try {
       const { data } = await axios.post(
         `${API}/api/admin/vault/config`,
@@ -403,7 +403,7 @@ export default function AdminVault(): JSX.Element {
             <div className="flex gap-2 mt-1">
               <Input
                 value={crackTokens}
-                onChange={(e) => setCrackTokens(e.target.value.replace(/[^0-9]/g, ""))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCrackTokens(e.target.value.replace(/[^0-9]/g, ""))}
                 placeholder="1000"
                 className="font-mono"
                 data-testid="admin-vault-crack-input"
@@ -467,7 +467,7 @@ export default function AdminVault(): JSX.Element {
               <div className="flex gap-2 mt-1">
                 <Input
                   value={tokensPerDigit}
-                  onChange={(e) => setTokensPerDigit(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTokensPerDigit(e.target.value.replace(/[^0-9]/g, ""))}
                   className="font-mono"
                   data-testid="admin-vault-tpd-input"
                 />
@@ -482,7 +482,7 @@ export default function AdminVault(): JSX.Element {
               <div className="flex gap-2 mt-1">
                 <Input
                   value={tokensPerMicro}
-                  onChange={(e) => setTokensPerMicro(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTokensPerMicro(e.target.value.replace(/[^0-9]/g, ""))}
                   className="font-mono"
                   data-testid="admin-vault-tpm-input"
                 />
@@ -500,7 +500,7 @@ export default function AdminVault(): JSX.Element {
                 <Label className="text-xs">Treasury goal (€)</Label>
                 <Input
                   value={treasuryGoal}
-                  onChange={(e) => setTreasuryGoal(e.target.value.replace(/[^0-9.]/g, ""))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTreasuryGoal(e.target.value.replace(/[^0-9.]/g, ""))}
                   className="font-mono mt-1"
                   data-testid="admin-vault-goal-input"
                 />
@@ -509,7 +509,7 @@ export default function AdminVault(): JSX.Element {
                 <Label className="text-xs">EUR/USD rate</Label>
                 <Input
                   value={eurUsdRate}
-                  onChange={(e) => setEurUsdRate(e.target.value.replace(/[^0-9.]/g, ""))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEurUsdRate(e.target.value.replace(/[^0-9.]/g, ""))}
                   className="font-mono mt-1"
                   data-testid="admin-vault-rate-input"
                 />
@@ -596,7 +596,7 @@ export default function AdminVault(): JSX.Element {
             <div className="flex gap-2 mt-1">
               <Input
                 value={dexCustomAddr}
-                onChange={(e) => setDexCustomAddr(e.target.value.trim())}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDexCustomAddr(e.target.value.trim())}
                 placeholder="e.g. 4k3D...mhAZ"
                 className="font-mono"
                 data-testid="admin-dex-custom-input"

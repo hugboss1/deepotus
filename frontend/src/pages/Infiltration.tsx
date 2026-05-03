@@ -497,7 +497,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
               <Label className="text-xs uppercase tracking-widest">Slug</Label>
               <Input
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setSlug(e.target.value)}
                 placeholder="grand-architecte"
                 disabled={!!riddle || busy}
                 className="font-mono"
@@ -509,7 +509,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
               <Input
                 type="number"
                 value={order}
-                onChange={(e) => setOrder(Number(e.target.value))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setOrder(Number(e.target.value))}
                 disabled={busy}
                 className="font-mono"
                 data-testid="riddle-order"
@@ -521,7 +521,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
             <Label className="text-xs uppercase tracking-widest">Title</Label>
             <Input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTitle(e.target.value)}
               disabled={busy}
               data-testid="riddle-title"
             />
@@ -531,7 +531,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
             <Label className="text-xs uppercase tracking-widest">Question (FR)</Label>
             <Textarea
               value={questionFr}
-              onChange={(e) => setQuestionFr(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setQuestionFr(e.target.value)}
               rows={4}
               disabled={busy}
               className="text-sm"
@@ -543,7 +543,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
             <Label className="text-xs uppercase tracking-widest">Question (EN)</Label>
             <Textarea
               value={questionEn}
-              onChange={(e) => setQuestionEn(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setQuestionEn(e.target.value)}
               rows={4}
               disabled={busy}
               className="text-sm"
@@ -557,7 +557,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
             </Label>
             <Textarea
               value={keywordsText}
-              onChange={(e) => setKeywordsText(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setKeywordsText(e.target.value)}
               rows={2}
               disabled={busy}
               placeholder="la fed, planche a billets, inflation"
@@ -572,7 +572,7 @@ function RiddleEditor({ riddle, onClose, onSaved }: RiddleEditorProps) {
             </Label>
             <Input
               value={hint}
-              onChange={(e) => setHint(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setHint(e.target.value)}
               disabled={busy}
               data-testid="riddle-hint"
             />
@@ -885,7 +885,7 @@ function ClearanceEditor({ row, onClose, onSaved }: ClearanceEditorProps) {
             </Label>
             <Input
               value={wallet}
-              onChange={(e) => setWallet(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setWallet(e.target.value)}
               disabled={busy}
               className="font-mono text-xs"
               data-testid="clearance-editor-wallet"
@@ -895,7 +895,7 @@ function ClearanceEditor({ row, onClose, onSaved }: ClearanceEditorProps) {
             <Label className="text-xs uppercase tracking-widest">Notes</Label>
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setNotes(e.target.value)}
               rows={3}
               maxLength={500}
               disabled={busy}
@@ -1057,7 +1057,7 @@ function SleeperTab() {
           <Label className="text-xs uppercase tracking-widest">Message (FR)</Label>
           <Textarea
             value={msgFr}
-            onChange={(e) => setMsgFr(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setMsgFr(e.target.value)}
             rows={3}
             maxLength={500}
             className="text-sm"
@@ -1068,7 +1068,7 @@ function SleeperTab() {
           <Label className="text-xs uppercase tracking-widest">Message (EN)</Label>
           <Textarea
             value={msgEn}
-            onChange={(e) => setMsgEn(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setMsgEn(e.target.value)}
             rows={3}
             maxLength={500}
             className="text-sm"
@@ -1170,14 +1170,14 @@ function AttemptsTab() {
         <Input
           placeholder="Filter by email"
           value={filterEmail}
-          onChange={(e) => setFilterEmail(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFilterEmail(e.target.value)}
           className="h-9 w-[220px] text-xs"
           data-testid="attempts-filter-email"
         />
         <Input
           placeholder="Filter by riddle slug"
           value={filterSlug}
-          onChange={(e) => setFilterSlug(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFilterSlug(e.target.value)}
           className="h-9 w-[220px] text-xs"
           data-testid="attempts-filter-slug"
         />

@@ -1,3 +1,4 @@
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Unlock,
@@ -35,7 +36,8 @@ import VaultActivityFeed from "@/components/landing/vault/VaultActivityFeed";
  * orchestrator hook.
  */
 
-export function AuthedVaultView({ session, vault, logout }) {
+// eslint-disable-next-line
+export function AuthedVaultView({ session, vault, logout }: any) {
   const { t } = useI18n();
 
   const stage = vault?.stage || "LOCKED";
@@ -206,6 +208,7 @@ export function AuthedVaultView({ session, vault, logout }) {
   );
 }
 
+// eslint-disable-next-line
 function MetricsPanel({
   t,
   vault,
@@ -213,7 +216,7 @@ function MetricsPanel({
   combo,
   dexMode,
   microTicksTotal,
-}) {
+}: any) {
   return (
     <div className="lg:col-span-5">
       <div className="rounded-2xl border border-[#F59E0B]/20 bg-[#0A0A0A] p-5">
@@ -290,7 +293,13 @@ function MetricsPanel({
   );
 }
 
-function Cell({ label, children, colSpan = 1 }) {
+interface CellProps {
+  label: React.ReactNode;
+  children: React.ReactNode;
+  colSpan?: number;
+}
+
+function Cell({ label, children, colSpan = 1 }: CellProps) {
   return (
     <div
       className={`rounded-md border border-white/10 bg-black/40 p-3 ${

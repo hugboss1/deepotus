@@ -47,14 +47,14 @@ import CustomLlmKeysSection from "@/pages/admin/sections/CustomLlmKeysSection";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
-const CONTENT_TYPE_ICONS = {
+const CONTENT_TYPE_ICONS: Record<string, string> = {
   prophecy: "🔮",
   market_commentary: "📉",
   vault_update: "🔒",
   kol_reply: "🕶️",
 };
 
-const STATUS_COLOR = {
+const STATUS_COLOR: Record<string, string> = {
   heartbeat: "#18C964",
   posted: "#2DD4BF",
   killed: "#E11D48",
@@ -171,14 +171,14 @@ export default function AdminBots() {
   // (Sprint 22.3 split). The child section owns the full flow and
   // calls `loadConfig()` to refresh the masked status after a mutation.
 
-  async function patchConfig(patch, successMsg) {
+  async function patchConfig(patch: Record<string, unknown>, successMsg?: string) {
     setBusy(true);
     try {
       const { data } = await axios.put(`${API}/api/admin/bots/config`, patch, { headers });
       setConfig(data);
       if (successMsg) toast.success(successMsg);
       // Jobs section auto-polls every 10 s, no manual refresh needed.
-    } catch (err) {
+    } catch (err: any) {
       logger.error(err);
       toast.error(err?.response?.data?.detail || "Config update failed");
     } finally {
@@ -186,7 +186,7 @@ export default function AdminBots() {
     }
   }
 
-  async function toggleKillSwitch(active) {
+  async function toggleKillSwitch(active: boolean) {
     setBusy(true);
     try {
       const { data } = await axios.post(
@@ -383,7 +383,7 @@ export default function AdminBots() {
                       <Label className="font-medium text-sm">X / Twitter</Label>
                       <Switch
                         checked={Boolean(config?.platforms?.x?.enabled)}
-                        onCheckedChange={(v) =>
+                        onCheckedChange={(v: boolean) =>
                           patchConfig(
                             { platforms: { x: { enabled: v } } },
                             `X bot ${v ? "enabled" : "disabled"}`,
@@ -401,7 +401,7 @@ export default function AdminBots() {
                         min="1"
                         max="48"
                         value={config?.platforms?.x?.post_frequency_hours ?? 4}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setConfig({
                             ...config,
                             platforms: {
@@ -413,7 +413,7 @@ export default function AdminBots() {
                             },
                           })
                         }
-                        onBlur={(e) =>
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
                           patchConfig(
                             {
                               platforms: {
@@ -439,7 +439,7 @@ export default function AdminBots() {
                       <Label className="font-medium text-sm">Telegram</Label>
                       <Switch
                         checked={Boolean(config?.platforms?.telegram?.enabled)}
-                        onCheckedChange={(v) =>
+                        onCheckedChange={(v: boolean) =>
                           patchConfig(
                             { platforms: { telegram: { enabled: v } } },
                             `Telegram bot ${v ? "enabled" : "disabled"}`,
@@ -457,7 +457,7 @@ export default function AdminBots() {
                         min="1"
                         max="48"
                         value={config?.platforms?.telegram?.post_frequency_hours ?? 6}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setConfig({
                             ...config,
                             platforms: {
@@ -469,7 +469,7 @@ export default function AdminBots() {
                             },
                           })
                         }
-                        onBlur={(e) =>
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
                           patchConfig(
                             {
                               platforms: {
@@ -518,7 +518,7 @@ export default function AdminBots() {
                           </span>
                           <Switch
                             checked={Boolean(config?.content_modes?.[ct])}
-                            onCheckedChange={(v) =>
+                            onCheckedChange={(v: boolean) =>
                               patchConfig(
                                 { content_modes: { [ct]: v } },
                                 `${ct} ${v ? "on" : "off"}`,
@@ -543,7 +543,7 @@ export default function AdminBots() {
                     </Label>
                     <Switch
                       checked={Boolean(config?.prompt_v2?.enabled)}
-                      onCheckedChange={(v) =>
+                      onCheckedChange={(v: boolean) =>
                         patchConfig(
                           { prompt_v2: { enabled: v } },
                           `Prompt v2 ${v ? "ENABLED" : "disabled"}`,
@@ -566,7 +566,7 @@ export default function AdminBots() {
                   </Label>
                   <Select
                     value={currentLlmId}
-                    onValueChange={(id) => {
+                    onValueChange={(id: string) => {
                       const preset = LLM_PRESETS.find((p) => p.id === id);
                       if (preset) {
                         patchConfig(
@@ -622,13 +622,13 @@ export default function AdminBots() {
                       min="1"
                       max="1440"
                       value={config?.heartbeat_interval_minutes ?? 5}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setConfig({
                           ...config,
                           heartbeat_interval_minutes: Number(e.target.value),
                         })
                       }
-                      onBlur={(e) =>
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
                         patchConfig(
                           { heartbeat_interval_minutes: Number(e.target.value) },
                           "Heartbeat interval saved",
@@ -647,13 +647,13 @@ export default function AdminBots() {
                       min="0"
                       max="500"
                       value={config?.max_posts_per_day ?? 12}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setConfig({
                           ...config,
                           max_posts_per_day: Number(e.target.value),
                         })
                       }
-                      onBlur={(e) =>
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
                         patchConfig(
                           { max_posts_per_day: Number(e.target.value) },
                           "Daily cap saved",

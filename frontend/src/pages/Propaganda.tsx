@@ -692,7 +692,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
               </Label>
               <Input
                 value={buyLink}
-                onChange={(e) => setBuyLink(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setBuyLink(e.target.value)}
                 placeholder="https://pump.fun/<mint>"
                 className="font-mono text-xs"
                 data-testid="trigger-fire-buy-link"
@@ -709,7 +709,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 value={mcTier}
                 min={1000}
                 step={5000}
-                onChange={(e) => setMcTier(Number(e.target.value || 0))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setMcTier(Number(e.target.value || 0))}
                 className="font-mono"
                 data-testid="trigger-fire-mc-tier"
               />
@@ -725,7 +725,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 value={whaleAmount}
                 min={1}
                 step={0.5}
-                onChange={(e) => setWhaleAmount(Number(e.target.value || 0))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setWhaleAmount(Number(e.target.value || 0))}
                 className="font-mono"
                 data-testid="trigger-fire-whale-amount"
               />
@@ -738,7 +738,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
               </Label>
               <Input
                 value={pumpswapLink}
-                onChange={(e) => setPumpSwapLink(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPumpSwapLink(e.target.value)}
                 placeholder="https://swap.pump.fun/?inputCurrency=..."
                 className="font-mono text-xs"
                 data-testid="trigger-fire-pumpswap-link"
@@ -762,7 +762,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                     min={0.01}
                     step={0.5}
                     value={founderAmount}
-                    onChange={(e) => setFounderAmount(Number(e.target.value || 0))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFounderAmount(Number(e.target.value || 0))}
                     className="font-mono"
                     data-testid="trigger-fire-founder-amount"
                   />
@@ -776,7 +776,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                     min={0}
                     step={1000}
                     value={founderMcUsd}
-                    onChange={(e) => setFounderMcUsd(Number(e.target.value || 0))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFounderMcUsd(Number(e.target.value || 0))}
                     className="font-mono"
                     data-testid="trigger-fire-founder-mc"
                   />
@@ -788,7 +788,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 </Label>
                 <Input
                   value={founderWallet}
-                  onChange={(e) => setFounderWallet(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFounderWallet(e.target.value)}
                   placeholder="7gXkHxJzwy5o..."
                   spellCheck={false}
                   className="font-mono text-xs"
@@ -801,7 +801,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 </Label>
                 <Input
                   value={founderTxSig}
-                  onChange={(e) => setFounderTxSig(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFounderTxSig(e.target.value)}
                   placeholder="2k7Lp...ZfX9"
                   spellCheck={false}
                   className="font-mono text-xs"
@@ -814,7 +814,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 </Label>
                 <Input
                   value={founderNote}
-                  onChange={(e) => setFounderNote(e.target.value.slice(0, 80))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFounderNote(e.target.value.slice(0, 80))}
                   placeholder="anniversary buy"
                   className="font-mono text-xs"
                   data-testid="trigger-fire-founder-note"
@@ -835,7 +835,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 </Label>
                 <Input
                   value={kolHandle}
-                  onChange={(e) => setKolHandle(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setKolHandle(e.target.value)}
                   placeholder="Ansem"
                   className="font-mono text-xs"
                   data-testid="trigger-fire-kol-handle"
@@ -847,7 +847,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 </Label>
                 <Input
                   value={kolTweetText}
-                  onChange={(e) => setKolTweetText(e.target.value.slice(0, 200))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setKolTweetText(e.target.value.slice(0, 200))}
                   placeholder='"Looks like $DEEPOTUS is ..."'
                   className="font-mono text-xs"
                   data-testid="trigger-fire-kol-text"
@@ -859,7 +859,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
                 </Label>
                 <Input
                   value={kolTweetUrl}
-                  onChange={(e) => setKolTweetUrl(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setKolTweetUrl(e.target.value)}
                   placeholder="https://x.com/Ansem/status/..."
                   className="font-mono text-xs"
                   data-testid="trigger-fire-kol-url"
@@ -1210,7 +1210,7 @@ function TemplateEditor({ template, onClose, onSaved }: TemplateEditorProps) {
             <Label className="text-xs uppercase tracking-widest">Content</Label>
             <Textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setContent(e.target.value)}
               rows={5}
               className="font-mono text-sm"
               maxLength={1000}
@@ -1230,7 +1230,7 @@ function TemplateEditor({ template, onClose, onSaved }: TemplateEditorProps) {
                 step={0.1}
                 min={0.1}
                 max={5}
-                onChange={(e) => setWeight(Number(e.target.value))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setWeight(Number(e.target.value))}
                 className="font-mono"
                 data-testid="template-weight-input"
               />
@@ -1702,7 +1702,7 @@ function ToneTab({ settings, onSaved }: ToneTabProps) {
             max={1}
             step={0.05}
             value={ratio}
-            onChange={(e) => setRatio(Number(e.target.value))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setRatio(Number(e.target.value))}
             disabled={!enabled}
             className="w-full mt-2 accent-[#F59E0B] disabled:opacity-50"
             data-testid="tone-ratio-slider"
@@ -1736,7 +1736,7 @@ function ToneTab({ settings, onSaved }: ToneTabProps) {
             <Label className="text-xs uppercase tracking-widest">Model</Label>
             <Input
               value={model}
-              onChange={(e) => setModel(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setModel(e.target.value)}
               placeholder="gpt-4o-mini"
               disabled={!enabled}
               className="font-mono"
@@ -1761,7 +1761,7 @@ function ToneTab({ settings, onSaved }: ToneTabProps) {
         </p>
         <Textarea
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPrompt(e.target.value)}
           rows={12}
           maxLength={4000}
           disabled={!enabled}

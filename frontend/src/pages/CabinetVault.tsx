@@ -591,7 +591,7 @@ const SetupWizard: React.FC<SetupProps> = ({ headers, onDone }) => {
             <Input
               type="text"
               value={quizAnswers[i]}
-              onChange={(e) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                 const next = [...quizAnswers];
                 next[i] = e.target.value;
                 setQuizAnswers(next);
@@ -617,7 +617,7 @@ const SetupWizard: React.FC<SetupProps> = ({ headers, onDone }) => {
         <Input
           type="text"
           value={ackText}
-          onChange={(e) => setAckText(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setAckText(e.target.value)}
           autoComplete="off"
           spellCheck={false}
           placeholder={ACK_PHRASE}
@@ -718,7 +718,7 @@ const UnlockForm: React.FC<{
         </Label>
         <textarea
           value={phrase}
-          onChange={(e) => setPhrase(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPhrase(e.target.value)}
           rows={4}
           spellCheck={false}
           autoComplete="off"
@@ -935,7 +935,7 @@ const FactoryResetDialog: React.FC<FactoryResetDialogProps> = ({
             <Input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPassword(e.target.value)}
               autoComplete="current-password"
               disabled={busy}
               className="font-mono text-sm"
@@ -950,7 +950,7 @@ const FactoryResetDialog: React.FC<FactoryResetDialogProps> = ({
             <Input
               type="text"
               value={totpCode}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
                 setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
               }
               placeholder="123456"
@@ -976,7 +976,7 @@ const FactoryResetDialog: React.FC<FactoryResetDialogProps> = ({
             <Input
               type="text"
               value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setConfirmText(e.target.value)}
               autoComplete="off"
               spellCheck={false}
               disabled={busy}
@@ -1612,7 +1612,7 @@ const SecretEditDialog: React.FC<{
             <Input
               type="text"
               value={keyName}
-              onChange={(e) => setKeyName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setKeyName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"))}
               disabled={!isNew || busy}
               className="mt-1 font-mono"
               autoComplete="off"
@@ -1628,7 +1628,7 @@ const SecretEditDialog: React.FC<{
               <Input
                 type={reveal ? "text" : "password"}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setValue(e.target.value)}
                 disabled={busy}
                 className="font-mono pr-10"
                 autoComplete="off"
@@ -1736,7 +1736,7 @@ const ExportDialog: React.FC<{
           <Input
             type="password"
             value={pp}
-            onChange={(e) => setPp(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPp(e.target.value)}
             placeholder="••••••••••••"
             className="font-mono"
             autoComplete="new-password"
@@ -1941,7 +1941,7 @@ function ImportDialog({
               <Input
                 type="password"
                 value={pp}
-                onChange={(e) => setPp(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPp(e.target.value)}
                 disabled={busy}
                 className="mt-1 font-mono"
                 autoComplete="new-password"
@@ -1957,7 +1957,7 @@ function ImportDialog({
               <input
                 type="checkbox"
                 checked={overwrite}
-                onChange={(e) => setOverwrite(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOverwrite(e.target.checked)}
                 disabled={busy}
                 className="accent-[#F59E0B]"
                 data-testid="cabinet-import-overwrite"

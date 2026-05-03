@@ -37,7 +37,7 @@ import {
   TOTAL_SUPPLY,
 } from "./constants";
 
-const fmtPrice = (v, sym = "€") => {
+const fmtPrice = (v: number | null | undefined, sym = "€") => {
   if (v == null || Number.isNaN(v)) return "—";
   if (v >= 1) return `${sym}${v.toFixed(2)}`;
   if (v >= 0.01) return `${sym}${v.toFixed(3)}`;
@@ -46,7 +46,7 @@ const fmtPrice = (v, sym = "€") => {
   return `${sym}${v.toExponential(2)}`;
 };
 
-const fmtCompact = (v) => {
+const fmtCompact = (v: number | null | undefined) => {
   if (v == null || Number.isNaN(v)) return "—";
   return new Intl.NumberFormat(undefined, {
     notation: "compact",
@@ -58,7 +58,9 @@ const fmtCompact = (v) => {
 function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld, currencySymbol }: any) {
   if (!active || !payload?.length) return null;
 
-  const byKey = Object.fromEntries(payload.map((p) => [p.dataKey, p.value]));
+  const byKey: Record<string, number> = Object.fromEntries(
+    payload.map((p: { dataKey: string; value: number }) => [p.dataKey, p.value]),
+  );
 
   const scenarioLines = ["brutal", "base", "optimistic"].map((key) => ({
     key,
@@ -129,7 +131,13 @@ function ChartTooltip({ active, payload, label, t, activeKey, tokensHeld, curren
   );
 }
 
-function LegendDot({ color, label, active }) {
+interface LegendDotProps {
+  color: string;
+  label: string;
+  active: boolean;
+}
+
+function LegendDot({ color, label, active }: LegendDotProps) {
   return (
     <div
       className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest"
@@ -153,7 +161,7 @@ function LegendDot({ color, label, active }) {
  * keeps a clean signal-to-noise ratio. Each cell pairs a coloured Δ tag
  * with its short label coming from i18n (`roi.roadmapPhases.<key>`).
  */
-function RoadmapLegend({ t }) {
+function RoadmapLegend({ t }: { t: (key: string) => any }) {
   const phases = t("roi.roadmapPhases") || {};
   return (
     <div
@@ -196,7 +204,8 @@ function RoadmapLegend({ t }) {
   );
 }
 
-export function PriceChart({ t, data, activeKey, tokensHeld, currencySymbol = "€" }) {
+// eslint-disable-next-line
+export function PriceChart({ t, data, activeKey, tokensHeld, currencySymbol = "€" }: any) {
   const xTicks = [0, 22, 45, 67, 89]; // 5 evenly spaced ticks across 90 days
   const amountMasked = t("roi.injectionAmountMasked") || `xxxx${currencySymbol}`;
 

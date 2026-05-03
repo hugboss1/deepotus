@@ -24,15 +24,15 @@ export const TARGET_PRICE_EUR = 0.0005;
 //   brutal     → 0.1   = €0.0000002 (≈ -90% / FDV €200)
 //   base       → 25    = €0.00005   (FDV ≈ €50k)
 //   optimistic → 250   = €0.0005    (FDV €500k = cible MiCA explicite)
-export const SCENARIO_KEYS = ["brutal", "base", "optimistic"];
+export const SCENARIO_KEYS: ReadonlyArray<string> = ["brutal", "base", "optimistic"];
 
-export const SCENARIO_MULTIPLIERS = {
+export const SCENARIO_MULTIPLIERS: Record<string, number> = {
   brutal: 0.1,
   base: 25,
   optimistic: 250,
 };
 
-export const SCENARIO_COLORS = {
+export const SCENARIO_COLORS: Record<string, string> = {
   brutal: "#E11D48", // campaign red
   base: "#F59E0B", // amber
   optimistic: "#18C964", // terminal green

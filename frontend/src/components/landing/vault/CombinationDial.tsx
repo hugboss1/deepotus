@@ -2,6 +2,55 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Lock, Unlock } from "lucide-react";
 
+// ---- Shared types ----
+type Stage = "LOCKED" | "CRACKING" | "UNLOCKING" | "DECLASSIFIED";
+type DialSize = "default" | "sm" | "chassis";
+
+// Framer-motion's return type for `useAnimation()` — we take the
+// non-exported shape via ReturnType so we don't have to fight the SDK.
+type FMControls = ReturnType<typeof useAnimation>;
+
+interface StageStyle {
+  ring: string;
+  glow: string;
+  text: string;
+}
+
+interface StageStyleArgs {
+  locked: boolean;
+  stage: Stage | string;
+  microFlash: boolean;
+  isActive: boolean;
+}
+
+interface ShuffleLoopArgs {
+  locked: boolean;
+  value: number;
+  index: number;
+  controls: FMControls;
+  setDisplay: React.Dispatch<React.SetStateAction<number>>;
+}
+
+interface MicroTickFlashArgs {
+  microTickVersion: number;
+  isActive: boolean;
+  locked: boolean;
+  controls: FMControls;
+  setDisplay: React.Dispatch<React.SetStateAction<number>>;
+  setMicroFlash: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+interface CombinationDialProps {
+  value?: number;
+  locked?: boolean;
+  stage?: Stage | string;
+  index?: number;
+  size?: DialSize;
+  showLabel?: boolean;
+  isActive?: boolean;
+  microTickVersion?: number;
+}
+
 /**
  * CombinationDial — a single 0-9 reel with mechanical rotation.
  *
@@ -62,7 +111,7 @@ const LOCKED_FALLBACK_STYLE = {
   text: "text-red-400",
 };
 
-function computeStageStyle({ locked, stage, microFlash, isActive }) {
+function computeStageStyle({ locked, stage, microFlash, isActive }: StageStyleArgs): StageStyle {
   if (locked) return LOCKED_STYLE;
   if (stage === "DECLASSIFIED") return DECLASSIFIED_STYLE;
   if (microFlash) return MICRO_FLASH_STYLE;
@@ -72,7 +121,7 @@ function computeStageStyle({ locked, stage, microFlash, isActive }) {
   return LOCKED_FALLBACK_STYLE;
 }
 
-function computeDimensions(size) {
+function computeDimensions(size: DialSize) {
   if (size === "chassis") {
     return {
       dims: "w-full h-full",
@@ -97,7 +146,7 @@ function computeDimensions(size) {
 // ---------------------------------------------------------------------
 // Custom hooks — encapsulate side-effects so the JSX stays declarative
 // ---------------------------------------------------------------------
-function useShuffleLoop({ locked, value, index, controls, setDisplay }) {
+function useShuffleLoop({ locked, value, index, controls, setDisplay }: ShuffleLoopArgs) {
   useEffect(() => {
     if (locked) {
       setDisplay(value);
@@ -106,7 +155,7 @@ function useShuffleLoop({ locked, value, index, controls, setDisplay }) {
     let cancelled = false;
     const tick = () => {
       if (cancelled) return;
-      setDisplay((d) => {
+      setDisplay((d: number) => {
         const next = Math.floor(Math.random() * 10);
         return next === d ? (d + 1) % 10 : next;
       });
@@ -131,13 +180,13 @@ function useMicroTickFlash({
   controls,
   setDisplay,
   setMicroFlash,
-}) {
-  const lastMicroRef = useRef(microTickVersion);
+}: MicroTickFlashArgs) {
+  const lastMicroRef = useRef<number>(microTickVersion);
   useEffect(() => {
     if (locked || !isActive) return undefined;
     if (microTickVersion === lastMicroRef.current) return undefined;
     lastMicroRef.current = microTickVersion;
-    setDisplay((d) => (d + 1) % 10);
+    setDisplay((d: number) => (d + 1) % 10);
     setMicroFlash(true);
     controls.start({
       y: [-8, 0],
@@ -161,7 +210,7 @@ export default function CombinationDial({
   showLabel = true,
   isActive = false, // true = first unlocked dial (receives micro-ticks)
   microTickVersion = 0, // increments when a new micro-purchase is detected
-}) {
+}: CombinationDialProps) {
   const [display, setDisplay] = useState(value);
   const [microFlash, setMicroFlash] = useState(false);
   const controls = useAnimation();

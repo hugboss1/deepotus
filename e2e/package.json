@@ -1,0 +1,16 @@
+{
+  "name": "deepotus-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playwright end-to-end smoke tests for DEEPOTUS (Sprint 22.5 bootstrap).",
+  "scripts": {
+    "install-browsers": "playwright install --with-deps chromium",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

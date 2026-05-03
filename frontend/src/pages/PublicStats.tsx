@@ -23,7 +23,7 @@ import { logger } from "@/lib/logger";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-function formatDateShort(iso) {
+function formatDateShort(iso: string) {
   try {
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -38,7 +38,7 @@ function ChartTooltip({ active, payload, label }: any) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2 shadow-[var(--shadow-elev-1)] font-mono text-xs">
       <div className="text-foreground font-semibold">{label}</div>
-      {payload.map((p) => (
+      {payload.map((p: { dataKey: string; color: string; name: string; value: any }) => (
         <div key={p.dataKey} className="tabular text-foreground/80">
           <span
             className="inline-block w-2 h-2 rounded-full mr-2 align-middle"
@@ -64,7 +64,14 @@ const AXIS_TICK_STYLE = {
 };
 const AXIS_LINE_STYLE = { stroke: "hsl(var(--border))" };
 
-function Stat({ icon: Icon, label, value, accent = "#2DD4BF" }) {
+interface StatProps {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  accent?: string;
+}
+
+function Stat({ icon: Icon, label, value, accent = "#2DD4BF" }: StatProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -78,7 +85,14 @@ function Stat({ icon: Icon, label, value, accent = "#2DD4BF" }) {
   );
 }
 
-function LangBars({ title, fr, en, testid }) {
+interface LangBarsProps {
+  title: string;
+  fr: number;
+  en: number;
+  testid: string;
+}
+
+function LangBars({ title, fr, en, testid }: LangBarsProps) {
   const total = Math.max(1, (fr || 0) + (en || 0));
   const frPct = Math.round(((fr || 0) / total) * 100);
   const enPct = 100 - frPct;
@@ -145,7 +159,7 @@ export default function PublicStats() {
 
   const chartData = useMemo(
     () =>
-      (data?.series || []).map((p) => ({
+      (data?.series || []).map((p: Record<string, any>) => ({
         date: formatDateShort(p.date),
         rawDate: p.date,
         whitelist: p.whitelist,
@@ -156,7 +170,7 @@ export default function PublicStats() {
     [data],
   );
 
-  const changeDays = (d) => {
+  const changeDays = (d: number) => {
     setDays(d);
     fetchData(d);
   };
@@ -476,7 +490,7 @@ export default function PublicStats() {
             </div>
 
             <ul className="mt-4 space-y-2">
-              {(data?.top_sessions || []).map((s, i) => (
+              {(data?.top_sessions || []).map((s: { anon_id: string; [k: string]: any }, i: number) => (
                 <li
                   key={s.anon_id}
                   className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"

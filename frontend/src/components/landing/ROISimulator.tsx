@@ -41,7 +41,7 @@ import { DisclaimerMarquee } from "./roi/DisclaimerMarquee";
 
 // Price formatter that gracefully degrades into scientific notation for the
 // sub-fractional memecoin prices we now deal with (€0.000002 etc.).
-const fmtRefPrice = (v) => {
+const fmtRefPrice = (v: number) => {
   if (v >= 0.0001) return v.toFixed(6);
   return v.toExponential(2);
 };
@@ -63,10 +63,10 @@ export default function ROISimulator() {
     return Math.floor(n / pricePerToken);
   }, [amount, pricePerToken]);
 
-  const fmt = (n) =>
+  const fmt = (n: number) =>
     new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
 
-  const valueFromMultiplier = (mult) => tokens * pricePerToken * mult;
+  const valueFromMultiplier = (mult: number) => tokens * pricePerToken * mult;
 
   // The chart consumes a single merged dataset re-computed when the user's
   // tokens or active tab change. With CHART_DAYS=90 this is < 1ms and the
@@ -168,6 +168,19 @@ export default function ROISimulator() {
 // ---------------------------------------------------------------------------
 // Calculator panel (left column)
 // ---------------------------------------------------------------------------
+interface CalculatorPanelProps {
+  t: (key: string) => any;
+  scenarios: Record<string, Record<string, any>>;
+  amount: number;
+  setAmount: React.Dispatch<React.SetStateAction<number>>;
+  tokens: number;
+  active: string;
+  setActive: (v: string) => void;
+  valueFromMultiplier: (mult: number) => number;
+  fmt: (n: number) => string;
+  currencySymbol: string;
+}
+
 function CalculatorPanel({
   t,
   scenarios,
@@ -179,7 +192,7 @@ function CalculatorPanel({
   valueFromMultiplier,
   fmt,
   currencySymbol,
-}) {
+}: CalculatorPanelProps) {
   return (
     <motion.div
       initial={FADE_UP_14_INITIAL}
@@ -219,7 +232,11 @@ function CalculatorPanel({
             step="10"
             inputMode="decimal"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              // Parent stores `amount` as a number; fall back to 0 if empty.
+              const v = Number(e.target.value);
+              setAmount(Number.isFinite(v) ? v : 0);
+            }}
             data-testid="roi-amount-input"
             className="pl-7 font-mono text-lg bg-black/40 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-[#2DD4BF]/50"
           />
