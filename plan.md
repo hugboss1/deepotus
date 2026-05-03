@@ -268,6 +268,20 @@
 
 - ✅ **Doc** : `/app/docs/SPRINT_21_22_DEPLOY.md` (guide push + verify + rollback).
 
+#### Sprint 22.2 — AdminVault.jsx → AdminVault.tsx — ✅ COMPLET
+- ✅ **Migration complète** de `pages/AdminVault.jsx` (665 lignes) vers `.tsx`.
+- ✅ **2 interfaces documentées** :
+  - `VaultState` : shape complète du GET /api/admin/vault/state (crack mechanics, treasury, DEX wiring, recent_events, target_combination, progress_pct). Backend Pydantic schema = source of truth (`backend/vault.py:VaultStateResponse`).
+  - `DexPollResult` : envelope retournée par le DEX poll endpoint (ok, mode, price_usd, source).
+- ✅ **Fix type errors révélés par TS strict mode** (webpack plus strict qu'esbuild) :
+  - `useEffect` : `return;` → `return undefined;` pour satisfaire `TS7030: Not all code paths return a value`.
+  - `setDexMode(mode)` : `const payload = { mode }` → `const payload: { mode: string; token_address?: string } = { mode }` pour permettre l'affectation dynamique conditionnelle.
+  - VaultState enrichie avec tous les champs utilisés (stage, progress_pct, target_combination, dex_last_h24_buys, etc.) pour éviter les `unknown` en reactNode position.
+- ✅ **Validation visuelle** : `/admin/vault` rend impeccablement — dials (4/6 locked), metrics, Manual crack form, Config (presets, hourly auto-tick, treasury goal, EUR/USD), DEX Live Feed. Aucune régression.
+- ✅ Bundle : 36.9 KB (identique au .jsx pré-migration).
+
+- ✅ **TS coverage update** : seul 1 fichier legacy restant applicatif — `AdminVault.jsx` était le dernier gros fichier non-typé. Les `components/ui/*.jsx` (shadcn) restent intentionnellement en .jsx pour conserver la compat upstream.
+
 ---
 
 ## 2) Implementation Steps

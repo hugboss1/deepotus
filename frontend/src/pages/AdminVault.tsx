@@ -24,12 +24,70 @@ import { logger } from "@/lib/logger";
 import HeliusSection from "@/pages/admin/sections/HeliusSection";
 import SealStatusSection from "@/pages/admin/sections/SealStatusSection";
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = process.env.REACT_APP_BACKEND_URL as string;
 
-export default function AdminVault() {
+/**
+ * Shape of ``GET /api/admin/vault/state``.
+ *
+ * Sprint 22.2 — migrated from .jsx → .tsx. The backend Pydantic schema
+ * is the source of truth (see ``backend/vault.py:VaultStateResponse``).
+ * We enumerate every field this page reads so TS catches typos and
+ * unknown-field access at build time. Unknown-but-harmless fields are
+ * caught by the final index signature.
+ */
+// eslint-disable-next-line
+interface VaultState {
+  // Core crack mechanics
+  stage?: string;
+  num_digits?: number;
+  digits_locked?: number;
+  tokens_sold?: number;
+  tokens_per_digit?: number;
+  tokens_per_micro?: number;
+  hourly_tick_enabled?: boolean;
+  last_hourly_tick_at?: string | null;
+  progress_pct?: number;
+  target_combination?: number[];
+  // Treasury / pricing
+  treasury_goal_eur?: number;
+  eur_usd_rate?: number;
+  // DEX wiring
+  dex_mode?: "off" | "demo" | "helius" | "pumpswap" | "pumpfun" | "custom" | string;
+  dex_label?: string;
+  dex_token_address?: string | null;
+  dex_demo_token_address?: string;
+  dex_last_price_usd?: number | null;
+  dex_last_h24_buys?: number | null;
+  dex_last_h24_volume_usd?: number | null;
+  dex_last_poll_at?: string | null;
+  dex_carry_tokens?: number;
+  dex_error?: string | null;
+  // Recent on-chain / admin events appended to the vault doc.
+  recent_events?: Array<{
+    id: string;
+    kind: string;
+    // eslint-disable-next-line
+    [key: string]: any;
+  }>;
+  // Seal status / phases (handled by <SealStatusSection />)
+  // Helius RPC + token balances (handled by <HeliusSection />)
+  [key: string]: unknown;
+}
+
+/** Envelope returned by the DEX poll endpoint. */
+interface DexPollResult {
+  ok?: boolean;
+  mode?: string;
+  price_usd?: number | null;
+  source?: string;
+  // eslint-disable-next-line
+  [key: string]: any;
+}
+
+export default function AdminVault(): JSX.Element {
   const navigate = useNavigate();
-  const [token] = useState(() => getAdminToken());
-  const [state, setState] = useState(null);
+  const [token] = useState<string | null>(() => getAdminToken());
+  const [state, setState] = useState<VaultState | null>(null);
   const [loading, setLoading] = useState(true);
   const [crackTokens, setCrackTokens] = useState("1000");
   const [tokensPerDigit, setTokensPerDigit] = useState("");
@@ -38,7 +96,7 @@ export default function AdminVault() {
   const [eurUsdRate, setEurUsdRate] = useState("");
   const [dexCustomAddr, setDexCustomAddr] = useState("");
   const [dexPollBusy, setDexPollBusy] = useState(false);
-  const [dexLastPoll, setDexLastPoll] = useState(null);
+  const [dexLastPoll, setDexLastPoll] = useState<DexPollResult | null>(null);
 
   // Helius state has moved to <HeliusSection /> (Sprint 6 split).
 
@@ -52,7 +110,7 @@ export default function AdminVault() {
   useEffect(() => {
     if (!token) {
       navigate("/admin");
-      return;
+      return undefined;
     }
     load();
     const id = setInterval(load, 8000);
@@ -207,9 +265,9 @@ export default function AdminVault() {
     }
   }
 
-  async function setDexMode(mode) {
+  async function setDexMode(mode: string) {
     try {
-      const payload = { mode };
+      const payload: { mode: string; token_address?: string } = { mode };
       if (mode === "custom") payload.token_address = dexCustomAddr.trim();
       const { data } = await axios.post(
         `${API}/api/admin/vault/dex-config`,

@@ -1,18 +1,22 @@
 [
   {
-    "content": "Sprint 21-A: refactor AdminBots.jsx 1798→1017 lignes (-43%) avec extraction Jobs+Logs+Preview en sections .tsx",
+    "content": "Sprint 22.2: explorer AdminVault.jsx pour repérer les interfaces clés à typer (data shapes)",
     "status": "completed"
   },
   {
-    "content": "Sprint 21-C: split cadence_engine en helpers + 25 unit tests pytest (passent tous)",
+    "content": "Sprint 22.2: renommer .jsx → .tsx + ajouter interfaces minimales (VaultState + DexPollResult)",
     "status": "completed"
   },
   {
-    "content": "Sprint 22-E: 3 fichiers migrés vers TS (index.tsx, App.tsx, AdminBots.tsx) + 6 sections types relaxés",
+    "content": "Sprint 22.2: fix les éventuels type errors de compilation (useEffect return, payload typing, unknown ReactNode)",
     "status": "completed"
   },
   {
-    "content": "Documenter dans plan.md + créer SPRINT_21_22_DEPLOY.md",
+    "content": "Tests: compile check + screenshot visual AdminVault + restart frontend",
+    "status": "completed"
+  },
+  {
+    "content": "Mettre à jour plan.md + SPRINT_21_22_DEPLOY.md avec l'état final",
     "status": "completed"
   }
 ]

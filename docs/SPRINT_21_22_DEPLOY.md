@@ -144,8 +144,9 @@ out-of-scope for this sprint and may have pre-existing skips.
 
 ## What's still pending after this sprint
 
-- **AdminVault.jsx** (665 lines) — next candidate for `.tsx`
-  migration, likely Sprint 22.2.
+- **AdminVault.jsx** (665 lines) — ✅ **SHIPPED in Sprint 22.2** →
+  migrated to `.tsx` with typed `VaultState` + `DexPollResult`
+  interfaces. All screens render without regression.
 - **Custom LLM keys dialog** inside `AdminBots.tsx` (~250 lines of
   the 1017-line file) — could be extracted into
   `AdminLLMKeysDialog.tsx` for further decomposition. Sprint 22.3.
@@ -155,8 +156,12 @@ out-of-scope for this sprint and may have pre-existing skips.
   documented in `docs/CODE_REVIEW_RESPONSE.md` §5. Reconsider after
   the launch window closes.
 - **TypeScript strict mode** — currently `strict: false`, which
-  worked for this pilot. Bumping it to true is itself a multi-sprint
-  effort and should follow the legacy file migration, not lead it.
+  worked for the pilot + AdminVault migrations. Bumping it to true
+  is itself a multi-sprint effort and should follow the legacy file
+  migration, not lead it.
+- **At this point the only non-TS applicative files in the repo are
+  the shadcn `components/ui/*.jsx` primitives** — kept in `.jsx` on
+  purpose so upstream shadcn releases remain easy to pull in.
 
 ---
 
