@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T01:40:13.561232+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "transparency_operations",
+  "aspect_ratio": "16:9",
+  "size_bytes": 48268,
+  "sha256_prefix": "4fc519024f4a2dc3",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial cinematic illustration of a classified intelligence-grade ledger terminal displaying the on-chain treasury operations of a satirical Deep-State token. Three-quarter view of a long brushed-steel desk in a dim archive vault, with two stacked dark-glass monitors angled towards the viewer. On the screens: dense vertical columns of stylised log entries rendered as abstract horizontal bars in Matrix-green (#33FF33) and teal (#2DD4BF), with occasional amber (#F59E0B) and crimson (#FF4D4D) marker rows for flagged operations — the impression of a transaction journal scrolling, NOT readable text. Beside the monitors, a small stamped paper file rests on the desk with a faint Greek Delta-Sigma (ΔΣ) seal embossed in gold foil; a single brass desk lamp casts a warm amber pool of light. Behind the desk, walls of identical sealed filing cabinets vanish into shadow. Mood: bureaucratic precision, audited, archival — the discipline of the Cabinet rendered as cold ledger. Shot on 35mm, wide-angle, shallow depth-of-field, fine film grain, cinematic noir, desaturated. No human figures, no faces, no recognisable real-world logos, no legible text — only the abstract bar rows and ΔΣ seal.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"Archive vault ledger terminal scrolling the treasury operations log. Bureaucratic precision, audited, the Cabinet's discipline rendered as cold ledger.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

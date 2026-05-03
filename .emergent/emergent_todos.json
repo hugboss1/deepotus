@@ -1,42 +1,30 @@
 [
   {
-    "content": "Cartes Tokenomics - identifier style typo 'Allocation & Discipline' et adapter titre section",
-    "status": "in_progress"
+    "content": "Ajouter 3 briefs IMAGE_STYLE_BRIEFS (transparency_distribution, transparency_rugcheck, transparency_operations) dans prophet_studio.py",
+    "status": "completed"
   },
   {
-    "content": "Cartes Tokenomics - aligner illustrations a la meme hauteur (zone texte fixe)",
-    "status": "pending"
+    "content": "Étendre generate_email_asset.py: HINTS + TRANSPARENCY_VISUAL_TYPES + flag --all-transparency",
+    "status": "completed"
   },
   {
-    "content": "Cartes Tokenomics - animations entrance + hover (framer-motion)",
-    "status": "pending"
+    "content": "Générer les 3 illustrations IA via script (transparency_distribution.jpg / _rugcheck.jpg / _operations.jpg)",
+    "status": "completed"
   },
   {
-    "content": "Cartes Tokenomics - glow shadow par couleur dominante (vert/gold/amber/red)",
-    "status": "pending"
+    "content": "Refonte TokenomicsCards.tsx: layout aligné + animations Framer Motion + ombres colorées dominantes par carte + titre style 'allocation & discipline'",
+    "status": "completed"
   },
   {
-    "content": "Transparency - examiner TransparencyTimeline existant pour reprendre le pattern",
-    "status": "pending"
+    "content": "Refonte Transparency.tsx: carrousel central inspiré 'On-Chain Transparency' pour distribution / rugcheck / operations + style typographique cohérent",
+    "status": "completed"
   },
   {
-    "content": "Transparency - generer 3 illustrations IA 'ecrans de visualisation' (distribution/rugcheck/operations)",
-    "status": "pending"
+    "content": "Mettre à jour les traductions FR/EN pour les nouvelles sections",
+    "status": "completed"
   },
   {
-    "content": "Transparency - refondre Wallets en carrousel responsive (Embla ou shadcn)",
-    "status": "pending"
-  },
-  {
-    "content": "Transparency - integrer les screens IA en frame autour BubbleMaps/RugCheck/OpsLog",
-    "status": "pending"
-  },
-  {
-    "content": "Transparency - titres cohérents avec le site (typo style)",
-    "status": "pending"
-  },
-  {
-    "content": "Build + screenshot validation",
-    "status": "pending"
+    "content": "Validation visuelle via screenshot tool (light + dark + hover)",
+    "status": "completed"
   }
 ]

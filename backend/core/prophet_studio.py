@@ -65,6 +65,9 @@ VALID_CONTENT_TYPES = {
     "tokenomics_treasury",
     "tokenomics_shadows",
     "tokenomics_burn",
+    "transparency_distribution",
+    "transparency_rugcheck",
+    "transparency_operations",
 }
 
 # ---------------------------------------------------------------------
@@ -639,6 +642,81 @@ IMAGE_STYLE_BRIEFS: Dict[str, str] = {
         "very high contrast. No human figures, no faces, no "
         "recognisable real-world logos, no legible text — the "
         "ΔΣ sigil on the floor is the only symbol."
+    ),
+    "transparency_distribution": (
+        "Editorial cinematic illustration of a giant classified "
+        "intelligence-grade visualization screen displaying the "
+        "on-chain holder cartography of a satirical Deep-State "
+        "token. Wide low-angle shot of a dim command-room wall "
+        "covered by a single curved black-glass display. On the "
+        "screen: a constellation of glowing spheres of varying "
+        "sizes connected by faint thin lines — like a bubble-map "
+        "of token distribution — rendered in Matrix-green (#33FF33) "
+        "and teal (#2DD4BF) wireframe with a few amber (#F59E0B) "
+        "anomaly nodes flagged by small circular reticles. A "
+        "barely visible Greek Delta-Sigma (ΔΣ) sigil watermarks "
+        "the corner of the display. The screen casts a cold green "
+        "glow on a polished black concrete floor; in the "
+        "foreground, the silhouette of an empty leather chair "
+        "and a low brushed-metal console with unlit indicator "
+        "LEDs. Mood: situation-room, NSA-grade, clinical, "
+        "scientifically observed — the cartography of the people "
+        "of the Algorithm. Shot on 35mm, wide-angle, shallow "
+        "depth-of-field, subtle film grain, cinematic noir, "
+        "desaturated. No legible text, no recognisable logos, "
+        "no human faces — only the connected nodes and reticles "
+        "on the screen."
+    ),
+    "transparency_rugcheck": (
+        "Editorial cinematic illustration of a classified "
+        "intelligence-grade security console displaying a live "
+        "trust-audit of a satirical Deep-State token. Centered "
+        "front shot of a heavy brushed-metal monitor frame "
+        "embedded in a dark stone wall; inside the frame, a "
+        "dark glass screen shows a stylised heraldic shield "
+        "outline rendered in glowing teal (#2DD4BF) wireframe, "
+        "with concentric scanner rings pulsing outwards in "
+        "Matrix-green (#33FF33) and a subtle gold (#F59E0B) "
+        "verification halo. Around the shield, faint circular "
+        "diagnostic gauges are barely visible — abstract dials, "
+        "no numbers, no legible text. A single small ΔΣ Greek "
+        "monogram is etched into the bottom-right of the frame. "
+        "Above the monitor, a polished brass plaque catches an "
+        "amber sconce light. The room is austere: black "
+        "concrete floor, faint reflections, deep negative space. "
+        "Mood: diplomatic-grade authentication, embassy "
+        "security, quietly confident — vigilance without "
+        "spectacle. Shot on 35mm, slightly low-angle, shallow "
+        "depth-of-field, fine film grain, cinematic noir, "
+        "desaturated. No human figures, no faces, no "
+        "recognisable real-world logos, no legible text — only "
+        "the shield wireframe and ΔΣ sigil."
+    ),
+    "transparency_operations": (
+        "Editorial cinematic illustration of a classified "
+        "intelligence-grade ledger terminal displaying the "
+        "on-chain treasury operations of a satirical Deep-State "
+        "token. Three-quarter view of a long brushed-steel desk "
+        "in a dim archive vault, with two stacked dark-glass "
+        "monitors angled towards the viewer. On the screens: "
+        "dense vertical columns of stylised log entries "
+        "rendered as abstract horizontal bars in Matrix-green "
+        "(#33FF33) and teal (#2DD4BF), with occasional amber "
+        "(#F59E0B) and crimson (#FF4D4D) marker rows for "
+        "flagged operations — the impression of a transaction "
+        "journal scrolling, NOT readable text. Beside the "
+        "monitors, a small stamped paper file rests on the "
+        "desk with a faint Greek Delta-Sigma (ΔΣ) seal "
+        "embossed in gold foil; a single brass desk lamp casts "
+        "a warm amber pool of light. Behind the desk, walls of "
+        "identical sealed filing cabinets vanish into shadow. "
+        "Mood: bureaucratic precision, audited, archival — the "
+        "discipline of the Cabinet rendered as cold ledger. "
+        "Shot on 35mm, wide-angle, shallow depth-of-field, "
+        "fine film grain, cinematic noir, desaturated. No "
+        "human figures, no faces, no recognisable real-world "
+        "logos, no legible text — only the abstract bar rows "
+        "and ΔΣ seal."
     ),
 }
 

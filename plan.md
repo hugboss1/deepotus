@@ -125,6 +125,39 @@
 - ✅ Nav + Footer : lien `/transparency`.
 - ✅ Doc : `/app/docs/PHASES_ENV_DRIVEN.md` + index docs mis à jour.
 
+#### Sprint 17.A — Refonte Tokenomics Cards (UI premium) — ✅ COMPLET
+- ✅ 4 cartes illustrées (Public, Treasury, Shadows, Burn) avec illustrations IA générées via gpt-image-1.
+- ✅ **Top slab à hauteur fixe** (`h-[180px]`) → toutes les illustrations alignées au même niveau Y (corrige le décrochage de la carte Public).
+- ✅ **Animations Framer Motion** : `whileInView` fade-in staggered (delay × 0.08), `whileHover` translate-Y (-4), image scale 1.045 sur hover.
+- ✅ **Ombres colorées dominantes** par carte via CSS var `--card-glow` :
+  - Public → cyan/teal `rgba(45, 212, 191, 0.55)`
+  - Treasury → amber/gold `rgba(245, 158, 11, 0.55)`
+  - Shadows → indigo/violet `rgba(129, 140, 248, 0.5)`
+  - Burn → ember red `rgba(239, 68, 68, 0.6)`
+- ✅ **Titre style "Allocation & Discipline"** : kicker mono `tracking-[0.25em]` + `font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight` + subtitle.
+- ✅ Edge top de l'illustration coloré dynamiquement (visible accent au hover).
+- ✅ Validation visuelle light + dark mode + hover state.
+
+#### Sprint 17.B — Refonte page /transparency (cinematic carousel) — ✅ COMPLET
+- ✅ **Hero refait** : kicker amber + `font-display text-4xl/5xl/6xl semibold leading-[1.04]` (cohérent avec Hero landing).
+- ✅ **Sections Wallets + Locks** : kicker mono + titres `font-display 2xl/3xl/4xl` (vs anciens `text-lg`).
+- ✅ **Nouveau composant** : `frontend/src/components/transparency/TransparencyDataCarousel.tsx`.
+- ✅ **3 slides classifiées** (modèle inspiré de `TransparencyTimeline` landing) :
+  1. SCREEN/01 — Holder cartography (BubbleMaps iframe ou placeholder)
+  2. SCREEN/02 — Live trust audit (RugCheck score + note MiCA-style)
+  3. SCREEN/03 — Treasury operations log (table from /api/treasury/operations)
+- ✅ Stamp CONFIDENTIEL rouge en CSS pur (zéro typo IA).
+- ✅ Tag DOSSIER bottom-left avec accent color par slide (#33FF33 / #2DD4BF / #F59E0B).
+- ✅ Navigation prev/next + hint scroll.
+- ✅ **3 illustrations IA "écrans de visualisation"** générées via gpt-image-1 (~30-50 KB chacune) :
+  - `transparency_distribution.jpg` : situation-room screen avec constellation de bubble nodes glowing green
+  - `transparency_rugcheck.jpg` : moniteur embassy-grade avec heraldic shield wireframe teal + scanner rings
+  - `transparency_operations.jpg` : ledger terminal sur desk brushed-steel + lampe ambre + dossier ΔΣ scellé
+- ✅ Briefs `IMAGE_STYLE_BRIEFS` ajoutés dans `prophet_studio.py` + `--all-transparency` flag dans le script.
+- ✅ CSS `viz-screen-frame` (radial green glow + scanlines overlay).
+- ✅ Translations FR/EN complètes (`transparencyPage.viz.*`, `walletsKicker`, `locksKicker`, `rugcheck.note`).
+- ✅ Validation visuelle light + dark mode.
+
 ---
 
 ## 2) Implementation Steps

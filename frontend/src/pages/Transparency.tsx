@@ -1,34 +1,43 @@
 /**
  * Transparency.tsx — Public page mounted at /transparency.
  *
- * Render strategy
- * ---------------
- * Five sections, each gracefully degraded when the corresponding env
- * vars / API responses are missing. The page is meant to render
- * cleanly during pre-mint (no mint, no locks, no operations) AND
- * during live / graduated phases without any code change.
+ * Sprint 17.B refresh
+ * -------------------
+ * Same data sources as before (fully env-driven, gracefully degraded
+ * pre-mint), but now organised into:
  *
- *   1. Header                  — title + tagline + back link
- *   2. Five Wallets            — addresses (or "TBD post-mint")
- *   3. Lock URLs               — Team + Treasury lock proofs
- *   4. BubbleMaps embed        — iframe (only when mint is set)
- *   5. RugCheck score          — fetch summary (only when mint is set)
- *   6. Treasury Operations Log — fetched from /api/treasury/operations
- *   7. Footer disclaimer
+ *   1. Hero block         — kicker (mono) + font-display title + tagline
+ *                          aligned with the rest of the landing page
+ *                          typography (same pattern as Tokenomics +
+ *                          On-Chain Transparency).
+ *   2. Five Wallets       — addresses, lock proofs, allocations.
+ *   3. Locks shortcut     — Team + Treasury lock proof cards.
+ *   4. Visualisation
+ *      Carousel           — three "intelligence-grade" slides illustrated
+ *                          by AI-generated screen renders:
+ *                            · Distribution Cartography (BubbleMaps)
+ *                            · RugCheck Live Score
+ *                            · Treasury Operations Log
+ *                          See <TransparencyDataCarousel/>.
+ *   5. Footer disclaimer.
  *
  * Anti-patterns explicitly avoided:
- *   - We DO NOT hard-code any address / URL — every address comes from
+ *   - No hard-coded address / URL — every address comes from
  *     ``getWallets()`` (env-driven), every URL from ``URLS.*``.
- *   - We DO NOT render the BubbleMaps iframe before mint — embedding
- *     it with an empty ?token=… leaks BubbleMaps' "no token found"
- *     error page into our trust-critical Transparency screen.
- *   - We DO NOT colour-code RugCheck status with raw red/green hex —
- *     we reuse the design tokens already used by the Vault
- *     (#33FF33 / #F59E0B / #FF4D4D) so the page reads as part of
- *     the same visual system.
+ *   - The BubbleMaps iframe is only mounted when a mint is set —
+ *     pre-mint we render a placeholder tile so we never embed
+ *     BubbleMaps' "no token found" error page on a trust-critical page.
+ *   - RugCheck status uses the design tokens already used by the Vault
+ *     (#33FF33 / #F59E0B / #FF4D4D) so the page reads as part of the
+ *     same visual system.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import {
@@ -52,6 +61,11 @@ import {
   type WalletInfo,
 } from "@/lib/launchPhase";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import {
+  TransparencyDataCarousel,
+  VIZ_SLIDE_DEFAULTS,
+  type VizSlide,
+} from "@/components/transparency/TransparencyDataCarousel";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -81,8 +95,6 @@ interface RugCheckSummary {
 
 // ---------------------------------------------------------------------
 // Tokenomics share table — the public source of truth for "% of supply".
-// Mirrors the data already used by Tokenomics.tsx but kept here as a
-// const so this page doesn't import the chart component.
 // ---------------------------------------------------------------------
 const ALLOCATIONS: Record<WalletInfo["id"], string> = {
   deployer: "0%",
@@ -153,25 +165,28 @@ const AddressBlock: React.FC<{ address: string; testId?: string }> = ({
 };
 
 // ---------------------------------------------------------------------
-// Five-wallets table
+// Five-wallets table (kept as a standalone section above the carousel)
 // ---------------------------------------------------------------------
 const WalletsSection: React.FC = () => {
   const { t } = useI18n();
   const wallets = getWallets();
   return (
     <section
-      className="mt-10"
+      className="mt-12"
       data-testid="transparency-wallets-section"
     >
-      <div className="flex items-baseline justify-between mb-4">
-        <h2 className="text-lg font-semibold tracking-wide">
+      <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+        {t("transparencyPage.walletsKicker") as string}
+      </div>
+      <div className="flex items-end justify-between gap-3 mt-2 flex-wrap">
+        <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-semibold leading-tight">
           {t("transparencyPage.walletsTitle") as string}
         </h2>
         <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/45 font-mono">
           5 / 5
         </span>
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-3 mt-6">
         {wallets.map((w, idx) => (
           <article
             key={w.id}
@@ -218,9 +233,7 @@ const WalletsSection: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------
-// Lock URL cards (team + treasury). Shown in addition to the per-wallet
-// links above to give them prominence — these are the highest-trust
-// artifacts on the page.
+// Lock URL cards (team + treasury)
 // ---------------------------------------------------------------------
 const LocksSection: React.FC = () => {
   const { t } = useI18n();
@@ -234,11 +247,14 @@ const LocksSection: React.FC = () => {
     },
   ];
   return (
-    <section className="mt-10" data-testid="transparency-locks-section">
-      <h2 className="text-lg font-semibold tracking-wide mb-4">
+    <section className="mt-12" data-testid="transparency-locks-section">
+      <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+        {t("transparencyPage.locksKicker") as string}
+      </div>
+      <h2 className="mt-2 font-display text-2xl md:text-3xl lg:text-4xl font-semibold leading-tight">
         {t("transparencyPage.locksTitle") as string}
       </h2>
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid sm:grid-cols-2 gap-3 mt-6">
         {items.map((it) => (
           <article
             key={it.id}
@@ -288,59 +304,52 @@ const LocksSection: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------
-// BubbleMaps embed — only mounted when a mint is set. Otherwise we
-// render a skeleton tile so the user understands the section will
-// activate post-mint.
+// Slide content : Distribution Cartography (BubbleMaps)
 // ---------------------------------------------------------------------
-const BubbleMapsSection: React.FC = () => {
+const DistributionSlideContent: React.FC = () => {
   const { t } = useI18n();
   const url = URLS.bubblemaps();
-  return (
-    <section className="mt-10" data-testid="transparency-bubblemaps-section">
-      <div className="flex items-baseline justify-between mb-4">
-        <h2 className="text-lg font-semibold tracking-wide">
-          {t("transparencyPage.bubblemapsTitle") as string}
-        </h2>
-        {url && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-mono uppercase tracking-widest text-[#2DD4BF] hover:underline"
-          >
-            Open standalone <ExternalLink size={10} className="inline" />
-          </a>
-        )}
-      </div>
-      {url ? (
+  if (url) {
+    return (
+      <div className="rounded-md border border-foreground/15 overflow-hidden bg-black">
         <iframe
           src={url}
           title="BubbleMaps"
           width="100%"
-          height="600"
+          height="380"
           loading="lazy"
-          className="rounded-md border border-foreground/15"
           data-testid="bubblemaps-iframe"
         />
-      ) : (
-        <div
-          className="rounded-md border border-dashed border-foreground/20 bg-foreground/[0.02] p-10 text-center text-xs text-foreground/55 font-mono uppercase tracking-widest"
-          data-testid="bubblemaps-placeholder"
-        >
-          <MapIcon size={20} className="mx-auto mb-3 opacity-50" />
-          {t("transparencyPage.bubblemapsPlaceholder") as string}
+        <div className="px-3 py-2 flex items-center justify-end gap-3 bg-foreground/[0.03]">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-mono uppercase tracking-widest text-[#2DD4BF] hover:underline inline-flex items-center gap-1"
+          >
+            Open standalone <ExternalLink size={10} />
+          </a>
         </div>
-      )}
-    </section>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="rounded-md border border-dashed border-foreground/20 bg-foreground/[0.02] p-10 text-center text-xs text-foreground/55 font-mono uppercase tracking-widest"
+      data-testid="bubblemaps-placeholder"
+    >
+      <MapIcon size={20} className="mx-auto mb-3 opacity-50" />
+      {t("transparencyPage.bubblemapsPlaceholder") as string}
+    </div>
   );
 };
 
 // ---------------------------------------------------------------------
-// RugCheck Live Score — fetch-on-mount, cached for the page lifetime.
+// Slide content : RugCheck Live Score
 // ---------------------------------------------------------------------
 type RugStatus = "loading" | "ok" | "good" | "warning" | "danger" | "error" | "missing";
 
-const RugCheckSection: React.FC = () => {
+const RugCheckSlideContent: React.FC = () => {
   const { t } = useI18n();
   const [status, setStatus] = useState<RugStatus>(
     hasMint() ? "loading" : "missing",
@@ -361,8 +370,6 @@ const RugCheckSection: React.FC = () => {
         const res = await axios.get(apiUrl, { timeout: 10_000 });
         if (cancelled) return;
         const score = Number((res.data as RugCheckSummary).score ?? -1);
-        // RugCheck convention: lower score = lower risk. We bin into 3
-        // visual tiers so the user gets a single colour at a glance.
         let s: RugStatus = "good";
         if (score >= 800) s = "danger";
         else if (score >= 400) s = "warning";
@@ -377,23 +384,23 @@ const RugCheckSection: React.FC = () => {
     };
   }, []);
 
-  let icon = <Loader2 size={16} className="animate-spin" />;
+  let icon = <Loader2 size={18} className="animate-spin" />;
   let badgeColor = "text-foreground/55";
   let label: string = t("transparencyPage.rugcheck.loading") as string;
   if (status === "good") {
-    icon = <ShieldCheck size={16} className="text-[#33FF33]" />;
+    icon = <ShieldCheck size={18} className="text-[#33FF33]" />;
     badgeColor = "text-[#33FF33]";
     label = t("transparencyPage.rugcheck.good") as string;
   } else if (status === "warning") {
-    icon = <ShieldAlert size={16} className="text-[#F59E0B]" />;
+    icon = <ShieldAlert size={18} className="text-[#F59E0B]" />;
     badgeColor = "text-[#F59E0B]";
     label = t("transparencyPage.rugcheck.warning") as string;
   } else if (status === "danger") {
-    icon = <ShieldAlert size={16} className="text-[#FF4D4D]" />;
+    icon = <ShieldAlert size={18} className="text-[#FF4D4D]" />;
     badgeColor = "text-[#FF4D4D]";
     label = t("transparencyPage.rugcheck.danger") as string;
   } else if (status === "error") {
-    icon = <AlertTriangle size={16} className="text-[#F59E0B]" />;
+    icon = <AlertTriangle size={18} className="text-[#F59E0B]" />;
     badgeColor = "text-[#F59E0B]";
     label = t("transparencyPage.rugcheck.error") as string;
   } else if (status === "missing") {
@@ -401,43 +408,44 @@ const RugCheckSection: React.FC = () => {
   }
 
   return (
-    <section
-      className="mt-10"
-      data-testid="transparency-rugcheck-section"
-    >
-      <h2 className="text-lg font-semibold tracking-wide mb-4">
-        {t("transparencyPage.rugcheckTitle") as string}
-      </h2>
-      <div className="rounded-md border border-foreground/15 bg-foreground/[0.02] p-4 flex items-center gap-3">
+    <div className="space-y-4">
+      <div className="rounded-md border border-foreground/15 bg-foreground/[0.02] p-5 flex items-center gap-4">
         {icon}
-        <span
-          className={`text-sm font-mono uppercase tracking-widest ${badgeColor}`}
-          data-testid="rugcheck-status"
-        >
-          {label}
-        </span>
-        {data?.score !== undefined && (
-          <span className="ml-auto text-[10px] font-mono uppercase tracking-widest text-foreground/45">
-            score: {data.score}
-          </span>
-        )}
+        <div className="flex-1 min-w-0">
+          <div
+            className={`text-sm font-mono uppercase tracking-widest ${badgeColor}`}
+            data-testid="rugcheck-status"
+          >
+            {label}
+          </div>
+          {data?.score !== undefined && (
+            <div className="text-[11px] font-mono uppercase tracking-widest text-foreground/45 mt-1">
+              score: {data.score}
+            </div>
+          )}
+        </div>
         {hasMint() && (
           <a
             href={URLS.rugcheck()}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] font-mono uppercase tracking-widest text-[#2DD4BF] hover:underline"
+            className="text-[10px] font-mono uppercase tracking-widest text-[#2DD4BF] hover:underline shrink-0 inline-flex items-center gap-1"
           >
-            full report <ExternalLink size={10} className="inline" />
+            full report <ExternalLink size={10} />
           </a>
         )}
       </div>
-    </section>
+
+      {/* MiCA-style risk explanation card */}
+      <div className="rounded-md border border-foreground/15 bg-foreground/[0.02] p-4 text-xs text-foreground/70 leading-relaxed">
+        {t("transparencyPage.rugcheck.note") as string}
+      </div>
+    </div>
   );
 };
 
 // ---------------------------------------------------------------------
-// Treasury Operations Log
+// Slide content : Treasury Operations Log
 // ---------------------------------------------------------------------
 const OPS_TYPE_STYLES: Record<TreasuryOp["type"], { color: string; bg: string }> = {
   BUYBACK: { color: "text-[#2DD4BF]", bg: "bg-[#2DD4BF]/10" },
@@ -446,7 +454,7 @@ const OPS_TYPE_STYLES: Record<TreasuryOp["type"], { color: string; bg: string }>
   LOCK: { color: "text-[#F59E0B]", bg: "bg-[#F59E0B]/10" },
 };
 
-const OperationsSection: React.FC = () => {
+const OperationsSlideContent: React.FC = () => {
   const { t } = useI18n();
   const [ops, setOps] = useState<TreasuryOp[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -472,88 +480,85 @@ const OperationsSection: React.FC = () => {
     };
   }, []);
 
+  if (ops === null) {
+    return (
+      <div className="rounded-md border border-foreground/15 p-6 text-center text-foreground/55 text-xs font-mono uppercase tracking-widest">
+        <Loader2 size={14} className="inline mr-2 animate-spin" />
+        {t("transparencyPage.opsLoading") as string}
+      </div>
+    );
+  }
+  if (ops.length === 0) {
+    return (
+      <div
+        className="rounded-md border border-dashed border-foreground/20 bg-foreground/[0.02] p-8 text-center text-xs text-foreground/55 font-mono uppercase tracking-widest"
+        data-testid="ops-empty"
+      >
+        {error
+          ? (t("transparencyPage.opsError") as string)
+          : (t("transparencyPage.opsEmpty") as string)}
+      </div>
+    );
+  }
   return (
-    <section className="mt-10" data-testid="transparency-operations-section">
-      <h2 className="text-lg font-semibold tracking-wide mb-4">
-        {t("transparencyPage.opsTitle") as string}
-      </h2>
-      {ops === null && (
-        <div className="rounded-md border border-foreground/15 p-6 text-center text-foreground/55 text-xs font-mono uppercase tracking-widest">
-          <Loader2 size={14} className="inline mr-2 animate-spin" />
-          {t("transparencyPage.opsLoading") as string}
-        </div>
-      )}
-      {ops !== null && ops.length === 0 && (
-        <div
-          className="rounded-md border border-dashed border-foreground/20 bg-foreground/[0.02] p-8 text-center text-xs text-foreground/55 font-mono uppercase tracking-widest"
-          data-testid="ops-empty"
-        >
-          {error
-            ? (t("transparencyPage.opsError") as string)
-            : (t("transparencyPage.opsEmpty") as string)}
-        </div>
-      )}
-      {ops !== null && ops.length > 0 && (
-        <div className="rounded-md border border-foreground/15 bg-foreground/[0.02] overflow-x-auto">
-          <table className="w-full text-xs" data-testid="ops-table">
-            <thead className="bg-foreground/[0.04] text-[10px] uppercase tracking-widest text-foreground/55">
-              <tr>
-                <th className="text-left px-3 py-2 font-mono">Date</th>
-                <th className="text-left px-3 py-2 font-mono">Type</th>
-                <th className="text-left px-3 py-2 font-mono">Amount</th>
-                <th className="text-left px-3 py-2 font-mono">Description</th>
-                <th className="text-left px-3 py-2 font-mono">Tx</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ops.map((op) => {
-                const style = OPS_TYPE_STYLES[op.type];
-                const date = new Date(op.logged_at).toLocaleDateString();
-                const amount =
-                  op.amount_tokens != null
-                    ? `${op.amount_tokens.toLocaleString()} tokens`
-                    : op.amount_sol != null
-                      ? `${op.amount_sol.toFixed(3)} SOL`
-                      : "—";
-                return (
-                  <tr
-                    key={op.id}
-                    className="border-t border-foreground/10 hover:bg-foreground/[0.03]"
-                    data-testid={`op-row-${op.id}`}
+    <div className="rounded-md border border-foreground/15 bg-foreground/[0.02] overflow-x-auto max-h-[420px] overflow-y-auto">
+      <table className="w-full text-xs" data-testid="ops-table">
+        <thead className="bg-foreground/[0.04] text-[10px] uppercase tracking-widest text-foreground/55 sticky top-0">
+          <tr>
+            <th className="text-left px-3 py-2 font-mono">Date</th>
+            <th className="text-left px-3 py-2 font-mono">Type</th>
+            <th className="text-left px-3 py-2 font-mono">Amount</th>
+            <th className="text-left px-3 py-2 font-mono">Description</th>
+            <th className="text-left px-3 py-2 font-mono">Tx</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ops.map((op) => {
+            const style = OPS_TYPE_STYLES[op.type];
+            const date = new Date(op.logged_at).toLocaleDateString();
+            const amount =
+              op.amount_tokens != null
+                ? `${op.amount_tokens.toLocaleString()} tokens`
+                : op.amount_sol != null
+                  ? `${op.amount_sol.toFixed(3)} SOL`
+                  : "—";
+            return (
+              <tr
+                key={op.id}
+                className="border-t border-foreground/10 hover:bg-foreground/[0.03]"
+                data-testid={`op-row-${op.id}`}
+              >
+                <td className="px-3 py-2 font-mono text-[10px] text-foreground/70">
+                  {date}
+                </td>
+                <td className="px-3 py-2">
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest ${style.bg} ${style.color}`}
                   >
-                    <td className="px-3 py-2 font-mono text-[10px] text-foreground/70">
-                      {date}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest ${style.bg} ${style.color}`}
-                      >
-                        {op.type}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 font-mono text-[11px]">{amount}</td>
-                    <td className="px-3 py-2 text-foreground/80 max-w-[280px] truncate">
-                      {op.description}
-                    </td>
-                    <td className="px-3 py-2">
-                      <a
-                        href={URLS.solscanTx(op.signature)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-[10px] text-[#2DD4BF] hover:underline inline-flex items-center gap-1"
-                      >
-                        {op.signature.slice(0, 6)}…{op.signature.slice(-4)}
-                        <ExternalLink size={10} />
-                      </a>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+                    {op.type}
+                  </span>
+                </td>
+                <td className="px-3 py-2 font-mono text-[11px]">{amount}</td>
+                <td className="px-3 py-2 text-foreground/80 max-w-[280px] truncate">
+                  {op.description}
+                </td>
+                <td className="px-3 py-2">
+                  <a
+                    href={URLS.solscanTx(op.signature)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[10px] text-[#2DD4BF] hover:underline inline-flex items-center gap-1"
+                  >
+                    {op.signature.slice(0, 6)}…{op.signature.slice(-4)}
+                    <ExternalLink size={10} />
+                  </a>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
@@ -576,12 +581,27 @@ const Transparency: React.FC = () => {
     };
   }, []);
 
+  // Compose the carousel slides — keep the data-fetching content
+  // co-located with the page so VizSlide stays a dumb presentational
+  // wrapper.
+  const slides: VizSlide[] = useMemo(
+    () =>
+      VIZ_SLIDE_DEFAULTS.map((d) => {
+        let content: React.ReactNode = null;
+        if (d.id === "distribution") content = <DistributionSlideContent />;
+        else if (d.id === "rugcheck") content = <RugCheckSlideContent />;
+        else if (d.id === "operations") content = <OperationsSlideContent />;
+        return { ...d, content };
+      }),
+    [],
+  );
+
   return (
     <div
       className="min-h-screen bg-background text-foreground font-body"
       data-testid="transparency-page"
     >
-      <header className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-4 flex items-center justify-between">
+      <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-4 flex items-center justify-between">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/55 hover:text-foreground transition-colors"
@@ -592,30 +612,33 @@ const Transparency: React.FC = () => {
         <ThemeToggle />
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pb-24">
-        <section className="pt-6 border-b border-foreground/10 pb-8">
-          <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-[#F59E0B]">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
+        {/* ---- Hero ---- */}
+        <section className="pt-6 border-b border-foreground/10 pb-10">
+          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-[#F59E0B]">
             {t("transparencyPage.kicker") as string}
           </p>
-          <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight">
+          <h1 className="mt-3 font-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.04] tracking-tight">
             {t("transparencyPage.title") as string}
           </h1>
-          <p className="mt-3 text-sm text-foreground/70 leading-relaxed max-w-2xl">
+          <p className="mt-4 text-sm md:text-base text-foreground/75 leading-relaxed max-w-2xl">
             {t("transparencyPage.tagline") as string}
           </p>
           {mintShort && (
-            <p className="mt-4 text-[10px] font-mono uppercase tracking-widest text-foreground/55">
+            <p className="mt-5 text-[10px] font-mono uppercase tracking-widest text-foreground/55">
               MINT · {mintShort}
             </p>
           )}
         </section>
 
+        {/* ---- Wallets + Locks (above the carousel) ---- */}
         <WalletsSection />
         <LocksSection />
-        <BubbleMapsSection />
-        <RugCheckSection />
-        <OperationsSection />
 
+        {/* ---- Visualisation carousel ---- */}
+        <TransparencyDataCarousel slides={slides} />
+
+        {/* ---- Footer disclaimer ---- */}
         <footer className="mt-16 border-t border-foreground/10 pt-6 text-[11px] text-foreground/50 leading-relaxed">
           {t("transparencyPage.footer") as string}
         </footer>

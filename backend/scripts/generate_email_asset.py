@@ -89,6 +89,22 @@ HINTS = {
         "The Ritual — what the Cabinet destroys, the Cabinet "
         "remembers. Ceremonial brazier, plain paper, sparks."
     ),
+    # ----- Transparency page visualisation screens (Sprint 17.B) -----
+    "transparency_distribution": (
+        "Situation-room screen displaying the on-chain holder "
+        "cartography of $DEEPOTUS as a constellation of glowing "
+        "spheres, NSA-grade, clinical, observed."
+    ),
+    "transparency_rugcheck": (
+        "Embassy-grade security monitor running a live trust "
+        "audit. Heraldic shield wireframe, scanner rings, "
+        "diplomatic confidence."
+    ),
+    "transparency_operations": (
+        "Archive vault ledger terminal scrolling the treasury "
+        "operations log. Bureaucratic precision, audited, the "
+        "Cabinet's discipline rendered as cold ledger."
+    ),
 }
 
 #: Email hero types — the original use-case for this script. Tokenomics
@@ -112,9 +128,20 @@ TOKENOMICS_CARD_TYPES = {
     "tokenomics_burn",
 }
 
+#: Transparency page visualisation screens — used on the public
+#: /transparency carousel slides (16:9, displayed at ~50% width on
+#: desktop). Briefs frame them as "classified intelligence consoles".
+TRANSPARENCY_VISUAL_TYPES = {
+    "transparency_distribution",
+    "transparency_rugcheck",
+    "transparency_operations",
+}
+
 #: Combined whitelist used by ``generate_one`` to validate the
 #: requested ``--content-type``.
-ALLOWED_TYPES = EMAIL_HERO_TYPES | TOKENOMICS_CARD_TYPES
+ALLOWED_TYPES = (
+    EMAIL_HERO_TYPES | TOKENOMICS_CARD_TYPES | TRANSPARENCY_VISUAL_TYPES
+)
 
 
 def _optimise(raw_png: bytes) -> tuple[bytes, dict]:
@@ -230,11 +257,36 @@ async def main() -> int:
         action="store_true",
         help="Regenerate ALL tokenomics card heroes sequentially.",
     )
+    parser.add_argument(
+        "--all-transparency",
+        action="store_true",
+        help="Regenerate ALL transparency visualisation screens sequentially.",
+    )
     args = parser.parse_args()
 
-    if not args.content_type and not args.all and not args.all_tokenomics:
-        parser.error("Provide --content-type, --all or --all-tokenomics.")
+    if (
+        not args.content_type
+        and not args.all
+        and not args.all_tokenomics
+        and not args.all_transparency
+    ):
+        parser.error(
+            "Provide --content-type, --all, --all-tokenomics or "
+            "--all-transparency.",
+        )
 
+    if args.all_transparency:
+        rc = 0
+        for ct in sorted(TRANSPARENCY_VISUAL_TYPES):
+            code = await generate_one(ct)
+            if code != 0:
+                rc = code
+                print(
+                    f"[email-asset] aborting --all-transparency after "
+                    f"{ct} failure",
+                )
+                break
+        return rc
     if args.all_tokenomics:
         rc = 0
         for ct in sorted(TOKENOMICS_CARD_TYPES):

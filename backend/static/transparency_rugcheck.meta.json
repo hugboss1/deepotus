@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T01:40:25.365251+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "transparency_rugcheck",
+  "aspect_ratio": "16:9",
+  "size_bytes": 31704,
+  "sha256_prefix": "ec2e8a1dd82641f6",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial cinematic illustration of a classified intelligence-grade security console displaying a live trust-audit of a satirical Deep-State token. Centered front shot of a heavy brushed-metal monitor frame embedded in a dark stone wall; inside the frame, a dark glass screen shows a stylised heraldic shield outline rendered in glowing teal (#2DD4BF) wireframe, with concentric scanner rings pulsing outwards in Matrix-green (#33FF33) and a subtle gold (#F59E0B) verification halo. Around the shield, faint circular diagnostic gauges are barely visible — abstract dials, no numbers, no legible text. A single small ΔΣ Greek monogram is etched into the bottom-right of the frame. Above the monitor, a polished brass plaque catches an amber sconce light. The room is austere: black concrete floor, faint reflections, deep negative space. Mood: diplomatic-grade authentication, embassy security, quietly confident — vigilance without spectacle. Shot on 35mm, slightly low-angle, shallow depth-of-field, fine film grain, cinematic noir, desaturated. No human figures, no faces, no recognisable real-world logos, no legible text — only the shield wireframe and ΔΣ sigil.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"Embassy-grade security monitor running a live trust audit. Heraldic shield wireframe, scanner rings, diplomatic confidence.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

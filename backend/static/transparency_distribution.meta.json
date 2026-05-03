@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T01:39:59.237985+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "transparency_distribution",
+  "aspect_ratio": "16:9",
+  "size_bytes": 50474,
+  "sha256_prefix": "6caf9ec96fc89ce7",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial cinematic illustration of a giant classified intelligence-grade visualization screen displaying the on-chain holder cartography of a satirical Deep-State token. Wide low-angle shot of a dim command-room wall covered by a single curved black-glass display. On the screen: a constellation of glowing spheres of varying sizes connected by faint thin lines — like a bubble-map of token distribution — rendered in Matrix-green (#33FF33) and teal (#2DD4BF) wireframe with a few amber (#F59E0B) anomaly nodes flagged by small circular reticles. A barely visible Greek Delta-Sigma (ΔΣ) sigil watermarks the corner of the display. The screen casts a cold green glow on a polished black concrete floor; in the foreground, the silhouette of an empty leather chair and a low brushed-metal console with unlit indicator LEDs. Mood: situation-room, NSA-grade, clinical, scientifically observed — the cartography of the people of the Algorithm. Shot on 35mm, wide-angle, shallow depth-of-field, subtle film grain, cinematic noir, desaturated. No legible text, no recognisable logos, no human faces — only the connected nodes and reticles on the screen.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"Situation-room screen displaying the on-chain holder cartography of $DEEPOTUS as a constellation of glowing spheres, NSA-grade, clinical, observed.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

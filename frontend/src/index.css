@@ -441,3 +441,64 @@ code,
     animation: none;
   }
 }
+
+
+/* ------------------------------------------------------------------ */
+/*  Tokenomics card glow — Sprint 17.A.2                              */
+/*  Each card declares its dominant tone via the --card-glow CSS var. */
+/*  The glow stays subtle at rest and intensifies on hover.           */
+/* ------------------------------------------------------------------ */
+.card-glow {
+  --card-glow: rgba(45, 212, 191, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 8px 24px -12px var(--card-glow),
+    0 0 0 transparent;
+  transition:
+    box-shadow 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 240ms ease,
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: box-shadow, transform;
+}
+
+.card-glow:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 0 0 1px var(--card-glow),
+    0 18px 48px -12px var(--card-glow),
+    0 0 64px -16px var(--card-glow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-glow,
+  .card-glow:hover {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Transparency carousel slide — viz console framing                 */
+/* ------------------------------------------------------------------ */
+.viz-screen-frame {
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(45, 212, 191, 0.08),
+      transparent 60%
+    ),
+    #0B0D10;
+  position: relative;
+}
+.viz-screen-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0 1px,
+      transparent 1px 4px
+    );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}

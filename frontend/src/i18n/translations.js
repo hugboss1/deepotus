@@ -474,7 +474,10 @@ export const translations = {
       },
       // Sprint 17.A — refonte 4 cartes illustrees
       cards: {
+        sectionKicker: "— DOSSIERS DU CONSEIL",
         sectionTitle: "Quatre dossiers du Conseil",
+        sectionSubtitle:
+          "Quatre allocations, quatre disciplines. Chaque dossier est verrouillable, auditable, et publié avant exécution. Aucune promesse de rendement — uniquement la mécanique.",
         transparencyLink: "Auditer les 5 portefeuilles · /transparency",
         lockPending: "🔒 Lock pending",
         public: {
@@ -998,6 +1001,7 @@ export const translations = {
       title: "Cinq portefeuilles. Adresses publiques. Aucun sac caché.",
       tagline:
         "Chaque flux $DEEPOTUS est tracé. Le Council ΔΣ publie ses adresses, ses locks et ses opérations de Trésor avant de les exécuter. La transparence n'est pas un argument marketing — c'est l'épine dorsale du protocole.",
+      walletsKicker: "— REGISTRE OFFICIEL",
       walletsTitle: "Cinq portefeuilles",
       wallets: {
         deployer: {
@@ -1024,6 +1028,7 @@ export const translations = {
           purpose: "Flux mensuel distribué aux top holders",
         },
       },
+      locksKicker: "— ARTÉFACTS CLASSÉS",
       locksTitle: "Preuves de lock",
       locks: {
         team: {
@@ -1045,11 +1050,39 @@ export const translations = {
         danger: "DANGER · Profil haut risque",
         error: "Score indisponible — essayez plus tard",
         missing: "🛡 Score live · Disponible après le mint",
+        note:
+          "Le score RugCheck agrège mint authority, freeze authority, concentration des holders et ancienneté du contrat. Un score bas signifie peu de signaux de risque détectés — rien de plus, rien de moins. Vérifiez toujours par vous-même.",
       },
       opsTitle: "Journal des opérations Treasury",
       opsLoading: "Chargement du journal…",
       opsEmpty: "Aucune opération journalisée · Phase 1 active",
       opsError: "Impossible de charger le journal — réessayez plus tard",
+      // Sprint 17.B — Visualisation carousel
+      viz: {
+        sectionKicker: "— ÉCRANS DU CONSEIL",
+        sectionTitle: "Trois visualisations classifiées",
+        sectionSubtitle:
+          "Chaque écran est un point d'audit indépendant. Le Council ΔΣ ne maquille rien : on vous montre exactement ce qu'on regarde, dans l'ordre où on le regarde.",
+        scrollHint: "FAITES DÉFILER LES ÉCRANS",
+        distribution: {
+          kicker: "ÉCRAN / 01",
+          title: "Cartographie des holders",
+          description:
+            "Carte interactive BubbleMaps — chaque sphère est un wallet, chaque ligne un transfert. Repérer les concentrations, vérifier que le supply est diffusé. Activée automatiquement après mint.",
+        },
+        rugcheck: {
+          kicker: "ÉCRAN / 02",
+          title: "Audit de confiance live",
+          description:
+            "Score RugCheck en direct, agrégé via leur API publique. Mint authority, freeze authority, concentration, âge du contrat — un seul nombre, lu à voix basse, vérifiable par tous.",
+        },
+        operations: {
+          kicker: "ÉCRAN / 03",
+          title: "Journal des opérations Treasury",
+          description:
+            "Toutes les opérations BUYBACK / DISTRIBUTION / BURN / LOCK loggées par le Council, avec leur signature on-chain. Aucune opération du Trésor n'arrive ici sans avoir été annoncée publiquement avant.",
+        },
+      },
       footer:
         "Toutes les adresses, locks et opérations sont vérifiables on-chain. PROTOCOL ΔΣ s'engage à une transparence totale.",
     },
@@ -1513,7 +1546,10 @@ export const translations = {
       },
       // Sprint 17.A — illustrated 4-card refresh
       cards: {
+        sectionKicker: "— COUNCIL DOSSIERS",
         sectionTitle: "Four Council dossiers",
+        sectionSubtitle:
+          "Four allocations, four disciplines. Each dossier is lockable, auditable, and published before execution. No yield promise — only the mechanics.",
         transparencyLink: "Audit the 5 wallets · /transparency",
         lockPending: "🔒 Lock pending",
         public: {
@@ -2027,6 +2063,7 @@ export const translations = {
       title: "Five wallets. Public addresses. No hidden bags.",
       tagline:
         "Every $DEEPOTUS flow is traceable. The Council ΔΣ publishes its addresses, its locks and its Treasury operations before it executes them. Transparency is not a marketing argument — it's the spine of the protocol.",
+      walletsKicker: "— OFFICIAL REGISTRY",
       walletsTitle: "Five wallets",
       wallets: {
         deployer: {
@@ -2053,6 +2090,7 @@ export const translations = {
           purpose: "Monthly distributions to top holders",
         },
       },
+      locksKicker: "— CLASSIFIED ARTEFACTS",
       locksTitle: "Lock proofs",
       locks: {
         team: {
@@ -2073,11 +2111,39 @@ export const translations = {
         danger: "DANGER · High-risk profile",
         error: "Score unavailable — try again later",
         missing: "🛡 Live score · Available post-mint",
+        note:
+          "RugCheck aggregates mint authority, freeze authority, holder concentration and contract age. A low score means few risk signals were detected — nothing more, nothing less. Always verify on your own.",
       },
       opsTitle: "Treasury operations log",
       opsLoading: "Loading log…",
       opsEmpty: "No operations logged yet · Phase 1 active",
       opsError: "Unable to load log — please retry",
+      // Sprint 17.B — Visualisation carousel
+      viz: {
+        sectionKicker: "— COUNCIL SCREENS",
+        sectionTitle: "Three classified visualisations",
+        sectionSubtitle:
+          "Each screen is an independent audit point. The Council ΔΣ doesn't dress it up: we show you exactly what we look at, in the order we look at it.",
+        scrollHint: "SCROLL THROUGH THE SCREENS",
+        distribution: {
+          kicker: "SCREEN / 01",
+          title: "Holder cartography",
+          description:
+            "Interactive BubbleMaps view — every sphere is a wallet, every line a transfer. Spot the concentrations, verify the supply is diffused. Activates automatically post-mint.",
+        },
+        rugcheck: {
+          kicker: "SCREEN / 02",
+          title: "Live trust audit",
+          description:
+            "Live RugCheck score, aggregated through their public API. Mint authority, freeze authority, concentration, contract age — one single number, read out loud, verifiable by everyone.",
+        },
+        operations: {
+          kicker: "SCREEN / 03",
+          title: "Treasury operations log",
+          description:
+            "All BUYBACK / DISTRIBUTION / BURN / LOCK operations logged by the Council, with their on-chain signature. No Treasury operation reaches this log without having been publicly announced first.",
+        },
+      },
       footer:
         "All addresses, locks, and operations are publicly verifiable on-chain. PROTOCOL ΔΣ is committed to full transparency.",
     },
