@@ -191,6 +191,33 @@
   - Screenshots : Cadence tab (top + scroll vers Quiet hours), Preview tab (V2 OFF, V2 ON, résultat avec badge), Config tab (toggle V2).
 - ✅ **Doc** : `/app/docs/SPRINT_17_18_DEPLOY.md` (guide push GitHub + verify Vercel/Render + rollback).
 
+#### Sprint 19 — Cadence wiring + reactive triggers + i18n cleanup — ✅ COMPLET
+- ✅ **Carte Phase 4 "Loyalty Mandate"** : remplacement complet du copy "Charity / UNICEF / Téléthon" par un slogan politique de candidat (*"the Cabinet buys back for the loyal"*, buybacks conditionnels aux milestones, distributions Niveau 02+, *"the longer the crowd stays loyal the more the Cabinet rebuys"*).
+- ✅ **Replace global `raydium` → `PumpSwap`** :
+  - Translation strings (translations.js : 24 occurrences traduites + URLs `swap.pump.fun`)
+  - Backend variables + comments (`raydium_link` → `pumpswap_link`, `_build_raydium_link` → `_build_pumpswap_link`)
+  - Trigger key `raydium_migration` → `pumpswap_migration` + fichier renommé `triggers/raydium_migration.py` → `triggers/pumpswap_migration.py`
+  - State value `dex_mode == "raydium"` → `dex_mode == "pumpswap"`
+  - Docs Vercel + Tokenomics policy mis à jour
+  - Total : **24 fichiers modifiés, 0 erreur lint, backend redémarre clean**.
+
+- ✅ **TASK 3 — Cadence engine wiring (`core/cadence_engine.py`)** :
+  - `is_in_quiet_hours(now_utc, qh)` — gère windows wrapping past midnight (e.g. 23:00 → 06:00).
+  - `pick_archetype(allowed)` — weighted random parmi V2 templates (fallback vers full set si liste invalide).
+  - `cadence_daily_tick()` — pour chaque platform `(x, telegram)`, vérifie si `enabled` + `now_utc.HH:MM in post_times_utc` + pas dans quiet hours + dedup `last_fired_today.{plat}.{slot} != today_iso`. Si oui → `generate_post_v2(force_template=archetype)` + `dispatch_queue.propose(policy="auto")`.
+  - `cadence_reactive_tick()` — lit `_read_market_snapshot()` (price × 1B = MC, holders best-effort), compare aux milestones config, fire post v2 (archetype `prophecy` pour MC, `stats` pour holders) avec dedup persisté `fired_milestones.{marketcap_usd, holders}`.
+  - `cadence_whale_react(sol_amount, tx_signature, wallet)` — appelé par `whale_watcher.process_pending_alerts` après le push v1 propaganda. Fire ADDITIONNEL post v2 archetype `satire_news` quand `sol_amount >= reactive_triggers.whale_buy_min_sol` ET `enabled=true` ET pas en quiet hours. Idempotent sur tx_signature.
+  - `cadence_combined_tick()` — wrapper resilient pour APScheduler (try/except sur chaque branche).
+  - **Persistance** : tout l'état dedup vit sur `bot_config.cadence._state.{last_fired_today, fired_milestones}` → survit aux restarts, restorable via Mongo.
+  - **Trigger keys** : `cadence_daily`, `cadence_holder`, `cadence_marketcap`, `cadence_whale` — distincts du Propaganda Engine v1.
+
+- ✅ **TASK 4 — Scheduler wiring** :
+  - Nouveau job `cadence_tick` enregistré via `_cadence_tick_job` dans `bot_scheduler.py` — `IntervalTrigger(seconds=60)`, max_instances=1, coalesce=True, misfire_grace_time=60.
+  - Job s'enregistre automatiquement à chaque `sync_jobs_from_config()`.
+  - **Backend tests** : `GET /api/admin/bots/jobs` montre `cadence_tick` interval `0:01:00`. Configuré un slot `02:54 X archetypes=[prophecy]`, désactivé kill_switch, attendu 2min → log `[cadence] fired trigger=cadence_daily plat=x template=prophecy queue_id=19505fa4-...`. Mongo `propaganda_queue` contient l'item avec `status=approved`, `template_id=prophecy`, `content_en/fr` cohérents et longs ("Within 72 hours, a European sovereign wealth fund will disclose catastrophic liquidity losses..."). Dedup persisté `cadence._state.last_fired_today.x.02:54="2026-05-03"`. Reset post-test : kill_switch ON.
+
+- ✅ **Whale watcher hook** : `core/whale_watcher.py:process_pending_alerts` ajoute un `try/except await cadence_whale_react(...)` après le push v1 propaganda (en fire-and-forget, swallow les exceptions pour ne pas casser la pipeline existante).
+
 ---
 
 ## 2) Implementation Steps

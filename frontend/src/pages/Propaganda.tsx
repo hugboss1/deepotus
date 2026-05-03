@@ -616,7 +616,7 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
   const [buyLink, setBuyLink] = useState<string>("");
   const [mcTier, setMcTier] = useState<number>(25_000);
   const [whaleAmount, setWhaleAmount] = useState<number>(7);
-  const [raydiumLink, setRaydiumLink] = useState<string>("");
+  const [pumpswapLink, setPumpSwapLink] = useState<string>("");
   // Founder Buy Disclosure (Sprint 16.2)
   const [founderAmount, setFounderAmount] = useState<number>(5);
   const [founderWallet, setFounderWallet] = useState<string>("");
@@ -638,8 +638,8 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
         if (buyLink) payload_override.buy_link = buyLink;
       }
       if (trigger.key === "whale_buy") payload_override.whale_amount = whaleAmount;
-      if (trigger.key === "raydium_migration" && raydiumLink) {
-        payload_override.raydium_link = raydiumLink;
+      if (trigger.key === "pumpswap_migration" && pumpswapLink) {
+        payload_override.pumpswap_link = pumpswapLink;
       }
       if (trigger.key === "founder_buy") {
         payload_override.founder_amount_sol = founderAmount;
@@ -731,17 +731,17 @@ function FireDialog({ trigger, onClose, onFired }: FireDialogProps) {
               />
             </div>
           )}
-          {trigger.key === "raydium_migration" && (
+          {trigger.key === "pumpswap_migration" && (
             <div>
               <Label className="text-xs uppercase tracking-widest">
-                Raydium link
+                PumpSwap link
               </Label>
               <Input
-                value={raydiumLink}
-                onChange={(e) => setRaydiumLink(e.target.value)}
-                placeholder="https://raydium.io/swap/?inputCurrency=..."
+                value={pumpswapLink}
+                onChange={(e) => setPumpSwapLink(e.target.value)}
+                placeholder="https://swap.pump.fun/?inputCurrency=..."
                 className="font-mono text-xs"
-                data-testid="trigger-fire-raydium-link"
+                data-testid="trigger-fire-pumpswap-link"
               />
             </div>
           )}
@@ -962,7 +962,7 @@ function TemplatesTab() {
   };
 
   const triggerKeys = useMemo(
-    () => ["mint", "mc_milestone", "jeet_dip", "whale_buy", "raydium_migration"],
+    () => ["mint", "mc_milestone", "jeet_dip", "whale_buy", "pumpswap_migration"],
     [],
   );
 
@@ -1184,7 +1184,7 @@ function TemplateEditor({ template, onClose, onSaved }: TemplateEditorProps) {
                   <SelectItem value="mc_milestone">mc_milestone</SelectItem>
                   <SelectItem value="jeet_dip">jeet_dip</SelectItem>
                   <SelectItem value="whale_buy">whale_buy</SelectItem>
-                  <SelectItem value="raydium_migration">raydium_migration</SelectItem>
+                  <SelectItem value="pumpswap_migration">pumpswap_migration</SelectItem>
                 </SelectContent>
               </Select>
             </div>

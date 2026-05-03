@@ -23,7 +23,7 @@ def _detect(ctx: TriggerCtx) -> TriggerResult:
     market = ctx.market or {}
     mint = (market.get("dex_token_address") or "").strip()
     dex_mode = (market.get("dex_mode") or "").strip().lower()
-    if not mint or dex_mode not in ("helius", "raydium", "pumpfun", "live"):
+    if not mint or dex_mode not in ("helius", "pumpswap", "pumpfun", "live"):
         return TriggerResult(fired=False, reason="mint_not_live")
     # Idempotency: collapse repeated detections for the same mint.
     return TriggerResult(

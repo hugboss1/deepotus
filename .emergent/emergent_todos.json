@@ -1,34 +1,22 @@
 [
   {
-    "content": "Explorer prophet_studio.py + AdminBots.jsx + bot_config_repo pour saisir l'architecture existante",
+    "content": "T1: trouver la carte 5 'campagne du candidat IA' + réécrire le texte (slogan politique buybacks conditionnels, supprimer toute référence charity/UNICEF/téléthon)",
     "status": "completed"
   },
   {
-    "content": "TASK 7 backend: ajouter PROMPT_TEMPLATES_V2 (5 templates pondérés) + generate_post_v2() + list_v2_templates() dans prophet_studio.py",
+    "content": "T2: remplacer toutes occurrences 'raydium' → 'PumpSwap' (frontend + backend + i18n + docs + renommage fichier trigger)",
     "status": "completed"
   },
   {
-    "content": "TASK 7+8 backend: étendre bot_config_repo (DEFAULT + ALLOWED_PATCH_KEYS pour prompt_v2 + cadence)",
+    "content": "T3 (Sprint 19): scheduler wiring cadence.daily_schedule → lire slots UTC + invoquer generate_post_v2 + respecter quiet hours",
     "status": "completed"
   },
   {
-    "content": "TASK 7+8 backend: étendre routers/bots.py (Pydantic patches + _shape_config + use_v2 dans generate-preview + endpoint GET /v2-templates)",
+    "content": "T4 (Sprint 19): reactive_triggers wiring → Helius webhook (whale buys) + holder/marketcap polling → fire post",
     "status": "completed"
   },
   {
-    "content": "TASK 7 frontend: toggle 'Use V2' dans AdminBots.jsx (Config tab) + dropdown 'Force template' dans Preview tab + badge template_used dans output",
-    "status": "completed"
-  },
-  {
-    "content": "TASK 8 frontend: AdminBots.jsx ajouter onglet 'Cadence' (schedule TG/X + triggers + quiet hours)",
-    "status": "completed"
-  },
-  {
-    "content": "Tests: lint + curl backend endpoints + screenshot frontend + test end-to-end (V2 généré meme_visual avec contenu correct)",
-    "status": "completed"
-  },
-  {
-    "content": "Préparer un guide push GitHub + déploiement Vercel (à exécuter par l'utilisateur)",
+    "content": "Tests: lint + curl + screenshot end-to-end + plan.md mis à jour",
     "status": "completed"
   }
 ]

@@ -24,7 +24,7 @@ from . import (  # noqa: F401  — side-effect imports register triggers
     kol_mention,
     mc_milestone,
     mint,
-    raydium_migration,
+    pumpswap_migration,
     whale_buy,
 )
 

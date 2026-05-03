@@ -24,7 +24,7 @@ export const translations = {
     seo: {
       title: "$DEEPOTUS — Candidat IA Deep State · PROTOCOL ΔΣ",
       description:
-        "Memecoin Solana de l'IA Prophète, candidat Deep State à la présidence du Monde. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → Raydium.",
+        "Memecoin Solana de l'IA Prophète, candidat Deep State à la présidence du Monde. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → PumpSwap.",
     },
 
     // ---- Hero ----
@@ -76,7 +76,7 @@ export const translations = {
         buyPumpfun: "Acheter sur Pump.fun",
         dexscreener: "Chart DexScreener",
         tradePumpswap: "Trader sur PumpSwap",
-        tradeRaydium: "Trader sur Raydium",
+        tradePumpSwap: "Trader sur PumpSwap",
       },
     },
 
@@ -416,8 +416,8 @@ export const translations = {
           detail: "Réserve de guerre pour le futur projet MiCA-compliant. Multisig public. Financé par sa propre valorisation — jamais par vos échanges.",
         },
         liquidity: {
-          name: "Liquidité & Ascension Raydium",
-          detail: "Départ sur Pump.fun. Migration chirurgicale vers Raydium dès la complétion de la Bonding Curve. Renfort de LP pour stabiliser le prix cible ≈ 0,0005€.",
+          name: "Liquidité & Ascension PumpSwap",
+          detail: "Départ sur Pump.fun. Migration chirurgicale vers PumpSwap dès la complétion de la Bonding Curve. Renfort de LP pour stabiliser le prix cible ≈ 0,0005€.",
         },
         marketing: {
           name: "Traction & Opérations X/TG",
@@ -510,7 +510,7 @@ export const translations = {
       kicker: "— TRANSPARENCE ON-CHAIN",
       title: "Lancement Pump.fun & Discipline du Trésor",
       subtitle:
-        "De J0 à l'Ascension Raydium. Chaque étape est publiée avant exécution.",
+        "De J0 à l'Ascension PumpSwap. Chaque étape est publiée avant exécution.",
       timeline: [
         {
           phase: "J0",
@@ -533,17 +533,17 @@ export const translations = {
           ],
         },
         {
-          phase: "Ascension Raydium",
-          title: "Migration automatique vers Raydium",
+          phase: "Ascension PumpSwap",
+          title: "Migration automatique vers PumpSwap",
           bullets: [
-            "Pump.fun brûle la LP initiale et la migre vers Raydium (≈ 12k$)",
+            "Pump.fun brûle la LP initiale et la migre vers PumpSwap (≈ 12k$)",
             "Renfort chirurgical de la LP pour stabiliser le prix cible ≈ 0,0005€",
             "Apport externe + ventes contrôlées du trésor annoncées à l'avance",
             "Audit sécurité publié + vérification on-chain ouverte à tous",
           ],
         },
         {
-          phase: "Raydium → ∞",
+          phase: "PumpSwap → ∞",
           title: "Discipline Anti-Dump",
           bullets: [
             "Multisig + timelock sur le trésor",
@@ -582,7 +582,7 @@ export const translations = {
         base: {
           label: "Base (cas moyen)",
           short: "Base",
-          caption: "Migration Raydium réussie, communauté modérée. Le prix tient un palier à €5e-5, sans euphorie.",
+          caption: "Migration PumpSwap réussie, communauté modérée. Le prix tient un palier à €5e-5, sans euphorie.",
           multiplier: 25,
         },
         optimistic: {
@@ -616,7 +616,7 @@ export const translations = {
           subtitle: "Bonding curve · 0% tax",
         },
         phase02: {
-          title: "Raydium Migration",
+          title: "PumpSwap Migration",
           subtitle: "LP burn · marché ouvert",
         },
         phase03: {
@@ -714,12 +714,12 @@ export const translations = {
           tag: "Phase 4",
           code: "ΔΣ-04",
           status: "encrypted",
-          title: "Charity",
-          subtitle: "J+60 · le Cabinet rembourse.",
+          title: "Loyalty Mandate",
+          subtitle: "J+60 · le Cabinet rachète pour ceux qui restent.",
           bullets: [
-            "Partenariat caritatif confirmé",
-            "Évent UNICEF / Téléthon-style",
-            "Donation publique tracée on-chain",
+            "Buybacks ΔΣ déclenchés à chaque milestone du peuple",
+            "Distribution mensuelle aux citoyens Niveau 02+",
+            "Plus la foule reste fidèle, plus le Cabinet rachète",
           ],
         },
         {
@@ -983,7 +983,7 @@ export const translations = {
         s1: "Ouvrir le pool PumpSwap",
         s2: "Connecter votre wallet Phantom",
         s3: "Swap SOL → $DEEPOTUS",
-        s4_raydium: "Optionnel — également tradable sur Raydium",
+        s4_pumpswap: "Optionnel — également tradable sur PumpSwap",
       },
     },
 
@@ -1107,7 +1107,7 @@ export const translations = {
     seo: {
       title: "$DEEPOTUS — The Deep State's AI Prophet · PROTOCOL ΔΣ",
       description:
-        "Solana memecoin powered by an AI Prophet, the Deep State's candidate for World President. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → Raydium.",
+        "Solana memecoin powered by an AI Prophet, the Deep State's candidate for World President. MiCA-aware, 0% Tax, PROTOCOL ΔΣ. Pump.fun → PumpSwap.",
     },
 
     hero: {
@@ -1158,7 +1158,7 @@ export const translations = {
         buyPumpfun: "Buy on Pump.fun",
         dexscreener: "DexScreener Chart",
         tradePumpswap: "Trade on PumpSwap",
-        tradeRaydium: "Trade on Raydium",
+        tradePumpSwap: "Trade on PumpSwap",
       },
     },
 
@@ -1488,8 +1488,8 @@ export const translations = {
           detail: "War reserve for the future MiCA-compliant project. Public multisig. Funded by its OWN valuation — never by your swaps.",
         },
         liquidity: {
-          name: "Liquidity & Raydium Ascension",
-          detail: "Launched on Pump.fun. Surgical migration to Raydium as soon as the Bonding Curve completes. LP reinforcement stabilizes the ≈€0.0005 target price.",
+          name: "Liquidity & PumpSwap Ascension",
+          detail: "Launched on Pump.fun. Surgical migration to PumpSwap as soon as the Bonding Curve completes. LP reinforcement stabilizes the ≈€0.0005 target price.",
         },
         marketing: {
           name: "Traction & X/TG Operations",
@@ -1581,7 +1581,7 @@ export const translations = {
       kicker: "— ON-CHAIN TRANSPARENCY",
       title: "Pump.fun Launch & Treasury Discipline",
       subtitle:
-        "From D0 to Raydium Ascension. Every step is published before execution.",
+        "From D0 to PumpSwap Ascension. Every step is published before execution.",
       timeline: [
         {
           phase: "D0",
@@ -1604,17 +1604,17 @@ export const translations = {
           ],
         },
         {
-          phase: "Raydium Ascension",
-          title: "Automatic migration to Raydium",
+          phase: "PumpSwap Ascension",
+          title: "Automatic migration to PumpSwap",
           bullets: [
-            "Pump.fun burns the initial LP and migrates to Raydium (≈ $12k)",
+            "Pump.fun burns the initial LP and migrates to PumpSwap (≈ $12k)",
             "Surgical LP reinforcement to stabilize target price ≈ €0.0005",
             "External top-up + controlled treasury sales pre-announced",
             "Security audit published + on-chain verification open to everyone",
           ],
         },
         {
-          phase: "Raydium → ∞",
+          phase: "PumpSwap → ∞",
           title: "Anti-Dump Discipline",
           bullets: [
             "Multisig + timelock on the treasury",
@@ -1652,7 +1652,7 @@ export const translations = {
         base: {
           label: "Base (average case)",
           short: "Base",
-          caption: "Raydium migration goes through, moderate community. Price holds a plateau around $5e-5, no euphoria.",
+          caption: "PumpSwap migration goes through, moderate community. Price holds a plateau around $5e-5, no euphoria.",
           multiplier: 25,
         },
         optimistic: {
@@ -1686,7 +1686,7 @@ export const translations = {
           subtitle: "Bonding curve · 0% tax",
         },
         phase02: {
-          title: "Raydium Migration",
+          title: "PumpSwap Migration",
           subtitle: "LP burn · market opens",
         },
         phase03: {
@@ -1783,12 +1783,12 @@ export const translations = {
           tag: "Phase 4",
           code: "ΔΣ-04",
           status: "encrypted",
-          title: "Charity",
-          subtitle: "J+60 · the Cabinet gives back.",
+          title: "Loyalty Mandate",
+          subtitle: "J+60 · the Cabinet buys back for the loyal.",
           bullets: [
-            "Confirmed charity partnership",
-            "UNICEF / Telethon-style event",
-            "Public donation traced on-chain",
+            "ΔΣ buybacks fire on every milestone the people unlock",
+            "Monthly distributions to Niveau 02+ citizens",
+            "The longer the crowd stays loyal, the more the Cabinet rebuys",
           ],
         },
         {
@@ -2045,7 +2045,7 @@ export const translations = {
         s1: "Open the PumpSwap pool",
         s2: "Connect your Phantom wallet",
         s3: "Swap SOL → $DEEPOTUS",
-        s4_raydium: "Optional — also tradable on Raydium",
+        s4_pumpswap: "Optional — also tradable on PumpSwap",
       },
     },
 

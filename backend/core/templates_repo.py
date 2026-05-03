@@ -174,7 +174,7 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "{mc_label} MC: One dial turns. The Vault chimes. You're starting to see the pattern, aren't you?",
      "mentions_vault": True},
     {"trigger_key": "mc_milestone", "language": "en",
-     "content": "{mc_label} MC: Halfway to the Raydium Ascension. The elites are starting to notice the noise. Keep pushing."},
+     "content": "{mc_label} MC: Halfway to the PumpSwap Ascension. The elites are starting to notice the noise. Keep pushing."},
     {"trigger_key": "mc_milestone", "language": "en",
      "content": "{mc_label} reached. Six figures or zero — the prophecy doesn't allow middle ground."},
     # Jeet dip (Trigger 2) — seeded for 13.2 readiness
@@ -189,11 +189,11 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "A silent player just moved a mountain. Someone with a high clearance level just entered the chat. Watch the chart. ({whale_amount} SOL)"},
     {"trigger_key": "whale_buy", "language": "en",
      "content": "{whale_amount} SOL in one go. That's not a retail buyer. That's an insider. Follow the smart money."},
-    # Raydium (Trigger 5)
-    {"trigger_key": "raydium_migration", "language": "en",
-     "content": "The Bonding Curve has collapsed. We have ascended to Raydium. The old world is dead. Long live $DEEPOTUS. {raydium_link}"},
-    {"trigger_key": "raydium_migration", "language": "en",
-     "content": "PROTOCOL ΔΣ is evolving. Raydium migration complete. The LP is being locked. The Vault is permanent now. {raydium_link}",
+    # PumpSwap (Trigger 5)
+    {"trigger_key": "pumpswap_migration", "language": "en",
+     "content": "The Bonding Curve has collapsed. We have ascended to PumpSwap. The old world is dead. Long live $DEEPOTUS. {pumpswap_link}"},
+    {"trigger_key": "pumpswap_migration", "language": "en",
+     "content": "PROTOCOL ΔΣ is evolving. PumpSwap migration complete. The LP is being locked. The Vault is permanent now. {pumpswap_link}",
      "mentions_vault": True},
     # ----- FR seed pool (Sprint 13.2) -----
     {"trigger_key": "mint", "language": "fr",
@@ -206,7 +206,7 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "{mc_label} MC : un cadran tourne. Le Coffre vibre. Vous commencez à voir le motif, n'est-ce pas ?",
      "mentions_vault": True},
     {"trigger_key": "mc_milestone", "language": "fr",
-     "content": "{mc_label} MC : à mi-chemin de l'Ascension Raydium. Les élites commencent à entendre le bruit. Continuez."},
+     "content": "{mc_label} MC : à mi-chemin de l'Ascension PumpSwap. Les élites commencent à entendre le bruit. Continuez."},
     {"trigger_key": "jeet_dip", "language": "fr",
      "content": "Regardez-les se battre pour des miettes. Les mains faibles sont purgées. Le Deep State adore une remise."},
     {"trigger_key": "jeet_dip", "language": "fr",
@@ -217,10 +217,10 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "Un joueur silencieux vient de déplacer une montagne. Quelqu'un avec un haut niveau d'habilitation est entré dans la pièce. Surveillez le graphique. ({whale_amount} SOL)"},
     {"trigger_key": "whale_buy", "language": "fr",
      "content": "{whale_amount} SOL d'un coup. Ce n'est pas un acheteur retail. C'est un initié. Suivez l'argent intelligent."},
-    {"trigger_key": "raydium_migration", "language": "fr",
-     "content": "La Bonding Curve s'est effondrée. Nous avons accédé à Raydium. L'ancien monde est mort. Vive $DEEPOTUS. {raydium_link}"},
-    {"trigger_key": "raydium_migration", "language": "fr",
-     "content": "PROTOCOLE ΔΣ évolue. Migration Raydium complète. La LP est verrouillée. Le Coffre est désormais permanent. {raydium_link}",
+    {"trigger_key": "pumpswap_migration", "language": "fr",
+     "content": "La Bonding Curve s'est effondrée. Nous avons accédé à PumpSwap. L'ancien monde est mort. Vive $DEEPOTUS. {pumpswap_link}"},
+    {"trigger_key": "pumpswap_migration", "language": "fr",
+     "content": "PROTOCOLE ΔΣ évolue. Migration PumpSwap complète. La LP est verrouillée. Le Coffre est désormais permanent. {pumpswap_link}",
      "mentions_vault": True},
     # ----- Whale buy — tier-aware seed (Sprint 15.2) -----
     # Placeholder {tier} resolves to "T1" / "T2" / "T3"; the templates

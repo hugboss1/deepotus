@@ -293,7 +293,7 @@ async def fire(
     # safely interpolate even when the trigger payload doesn't include
     # them explicitly.
     payload.setdefault("buy_link", market.get("buy_link", ""))
-    payload.setdefault("raydium_link", market.get("raydium_link", ""))
+    payload.setdefault("pumpswap_link", market.get("pumpswap_link", ""))
     payload.setdefault("vault_link", market.get("vault_link", ""))
     rendered = _safe_format(tpl["content"], payload)
 

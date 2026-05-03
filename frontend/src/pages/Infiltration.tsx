@@ -990,7 +990,7 @@ function SleeperTab() {
     );
   }
 
-  const allTriggers = ["mint", "whale_buy", "mc_milestone", "raydium_migration", "jeet_dip"];
+  const allTriggers = ["mint", "whale_buy", "mc_milestone", "pumpswap_migration", "jeet_dip"];
 
   return (
     <div className="space-y-6">

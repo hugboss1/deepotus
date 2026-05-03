@@ -113,12 +113,12 @@ export function HeroHeadline() {
           external: true,
           testId: "hero-cta-pumpswap",
         },
-        secondary: PHASE_URLS.raydium
+        secondary: PHASE_URLS.pumpswap
           ? {
-              label: t("hero.cta.tradeRaydium") as string,
-              href: PHASE_URLS.raydium,
+              label: t("hero.cta.tradePumpSwap") as string,
+              href: PHASE_URLS.pumpswap,
               external: true,
-              testId: "hero-cta-raydium",
+              testId: "hero-cta-pumpswap",
             }
           : null,
       };

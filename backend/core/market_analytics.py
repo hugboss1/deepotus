@@ -126,7 +126,7 @@ async def current_market_snapshot() -> Dict[str, Any]:
       * ``last_milestone_usd`` — highest tier we've already announced
       * ``milestone_tiers`` — configured tier list
       * ``dex_token_address`` / ``dex_mode`` — from ``vault_state``
-      * ``buy_link`` / ``raydium_link`` — resolved from settings / Cabinet Vault
+      * ``buy_link`` / ``pumpswap_link`` — resolved from settings / Cabinet Vault
         when available, else empty strings (templates safely degrade).
     """
     vs = await db.vault_state.find_one({"_id": "protocol_delta_sigma"}) or {}
@@ -150,9 +150,9 @@ async def current_market_snapshot() -> Dict[str, Any]:
         settings.get("buy_link_override")
         or _build_pump_link(vs.get("dex_token_address") or "")
     )
-    raydium_link = (
-        settings.get("raydium_link_override")
-        or _build_raydium_link(vs.get("dex_token_address") or "")
+    pumpswap_link = (
+        settings.get("pumpswap_link_override")
+        or _build_pumpswap_link(vs.get("dex_token_address") or "")
     )
 
     return {
@@ -164,7 +164,7 @@ async def current_market_snapshot() -> Dict[str, Any]:
         "dex_mode": vs.get("dex_mode"),
         "helius_pool_address": vs.get("helius_pool_address"),
         "buy_link": buy_link,
-        "raydium_link": raydium_link,
+        "pumpswap_link": pumpswap_link,
         "last_buy": await _last_buy_safe(),
     }
 
@@ -200,7 +200,7 @@ def _build_pump_link(mint: str) -> str:
     return f"https://pump.fun/{mint}"
 
 
-def _build_raydium_link(mint: str) -> str:
+def _build_pumpswap_link(mint: str) -> str:
     if not mint:
         return ""
-    return f"https://raydium.io/swap/?inputCurrency=sol&outputCurrency={mint}"
+    return f"https://swap.pump.fun/?inputCurrency=sol&outputCurrency={mint}"

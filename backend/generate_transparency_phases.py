@@ -86,8 +86,8 @@ PHASES = {
         "arc with marked checkpoints). Coffee ring stains on the corner. "
         "Mood: focused, calculated ascension."
     ),
-    "phase_03_raydium_migration.png": (
-        "PHASE 03 - 'RAYDIUM ASCENSION'.\n"
+    "phase_03_pumpswap_migration.png": (
+        "PHASE 03 - 'PUMPSWAP ASCENSION'.\n"
         "Visual narrative: a contract page mid-migration. Two diagrammatic "
         "circles connected by a thick gold arrow (representing pool migration). "
         "Burnt edges on the left circle (the LP being burned). A small "
@@ -96,7 +96,7 @@ PHASES = {
         "Mood: irreversible commitment, transition."
     ),
     "phase_04_anti_dump.png": (
-        "PHASE 04 - 'RAYDIUM → ∞ · ANTI-DUMP DISCIPLINE'.\n"
+        "PHASE 04 - 'PUMPSWAP → ∞ · ANTI-DUMP DISCIPLINE'.\n"
         "Visual narrative: a contract page showing diagrammatic icons of "
         "discipline: a small balance scale (justice), an antique padlock "
         "with multiple keys (multisig), a clock face with 48h marked, "

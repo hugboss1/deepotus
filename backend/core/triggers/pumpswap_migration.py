@@ -1,8 +1,8 @@
-"""Trigger 5 — Raydium ascension.
+"""Trigger 5 — PumpSwap ascension.
 
 Fires once when the bonding curve hits 100 % and the LP migrates to
-Raydium. We trust the ``vault_state.dex_mode`` field as the source of
-truth: the value flips from ``pumpfun`` (or ``helius``) to ``raydium``
+PumpSwap. We trust the ``vault_state.dex_mode`` field as the source of
+truth: the value flips from ``pumpfun`` (or ``helius``) to ``pumpswap``
 the moment the migration is detected by our Helius webhook handler.
 
 Idempotency: keyed by the mint address — a single token never migrates
@@ -19,10 +19,10 @@ def _detect(ctx: TriggerCtx) -> TriggerResult:
         return TriggerResult(
             fired=True,
             payload={
-                "raydium_link": ctx.payload_override.get("raydium_link", ""),
+                "pumpswap_link": ctx.payload_override.get("pumpswap_link", ""),
                 "mint": ctx.payload_override.get("mint", ""),
             },
-            idempotency_key="manual:raydium",
+            idempotency_key="manual:pumpswap",
         )
 
     market = ctx.market or {}
@@ -30,25 +30,25 @@ def _detect(ctx: TriggerCtx) -> TriggerResult:
     dex_mode = (market.get("dex_mode") or "").strip().lower()
     if not mint:
         return TriggerResult(fired=False, reason="no_mint")
-    if dex_mode != "raydium":
+    if dex_mode != "pumpswap":
         return TriggerResult(fired=False, reason=f"dex_mode_is_{dex_mode or 'unset'}")
     return TriggerResult(
         fired=True,
         payload={
-            "raydium_link": market.get("raydium_link", ""),
+            "pumpswap_link": market.get("pumpswap_link", ""),
             "mint": mint,
         },
-        idempotency_key=f"raydium:{mint}",
+        idempotency_key=f"pumpswap:{mint}",
     )
 
 
-RAYDIUM_MIGRATION = register_trigger(
+PUMPSWAP_MIGRATION = register_trigger(
     Trigger(
-        key="raydium_migration",
-        label="Raydium Ascension",
+        key="pumpswap_migration",
+        label="PumpSwap Ascension",
         description=(
             "Fires once when the bonding curve completes (100 %) and the LP "
-            "migrates to Raydium. Posts the new chart link — idempotent on mint."
+            "migrates to PumpSwap. Posts the new chart link — idempotent on mint."
         ),
         default_policy="approval",
         default_cooldown_minutes=720,  # one announcement per launch lifetime

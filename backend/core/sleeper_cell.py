@@ -4,7 +4,7 @@ A global pre-launch toggle the operator flips ON before the token is
 minted and OFF the moment the contract goes live on Pump.fun. When ON:
 
   * the landing page hides every ``buy_link`` / direct purchase CTA,
-  * the Propaganda Engine's mint / whale / raydium triggers are blocked
+  * the Propaganda Engine's mint / whale / pumpswap triggers are blocked
     (the market simply isn't live yet — no point shouting about it),
   * only the Proof-of-Intelligence terminal stays fully accessible —
     that's the only legitimate entry point for pre-launch agents.
@@ -40,7 +40,7 @@ DEFAULT_DOC: Dict[str, Any] = {
     ),
     "activated_at": datetime.now(timezone.utc).isoformat(),
     "deactivated_at": None,
-    "blocked_triggers": ["mint", "whale_buy", "mc_milestone", "raydium_migration"],
+    "blocked_triggers": ["mint", "whale_buy", "mc_milestone", "pumpswap_migration"],
     "version": 1,
 }
 

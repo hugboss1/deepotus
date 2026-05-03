@@ -13,7 +13,7 @@
  *
  *   PRE-MINT   : wallet → fund SOL → whitelist → wait
  *   LIVE       : open Pump.fun → connect → buy SOL → watch curve
- *   GRADUATED  : open PumpSwap → connect → swap → (optional Raydium)
+ *   GRADUATED  : open PumpSwap → connect → swap → (optional PumpSwap)
  *
  * The "Trade on Telegram (BonkBot)" CTA is shown in EVERY phase — it
  * works pre-mint (waitlist) and post-mint (referral link if env is set)
@@ -45,12 +45,12 @@ function getStepsForPhase(phase: ReturnType<typeof getLaunchPhase>): PhaseStep[]
       },
       { icon: <Wallet size={14} />, labelKey: "howToBuyPhased.graduated.s2" },
       { icon: <Activity size={14} />, labelKey: "howToBuyPhased.graduated.s3" },
-      ...(PHASE_URLS.raydium
+      ...(PHASE_URLS.pumpswap
         ? [
             {
               icon: <ExternalLink size={14} />,
-              labelKey: "howToBuyPhased.graduated.s4_raydium",
-              href: PHASE_URLS.raydium,
+              labelKey: "howToBuyPhased.graduated.s4_pumpswap",
+              href: PHASE_URLS.pumpswap,
               external: true,
             },
           ]

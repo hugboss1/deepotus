@@ -216,7 +216,7 @@ export const HeliusSection: React.FC<HeliusSectionProps> = ({
           <Input
             value={heliusPool}
             onChange={(e) => setHeliusPool(e.target.value)}
-            placeholder="Raydium/Orca pool address"
+            placeholder="PumpSwap/Orca pool address"
             className="font-mono text-xs mt-1"
             data-testid="admin-helius-pool"
           />

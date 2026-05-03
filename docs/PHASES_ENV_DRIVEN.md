@@ -13,7 +13,7 @@ a redeploy-only operation.
 |---|---|---|---|---|---|
 | **PRE-MINT** | No mint yet | Join Whitelist | Get wallet → fund SOL → whitelist → wait | Lock pending (amber) | Phase 0 done · Phase 1 next |
 | **LIVE** | Mint set + Pump.fun URL set | Buy on Pump.fun | Open Pump.fun → connect → buy → watch curve | Locks active (green) | Phase 1 active |
-| **GRADUATED** | PumpSwap URL set | Trade on PumpSwap | Open PumpSwap → connect → swap → optional Raydium | Locks active | Phase 2 done |
+| **GRADUATED** | PumpSwap URL set | Trade on PumpSwap | Open PumpSwap → connect → swap → optional PumpSwap | Locks active | Phase 2 done |
 
 The decision logic is centralised in [`frontend/src/lib/launchPhase.ts`](frontend/src/lib/launchPhase.ts):
 
@@ -35,7 +35,7 @@ BurnCounter) reads `getLaunchPhase()` once at render time and adapts.
 | `REACT_APP_DEEPOTUS_MINT` | live | base58 mint address | `7K3aFJk2WyAcRtBzKsLpFnV5Hg7XyZ9bKf3WgT8rN5Hp` |
 | `REACT_APP_PUMPFUN_URL` | live | full URL | `https://pump.fun/coin/7K3aFJk...` |
 | `REACT_APP_PUMPSWAP_URL` | graduated | full URL | `https://pumpswap.com/pool/...` |
-| `REACT_APP_RAYDIUM_URL` | (optional) | full URL | `https://raydium.io/swap/?inputCurrency=SOL...` |
+| `REACT_APP_PUMPSWAP_URL` | (optional) | full URL | `https://swap.pump.fun/?inputCurrency=SOL...` |
 | `REACT_APP_TEAM_LOCK_URL` | tokenomics badge | lock.jup.ag URL | `https://lock.jup.ag/...team` |
 | `REACT_APP_TREASURY_LOCK_URL` | tokenomics badge | lock.jup.ag URL | `https://lock.jup.ag/...treasury` |
 | `REACT_APP_BONKBOT_REF_URL` | how-to-buy footer | t.me referral | `https://t.me/BonkBot_bot?start=ref_xxx` |

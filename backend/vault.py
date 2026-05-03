@@ -146,7 +146,7 @@ class VaultStateResponse(BaseModel):
     recent_events: List[VaultEvent] = Field(default_factory=list)
     # DEX public status (non-sensitive; just advertises live-feed source)
     dex_mode: str = "off"           # off | demo | custom | helius
-    dex_label: Optional[str] = None # e.g. "BONK · raydium"
+    dex_label: Optional[str] = None # e.g. "BONK · pumpswap"
     dex_pair_symbol: Optional[str] = None
 
 

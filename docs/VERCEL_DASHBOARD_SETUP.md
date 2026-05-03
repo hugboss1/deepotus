@@ -25,7 +25,7 @@ Le préfixe accepté par CRA est **`REACT_APP_`**, point final.
 | `REACT_APP_SITE_URL` | `https://deepotus.com` | Production | Pour SEO meta tags (og:url, canonical) |
 | `REACT_APP_DEEPOTUS_MINT` | `<mint address Solana>` | Production | Post-mint seulement |
 | `REACT_APP_PUMPFUN_URL` | `https://pump.fun/coin/<MINT>` | Production | Optionnel |
-| `REACT_APP_RAYDIUM_URL` | `https://raydium.io/swap?...` | Production | Optionnel |
+| `REACT_APP_PUMPSWAP_URL` | `https://swap.pump.fun/?...` | Production | Optionnel |
 | `REACT_APP_TEAM_LOCK_URL` | `https://team.finance/...` | Production | Optionnel |
 | `REACT_APP_TREASURY_LOCK_URL` | `https://...` | Production | Optionnel |
 

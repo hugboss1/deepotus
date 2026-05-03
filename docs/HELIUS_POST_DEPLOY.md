@@ -87,7 +87,7 @@ swaps :
   sera minté — si vous êtes encore en pre-launch, gardez l'adresse demo
   `So11111111111111111111111111111111111111112` qui est celle du wrapped SOL
   utilisée comme placeholder et qui active le mode demo).
-- `helius_pool_address` = l'adresse du pool Raydium/Orca — connue seulement
+- `helius_pool_address` = l'adresse du pool PumpSwap/Orca — connue seulement
   après création du pool.
 
 **Depuis l'admin UI**, section **Whale Watcher → Helius Config** (ou via curl) :
@@ -241,7 +241,7 @@ curl -X POST https://VOTRE-BACKEND.onrender.com/api/admin/vault/dex-config \
   -d '{ "dex_mode": "demo" }'
 ```
 
-Une fois le pool créé sur Raydium et le mint mainnet annoncé :
+Une fois le pool créé sur PumpSwap et le mint mainnet annoncé :
 
 ```bash
 curl -X POST https://VOTRE-BACKEND.onrender.com/api/admin/vault/dex-config \

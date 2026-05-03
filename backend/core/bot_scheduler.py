@@ -322,6 +322,27 @@ async def _kol_listener_job() -> None:
         logging.exception("[bot_scheduler] kol listener tick failed")
 
 
+async def _cadence_tick_job() -> None:
+    """Run the Sprint-19 cadence engine tick (daily + reactive).
+
+    Runs every 60 s. Internally honours kill-switch + quiet hours +
+    per-platform enabled toggles + per-day / per-milestone dedup, so
+    flipping `cadence.daily_schedule.x.enabled` off in the admin
+    dashboard pauses the daily slots within ~1 minute without any
+    rescheduling on our side.
+
+    Decoupled from `_run_guarded` because cadence is platform-agnostic
+    (it pushes into the propaganda queue; the dispatch worker is what
+    eventually calls X / Telegram and is itself kill-switch-aware).
+    """
+    from core.cadence_engine import cadence_combined_tick  # noqa: WPS433
+
+    try:
+        await cadence_combined_tick()
+    except Exception:
+        logging.exception("[bot_scheduler] cadence tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -467,6 +488,29 @@ async def sync_jobs_from_config() -> None:
         coalesce=True,
         misfire_grace_time=60,
     )
+
+    # ---- Cadence engine tick (Sprint 19) ----
+    # Runs every 60 s and pushes V2 posts into the propaganda queue
+    # when the configured daily slots fire OR when holder/marketcap
+    # milestones are crossed. The job is unconditionally scheduled —
+    # the engine itself reads `bot_config.cadence` on every tick and
+    # short-circuits when nothing is enabled, so no rescheduling is
+    # required when the admin flips toggles.
+    if _scheduler.get_job("cadence_tick"):
+        _scheduler.reschedule_job(
+            "cadence_tick",
+            trigger=IntervalTrigger(seconds=60),
+        )
+    else:
+        _scheduler.add_job(
+            _cadence_tick_job,
+            trigger=IntervalTrigger(seconds=60),
+            id="cadence_tick",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
 
 
 async def start_scheduler() -> AsyncIOScheduler:

@@ -22,7 +22,7 @@ schedule you can pull from Streamflow / Squads dashboards.
 |--------------------------|------|----------------|------------------------------|------------------------------------------------|
 | **Treasury (project)**   | 30 % | 300,000,000    | `Wallet_TREASURY` (Squads multisig, 2-of-3) | Subject to the Treasury Take-Profit Policy in §3 |
 | **Team vesting**         | 15 % | 150,000,000    | `Wallet_TEAM_VESTING` (Streamflow contract) | **3-month cliff + 12-month linear vest**       |
-| **Public liquidity**     | 25 % | 250,000,000    | Pump.fun bonding curve, then Raydium LP burned at migration | **Burned LP** at Raydium migration (no team rug possible) |
+| **Public liquidity**     | 25 % | 250,000,000    | Pump.fun bonding curve, then PumpSwap LP burned at migration | **Burned LP** at PumpSwap migration (no team rug possible) |
 | **Airdrop & Clearance**  | 10 % | 100,000,000    | `Wallet_AIRDROPS`           | Reserved for Proof-of-Intelligence holders (§4) |
 | **Marketing & KOLs**     | 10 % | 100,000,000    | `Wallet_MARKETING`           | Spent on disclosed line items (§5)             |
 | **Founder allocation**   | 10 % | 100,000,000    | `Wallet_FOUNDER`             | **3-month cliff + 12-month linear vest** (Streamflow), parity with team |
@@ -68,7 +68,7 @@ without dumping the chart, we commit to the following **public schedule** :
 |-----------------------------------------------------|----------------------------------------------------|-----------|
 | **Phase 1** — `MC ≥ 5× initial MC` (break-even)     | Sell up to **10 %** of Treasury position           | EUR 5 k   |
 | **Phase 2** — `MC ≥ 15× initial MC` (growth)        | Sell up to **20 %** of Treasury position           | EUR 25 k  |
-| **Phase 3** — Post-Raydium migration                | Sell up to **5 % per "green candle"** (≥+15% / 1h) | EUR 250 k |
+| **Phase 3** — Post-PumpSwap migration                | Sell up to **5 % per "green candle"** (≥+15% / 1h) | EUR 250 k |
 
 ### Operational rules
 1. **Multisig signature**: every Treasury sell requires 2-of-3 Squads multisig
@@ -172,7 +172,7 @@ and the founder commits to publicly disowning any such deployment:
 - ❌ **No T-0 sniper bots** funded by team or founder.
 - ❌ **No private OTC "team allocation" buys** at favorable prices outside
   the public tokenomics above.
-- ❌ **No spoofing** (placing then cancelling orders) on Raydium / Jupiter.
+- ❌ **No spoofing** (placing then cancelling orders) on PumpSwap / Jupiter.
 
 Any community member who spots evidence of the above is invited to file a
 report on `/transparency#whistleblow`. Verified reports trigger an immediate

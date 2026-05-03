@@ -105,7 +105,7 @@ Vérifier que les variables suivantes sont définies (sinon l'app charge mais le
 | **`REACT_APP_BACKEND_URL`** | `https://deepotus.onrender.com` | **OBLIGATOIRE.** URL Render prod, SANS `/api`, SANS `/` à la fin. |
 | `REACT_APP_SITE_URL` | `https://deepotus.com` | Pour les meta tags SEO (og:url, canonical, JSON-LD). |
 | `REACT_APP_DEEPOTUS_MINT` | `<mint Solana>` | Post-mint. Avant le mint, laisser vide. |
-| `REACT_APP_PUMPFUN_URL` / `REACT_APP_RAYDIUM_URL` | URLs Pump.fun / Raydium | Optionnelles, utilisées dans HowToBuy. |
+| `REACT_APP_PUMPFUN_URL` / `REACT_APP_PUMPSWAP_URL` | URLs Pump.fun / PumpSwap | Optionnelles, utilisées dans HowToBuy. |
 | `REACT_APP_TEAM_LOCK_URL` / `REACT_APP_TREASURY_LOCK_URL` | URLs d'audit wallet | Optionnelles, utilisées dans le Transparency panel. |
 
 > ⚠️ **Le seul préfixe accepté par CRA5 est `REACT_APP_`.** Ne PAS créer de `VITE_*` ou `NEXT_PUBLIC_*` — ils sont ignorés par le build et polluent la config.

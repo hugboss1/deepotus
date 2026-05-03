@@ -76,7 +76,6 @@ export const URLS = {
   // Direct buy / trade flows
   pumpfun: env("REACT_APP_PUMPFUN_URL"),
   pumpswap: env("REACT_APP_PUMPSWAP_URL"),
-  raydium: env("REACT_APP_RAYDIUM_URL"),
   bonkbot: env("REACT_APP_BONKBOT_REF_URL"),
 
   // Lock proofs (lock.jup.ag deep links — pre-filled at lock-creation)

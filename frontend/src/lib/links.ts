@@ -10,8 +10,8 @@ export const PUMPFUN_URL: string = (
   process.env.REACT_APP_PUMPFUN_URL || ""
 ).trim();
 
-export const RAYDIUM_URL: string = (
-  process.env.REACT_APP_RAYDIUM_URL || ""
+export const PUMPSWAP_URL: string = (
+  process.env.REACT_APP_PUMPSWAP_URL || ""
 ).trim();
 
 // Public Jupiter Lock / Streamflow URLs that prove team & treasury tokens
@@ -61,10 +61,10 @@ export function hasAnyLock(): boolean {
  */
 export function getBuyUrl(): string {
   if (PUMPFUN_URL) return PUMPFUN_URL;
-  if (RAYDIUM_URL) return RAYDIUM_URL;
+  if (PUMPSWAP_URL) return PUMPSWAP_URL;
   return "#whitelist";
 }
 
 export function isBuyUrlExternal(): boolean {
-  return Boolean(PUMPFUN_URL || RAYDIUM_URL);
+  return Boolean(PUMPFUN_URL || PUMPSWAP_URL);
 }

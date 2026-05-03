@@ -295,6 +295,27 @@ async def process_pending_alerts(limit: int = 1) -> Dict[str, int]:
                     },
                 )
                 processed += 1
+                # ---- Sprint 19 cadence reactive whale hook ----
+                # Independent V2 post on top of the v1 fire — only
+                # if cadence.reactive_triggers is enabled AND the
+                # SOL volume passes cadence's own threshold. Failures
+                # are swallowed so a cadence hiccup never disrupts
+                # the v1 pipeline.
+                try:
+                    from core.cadence_engine import (  # noqa: WPS433
+                        cadence_whale_react,
+                    )
+
+                    await cadence_whale_react(
+                        sol_amount=float(claimed.get("amount_sol") or 0),
+                        tx_signature=claimed.get("tx_signature"),
+                        wallet=claimed.get("buyer"),
+                    )
+                except Exception:  # noqa: BLE001
+                    logger.exception(
+                        "[whale-watcher] cadence_whale_react failed for %s",
+                        claimed.get("_id"),
+                    )
             else:
                 # Fire returned ok=False — likely panic ON, trigger disabled,
                 # cooldown active, or no template. Mark skipped (with

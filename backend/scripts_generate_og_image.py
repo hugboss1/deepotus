@@ -162,7 +162,7 @@ def build_og_canvas() -> Image.Image:
     rb_font = _try_font(FONT_MONO_PATHS, 20)
     rb1 = "AI-PROPHET"
     rb2 = "MICA-AWARE"
-    rb3 = "PUMP.FUN → RAYDIUM"
+    rb3 = "PUMP.FUN → PUMPSWAP"
     pad_x, pad_y = 12, 6
     bx_right = W - 56
     by = H - 56

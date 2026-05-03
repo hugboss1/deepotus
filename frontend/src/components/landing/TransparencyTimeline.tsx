@@ -24,7 +24,7 @@ const PHASE_VISUALS = [
     accent: "#22D3EE",
   },
   {
-    image: "/phase_03_raydium_migration.png",
+    image: "/phase_03_pumpswap_migration.png",
     icon: Shield,
     accent: "#E11D48",
   },
