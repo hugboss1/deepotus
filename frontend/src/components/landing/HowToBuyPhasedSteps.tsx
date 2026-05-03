@@ -125,6 +125,12 @@ export function HowToBuyPhasedSteps() {
       </div>
       <ol className="space-y-2.5">
         {steps.map((step, idx) => {
+          // Stable composite key — `labelKey` is a deterministic i18n
+          // string (e.g. "howToBuyPhased.preMint.step1.label") and is
+          // unique per step within a phase. Falls back to `href` when
+          // present so this still works if a phase ever ships two steps
+          // sharing a labelKey but pointing at different URLs.
+          const stepKey = `${step.labelKey}::${step.href || "no-href"}`;
           const label = t(step.labelKey) as string;
           const inner = (
             <div className="flex items-start gap-3">
@@ -145,7 +151,7 @@ export function HowToBuyPhasedSteps() {
           );
           if (step.href) {
             return (
-              <li key={idx}>
+              <li key={stepKey}>
                 <a
                   href={step.href}
                   target={step.external ? "_blank" : undefined}
@@ -159,7 +165,7 @@ export function HowToBuyPhasedSteps() {
             );
           }
           return (
-            <li key={idx} className="px-2 py-1.5" data-testid={`howtobuy-step-${idx + 1}`}>
+            <li key={stepKey} className="px-2 py-1.5" data-testid={`howtobuy-step-${idx + 1}`}>
               {inner}
             </li>
           );

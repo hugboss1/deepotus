@@ -33,46 +33,15 @@ counter + exponential backoff in 13.3.x.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Callable, Coroutine, Dict, Optional
 
+# Shared types live in `base.py` to avoid a circular import with the
+# per-platform dispatcher modules (which import these primitives at
+# module load time). We re-export them here so external callers can
+# keep using ``from core.dispatchers import DispatchOutcome, DispatchResult``.
+from core.dispatchers.base import DispatchOutcome, DispatchResult
+
 logger = logging.getLogger("deepotus.propaganda.dispatchers")
-
-
-class DispatchOutcome(str, Enum):
-    SENT = "sent"
-    FAILED = "failed"
-
-
-@dataclass
-class DispatchResult:
-    """Per-platform dispatch report. Stored as a dict in
-    ``propaganda_queue.results[<platform>]`` for audit trail."""
-
-    outcome: DispatchOutcome
-    platform_message_id: Optional[str] = None  # tweet ID, telegram msg ID, …
-    error: Optional[str] = None  # human-readable failure reason
-    dry_run: bool = False
-    duration_ms: int = 0
-    response_snippet: Optional[str] = None  # first ~200 chars for diagnostics
-    #: ``True`` for retry-eligible failures (network timeout, 429, 5xx).
-    #: The worker will re-schedule the item with exponential backoff
-    #: instead of marking it terminally failed. Default ``False`` —
-    #: only set explicitly by dispatchers when they detect a known
-    #: transient class of error.
-    transient_failure: bool = False
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "outcome": self.outcome.value,
-            "platform_message_id": self.platform_message_id,
-            "error": self.error,
-            "dry_run": self.dry_run,
-            "duration_ms": self.duration_ms,
-            "response_snippet": self.response_snippet,
-            "transient_failure": self.transient_failure,
-        }
 
 
 # ---------------------------------------------------------------------

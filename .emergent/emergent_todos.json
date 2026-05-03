@@ -1,22 +1,38 @@
 [
   {
-    "content": "Préparer le récap de push GitHub : lister tous les fichiers Sprint 18 + 19 + commit message clair",
+    "content": "C1: résoudre l'import circulaire dispatchers/__init__.py ↔ telegram.py",
     "status": "completed"
   },
   {
-    "content": "Explorer dex.py + vault_state pour comprendre où brancher le holders poller",
+    "content": "C3: identifier + corriger les 15 variables Python potentiellement undefined (ruff scan)",
     "status": "completed"
   },
   {
-    "content": "Créer core/holders_poller.py : tente Birdeye (si key) puis Helius getProgramAccounts en fallback, persiste dans vault_state.dex_holders_count",
+    "content": "I7: corriger les 141 'is' → '==' dans le backend (vault.py, routers/*.py)",
     "status": "completed"
   },
   {
-    "content": "Brancher le poller dans dex.py loop OU nouveau scheduler job (~5min interval)",
+    "content": "C2: corriger les hook deps critiques (useClassifiedSession, WhaleWatcherTab, NewsRepostSection, ThemeProvider)",
     "status": "completed"
   },
   {
-    "content": "Tests: lint + curl test polling + vérifier que cadence_reactive_tick cesse d'être None pour holders",
+    "content": "C4: localStorage → sessionStorage pour données sensibles (adminAuth, classifiedSession)",
+    "status": "completed"
+  },
+  {
+    "content": "I8: index-as-key → stable id dans HowToBuyPhasedSteps",
+    "status": "completed"
+  },
+  {
+    "content": "I10: nettoyer les 5 console statements",
+    "status": "completed"
+  },
+  {
+    "content": "Tests post-fixes: lint Python + ESLint + redemarrer services",
+    "status": "completed"
+  },
+  {
+    "content": "Documenter les refactors lourds reportés (#5, #6, #9) dans plan.md",
     "status": "completed"
   }
 ]

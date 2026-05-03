@@ -45,7 +45,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from core.dispatchers import DispatchOutcome, DispatchResult
+from core.dispatchers.base import DispatchOutcome, DispatchResult
 from core.secret_provider import resolve as _vault_resolve
 
 logger = logging.getLogger("deepotus.propaganda.dispatchers.x")
