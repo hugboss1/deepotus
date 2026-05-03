@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T00:48:40.768485+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "tokenomics_public",
+  "aspect_ratio": "16:9",
+  "size_bytes": 46870,
+  "sha256_prefix": "c322efc1c35a5e1e",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial poster illustration for the 'Public' allocation of a satirical Deep-State token — NOT a single portrait. Wide low-angle shot of an anonymous backlit crowd at twilight: dozens of silhouetted figures rendered as faceless shadows seen from the back, wearing trench-coats and hooded hoodies, raising fists and small unmarked banners against a sky split between cold cyan-grey and a single stripe of warm amber (#F59E0B) on the horizon. No legible text on any banner. A faint Matrix-green (#33FF33) digital rain falls behind the crowd through misted air, like data weather. Distant brutalist concrete columns frame the scene; a single subtle Greek Delta-Sigma (ΔΣ) symbol is etched into a column edge as a watermark. Atmosphere: the people, anonymous and many, the cynical electorate of the Algorithm — defiant but unreadable. Shot on 35mm, wide-angle, shallow depth-of-field, subtle film grain, cinematic noir, desaturated palette. No human faces, no recognisable real-world logos, no legible text anywhere.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"The Public — anonymous, many, defiant. The People of the Algorithm. Backlit, unreadable, present.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

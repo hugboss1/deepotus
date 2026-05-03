@@ -72,16 +72,49 @@ HINTS = {
         "The Prophet is about to speak. The command post is silent. "
         "The monitors glow. The chair is empty, still warm."
     ),
+    # ----- Tokenomics card heroes (Sprint 17.A — design refresh) -----
+    "tokenomics_public": (
+        "The Public — anonymous, many, defiant. The People of "
+        "the Algorithm. Backlit, unreadable, present."
+    ),
+    "tokenomics_treasury": (
+        "The Treasury — locked, audited, weighty. An institution, "
+        "not a wallet. Embassy-grade vault, ΔΣ monogram."
+    ),
+    "tokenomics_shadows": (
+        "The Council — anonymous operators, never named. Black "
+        "overcoats. Long marble corridor. Discreet earpieces."
+    ),
+    "tokenomics_burn": (
+        "The Ritual — what the Cabinet destroys, the Cabinet "
+        "remembers. Ceremonial brazier, plain paper, sparks."
+    ),
 }
 
-#: Only these content types are email heroes. Reject anything else so
-#: we don't accidentally produce bot-preview assets here.
+#: Email hero types — the original use-case for this script. Tokenomics
+#: types are listed separately so we can reject mismatched paths
+#: (e.g. ``--content-type prophecy`` would be a bot preview, not an
+#: email or a card).
 EMAIL_HERO_TYPES = {
     "loyalty_hero",
     "welcome_hero",
     "accreditation_hero",
     "prophet_update_hero",
 }
+
+#: Tokenomics card heroes — render at the same 16:9 ratio as email
+#: heroes but the cards crop them to a vertical-ish bottom block, so
+#: composition guidance in the briefs accounts for both framings.
+TOKENOMICS_CARD_TYPES = {
+    "tokenomics_public",
+    "tokenomics_treasury",
+    "tokenomics_shadows",
+    "tokenomics_burn",
+}
+
+#: Combined whitelist used by ``generate_one`` to validate the
+#: requested ``--content-type``.
+ALLOWED_TYPES = EMAIL_HERO_TYPES | TOKENOMICS_CARD_TYPES
 
 
 def _optimise(raw_png: bytes) -> tuple[bytes, dict]:
@@ -112,11 +145,13 @@ def _optimise(raw_png: bytes) -> tuple[bytes, dict]:
 
 
 async def generate_one(content_type: str) -> int:
-    """Generate a single email asset. Returns process-exit code."""
-    if content_type not in EMAIL_HERO_TYPES:
+    """Generate a single asset (email hero or tokenomics card). Returns
+    process-exit code. The ALLOWED_TYPES check covers both families
+    so callers can pass either kind without changing flags."""
+    if content_type not in ALLOWED_TYPES:
         print(
-            f"[email-asset] FAILED: '{content_type}' is not an email hero "
-            f"type. Valid: {sorted(EMAIL_HERO_TYPES)}",
+            f"[email-asset] FAILED: '{content_type}' is not a registered "
+            f"asset type. Valid: {sorted(ALLOWED_TYPES)}",
             file=sys.stderr,
         )
         return 2
@@ -182,7 +217,7 @@ async def main() -> int:
     )
     parser.add_argument(
         "--content-type",
-        choices=sorted(EMAIL_HERO_TYPES),
+        choices=sorted(ALLOWED_TYPES),
         help="Single content type to (re)generate.",
     )
     parser.add_argument(
@@ -190,11 +225,25 @@ async def main() -> int:
         action="store_true",
         help="Regenerate ALL email hero assets sequentially.",
     )
+    parser.add_argument(
+        "--all-tokenomics",
+        action="store_true",
+        help="Regenerate ALL tokenomics card heroes sequentially.",
+    )
     args = parser.parse_args()
 
-    if not args.content_type and not args.all:
-        parser.error("Provide either --content-type <type> or --all.")
+    if not args.content_type and not args.all and not args.all_tokenomics:
+        parser.error("Provide --content-type, --all or --all-tokenomics.")
 
+    if args.all_tokenomics:
+        rc = 0
+        for ct in sorted(TOKENOMICS_CARD_TYPES):
+            code = await generate_one(ct)
+            if code != 0:
+                rc = code
+                print(f"[email-asset] aborting --all-tokenomics after {ct} failure")
+                break
+        return rc
     if args.all:
         rc = 0
         for ct in sorted(EMAIL_HERO_TYPES):

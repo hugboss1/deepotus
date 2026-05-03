@@ -1,46 +1,34 @@
 [
   {
-    "content": "TASK 10 - lib/launchPhase.ts helper centralise",
+    "content": "1 - Ajouter 4 content_types tokenomics + briefs visuels persona-aligned",
     "status": "completed"
   },
   {
-    "content": "TASK 6 - Backend treasury operations endpoints + Mongo collection",
+    "content": "2 - Generaliser script generate_email_asset (--all-tokenomics)",
     "status": "completed"
   },
   {
-    "content": "TASK 1 - Page /transparency",
+    "content": "3 - Generer 4 illustrations gpt-image-1 optimisees (28-47 KB)",
     "status": "completed"
   },
   {
-    "content": "TASK 2 - Hero 3 phases env-driven (pre/live/graduated)",
+    "content": "4 - Refondre TokenomicsCards (4 cartes uniformes 1/3 texte + 2/3 image)",
     "status": "completed"
   },
   {
-    "content": "TASK 3 - Tokenomics badges 3 slices avec lock URLs",
+    "content": "5 - Integrer BurnCounter comme 4e carte dans le grid",
     "status": "completed"
   },
   {
-    "content": "TASK 4 - HowToBuy 3 phases",
+    "content": "6 - Translations FR/EN titres satiriques",
     "status": "completed"
   },
   {
-    "content": "TASK 5 - Roadmap update 6 phases avec status dynamique",
+    "content": "7 - Build + screenshot validation",
     "status": "completed"
   },
   {
-    "content": "TASK 9 - Burn counter widget",
-    "status": "completed"
-  },
-  {
-    "content": "Lien 'Transparency' dans footer + nav",
-    "status": "completed"
-  },
-  {
-    "content": "docs/PHASES_ENV_DRIVEN.md - section Pre-mint/Mint phases doc env-driven",
-    "status": "completed"
-  },
-  {
-    "content": "Build prod + service restart + tests health checks",
+    "content": "Cleanup orphans + final build",
     "status": "completed"
   }
 ]

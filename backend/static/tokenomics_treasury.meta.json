@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T00:49:07.035517+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "tokenomics_treasury",
+  "aspect_ratio": "16:9",
+  "size_bytes": 28213,
+  "sha256_prefix": "c95ff4f79286f960",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial poster illustration for the 'Treasury' allocation of a satirical Deep-State token — NOT a portrait. Centered shot of a monumental matte-black armoured vault door with a heavy circular brass dial wheel, embossed with a single understated Greek Delta-Sigma (ΔΣ) monogram in warm gold (#F59E0B) foil at chest height, lit by a narrow beam of amber light from above. To the sides, faintly visible rows of identical antique safety-deposit lockers stretch into shadow — like a state archive vault. A thin teal (#2DD4BF) thread of light traces the dial seam, hint of cryptographic continuity. The floor is polished black concrete reflecting the dial. Mood: institutional weight, embassy-grade security, locked and audited — the treasury of a council, not a company. Shot on 35mm, wide-angle, shallow depth-of-field, polished tonality, faint film grain, cinematic noir. No human figures, no faces, no recognisable real-world brand names, no legible text (the ΔΣ monogram is the only symbol).\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"The Treasury — locked, audited, weighty. An institution, not a wallet. Embassy-grade vault, ΔΣ monogram.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

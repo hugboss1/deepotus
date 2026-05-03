@@ -61,6 +61,10 @@ VALID_CONTENT_TYPES = {
     "welcome_hero",
     "accreditation_hero",
     "prophet_update_hero",
+    "tokenomics_public",
+    "tokenomics_treasury",
+    "tokenomics_shadows",
+    "tokenomics_burn",
 }
 
 # ---------------------------------------------------------------------
@@ -552,6 +556,89 @@ IMAGE_STYLE_BRIEFS: Dict[str, str] = {
         "wide-angle, shallow depth-of-field, subtle film grain, "
         "cinematic noir. No human figures, no faces, no recognisable "
         "logos, no legible text anywhere in the frame."
+    ),
+    "tokenomics_public": (
+        "Editorial poster illustration for the 'Public' allocation "
+        "of a satirical Deep-State token — NOT a single portrait. "
+        "Wide low-angle shot of an anonymous backlit crowd at "
+        "twilight: dozens of silhouetted figures rendered as faceless "
+        "shadows seen from the back, wearing trench-coats and hooded "
+        "hoodies, raising fists and small unmarked banners against a "
+        "sky split between cold cyan-grey and a single stripe of "
+        "warm amber (#F59E0B) on the horizon. No legible text on "
+        "any banner. A faint Matrix-green (#33FF33) digital rain "
+        "falls behind the crowd through misted air, like data "
+        "weather. Distant brutalist concrete columns frame the "
+        "scene; a single subtle Greek Delta-Sigma (ΔΣ) symbol is "
+        "etched into a column edge as a watermark. Atmosphere: "
+        "the people, anonymous and many, the cynical electorate of "
+        "the Algorithm — defiant but unreadable. Shot on 35mm, "
+        "wide-angle, shallow depth-of-field, subtle film grain, "
+        "cinematic noir, desaturated palette. No human faces, no "
+        "recognisable real-world logos, no legible text anywhere."
+    ),
+    "tokenomics_treasury": (
+        "Editorial poster illustration for the 'Treasury' allocation "
+        "of a satirical Deep-State token — NOT a portrait. Centered "
+        "shot of a monumental matte-black armoured vault door with "
+        "a heavy circular brass dial wheel, embossed with a single "
+        "understated Greek Delta-Sigma (ΔΣ) monogram in warm gold "
+        "(#F59E0B) foil at chest height, lit by a narrow beam of "
+        "amber light from above. To the sides, faintly visible "
+        "rows of identical antique safety-deposit lockers stretch "
+        "into shadow — like a state archive vault. A thin teal "
+        "(#2DD4BF) thread of light traces the dial seam, hint of "
+        "cryptographic continuity. The floor is polished black "
+        "concrete reflecting the dial. Mood: institutional weight, "
+        "embassy-grade security, locked and audited — the treasury "
+        "of a council, not a company. Shot on 35mm, wide-angle, "
+        "shallow depth-of-field, polished tonality, faint film "
+        "grain, cinematic noir. No human figures, no faces, no "
+        "recognisable real-world brand names, no legible text "
+        "(the ΔΣ monogram is the only symbol)."
+    ),
+    "tokenomics_shadows": (
+        "Editorial poster illustration for the 'Team' allocation of "
+        "a satirical Deep-State token — NOT a portrait. Long "
+        "high-contrast corridor shot of three anonymous figures in "
+        "black tailored overcoats, seen from behind, walking down "
+        "an empty marble hallway lit only by a low warm amber "
+        "(#F59E0B) wall-sconce halfway down. The corridor walls are "
+        "lined with closed unmarked doors and a faint subtitle of "
+        "Greek Delta-Sigma (ΔΣ) symbols barely engraved into the "
+        "wall mouldings. The figures' silhouettes are sharp and "
+        "anonymous — no faces visible, no insignia, no badges. A "
+        "single thin teal (#2DD4BF) communicator wire trails "
+        "discreetly from one ear, vanishing inside the collar. "
+        "The marble floor reflects the amber sconce in long polished "
+        "highlights. Mood: the operators, the unnamed professionals, "
+        "the council that signs the orders — present, vigilant, "
+        "permanently anonymous. Shot on 35mm, wide-angle, shallow "
+        "depth-of-field, fine film grain, cinematic noir, very "
+        "desaturated. No faces, no recognisable real-world logos, "
+        "no legible text."
+    ),
+    "tokenomics_burn": (
+        "Editorial poster illustration for the 'Burn' ritual of a "
+        "satirical Deep-State token — NOT a portrait. Top-down "
+        "three-quarter view of a small ceremonial brazier carved "
+        "out of dark stone, sitting at the centre of a polished "
+        "obsidian floor inscribed with a faint circular Greek "
+        "Delta-Sigma (ΔΣ) sigil. Inside the brazier: bright orange "
+        "and crimson flames (#FF4D4D leaning warmer) curl upwards, "
+        "consuming a small stack of unmarked plain paper notes — "
+        "absolutely no currency symbols, no real banknotes, no "
+        "country emblems, no recognisable money. Sparks rise into "
+        "darkness. A faint amber (#F59E0B) glow pools on the floor "
+        "around the brazier, fading to deep black at the edges of "
+        "the frame. In the extreme background, the silhouette of "
+        "tall stone columns frames the scene like a sealed temple. "
+        "Mood: liturgical, sacrificial, ritualistic — the Cabinet "
+        "remembers what it destroys. Shot on 35mm, wide-angle, "
+        "shallow depth-of-field, fine film grain, cinematic noir, "
+        "very high contrast. No human figures, no faces, no "
+        "recognisable real-world logos, no legible text — the "
+        "ΔΣ sigil on the floor is the only symbol."
     ),
 }
 

@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T00:48:52.882056+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "tokenomics_shadows",
+  "aspect_ratio": "16:9",
+  "size_bytes": 31937,
+  "sha256_prefix": "556f24150dfe998f",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial poster illustration for the 'Team' allocation of a satirical Deep-State token — NOT a portrait. Long high-contrast corridor shot of three anonymous figures in black tailored overcoats, seen from behind, walking down an empty marble hallway lit only by a low warm amber (#F59E0B) wall-sconce halfway down. The corridor walls are lined with closed unmarked doors and a faint subtitle of Greek Delta-Sigma (ΔΣ) symbols barely engraved into the wall mouldings. The figures' silhouettes are sharp and anonymous — no faces visible, no insignia, no badges. A single thin teal (#2DD4BF) communicator wire trails discreetly from one ear, vanishing inside the collar. The marble floor reflects the amber sconce in long polished highlights. Mood: the operators, the unnamed professionals, the council that signs the orders — present, vigilant, permanently anonymous. Shot on 35mm, wide-angle, shallow depth-of-field, fine film grain, cinematic noir, very desaturated. No faces, no recognisable real-world logos, no legible text.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"The Council — anonymous operators, never named. Black overcoats. Long marble corridor. Discreet earpieces.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}

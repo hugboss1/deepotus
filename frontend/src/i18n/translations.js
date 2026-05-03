@@ -472,6 +472,34 @@ export const translations = {
         lockPending: "🔒 Lock activé après mint",
         summary: "45% verrouillés · 5 portefeuilles transparents · Voir /transparency",
       },
+      // Sprint 17.A — refonte 4 cartes illustrees
+      cards: {
+        sectionTitle: "Quatre dossiers du Conseil",
+        transparencyLink: "Auditer les 5 portefeuilles · /transparency",
+        lockPending: "🔒 Lock pending",
+        public: {
+          title: "Le Peuple Algorithmique",
+          terms: "Bonding curve · Marché libre",
+          alt: "Foule anonyme silhouettes de dos, signes vides, ambiance dystopique cyan/amber.",
+        },
+        treasury: {
+          title: "Le Coffre Scellé",
+          locked: "🔒 Verrouillé 6 mois",
+          alt: "Porte de coffre-fort blindee monogramme ΔΣ, archive d'État.",
+        },
+        shadows: {
+          title: "Les Ombres du Conseil",
+          locked: "🔒 6mo cliff + 12mo vesting",
+          alt: "Trois silhouettes anonymes en pardessus noir dans un long couloir de marbre.",
+        },
+        burn: {
+          title: "Le Feu Rituel",
+          empty: "Phase 1 active · Premier burn à J+30",
+          tokens: "$DEEPOTUS détruits",
+          lastBurn: "Dernier rituel",
+          alt: "Brasier ceremonial sur sol obsidienne, sceau ΔΣ grave, papiers vierges en flammes.",
+        },
+      },
     },
 
     // ---- Transparency / Liquidity timeline ----
@@ -1482,6 +1510,34 @@ export const translations = {
         },
         lockPending: "🔒 Lock pending — activated post-mint",
         summary: "45% locked · 5 wallets transparent · See /transparency",
+      },
+      // Sprint 17.A — illustrated 4-card refresh
+      cards: {
+        sectionTitle: "Four Council dossiers",
+        transparencyLink: "Audit the 5 wallets · /transparency",
+        lockPending: "🔒 Lock pending",
+        public: {
+          title: "The Algorithmic People",
+          terms: "Bonding curve · Free market",
+          alt: "Anonymous silhouette crowd from behind, blank signs, cyan/amber dystopian atmosphere.",
+        },
+        treasury: {
+          title: "The Sealed Vault",
+          locked: "🔒 Locked 6mo",
+          alt: "Armoured vault door with ΔΣ monogram, state-archive grade.",
+        },
+        shadows: {
+          title: "The Council's Shadows",
+          locked: "🔒 6mo cliff + 12mo vesting",
+          alt: "Three anonymous figures in black overcoats walking down a marble corridor.",
+        },
+        burn: {
+          title: "The Ritual Fire",
+          empty: "Phase 1 active · First burn at J+30",
+          tokens: "$DEEPOTUS destroyed",
+          lastBurn: "Last ritual",
+          alt: "Ceremonial brazier on obsidian floor with engraved ΔΣ sigil, plain papers burning.",
+        },
       },
     },
 

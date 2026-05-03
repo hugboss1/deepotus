@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-03T00:48:27.979086+00:00",
+  "provider": "openai",
+  "model": "gpt-image-1",
+  "content_type": "tokenomics_burn",
+  "aspect_ratio": "16:9",
+  "size_bytes": 33480,
+  "sha256_prefix": "ea3b192554342782",
+  "prompt": "Cinematic 16:9 LANDSCAPE frame, optimized for X / Twitter in-feed display\n\nVisual direction:\nEditorial poster illustration for the 'Burn' ritual of a satirical Deep-State token — NOT a portrait. Top-down three-quarter view of a small ceremonial brazier carved out of dark stone, sitting at the centre of a polished obsidian floor inscribed with a faint circular Greek Delta-Sigma (ΔΣ) sigil. Inside the brazier: bright orange and crimson flames (#FF4D4D leaning warmer) curl upwards, consuming a small stack of unmarked plain paper notes — absolutely no currency symbols, no real banknotes, no country emblems, no recognisable money. Sparks rise into darkness. A faint amber (#F59E0B) glow pools on the floor around the brazier, fading to deep black at the edges of the frame. In the extreme background, the silhouette of tall stone columns frames the scene like a sealed temple. Mood: liturgical, sacrificial, ritualistic — the Cabinet remembers what it destroys. Shot on 35mm, wide-angle, shallow depth-of-field, fine film grain, cinematic noir, very high contrast. No human figures, no faces, no recognisable real-world logos, no legible text — the ΔΣ sigil on the floor is the only symbol.\n\nNarrative hook (translate this idea into a purely visual scene — DO NOT render the text itself inside the image):\n\"The Ritual — what the Cabinet destroys, the Cabinet remembers. Ceremonial brazier, plain paper, sparks.\"\n\nABSOLUTE RULES:\n- NO visible text, NO letters, NO numbers unless they are clearly part of the Matrix code rain or the engraved Greek glyphs.\n- NO watermark, NO logo, NO signature, NO AI disclaimer badge.\n- NO real politician likeness, NO real brand logos.\n- NO hands with more than 5 fingers.\n- Palette locked to: near-black #0B0D10, Matrix green #33FF33, cyan #2DD4BF, gold #F59E0B, campaign-red #E11D48 (used sparingly).\n- Photorealistic hybrid with digital-painting finish, cinematic volumetric lighting, 35mm film grain, subtle chromatic aberration.",
+  "optimisation": {
+    "original_size": [
+      1536,
+      1024
+    ],
+    "resized_to": [
+      960,
+      540
+    ],
+    "quality": 85,
+    "format": "JPEG"
+  }
+}
