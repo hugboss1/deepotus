@@ -1,22 +1,22 @@
 [
   {
-    "content": "T1: trouver la carte 5 'campagne du candidat IA' + réécrire le texte (slogan politique buybacks conditionnels, supprimer toute référence charity/UNICEF/téléthon)",
+    "content": "Préparer le récap de push GitHub : lister tous les fichiers Sprint 18 + 19 + commit message clair",
     "status": "completed"
   },
   {
-    "content": "T2: remplacer toutes occurrences 'raydium' → 'PumpSwap' (frontend + backend + i18n + docs + renommage fichier trigger)",
+    "content": "Explorer dex.py + vault_state pour comprendre où brancher le holders poller",
     "status": "completed"
   },
   {
-    "content": "T3 (Sprint 19): scheduler wiring cadence.daily_schedule → lire slots UTC + invoquer generate_post_v2 + respecter quiet hours",
+    "content": "Créer core/holders_poller.py : tente Birdeye (si key) puis Helius getProgramAccounts en fallback, persiste dans vault_state.dex_holders_count",
     "status": "completed"
   },
   {
-    "content": "T4 (Sprint 19): reactive_triggers wiring → Helius webhook (whale buys) + holder/marketcap polling → fire post",
+    "content": "Brancher le poller dans dex.py loop OU nouveau scheduler job (~5min interval)",
     "status": "completed"
   },
   {
-    "content": "Tests: lint + curl + screenshot end-to-end + plan.md mis à jour",
+    "content": "Tests: lint + curl test polling + vérifier que cadence_reactive_tick cesse d'être None pour holders",
     "status": "completed"
   }
 ]

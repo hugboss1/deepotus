@@ -218,6 +218,29 @@
 
 - ✅ **Whale watcher hook** : `core/whale_watcher.py:process_pending_alerts` ajoute un `try/except await cadence_whale_react(...)` après le push v1 propaganda (en fire-and-forget, swallow les exceptions pour ne pas casser la pipeline existante).
 
+#### Sprint 19.1 — Holders poller (Helius DAS) — ✅ COMPLET
+- ✅ Nouveau module `backend/core/holders_poller.py` (~290 lignes) :
+  - **Source 1 — Helius DAS `getTokenAccounts`** : pagination via cursor, page_size=1000, max_pages=100 (cap = 100k accounts pour éviter runaway sur un token mature). Compte les `token_accounts` avec `amount > 0`.
+  - **Source 2 — DexScreener** : placeholder explicite (pas de holders field exposé en early 2026), retourne erreur tagguée pour le fallback.
+  - **Skip silencieux** si aucun mint dans `vault_state.dex_token_address` (état pre-mint).
+  - Persiste sur succès : `dex_holders_count`, `dex_holders_polled_at`, `dex_holders_source="helius"`, `dex_holders_approximate` (true si cap atteint), `dex_holders_error=None`. Sur erreur : `dex_holders_error` préservé pour observabilité, count laissé inchangé.
+  - Helper `_decode_amount_from_b64()` gardé sans usage immédiat — couvre une future migration vers `getProgramAccounts` raw.
+- ✅ **Job scheduler** `holders_poll` enregistré dans `bot_scheduler.py` :
+  - `IntervalTrigger(seconds=POLL_INTERVAL_SECONDS=300)` → 5 minutes.
+  - `max_instances=1`, `coalesce=True`, `misfire_grace_time=60`.
+  - `GET /api/admin/bots/jobs` confirme `holders_poll` actif aux côtés de `cadence_tick`, `whale_watcher`, etc.
+- ✅ **Test live sur BONK** (`DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263`, ~870k holders) :
+  - 100 pages × 1000 accounts paginées en ~13 secondes via Helius DAS.
+  - Résultat : `count=99997, approximate=true` (cap 100k atteint comme attendu).
+  - Persistance vault_state validée puis cleanup automatique.
+- ✅ **Test E2E cadence_holder** :
+  - Injection `dex_holders_count=750` via Mongo + `reactive_triggers.enabled=true` via router (proper deep merge).
+  - Attente 1 cycle scheduler 60s → log `[cadence] fired trigger=cadence_holder plat=x template=stats queue_id=afa00d68-...`.
+  - Mongo `propaganda_queue` → item avec `template_id="stats"` et content cohérent : *"Council ΔΣ archive: for every new holder, 3.7 European bureaucrats lose one hour of sleep."*
+  - Dedup persisté `cadence._state.fired_milestones.holders=[500]`.
+  - Cleanup final : kill_switch ON + reactive disabled + test mint retiré.
+- ✅ `_read_market_snapshot()` dans `cadence_engine.py` corrigé : utilise `VAULT_DOC_ID = "protocol_delta_sigma"` (était `"deepotus_protocol"` — incorrect) → l'engine lit maintenant le bon doc.
+
 ---
 
 ## 2) Implementation Steps

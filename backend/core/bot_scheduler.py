@@ -343,6 +343,25 @@ async def _cadence_tick_job() -> None:
         logging.exception("[bot_scheduler] cadence tick failed")
 
 
+async def _holders_poll_job() -> None:
+    """Refresh the live holders count for the $DEEPOTUS mint.
+
+    Sprint-19.1 — feeds ``vault_state.dex_holders_count``, which the
+    cadence reactive tick reads to fire holder-milestone posts. Runs
+    every ``POLL_INTERVAL_SECONDS`` (5 minutes by default). Holders
+    move slowly relative to trades, so this cadence is a sweet spot
+    between freshness and Helius RPC budget.
+
+    Skipped silently when no mint is configured yet (pre-mint state).
+    """
+    from core.holders_poller import poll_holders_once  # noqa: WPS433
+
+    try:
+        await poll_holders_once()
+    except Exception:
+        logging.exception("[bot_scheduler] holders poll tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -506,6 +525,30 @@ async def sync_jobs_from_config() -> None:
             _cadence_tick_job,
             trigger=IntervalTrigger(seconds=60),
             id="cadence_tick",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+
+    # ---- Holders poller (Sprint 19.1) ----
+    # Feeds `vault_state.dex_holders_count` so the cadence reactive
+    # tick can fire holder-milestone posts. Helius DAS getTokenAccounts
+    # is the primary source; the job no-ops (with an info log) until
+    # the mint address is set on the vault state, so it's safe to run
+    # in pre-mint preview mode.
+    from core.holders_poller import POLL_INTERVAL_SECONDS as _HOLDERS_INTERVAL
+
+    if _scheduler.get_job("holders_poll"):
+        _scheduler.reschedule_job(
+            "holders_poll",
+            trigger=IntervalTrigger(seconds=_HOLDERS_INTERVAL),
+        )
+    else:
+        _scheduler.add_job(
+            _holders_poll_job,
+            trigger=IntervalTrigger(seconds=_HOLDERS_INTERVAL),
+            id="holders_poll",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

@@ -190,7 +190,9 @@ async def _read_market_snapshot() -> Dict[str, Any]:
         "holders": None,
     }
     try:
-        doc = await db.vault_state.find_one({"_id": "deepotus_protocol"})
+        # `VAULT_DOC_ID` is "protocol_delta_sigma" in vault.py — keep this
+        # in sync if the singleton ID ever changes.
+        doc = await db.vault_state.find_one({"_id": "protocol_delta_sigma"})
     except Exception:  # noqa: BLE001
         logger.exception("[cadence] vault_state read failed")
         return snapshot
