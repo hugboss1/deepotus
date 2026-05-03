@@ -1,22 +1,22 @@
 [
   {
-    "content": "Sprint 22.2: explorer AdminVault.jsx pour repérer les interfaces clés à typer (data shapes)",
+    "content": "Status check: Sprint 22.2 (AdminVault.jsx → .tsx) — déjà terminé",
     "status": "completed"
   },
   {
-    "content": "Sprint 22.2: renommer .jsx → .tsx + ajouter interfaces minimales (VaultState + DexPollResult)",
+    "content": "Task A / Sprint 22.3 — Extraire le dialog + section 'Custom LLM keys' de AdminBots.tsx vers CustomLlmKeysSection.tsx (1037 → 743 lignes, -28%)",
     "status": "completed"
   },
   {
-    "content": "Sprint 22.2: fix les éventuels type errors de compilation (useEffect return, payload typing, unknown ReactNode)",
+    "content": "Task A — Vérif compilation TS + test visuel /admin/bots (VALIDÉ)",
     "status": "completed"
   },
   {
-    "content": "Tests: compile check + screenshot visual AdminVault + restart frontend",
-    "status": "completed"
+    "content": "Task C / Sprint 22.4 — Durcir tsconfig.json progressivement (activer noImplicitAny, strictNullChecks) et corriger les erreurs",
+    "status": "in_progress"
   },
   {
-    "content": "Mettre à jour plan.md + SPRINT_21_22_DEPLOY.md avec l'état final",
-    "status": "completed"
+    "content": "Task E / Sprint 22.5 — Ajouter couverture pytest backend additionnelle + bootstrap Playwright E2E",
+    "status": "pending"
   }
 ]
