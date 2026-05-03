@@ -29,6 +29,7 @@ import {
   Trash2,
   Lock as LockIcon,
   ShieldCheck,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import { logger } from "@/lib/logger";
 import LoyaltySection from "@/pages/admin/sections/LoyaltySection";
 import NewsRepostSection from "@/pages/admin/sections/NewsRepostSection";
 import NewsFeedSection from "@/pages/admin/sections/NewsFeedSection";
+import AdminCadenceSection from "@/pages/admin/sections/AdminCadenceSection";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -108,6 +110,14 @@ export default function AdminBots() {
   const [previewKeywords, setPreviewKeywords] = useState("");
   const [useNewsContext, setUseNewsContext] = useState(false);
 
+  // ---- Sprint 18 — Prompt v2 toggles for the Preview tab ----
+  // useV2Preview routes the request through generate_post_v2 (5 weighted
+  // templates). When ON, content_type / kol_post are ignored server-side
+  // and `forceTemplateV2` (optional) overrides the random pick.
+  const [useV2Preview, setUseV2Preview] = useState(false);
+  const [forceTemplateV2, setForceTemplateV2] = useState(""); // "" = random
+  const [v2Templates, setV2Templates] = useState([]);
+
   // ---- News-feed aggregator state (Config tab "News Feed" section) ----
   // News feed state has moved to <NewsFeedSection /> (Sprint 6 split).
   // It now owns its own state, draft inputs, and refresh API call.
@@ -161,6 +171,7 @@ export default function AdminBots() {
         loadJobs(),
         loadPosts(),
         loadContentTypes(),
+        loadV2Templates(),
       ]);
     } finally {
       setLoading(false);
@@ -207,6 +218,19 @@ export default function AdminBots() {
     try {
       const { data } = await axios.get(`${API}/api/admin/bots/content-types`, { headers });
       setContentTypes(Array.isArray(data) ? data : []);
+    } catch (err) {
+      logger.error(err);
+    }
+  }
+
+  // ---- Sprint 18 — V2 templates metadata for the Preview tab dropdown ----
+  async function loadV2Templates() {
+    try {
+      const { data } = await axios.get(
+        `${API}/api/admin/bots/v2-templates`,
+        { headers },
+      );
+      setV2Templates(Array.isArray(data) ? data : []);
     } catch (err) {
       logger.error(err);
     }
@@ -349,8 +373,14 @@ export default function AdminBots() {
         image_provider: effectiveProvider,
         image_aspect_ratio: imageAspect,
         use_news_context: useNewsContext,
+        use_v2: useV2Preview,
       };
-      if (previewType === "kol_reply") body.kol_post = kolPost.trim();
+      if (useV2Preview && forceTemplateV2) {
+        body.force_template_v2 = forceTemplateV2;
+      }
+      if (previewType === "kol_reply" && !useV2Preview) {
+        body.kol_post = kolPost.trim();
+      }
       const cleanedKw = (previewKeywords || "")
         .split(",")
         .map((k) => k.trim())
@@ -540,12 +570,15 @@ export default function AdminBots() {
         </section>
 
         <Tabs defaultValue="config" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
             <TabsTrigger value="config" data-testid="tab-config">
               <Settings size={14} className="mr-1" /> Config
             </TabsTrigger>
             <TabsTrigger value="preview" data-testid="tab-preview">
               <Wand2 size={14} className="mr-1" /> Preview
+            </TabsTrigger>
+            <TabsTrigger value="cadence" data-testid="tab-cadence">
+              <CalendarClock size={14} className="mr-1" /> Cadence
             </TabsTrigger>
             <TabsTrigger value="jobs" data-testid="tab-jobs">
               <Clock size={14} className="mr-1" /> Jobs
@@ -724,6 +757,32 @@ export default function AdminBots() {
 
                 <Separator />
 
+                {/* ---- Sprint 18 — Prompt v2 toggle ---- */}
+                <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <Sparkles size={13} className="text-[#F59E0B]" />
+                      Prompt V2 — 5 weighted templates
+                    </Label>
+                    <Switch
+                      checked={Boolean(config?.prompt_v2?.enabled)}
+                      onCheckedChange={(v) =>
+                        patchConfig(
+                          { prompt_v2: { enabled: v } },
+                          `Prompt v2 ${v ? "ENABLED" : "disabled"}`,
+                        )
+                      }
+                      data-testid="config-prompt-v2-toggle"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    When ON, the Prophet rolls between <span className="font-mono">lore</span> · <span className="font-mono">satire_news</span>{" "}
+                    · <span className="font-mono">stats</span> · <span className="font-mono">prophecy</span> · <span className="font-mono">meme_visual</span>{" "}
+                    using weighted random (4·3·1·1·1). Use the Cadence tab to whitelist archetypes per slot. Use the Preview tab → "Use V2" to test.
+                  </p>
+                </div>
+
+                <Separator />
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-widest">
                     LLM preset
@@ -1085,6 +1144,59 @@ export default function AdminBots() {
 
                 <Separator />
 
+                {/* ---- Sprint 18 — Prompt v2 controls ---- */}
+                <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={14} className="text-[#F59E0B]" />
+                      <Label className="font-medium text-sm">
+                        Use Prompt V2 (5 weighted templates)
+                      </Label>
+                    </div>
+                    <Switch
+                      checked={useV2Preview}
+                      onCheckedChange={setUseV2Preview}
+                      data-testid="preview-v2-toggle"
+                    />
+                  </div>
+                  {useV2Preview && (
+                    <>
+                      <p className="text-[10.5px] text-muted-foreground leading-relaxed">
+                        Routes through <span className="font-mono">generate_post_v2()</span>.
+                        The content type / KOL post above are ignored. Pick a specific
+                        template below to override the weighted random pick.
+                      </p>
+                      <div>
+                        <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                          Force template (optional)
+                        </Label>
+                        <Select
+                          value={forceTemplateV2 || "__random__"}
+                          onValueChange={(v) =>
+                            setForceTemplateV2(v === "__random__" ? "" : v)
+                          }
+                        >
+                          <SelectTrigger className="mt-2" data-testid="preview-v2-template-select">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__random__">
+                              ⚖ Weighted random (4·3·1·1·1)
+                            </SelectItem>
+                            {v2Templates.map((tpl) => (
+                              <SelectItem key={tpl.id} value={tpl.id}>
+                                {tpl.id} · weight {tpl.weight} — {tpl.label_en}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <Separator />
+
                 {/* Nano Banana image toggle */}
                 <div className="space-y-3 rounded-lg border border-border/60 bg-background/40 p-3">
                   <div className="flex items-center justify-between gap-2">
@@ -1186,6 +1298,23 @@ export default function AdminBots() {
 
                 {preview && (
                   <div className="space-y-4">
+                    {preview.template_used && (
+                      <div
+                        className="rounded-md border border-[#F59E0B]/30 bg-[#F59E0B]/5 px-3 py-2 flex items-center gap-2"
+                        data-testid="preview-v2-template-badge"
+                      >
+                        <Sparkles size={13} className="text-[#F59E0B]" />
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#F59E0B]">
+                          V2 Template
+                        </span>
+                        <span className="font-mono text-[11px]">
+                          {preview.template_used}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {preview.template_label}
+                        </span>
+                      </div>
+                    )}
                     <div className="rounded-lg border border-border/80 bg-background/40 p-4">
                       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
                         FR · {preview.content_fr.length}/{preview.char_budget}
@@ -1349,6 +1478,11 @@ export default function AdminBots() {
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          {/* -------------------- CADENCE TAB -------------------- */}
+          <TabsContent value="cadence" className="mt-6">
+            <AdminCadenceSection api={API} headers={headers} />
           </TabsContent>
 
           {/* -------------------- JOBS TAB -------------------- */}

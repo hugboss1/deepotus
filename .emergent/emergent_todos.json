@@ -1,30 +1,34 @@
 [
   {
-    "content": "Ajouter 3 briefs IMAGE_STYLE_BRIEFS (transparency_distribution, transparency_rugcheck, transparency_operations) dans prophet_studio.py",
+    "content": "Explorer prophet_studio.py + AdminBots.jsx + bot_config_repo pour saisir l'architecture existante",
     "status": "completed"
   },
   {
-    "content": "Étendre generate_email_asset.py: HINTS + TRANSPARENCY_VISUAL_TYPES + flag --all-transparency",
+    "content": "TASK 7 backend: ajouter PROMPT_TEMPLATES_V2 (5 templates pondérés) + generate_post_v2() + list_v2_templates() dans prophet_studio.py",
     "status": "completed"
   },
   {
-    "content": "Générer les 3 illustrations IA via script (transparency_distribution.jpg / _rugcheck.jpg / _operations.jpg)",
+    "content": "TASK 7+8 backend: étendre bot_config_repo (DEFAULT + ALLOWED_PATCH_KEYS pour prompt_v2 + cadence)",
     "status": "completed"
   },
   {
-    "content": "Refonte TokenomicsCards.tsx: layout aligné + animations Framer Motion + ombres colorées dominantes par carte + titre style 'allocation & discipline'",
+    "content": "TASK 7+8 backend: étendre routers/bots.py (Pydantic patches + _shape_config + use_v2 dans generate-preview + endpoint GET /v2-templates)",
     "status": "completed"
   },
   {
-    "content": "Refonte Transparency.tsx: carrousel central inspiré 'On-Chain Transparency' pour distribution / rugcheck / operations + style typographique cohérent",
+    "content": "TASK 7 frontend: toggle 'Use V2' dans AdminBots.jsx (Config tab) + dropdown 'Force template' dans Preview tab + badge template_used dans output",
     "status": "completed"
   },
   {
-    "content": "Mettre à jour les traductions FR/EN pour les nouvelles sections",
+    "content": "TASK 8 frontend: AdminBots.jsx ajouter onglet 'Cadence' (schedule TG/X + triggers + quiet hours)",
     "status": "completed"
   },
   {
-    "content": "Validation visuelle via screenshot tool (light + dark + hover)",
+    "content": "Tests: lint + curl backend endpoints + screenshot frontend + test end-to-end (V2 généré meme_visual avec contenu correct)",
+    "status": "completed"
+  },
+  {
+    "content": "Préparer un guide push GitHub + déploiement Vercel (à exécuter par l'utilisateur)",
     "status": "completed"
   }
 ]

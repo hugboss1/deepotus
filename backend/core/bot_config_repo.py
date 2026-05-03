@@ -83,6 +83,49 @@ DEFAULT_BOT_CONFIG: Dict[str, Any] = {
         "prefix_fr": "⚡ INTERCEPTÉ ·",
         "prefix_en": "⚡ INTERCEPT ·",
     },
+    # ---- Prompt V2 (Sprint 18 — 5 weighted templates) ----
+    # When `enabled` is true, generate_post_v2() is used instead of
+    # the original generate_post(). Off by default so the rollout is
+    # an explicit admin opt-in.
+    "prompt_v2": {
+        "enabled": False,
+    },
+    # ---- Cadence (Sprint 18 — daily schedule + reactive triggers) ----
+    "cadence": {
+        # Daily fixed-time schedule per platform. UTC times.
+        "daily_schedule": {
+            "x": {
+                "enabled": False,
+                "post_times_utc": ["08:00", "14:00", "20:00"],
+                # Whitelist of templates the scheduler may pick from
+                # when this slot fires. Empty list ⇒ all templates.
+                "archetypes": [],
+            },
+            "telegram": {
+                "enabled": False,
+                "post_times_utc": ["09:00", "18:00"],
+                "archetypes": [],
+            },
+        },
+        # Reactive triggers — fire an extra post when on-chain or
+        # community events cross thresholds. Wired into the scheduler
+        # in a follow-up sprint; persisted now so the UI can stage
+        # the configuration.
+        "reactive_triggers": {
+            "enabled": False,
+            "whale_buy_min_sol": 5.0,
+            "holder_milestones": [100, 500, 1000, 5000, 10000],
+            "marketcap_milestones_usd": [50000, 100000, 250000, 1000000],
+        },
+        # Quiet hours — bots stay silent inside this UTC window. If
+        # `start_utc > end_utc` we treat the window as wrapping past
+        # midnight (e.g. 23:00 → 06:00).
+        "quiet_hours": {
+            "enabled": False,
+            "start_utc": "23:00",
+            "end_utc": "06:00",
+        },
+    },
     "heartbeat_interval_minutes": 5,
     "max_posts_per_day": 12,
     "last_updated_at": None,
@@ -101,6 +144,8 @@ ALLOWED_PATCH_KEYS = {
     "news_feed",
     "loyalty",
     "news_repost",
+    "prompt_v2",
+    "cadence",
     "heartbeat_interval_minutes",
     "max_posts_per_day",
 }

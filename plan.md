@@ -158,6 +158,39 @@
 - ✅ Translations FR/EN complètes (`transparencyPage.viz.*`, `walletsKicker`, `locksKicker`, `rugcheck.note`).
 - ✅ Validation visuelle light + dark mode.
 
+#### Sprint 18 — Prophet Studio v2 (TASK 7) + AdminBots Cadence (TASK 8) — ✅ COMPLET
+- ✅ **TASK 7 backend** :
+  - `prophet_studio.PROMPT_TEMPLATES_V2` : 5 templates pondérés (`lore`·1, `satire_news`·3, `stats`·1, `prophecy`·4, `meme_visual`·1).
+  - `generate_post_v2(platform, force_template?, extra_context?)` réutilise les helpers v1 (`_build_user_prompt`, `_call_llm`, `_parse_llm_json`, `_normalize_hashtags`, `_truncate`) — wire contract identique sauf champs additionnels `template_used` + `template_label`.
+  - `list_v2_templates()` retourne metadata JSON-safe.
+  - V1 `generate_post()` inchangé → fallback admin one-click.
+- ✅ **TASK 7 endpoints** :
+  - `GET /api/admin/bots/v2-templates` retourne les 5 templates avec poids + suggested hashtags.
+  - `POST /api/admin/bots/generate-preview` accepte `use_v2` + `force_template_v2` ; response carries `template_used` + `template_label`.
+  - Image generation sur path V2 fallback à `prophecy` content_type pour compat.
+- ✅ **TASK 7 frontend** :
+  - Toggle "Prompt V2 — 5 weighted templates" dans Config tab (data-testid `config-prompt-v2-toggle`).
+  - Switch "Use V2" + dropdown "Force template (optional)" dans Preview tab (data-testid `preview-v2-toggle`, `preview-v2-template-select`).
+  - Badge orange "V2 TEMPLATE <id>" + label affiché au-dessus du résultat (data-testid `preview-v2-template-badge`).
+  - Test end-to-end : V2 a roulé `meme_visual` aléatoirement, produit "Un fauteuil vide face à douze écrans éteints…" — ton parfait.
+- ✅ **TASK 8 backend** :
+  - `bot_config.cadence` étendu : `daily_schedule.{x,telegram}.{enabled, post_times_utc, archetypes}` + `reactive_triggers.{enabled, whale_buy_min_sol, holder_milestones, marketcap_milestones_usd}` + `quiet_hours.{enabled, start_utc, end_utc}`.
+  - `_shape_cadence()` helper + safe defaults exposés via `_shape_config`.
+  - `CadencePatch` Pydantic avec validation HH:MM regex, max 8 slots, archetypes string list, milestones tri+dedupé.
+- ✅ **TASK 8 frontend** :
+  - Nouveau composant `frontend/src/pages/admin/sections/AdminCadenceSection.tsx` (auto-loaded GET /config + GET /v2-templates).
+  - Onglet "Cadence" (5e tab) entre Preview et Jobs.
+  - Daily schedule X/TG : time picker (input type=time), Add slot button, badges removables, archetype multi-select (toggle pills avec poids).
+  - Reactive triggers : Switch global + 3 inputs (whale SOL, holder milestones CSV, marketcap milestones CSV).
+  - Quiet hours : Switch + 2 time pickers UTC.
+  - Tous les inputs persist on blur via `PUT /api/admin/bots/config` patch.cadence.
+- ✅ **Tests** :
+  - Backend : `ruff` All checks passed sur les 3 fichiers Python.
+  - Frontend : `eslint` No issues found sur AdminBots.jsx + esbuild OK sur AdminCadenceSection.tsx.
+  - curl : `/v2-templates` retourne 5 templates, `/config` expose nouveaux blocs avec defaults, `PUT /config` merge correctement, `/generate-preview use_v2=true force=lore` retourne content cohérent.
+  - Screenshots : Cadence tab (top + scroll vers Quiet hours), Preview tab (V2 OFF, V2 ON, résultat avec badge), Config tab (toggle V2).
+- ✅ **Doc** : `/app/docs/SPRINT_17_18_DEPLOY.md` (guide push GitHub + verify Vercel/Render + rollback).
+
 ---
 
 ## 2) Implementation Steps

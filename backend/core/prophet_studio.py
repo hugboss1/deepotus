@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -426,6 +427,262 @@ async def generate_post(
     logger.info(
         "[prophet_studio] generated type=%s platform=%s model=%s fr_len=%d en_len=%d",
         content_type,
+        platform,
+        model,
+        len(content_fr),
+        len(content_en),
+    )
+    return result
+
+
+
+# =====================================================================
+# PROPHET STUDIO V2 — 5 weighted prompt templates
+# =====================================================================
+# Sprint 18 — Prompt v2.
+#
+# The original generate_post() pipeline (kept untouched above) maps one
+# `content_type` to one fixed brief. v2 introduces a mini-library of 5
+# satirical archetypes that the Prophet rotates through at random
+# (weighted random — `prophecy` & `satire_news` weigh more so the feed
+# stays grounded in topical content, with `lore`, `stats` & `meme_visual`
+# providing texture).
+#
+# v2 reuses the existing helpers (`_build_user_prompt`, `_call_llm`,
+# `_parse_llm_json`, `_normalize_hashtags`, `_truncate`) so the post
+# format on the wire stays identical (content_fr / content_en /
+# hashtags / primary_emoji). The only thing that changes is the brief
+# fed into the prompt.
+#
+# Activation is gated by `bot_config.prompt_v2.enabled = true`. When
+# false, `generate_post()` v1 stays the source of truth — that gives
+# admins a one-click rollback.
+
+PROMPT_TEMPLATES_V2: Dict[str, Dict[str, Any]] = {
+    # Weight 1 / 10 → ~10% of posts (rarer, builds the universe).
+    "lore": {
+        "weight": 1,
+        "label_fr": "Lore PROTOCOL ΔΣ",
+        "label_en": "Lore PROTOCOL ΔΣ",
+        "description_fr": (
+            "Mini-fragment de back-story du Conseil ΔΣ — 2 à 3 phrases qui "
+            "enrichissent l'univers sans rien promettre."
+        ),
+        "description_en": (
+            "Mini-fragment of Council ΔΣ back-story — 2 to 3 sentences that "
+            "enrich the universe without promising anything."
+        ),
+        "brief": (
+            "Generate ONE short (2-3 sentences) lore fragment about the "
+            "Deep-State PROTOCOL ΔΣ universe. Drop a single specific "
+            "detail: a classified room, a numbered directive, a date "
+            "stamped on a sealed dossier, an artefact of the Council. "
+            "Stay ominous, oblique, in-universe — never break character. "
+            "DO NOT cite prices, DO NOT promise rewards, DO NOT name "
+            "real people. The reader should feel they just glimpsed a "
+            "redacted memo."
+        ),
+        "hashtag_hint": ["PROTOCOLΔΣ", "DeepState", "Lore"],
+    },
+    # Weight 3 / 10 → ~30% of posts (steady satirical commentary).
+    "satire_news": {
+        "weight": 3,
+        "label_fr": "Satire d'actualité",
+        "label_en": "Satirical news",
+        "description_fr": (
+            "Commentaire satirique sur une actualité macro / crypto / géopolitique."
+        ),
+        "description_en": (
+            "Satirical take on a macro / crypto / geopolitical headline."
+        ),
+        "brief": (
+            "Generate ONE short, biting satirical comment (2-3 sentences) "
+            "on a CURRENT macro / crypto / geopolitical theme of your "
+            "choice (Fed rates, EU regulation, US politics, central-bank "
+            "moves, crypto regulation, AI scare cycle, oil/energy, tech "
+            "monopolies). Mock the establishment narrative — irony, dry "
+            "wit, never insults, never naming a specific living person. "
+            "End with no hashtag inside the sentence (hashtags go in the "
+            "hashtags array). Stay ambiguous enough to age well."
+        ),
+        "hashtag_hint": ["DeepState", "Macro", "Crypto", "PROTOCOLΔΣ"],
+    },
+    # Weight 1 / 10 → ~10% of posts (texture).
+    "stats": {
+        "weight": 1,
+        "label_fr": "Statistiques classifiées",
+        "label_en": "Classified stats",
+        "description_fr": (
+            "Pseudo-statistique deep-state : un chiffre, un pourcentage, une "
+            "comparaison absurde mais crédible."
+        ),
+        "description_en": (
+            "Pseudo deep-state statistic: one number, one percentage, one "
+            "comparison — absurd yet plausible."
+        ),
+        "brief": (
+            "Generate ONE short (2-3 sentences) post built around ONE "
+            "fictional but plausible-sounding 'classified statistic' from "
+            "the Council ΔΣ archives. Format hint: 'X% of [group] [verb] "
+            "[unexpected fact]', or 'For every $1 [thing], [country/sector] "
+            "[loses/gains] $Y'. Keep the number SPECIFIC and the framing "
+            "deadpan. NEVER cite real research, NEVER promise market "
+            "outcomes. The cynicism is the message — not the number."
+        ),
+        "hashtag_hint": ["DeepState", "Numbers", "PROTOCOLΔΣ"],
+    },
+    # Weight 4 / 10 → ~40% of posts (signature voice — most frequent).
+    "prophecy": {
+        "weight": 4,
+        "label_fr": "Prophétie courte",
+        "label_en": "Short prophecy",
+        "description_fr": (
+            "Prophétie cynique courte sur un effondrement à venir — "
+            "spécifique, cinglante."
+        ),
+        "description_en": (
+            "Short cynical prophecy of an upcoming collapse — specific, "
+            "stinging."
+        ),
+        "brief": (
+            "Generate ONE concise prophecy (max 2 sentences) predicting a "
+            "specific upcoming collapse: a sector, an asset class, a "
+            "market cycle, a fiat currency, a tech bubble, a regulator, "
+            "a narrative. Be SPECIFIC and TIMELY. Open with a verb in "
+            "the future or a date hint. End with nothing or one emoji "
+            "at most. NO ticker calls, NO numerical price targets."
+        ),
+        "hashtag_hint": ["Prophecy", "DeepState", "PROTOCOLΔΣ"],
+    },
+    # Weight 1 / 10 → ~10% of posts (visual texture).
+    "meme_visual": {
+        "weight": 1,
+        "label_fr": "Description méme visuelle",
+        "label_en": "Meme visual description",
+        "description_fr": (
+            "Description courte et frappante d'une scène visuelle satirique "
+            "(à utiliser seule ou en accompagnement d'une image)."
+        ),
+        "description_en": (
+            "Short, striking description of a satirical visual scene "
+            "(works alone or paired with an image)."
+        ),
+        "brief": (
+            "Generate ONE short (1-2 sentences) caption-style description "
+            "of a satirical, cinematic visual scene tied to the Deep-State "
+            "universe (e.g. 'a candidate's empty podium under flickering "
+            "neon', 'a stack of unmarked gold bars in a cracked vault', "
+            "'a dial wheel turning by itself in a sealed room'). The text "
+            "MUST evoke a single still frame the reader can picture. "
+            "Tone: cinematic, dry, satirical. NEVER name a real person, "
+            "NEVER reference real brand logos."
+        ),
+        "hashtag_hint": ["DeepState", "PROTOCOLΔΣ", "Visual"],
+    },
+}
+
+
+def list_v2_templates() -> List[Dict[str, Any]]:
+    """JSON-safe metadata for the admin dashboard (Cadence + V2 toggle)."""
+    return [
+        {
+            "id": tid,
+            "weight": int(t["weight"]),
+            "label_fr": t["label_fr"],
+            "label_en": t["label_en"],
+            "description_fr": t["description_fr"],
+            "description_en": t["description_en"],
+            "suggested_hashtags": list(t["hashtag_hint"]),
+        }
+        for tid, t in PROMPT_TEMPLATES_V2.items()
+    ]
+
+
+def _pick_v2_template(force_template: Optional[str] = None) -> str:
+    """Return a template id — explicit override wins, else weighted random."""
+    if force_template and force_template in PROMPT_TEMPLATES_V2:
+        return force_template
+    ids = list(PROMPT_TEMPLATES_V2.keys())
+    weights = [int(PROMPT_TEMPLATES_V2[k]["weight"]) for k in ids]
+    return random.choices(ids, weights=weights, k=1)[0]
+
+
+async def generate_post_v2(
+    *,
+    platform: str = "x",
+    extra_context: Optional[str] = None,
+    force_template: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Generate one bilingual post via the V2 weighted-template pipeline.
+
+    Reuses the existing LLM helpers (`_build_user_prompt`, `_call_llm`,
+    `_parse_llm_json`, `_normalize_hashtags`, `_truncate`) so the wire
+    contract stays identical to ``generate_post`` v1 — only the brief
+    feeding the LLM is template-driven.
+
+    The result includes ``template_used`` + ``template_label`` so the
+    admin dashboard can show which archetype was rolled.
+    """
+    if platform not in PLATFORM_CHAR_BUDGETS:
+        raise ValueError(f"unknown platform={platform}")
+
+    template_id = _pick_v2_template(force_template)
+    template = PROMPT_TEMPLATES_V2[template_id]
+
+    char_budget = PLATFORM_CHAR_BUDGETS[platform]
+    llm_cfg = await _resolve_llm_config()
+    provider, model = llm_cfg["provider"], llm_cfg["model"]
+
+    # The pipeline expects a `brief` dict with at least 'brief' and
+    # 'hashtag_hint' keys — we synthesise one from the template.
+    custom_brief: Dict[str, Any] = {
+        "brief": template["brief"],
+        "hashtag_hint": template["hashtag_hint"],
+    }
+    pseudo_content_type = f"v2_{template_id}"
+    user_prompt = _build_user_prompt(
+        content_type=pseudo_content_type,
+        platform=platform,
+        char_budget=char_budget,
+        brief=custom_brief,
+        kol_post=None,
+        extra_context=extra_context,
+    )
+    raw = await _call_llm(provider, model, pseudo_content_type, user_prompt)
+    data = _parse_llm_json(raw)
+
+    content_fr = _truncate(str(data.get("content_fr", "")).strip(), char_budget)
+    content_en = _truncate(str(data.get("content_en", "")).strip(), char_budget)
+    if not content_fr or not content_en:
+        raise RuntimeError("llm_empty_content")
+
+    hashtags = _normalize_hashtags(
+        data.get("hashtags") or template["hashtag_hint"],
+    )
+    primary_emoji = str(data.get("primary_emoji", "")).strip()
+
+    result = {
+        # Same shape as v1 so callers (logs / dispatchers / UI) need no
+        # branching beyond reading `template_used` if they care.
+        "content_type": pseudo_content_type,
+        "platform": platform,
+        "char_budget": char_budget,
+        "provider": provider,
+        "model": model,
+        "content_fr": content_fr,
+        "content_en": content_en,
+        "hashtags": hashtags,
+        "primary_emoji": primary_emoji,
+        "loyalty": None,
+        # V2-specific fields:
+        "template_used": template_id,
+        "template_label": template["label_en"],
+        "template_weight": int(template["weight"]),
+    }
+    logger.info(
+        "[prophet_studio] generated_v2 template=%s platform=%s model=%s "
+        "fr_len=%d en_len=%d",
+        template_id,
         platform,
         model,
         len(content_fr),

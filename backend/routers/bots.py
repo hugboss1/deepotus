@@ -14,6 +14,7 @@ All endpoints are JWT-protected via `require_admin`. No public access.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -42,10 +43,13 @@ from core.news_feed import (
 )
 from core.prophet_studio import (
     PLATFORM_CHAR_BUDGETS,
+    PROMPT_TEMPLATES_V2,
     VALID_CONTENT_TYPES,
     generate_image,
     generate_post,
+    generate_post_v2,
     list_content_types,
+    list_v2_templates,
 )
 from core.secrets_vault import (
     assert_provider_match,
@@ -114,6 +118,68 @@ class NewsRepostPatch(BaseModel):
     prefix_en: Optional[str] = Field(default=None, max_length=80)
 
 
+class PromptV2Patch(BaseModel):
+    """Partial patch for the prompt_v2 sub-document (Sprint 18 — V2 toggle)."""
+
+    enabled: Optional[bool] = None
+
+
+class CadenceDailyScheduleEntry(BaseModel):
+    """Per-platform daily fixed-time schedule (UTC)."""
+
+    enabled: Optional[bool] = None
+    post_times_utc: Optional[List[str]] = Field(
+        default=None,
+        description="HH:MM UTC strings, max 8 per day.",
+        max_length=8,
+    )
+    archetypes: Optional[List[str]] = Field(
+        default=None,
+        description="V2 template ids to allow when this slot fires. Empty = all.",
+        max_length=12,
+    )
+
+
+class CadenceDailyScheduleBlock(BaseModel):
+    x: Optional[CadenceDailyScheduleEntry] = None
+    telegram: Optional[CadenceDailyScheduleEntry] = None
+
+
+class CadenceReactiveTriggers(BaseModel):
+    enabled: Optional[bool] = None
+    whale_buy_min_sol: Optional[float] = Field(default=None, ge=0.0, le=10000.0)
+    holder_milestones: Optional[List[int]] = Field(
+        default=None,
+        max_length=20,
+    )
+    marketcap_milestones_usd: Optional[List[int]] = Field(
+        default=None,
+        max_length=20,
+    )
+
+
+class CadenceQuietHours(BaseModel):
+    enabled: Optional[bool] = None
+    start_utc: Optional[str] = Field(
+        default=None,
+        description="Quiet window start, HH:MM UTC.",
+        max_length=5,
+    )
+    end_utc: Optional[str] = Field(
+        default=None,
+        description="Quiet window end, HH:MM UTC. May wrap past midnight.",
+        max_length=5,
+    )
+
+
+class CadencePatch(BaseModel):
+    """Partial patch for the cadence sub-document (Sprint 18)."""
+
+    daily_schedule: Optional[CadenceDailyScheduleBlock] = None
+    reactive_triggers: Optional[CadenceReactiveTriggers] = None
+    quiet_hours: Optional[CadenceQuietHours] = None
+
+
 class BotConfigPatch(BaseModel):
     kill_switch_active: Optional[bool] = None
     platforms: Optional[Dict[str, PlatformPatch]] = None
@@ -122,6 +188,8 @@ class BotConfigPatch(BaseModel):
     news_feed: Optional[NewsFeedPatch] = None
     loyalty: Optional[LoyaltyPatch] = None
     news_repost: Optional[NewsRepostPatch] = None
+    prompt_v2: Optional[PromptV2Patch] = None
+    cadence: Optional[CadencePatch] = None
     heartbeat_interval_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
     max_posts_per_day: Optional[int] = Field(default=None, ge=0, le=500)
 
@@ -155,6 +223,23 @@ class GeneratePreviewRequest(BaseModel):
         default=False,
         description="When true, inject the freshest geopolitics/macro headlines (top N from the RSS aggregator) into extra_context.",
     )
+    use_v2: bool = Field(
+        default=False,
+        description=(
+            "When true, route through generate_post_v2() and ignore "
+            "content_type / kol_post — the V2 weighted-template engine "
+            "decides which archetype to use. `force_template_v2` overrides "
+            "the random pick if provided."
+        ),
+    )
+    force_template_v2: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional V2 template id (lore | satire_news | stats | "
+            "prophecy | meme_visual). Only honoured when use_v2=true."
+        ),
+        max_length=32,
+    )
 
 
 class GeneratedImage(BaseModel):
@@ -179,6 +264,9 @@ class GeneratePreviewResponse(BaseModel):
     primary_emoji: str
     image: Optional[GeneratedImage] = None
     image_error: Optional[str] = None
+    # V2-only fields, populated when use_v2=true. None on v1 responses.
+    template_used: Optional[str] = None
+    template_label: Optional[str] = None
 
 
 class ContentTypeMeta(BaseModel):
@@ -198,6 +286,8 @@ class BotConfigResponse(BaseModel):
     news_feed: Dict[str, Any]
     loyalty: Optional[Dict[str, Any]] = None
     news_repost: Optional[Dict[str, Any]] = None
+    prompt_v2: Optional[Dict[str, Any]] = None
+    cadence: Optional[Dict[str, Any]] = None
     custom_llm_keys: Dict[str, Any]
     heartbeat_interval_minutes: int
     max_posts_per_day: int
@@ -286,11 +376,56 @@ def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
             "last_run_at": (doc.get("news_repost") or {}).get("last_run_at"),
             "last_run_summary": (doc.get("news_repost") or {}).get("last_run_summary"),
         },
+        "prompt_v2": {
+            "enabled": bool((doc.get("prompt_v2") or {}).get("enabled", False)),
+        },
+        "cadence": _shape_cadence(doc.get("cadence") or {}),
         "heartbeat_interval_minutes": int(doc.get("heartbeat_interval_minutes") or 5),
         "max_posts_per_day": int(doc.get("max_posts_per_day") or 12),
         "last_updated_at": doc.get("last_updated_at"),
         "updated_by": doc.get("updated_by"),
         "created_at": doc.get("created_at"),
+    }
+
+
+def _shape_cadence(c: Dict[str, Any]) -> Dict[str, Any]:
+    """Shape the cadence sub-document with safe defaults for the UI."""
+    ds_raw = (c.get("daily_schedule") or {})
+    rt_raw = (c.get("reactive_triggers") or {})
+    qh_raw = (c.get("quiet_hours") or {})
+
+    def _platform_entry(p: Dict[str, Any], default_times: List[str]) -> Dict[str, Any]:
+        return {
+            "enabled": bool(p.get("enabled", False)),
+            "post_times_utc": list(p.get("post_times_utc") or default_times),
+            "archetypes": list(p.get("archetypes") or []),
+        }
+
+    return {
+        "daily_schedule": {
+            "x": _platform_entry(
+                ds_raw.get("x") or {}, ["08:00", "14:00", "20:00"],
+            ),
+            "telegram": _platform_entry(
+                ds_raw.get("telegram") or {}, ["09:00", "18:00"],
+            ),
+        },
+        "reactive_triggers": {
+            "enabled": bool(rt_raw.get("enabled", False)),
+            "whale_buy_min_sol": float(rt_raw.get("whale_buy_min_sol", 5.0)),
+            "holder_milestones": list(
+                rt_raw.get("holder_milestones") or [100, 500, 1000, 5000, 10000],
+            ),
+            "marketcap_milestones_usd": list(
+                rt_raw.get("marketcap_milestones_usd")
+                or [50000, 100000, 250000, 1000000],
+            ),
+        },
+        "quiet_hours": {
+            "enabled": bool(qh_raw.get("enabled", False)),
+            "start_utc": str(qh_raw.get("start_utc") or "23:00"),
+            "end_utc": str(qh_raw.get("end_utc") or "06:00"),
+        },
     }
 
 
@@ -406,6 +541,78 @@ async def put_config(
         if rp.prefix_en is not None:
             merged_repost["prefix_en"] = rp.prefix_en.strip()
         patch_dict["news_repost"] = merged_repost
+    if payload.prompt_v2 is not None:
+        # Tiny block — only one field today; partial merge keeps it
+        # future-proof for additional v2 knobs.
+        merged_v2 = dict(current.get("prompt_v2") or {})
+        if payload.prompt_v2.enabled is not None:
+            merged_v2["enabled"] = bool(payload.prompt_v2.enabled)
+        patch_dict["prompt_v2"] = merged_v2
+    if payload.cadence is not None:
+        merged_cadence = dict(current.get("cadence") or {})
+        cd = payload.cadence
+
+        if cd.daily_schedule is not None:
+            merged_ds = dict(merged_cadence.get("daily_schedule") or {})
+            for plat in ("x", "telegram"):
+                entry_patch = getattr(cd.daily_schedule, plat)
+                if entry_patch is None:
+                    continue
+                merged_entry = dict(merged_ds.get(plat) or {})
+                if entry_patch.enabled is not None:
+                    merged_entry["enabled"] = bool(entry_patch.enabled)
+                if entry_patch.post_times_utc is not None:
+                    # Validate HH:MM format and uniqueness, max 8 slots.
+                    cleaned = []
+                    for raw in entry_patch.post_times_utc:
+                        s = (raw or "").strip()
+                        if re.fullmatch(r"\d{2}:\d{2}", s):
+                            h, m = s.split(":")
+                            if 0 <= int(h) < 24 and 0 <= int(m) < 60 and s not in cleaned:
+                                cleaned.append(s)
+                    merged_entry["post_times_utc"] = cleaned[:8]
+                if entry_patch.archetypes is not None:
+                    merged_entry["archetypes"] = [
+                        a.strip()
+                        for a in entry_patch.archetypes
+                        if (a or "").strip()
+                    ][:12]
+                merged_ds[plat] = merged_entry
+            merged_cadence["daily_schedule"] = merged_ds
+
+        if cd.reactive_triggers is not None:
+            merged_rt = dict(merged_cadence.get("reactive_triggers") or {})
+            rt = cd.reactive_triggers
+            if rt.enabled is not None:
+                merged_rt["enabled"] = bool(rt.enabled)
+            if rt.whale_buy_min_sol is not None:
+                merged_rt["whale_buy_min_sol"] = float(rt.whale_buy_min_sol)
+            if rt.holder_milestones is not None:
+                merged_rt["holder_milestones"] = sorted(
+                    {int(m) for m in rt.holder_milestones if m and int(m) > 0},
+                )[:20]
+            if rt.marketcap_milestones_usd is not None:
+                merged_rt["marketcap_milestones_usd"] = sorted(
+                    {int(m) for m in rt.marketcap_milestones_usd if m and int(m) > 0},
+                )[:20]
+            merged_cadence["reactive_triggers"] = merged_rt
+
+        if cd.quiet_hours is not None:
+            merged_qh = dict(merged_cadence.get("quiet_hours") or {})
+            qh = cd.quiet_hours
+            if qh.enabled is not None:
+                merged_qh["enabled"] = bool(qh.enabled)
+            for fld in ("start_utc", "end_utc"):
+                v = getattr(qh, fld)
+                if v is not None:
+                    s = (v or "").strip()
+                    if re.fullmatch(r"\d{2}:\d{2}", s):
+                        h, m = s.split(":")
+                        if 0 <= int(h) < 24 and 0 <= int(m) < 60:
+                            merged_qh[fld] = s
+            merged_cadence["quiet_hours"] = merged_qh
+
+        patch_dict["cadence"] = merged_cadence
     if payload.heartbeat_interval_minutes is not None:
         patch_dict["heartbeat_interval_minutes"] = payload.heartbeat_interval_minutes
     if payload.max_posts_per_day is not None:
@@ -547,21 +754,38 @@ async def generate_preview(
     Useful to preview exactly what the Prophet will produce before
     enabling a platform or adjusting prompts. Available even when the
     kill-switch is active (admin-only, read-only for external services).
+
+    When ``use_v2`` is true, route through the new weighted-template
+    engine (Sprint 18) instead of the legacy `generate_post()` pipeline.
+    `content_type` and `kol_post` are ignored on the v2 path.
     """
-    if payload.content_type not in VALID_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"invalid content_type — expected one of {sorted(VALID_CONTENT_TYPES)}",
-        )
+    if not payload.use_v2:
+        if payload.content_type not in VALID_CONTENT_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"invalid content_type — expected one of {sorted(VALID_CONTENT_TYPES)}",
+            )
+        if payload.content_type == "kol_reply" and not payload.kol_post:
+            raise HTTPException(
+                status_code=400,
+                detail="kol_reply requires a non-empty 'kol_post' field",
+            )
     if payload.platform not in PLATFORM_CHAR_BUDGETS:
         raise HTTPException(
             status_code=400,
             detail=f"invalid platform — expected one of {sorted(PLATFORM_CHAR_BUDGETS.keys())}",
         )
-    if payload.content_type == "kol_reply" and not payload.kol_post:
+    if (
+        payload.use_v2
+        and payload.force_template_v2
+        and payload.force_template_v2 not in PROMPT_TEMPLATES_V2
+    ):
         raise HTTPException(
             status_code=400,
-            detail="kol_reply requires a non-empty 'kol_post' field",
+            detail=(
+                "invalid force_template_v2 — expected one of "
+                f"{sorted(PROMPT_TEMPLATES_V2.keys())}"
+            ),
         )
     try:
         # Compose `extra_context` from 3 optional sources (in priority order):
@@ -590,12 +814,19 @@ async def generate_preview(
             else None
         )
 
-        result = await generate_post(
-            content_type=payload.content_type,
-            platform=payload.platform,
-            kol_post=payload.kol_post,
-            extra_context=composed_context,
-        )
+        if payload.use_v2:
+            result = await generate_post_v2(
+                platform=payload.platform,
+                extra_context=composed_context,
+                force_template=payload.force_template_v2,
+            )
+        else:
+            result = await generate_post(
+                content_type=payload.content_type,
+                platform=payload.platform,
+                kol_post=payload.kol_post,
+                extra_context=composed_context,
+            )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except RuntimeError as exc:
@@ -611,12 +842,21 @@ async def generate_preview(
     image_error: Optional[str] = None
     if payload.include_image:
         requested_provider = (payload.image_provider or "gemini").strip().lower()
+        # On the V2 path the user-facing content_type is `v2_<template>`
+        # which the image briefs do NOT recognise. We map the V2 path to
+        # `prophecy` for image generation — the safest, most generic of
+        # the V1 image briefs — so the admin still gets a usable preview.
+        image_content_type = (
+            "prophecy"
+            if payload.use_v2 and payload.content_type not in VALID_CONTENT_TYPES
+            else payload.content_type
+        )
         try:
             if requested_provider == "openai":
                 from core.openai_image_gen import generate_image_openai
 
                 img = await generate_image_openai(
-                    content_type=payload.content_type,
+                    content_type=image_content_type,
                     aspect_ratio=payload.image_aspect_ratio,
                     text_hint=result.get("content_en"),
                 )
@@ -628,7 +868,7 @@ async def generate_preview(
                         requested_provider,
                     )
                 img = await generate_image(
-                    content_type=payload.content_type,
+                    content_type=image_content_type,
                     aspect_ratio=payload.image_aspect_ratio,
                     text_hint=result.get("content_en"),
                 )
@@ -646,11 +886,57 @@ async def generate_preview(
         except RuntimeError as exc:
             image_error = str(exc)
 
+    # `result` from generate_post_v2 contains a few V2-only keys that
+    # GeneratePreviewResponse doesn't expose. Strip them out before
+    # spreading so Pydantic doesn't error out on unknown fields.
+    response_kwargs = {
+        k: v
+        for k, v in result.items()
+        if k
+        in {
+            "content_type",
+            "platform",
+            "char_budget",
+            "provider",
+            "model",
+            "content_fr",
+            "content_en",
+            "hashtags",
+            "primary_emoji",
+            "template_used",
+            "template_label",
+        }
+    }
     return GeneratePreviewResponse(
-        **result,
+        **response_kwargs,
         image=image_payload,
         image_error=image_error,
     )
+
+
+# ---------------------------------------------------------------------
+# Sprint 18 — Prompt v2 templates metadata
+# ---------------------------------------------------------------------
+class V2TemplateMeta(BaseModel):
+    id: str
+    weight: int
+    label_fr: str
+    label_en: str
+    description_fr: str
+    description_en: str
+    suggested_hashtags: List[str]
+
+
+@router.get("/v2-templates", response_model=List[V2TemplateMeta])
+async def get_v2_templates(_p: dict = Depends(require_admin)):
+    """Metadata for the 5 weighted V2 prompt templates (Sprint 18).
+
+    Used by the AdminBots dashboard to render:
+      - the multi-select archetype picker on the Cadence tab
+      - the optional "force a specific template" picker on the Preview tab
+      - a quick weight-distribution summary on the Config tab
+    """
+    return list_v2_templates()
 
 
 # ---------------------------------------------------------------------
