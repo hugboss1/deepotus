@@ -1,22 +1,38 @@
 [
   {
-    "content": "P1 / Sprint 14.2 UI — AutoReviewTab.tsx + 3 sections + test visuel validé",
+    "content": "Audit: Dispatchers X + TG déjà réels (code complet OAuth1+v2, retries, error mapping) — aucun change code nécessaire",
     "status": "completed"
   },
   {
-    "content": "P3 / Sprint 23 — 140 erreurs noImplicitAny corrigées + tsconfig flip",
+    "content": "Implémenter _resolve_user_id(handle) via GET /2/users/by/username/:handle avec cache TTL 7j",
     "status": "completed"
   },
   {
-    "content": "P4 / Sprint 24 — GitHub Actions e2e-smoke.yml + README secrets",
+    "content": "Implémenter _fetch_kol_recent_tweets(user_id, since_id) via GET /2/users/:id/tweets (Bearer, exclude retweets+replies)",
     "status": "completed"
   },
   {
-    "content": "Doc : SPRINT_14_2_23_24_DEPLOY.md créé + plan.md mis à jour",
+    "content": "Réécrire poll_x_api_once() : resolve → fetch → filter match_terms → enqueue, avec baseline silencieux au premier poll",
     "status": "completed"
   },
   {
-    "content": "P3 / Helius live post-mint — BLOQUÉ sur mint, doc HELIUS_POST_DEPLOY.md déjà disponible",
+    "content": "Ajouter kol_user_id_cache + kol_poll_state collections + TTL index sur cache",
     "status": "completed"
+  },
+  {
+    "content": "Ajouter endpoint POST /api/admin/kol-listener/poll-now pour trigger manuel",
+    "status": "completed"
+  },
+  {
+    "content": "Tests pytest : test_kol_listener_helpers.py (6 cases) — 63 passed total",
+    "status": "completed"
+  },
+  {
+    "content": "Doc runbook : SPRINT_P1_LIVE_ACTIVATION.md (activation 6 étapes + rotation 4 plateformes + Render/Vercel delta)",
+    "status": "completed"
+  },
+  {
+    "content": "P3 / Helius live post-mint — BLOQUÉ sur mint, doc déjà disponible",
+    "status": "pending"
   }
 ]

@@ -1,4 +1,4 @@
-"""Admin REST surface for the KOL X-Mention Listener (Sprint 16.4).
+"""Admin REST surface for the KOL X-Mention Listener.
 
 Endpoints (all admin-only — JWT required):
 
@@ -7,11 +7,13 @@ Endpoints (all admin-only — JWT required):
     GET   /api/admin/kol-listener/mentions        - audit feed
     GET   /api/admin/kol-listener/stats           - dashboard widget data
     POST  /api/admin/kol-listener/simulate        - inject a synthetic mention
+    POST  /api/admin/kol-listener/poll-now        - trigger a live X API poll tick
 
-The polling loop is a TODO — see ``core/kol_listener.poll_x_api_once``
-for the wiring point. Until that lands, the simulate endpoint provides
-the only ingestion path and is sufficient to verify the full
-propaganda dispatch pipeline end-to-end.
+Sprint P1 (live polling) is live — ``poll_x_api_once`` hits X API v2
+when ``cfg.enabled == true`` and ``X_BEARER_TOKEN`` is populated in the
+Cabinet Vault. The ``/poll-now`` endpoint is the operator-facing
+trigger used during activation + rotation runbooks (see
+``docs/SPRINT_P1_LIVE_ACTIVATION.md``).
 """
 
 from __future__ import annotations
@@ -137,3 +139,25 @@ async def simulate(
             "ts": inserted.get("ts"),
         },
     }
+
+
+@admin_router.post("/poll-now")
+async def poll_now(_admin=Depends(require_admin)) -> Dict[str, Any]:
+    """Trigger a live X API poll tick immediately.
+
+    The automatic scheduler already runs every 5 min; this endpoint is
+    the operator-facing escape hatch used during:
+
+      * First-time activation (verify the creds + baselines handles).
+      * Post-rotation smoke tests (did the new bearer work?).
+      * Debugging a silent listener (no ``X_BEARER_TOKEN`` in the
+        vault returns ``polled=false, reason="no_bearer_token"``).
+
+    **No 2FA required**: a poll only fetches + enqueues draft proposals
+    (``status=proposed``) — nothing is published to X/Telegram without
+    going through the 2FA-gated approval flow in ``/admin/propaganda``.
+    Dry-run safe.
+    """
+    result = await kol_listener.poll_x_api_once()
+    return {"ok": True, "result": result}
+
