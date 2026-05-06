@@ -44,6 +44,7 @@ from routers import (
     public_stats as public_stats_router,
     treasury as treasury_router,
     vault as vault_router,
+    wallet_registry as wallet_registry_router,
     webhooks as webhooks_router,
     whale_watcher as whale_watcher_router,
 )
@@ -75,6 +76,11 @@ app.include_router(kol_listener_router.admin_router)
 # Sprint 15 — public Treasury Transparency feed + admin op-logging.
 app.include_router(treasury_router.router)
 app.include_router(treasury_router.admin_router)
+# Sprint Transparency & Trust (pre-mint) — Public Wallet Registry +
+# canonical $DEEPOTUS mint address (drives the green LOCKED badges
+# and the RugCheck deeplink on /transparency).
+app.include_router(wallet_registry_router.public_router)
+app.include_router(wallet_registry_router.admin_router)
 
 # ---------------------------------------------------------------------
 # Static assets (email hero illustrations, etc.)

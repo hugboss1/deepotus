@@ -53,6 +53,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useWalletRegistry } from "@/hooks/useWalletRegistry";
 import {
   URLS,
   getWallets,
@@ -165,11 +166,45 @@ const AddressBlock: React.FC<{ address: string; testId?: string }> = ({
 };
 
 // ---------------------------------------------------------------------
+// RugCheck CTA (hero) — only shows once the registry has a mint address
+// ---------------------------------------------------------------------
+const RugCheckCta: React.FC = () => {
+  const registry = useWalletRegistry();
+  if (!registry.mint_live || !registry.rugcheck_url) return null;
+  return (
+    <div className="mt-6 flex items-center gap-3 flex-wrap" data-testid="rugcheck-cta">
+      <a
+        href={registry.rugcheck_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-md border border-[#33FF33]/40 bg-[#33FF33]/10 px-4 py-2 text-xs font-mono uppercase tracking-widest text-[#33FF33] hover:bg-[#33FF33]/15 transition-colors"
+        data-testid="rugcheck-cta-button"
+      >
+        <ShieldCheck size={14} />
+        Verify on RugCheck
+        <ExternalLink size={12} className="opacity-70" />
+      </a>
+      <span className="text-[10px] font-mono text-foreground/45 uppercase tracking-widest">
+        Live contract scan · independent
+      </span>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------
 // Five-wallets table (kept as a standalone section above the carousel)
 // ---------------------------------------------------------------------
 const WalletsSection: React.FC = () => {
   const { t } = useI18n();
-  const wallets = getWallets();
+  // Live data from the backend (with env-var fallback for SSR / first
+  // paint). The hook revalidates every 30s so an admin edit shows up
+  // here without forcing visitors to refresh.
+  const registry = useWalletRegistry();
+  const wallets = registry.wallets;
+  // Slots that are *contractually* lockable — show the LOCKED/PENDING
+  // badge for these even when ``lock_url`` is empty (so the public can
+  // see at a glance whether the lock is still TBD).
+  const LOCKABLE: ReadonlySet<string> = new Set(["team", "treasury"]);
   return (
     <section
       className="mt-12"
@@ -187,46 +222,71 @@ const WalletsSection: React.FC = () => {
         </span>
       </div>
       <div className="grid gap-3 mt-6">
-        {wallets.map((w, idx) => (
-          <article
-            key={w.id}
-            className="rounded-md border border-foreground/15 bg-foreground/[0.02] p-4 hover:border-foreground/25 transition-colors"
-            data-testid={`wallet-card-${w.id}`}
-          >
-            <div className="flex items-start gap-4">
-              <div className="shrink-0 w-8 h-8 rounded-full bg-foreground/8 flex items-center justify-center font-mono text-xs text-foreground/70">
-                {idx + 1}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h3 className="text-sm font-semibold">
-                    {t(`transparencyPage.wallets.${w.id}.name`) as string}
-                  </h3>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#F59E0B]">
-                    {ALLOCATIONS[w.id]}
-                  </span>
-                  {w.lockUrl && (
-                    <a
-                      href={w.lockUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] font-mono uppercase tracking-widest text-[#33FF33] hover:underline inline-flex items-center gap-1"
-                      data-testid={`wallet-${w.id}-lock-link`}
-                    >
-                      <Lock size={10} /> Lock proof
-                    </a>
-                  )}
+        {wallets.map((w, idx) => {
+          const lockable = LOCKABLE.has(w.id);
+          const isLocked = w.lock_url.length > 0;
+          return (
+            <article
+              key={w.id}
+              className="rounded-md border border-foreground/15 bg-foreground/[0.02] p-4 hover:border-foreground/25 transition-colors"
+              data-testid={`wallet-card-${w.id}`}
+            >
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 w-8 h-8 rounded-full bg-foreground/8 flex items-center justify-center font-mono text-xs text-foreground/70">
+                  {idx + 1}
                 </div>
-                <p className="text-xs text-foreground/70 mt-1.5 leading-relaxed">
-                  {t(`transparencyPage.wallets.${w.id}.purpose`) as string}
-                </p>
-                <div className="mt-2.5">
-                  <AddressBlock address={w.address} testId={`wallet-${w.id}-address`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h3 className="text-sm font-semibold">
+                      {t(`transparencyPage.wallets.${w.id}.name`) as string}
+                    </h3>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#F59E0B]">
+                      {ALLOCATIONS[w.id]}
+                    </span>
+                    {lockable && isLocked && (
+                      <a
+                        href={w.lock_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full border border-[#33FF33]/40 bg-[#33FF33]/8 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest text-[#33FF33] hover:bg-[#33FF33]/15"
+                        data-testid={`wallet-${w.id}-lock-badge`}
+                      >
+                        <Lock size={9} /> LOCKED
+                        <ExternalLink size={9} className="opacity-70" />
+                      </a>
+                    )}
+                    {lockable && !isLocked && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full border border-[#F59E0B]/40 bg-[#F59E0B]/8 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest text-[#F59E0B]"
+                        data-testid={`wallet-${w.id}-pending-badge`}
+                      >
+                        <AlertTriangle size={9} /> PENDING
+                      </span>
+                    )}
+                    {!lockable && isLocked && (
+                      <a
+                        href={w.lock_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full border border-[#33FF33]/30 bg-[#33FF33]/5 px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest text-[#33FF33] hover:bg-[#33FF33]/10"
+                        data-testid={`wallet-${w.id}-lock-badge`}
+                      >
+                        <Lock size={9} /> Proof
+                        <ExternalLink size={9} className="opacity-70" />
+                      </a>
+                    )}
+                  </div>
+                  <p className="text-xs text-foreground/70 mt-1.5 leading-relaxed">
+                    {t(`transparencyPage.wallets.${w.id}.purpose`) as string}
+                  </p>
+                  <div className="mt-2.5">
+                    <AddressBlock address={w.address} testId={`wallet-${w.id}-address`} />
+                  </div>
                 </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
@@ -629,6 +689,11 @@ const Transparency: React.FC = () => {
               MINT · {mintShort}
             </p>
           )}
+          {/* RugCheck CTA — only shows once the mint is in the
+              registry. The button intentionally lives in the hero so
+              first-touch buyers can validate the contract before any
+              other on-page interaction. */}
+          <RugCheckCta />
         </section>
 
         {/* ---- Wallets + Locks (above the carousel) ---- */}

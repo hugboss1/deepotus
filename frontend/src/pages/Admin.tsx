@@ -28,6 +28,7 @@ import { WhitelistTab } from "./admin/sections/WhitelistTab";
 import { ChatLogsTab } from "./admin/sections/ChatLogsTab";
 import { BlacklistTab } from "./admin/sections/BlacklistTab";
 import { SessionsTab } from "./admin/sections/SessionsTab";
+import WalletRegistrySection from "./admin/sections/WalletRegistrySection";
 
 import type {
   AdminEvolutionPoint,
@@ -493,6 +494,7 @@ export default function Admin() {
             <TabsTrigger value="chat" data-testid="admin-tab-chat">Chat ({chatLogs.total})</TabsTrigger>
             <TabsTrigger value="blacklist" data-testid="admin-tab-blacklist">Blacklist ({blacklist.total})</TabsTrigger>
             <TabsTrigger value="sessions" data-testid="admin-tab-sessions">Security ({sessions.total})</TabsTrigger>
+            <TabsTrigger value="wallets" data-testid="admin-tab-wallets">Wallets · Registry</TabsTrigger>
           </TabsList>
 
           <TabsContent value="whitelist" className="mt-4">
@@ -550,6 +552,12 @@ export default function Admin() {
               onAskRotateSecret={() => askConfirm("rotateSecret", { label: "secret" })}
               onEnable2FA={() => setTwofaDialogOpen(true)}
               onDisable2FA={disable2FA}
+            />
+          </TabsContent>
+
+          <TabsContent value="wallets" className="mt-4">
+            <WalletRegistrySection
+              headers={authHeaders as Record<string, string>}
             />
           </TabsContent>
         </Tabs>
