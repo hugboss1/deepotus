@@ -33,6 +33,15 @@ const STAGE_META = {
   },
 };
 
+/**
+ * Hash that, when present in the URL, scrolls to the "Demander un niveau
+ * d'accréditation" CTA AND auto-opens the TerminalPopup as if the user had
+ * clicked the button. Drives both:
+ *   - direct deep-links e.g. /#accreditation
+ *   - in-page anchor clicks (Hero, Footer, etc.) via `hashchange`.
+ */
+const ACCREDITATION_HASH = "#accreditation";
+
 export default function VaultSection() {
   const { t } = useI18n();
   const [state, setState] = useState(null);
@@ -40,6 +49,11 @@ export default function VaultSection() {
   const [error, setError] = useState(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const aliveRef = useRef(true);
+  // Pulse glow around the request-clearance CTA so the Agent visually
+  // tracks where the action originated, even if the popup opens
+  // immediately. Toggles off after ~2.6s.
+  const [ctaPulse, setCtaPulse] = useState<boolean>(false);
+  const accreditationAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const fetchState = async () => {
     try {
@@ -66,6 +80,85 @@ export default function VaultSection() {
       clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Anchor-driven gate opener.
+   *
+   * When the URL hash equals `#accreditation` we:
+   *   1. Smooth-scroll to the anchor sitting next to the CTA.
+   *   2. Auto-open the TerminalPopup (the same modal the button opens).
+   *   3. Light up a transient amber pulse around the CTA for ~2.6s so
+   *      the Agent visually anchors WHERE the action came from.
+   *
+   * IntersectionObserver gate: the landing page boots with a ~6-8s
+   * full-screen DeepState intro that covers the vault. Firing the
+   * popup behind it would just confuse the visitor — we wait until the
+   * vault section is ≥30% visible before triggering. Re-runs on every
+   * `hashchange` so subsequent in-page clicks still work.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    let pendingTrigger: boolean = window.location.hash === ACCREDITATION_HASH;
+
+    const drainTrigger = (): void => {
+      if (!pendingTrigger) return;
+      pendingTrigger = false;
+      requestAnimationFrame(() => {
+        accreditationAnchorRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        // Open the gate modal slightly after the scroll begins so the
+        // popup animation doesn't fight the scroll.
+        window.setTimeout(() => {
+          setTerminalOpen(true);
+        }, 350);
+        setCtaPulse(true);
+        window.setTimeout(() => setCtaPulse(false), 2600);
+      });
+    };
+
+    let observer: IntersectionObserver | null = null;
+    if (
+      accreditationAnchorRef.current &&
+      pendingTrigger &&
+      "IntersectionObserver" in window
+    ) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+              drainTrigger();
+              observer?.disconnect();
+              observer = null;
+              break;
+            }
+          }
+        },
+        { threshold: [0.3] },
+      );
+      observer.observe(accreditationAnchorRef.current);
+      // Hard fallback for headless / legacy browsers — drain after 9s.
+      window.setTimeout(() => {
+        if (pendingTrigger) drainTrigger();
+      }, 9000);
+    } else if (pendingTrigger) {
+      drainTrigger();
+    }
+
+    const onHashChange = (): void => {
+      if (window.location.hash !== ACCREDITATION_HASH) return;
+      pendingTrigger = true;
+      drainTrigger();
+    };
+    window.addEventListener("hashchange", onHashChange);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("hashchange", onHashChange);
+    };
   }, []);
 
   const stage = state?.stage || "LOCKED";
@@ -239,8 +332,14 @@ export default function VaultSection() {
                   initial={FADE_UP_10_INITIAL}
                   animate={FADE_UP_ANIMATE}
                   exit={FADE_EXIT}
-                  className="mt-5 p-4 rounded-xl border border-[#18C964]/40 bg-[#18C964]/10"
+                  className={[
+                    "mt-5 p-4 rounded-xl border bg-[#18C964]/10 transition-[box-shadow,border-color] duration-500 ease-out",
+                    ctaPulse
+                      ? "border-[#F59E0B]/70 shadow-[0_0_0_4px_rgba(245,158,11,0.15),0_0_32px_rgba(245,158,11,0.35)] motion-safe:animate-[pulse_1.3s_ease-in-out_1]"
+                      : "border-[#18C964]/40",
+                  ].join(" ")}
                   data-testid="vault-declassified-cta"
+                  data-cta-pulse={ctaPulse ? "true" : "false"}
                 >
                   <div className="flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
                     <div>
@@ -264,10 +363,31 @@ export default function VaultSection() {
               )}
             </AnimatePresence>
 
+            {/* Anchor target for /#accreditation deep-links. Sits ABOVE the
+                always-visible request-clearance CTA so the button stays in
+                view when we smooth-scroll to the anchor. Zero-height +
+                negative offset so it doesn't shift layout and clears any
+                sticky header. */}
+            <div
+              id="accreditation"
+              ref={accreditationAnchorRef}
+              data-testid="accreditation-anchor"
+              aria-hidden="true"
+              className="relative -top-24 h-0 w-0"
+            />
+
             {/* Always-available shortcut to request Level 2 clearance
                 (visible regardless of vault stage — for users who already know) */}
             {stage !== "DECLASSIFIED" && (
-              <div className="mt-5 flex items-center gap-3 flex-wrap">
+              <div
+                className={[
+                  "mt-5 flex items-center gap-3 flex-wrap rounded-xl p-2 transition-[box-shadow,border-color] duration-500 ease-out border",
+                  ctaPulse
+                    ? "border-[#F59E0B]/70 shadow-[0_0_0_4px_rgba(245,158,11,0.15),0_0_32px_rgba(245,158,11,0.35)] motion-safe:animate-[pulse_1.3s_ease-in-out_1]"
+                    : "border-transparent",
+                ].join(" ")}
+                data-cta-pulse={ctaPulse ? "true" : "false"}
+              >
                 <Button
                   variant="outline"
                   size="sm"
