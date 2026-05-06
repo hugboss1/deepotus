@@ -1,0 +1,60 @@
+{
+  "summary": "Completed comprehensive testing of #accreditation deep-link UX rewire. All core functionality verified: direct URL load auto-opens TerminalPopup after DeepState intro, in-page hashchange triggers popup with CTA pulse, anchor successfully moved from Whitelist to Vault section, vault CTAs work correctly, TerminalPopup phases display properly (SEALED state with Genesis CTA), whitelist form regression passed, and bilingual stability confirmed (FR/EN).",
+  
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "notes": [
+      "POST /api/access-card/request returns 403 VAULT_SEALED - this is EXPECTED behavior when vault is in sealed state (not a bug)"
+    ]
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "Backend: GET /api/vault/state returns DECLASSIFIED stage",
+    "Backend: GET /api/vault/classified-status returns sealed: true, mint_live: false",
+    "Backend: POST /api/whitelist successfully subscribes emails",
+    "Backend: POST /api/access-card/genesis-broadcast successfully subscribes to genesis broadcast",
+    "Frontend: Direct URL load of /#accreditation auto-opens TerminalPopup after DeepState intro (~6-8s)",
+    "Frontend: In-page hashchange to #accreditation reopens TerminalPopup and sets data-cta-pulse='true'",
+    "Frontend: Accreditation anchor moved from Whitelist section to Vault section (regression confirmed)",
+    "Frontend: Accreditation anchor has correct id='accreditation' and data-testid='accreditation-anchor'",
+    "Frontend: TerminalPopup displays SEALED phase correctly with Genesis CTA and locked Level-02 buttons",
+    "Frontend: Vault DECLASSIFIED CTA (vault-open-operation-cta) successfully opens TerminalPopup on direct click",
+    "Frontend: Whitelist form submission works end-to-end (POST /api/whitelist)",
+    "Frontend: Whitelist section no longer contains accreditation anchor",
+    "Frontend: Bilingual stability confirmed - language toggle (FR/EN) works, popup adapts copy but auto-open logic still triggers",
+    "Frontend: TerminalPopup contains 'PROTOCOL ΔΣ' in both FR and EN languages",
+    "Playwright spec: All 3 tests passed in 18.8s (accreditation-deeplink.spec.ts)"
+  ],
+  
+  "test_report_links": [
+    "/app/backend_test_accreditation.py",
+    "/app/e2e/specs/accreditation-deeplink.spec.ts",
+    ".screenshots/test2-terminal-sealed-phase.png",
+    ".screenshots/test3-vault-declassified-cta-click.png",
+    ".screenshots/test4-whitelist-success.png",
+    ".screenshots/test5-hashchange-pulse.png",
+    ".screenshots/test6-bilingual-popup.png"
+  ],
+  
+  "action_item_for_main_agent": "",
+  
+  "updated_files": [
+    "/app/backend_test_accreditation.py"
+  ],
+  
+  "success_percentage": {
+    "backend": "100% (4/4 functional endpoints, 1 expected 403 for sealed state)",
+    "frontend": "100% (all deep-link scenarios, popup phases, CTAs, whitelist regression, bilingual)",
+    "integration": "100% (deep-link auto-open, hashchange, CTA pulse, form submission)"
+  },
+  
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}
