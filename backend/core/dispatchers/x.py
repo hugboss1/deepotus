@@ -116,24 +116,33 @@ async def send(
         )
 
     # OAuth 1.0a is required for v2 POST /2/tweets in Elevated tier.
-    # We rely on httpx + a tiny inline OAuth1 helper (rather than pulling
-    # the full ``requests-oauthlib`` dep) to keep the deploy footprint
-    # tight. The helper lives next to the call so it stays auditable.
+    # We use ``authlib.integrations.httpx_client.OAuth1Auth`` which
+    # inherits directly from ``httpx.Auth`` and implements the full
+    # ``auth_flow`` contract — no shim, no manual signing.
+    #
+    # This replaces the previous home-rolled ``_OAuth1Adapter`` that
+    # tried to bridge ``requests_oauthlib.OAuth1`` onto httpx via a
+    # synthetic PreparedRequest stub. The bridge worked at signature
+    # level but the OAuth1 client called ``prepare_headers()`` on the
+    # stub (which doesn't exist), raising a TypeError that surfaced
+    # in production as "Exception in ASGI application" whenever the
+    # admin clicked Approve / Push on a real tweet item.
     try:
-        from requests_oauthlib import OAuth1  # type: ignore[import-not-found]
+        from authlib.integrations.httpx_client import (  # type: ignore[import-not-found]
+            OAuth1Auth,
+        )
     except ImportError:
         return DispatchResult(
             outcome=DispatchOutcome.FAILED,
-            error="missing_dep_requests_oauthlib",
+            error="missing_dep_authlib",
             duration_ms=_elapsed_ms(started),
         )
 
-    auth = OAuth1(
-        creds["api_key"],
+    auth = OAuth1Auth(
+        client_id=creds["api_key"],
         client_secret=creds["api_secret"],
-        resource_owner_key=creds["access_token"],
-        resource_owner_secret=creds["access_token_secret"],
-        signature_type="auth_header",
+        token=creds["access_token"],
+        token_secret=creds["access_token_secret"],
     )
 
     body: Dict[str, Any] = {"text": text}
@@ -141,7 +150,7 @@ async def send(
         body["reply"] = {"in_reply_to_tweet_id": reply_to_id}
     try:
         async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
-            resp = await client.post(_API_URL, json=body, auth=_OAuth1Adapter(auth))
+            resp = await client.post(_API_URL, json=body, auth=auth)
         snippet = resp.text[:200] if resp.text else None
         if resp.status_code == 401:
             return DispatchResult(
@@ -228,41 +237,14 @@ def _elapsed_ms(started_monotonic: float) -> int:
     return int((time.monotonic() - started_monotonic) * 1000)
 
 
-class _OAuth1Adapter:
-    """Bridge ``requests_oauthlib.OAuth1`` (sync, requests.PreparedRequest
-    contract) onto httpx's auth-flow protocol.
+# NOTE on auth: the OAuth 1.0a signing is done via
+# ``authlib.integrations.httpx_client.OAuth1Auth`` (instantiated inline
+# inside ``send()``). It already inherits ``httpx.Auth`` and implements
+# ``auth_flow``, so no custom adapter is needed here.
+#
+# The previous in-tree shim (``_OAuth1Adapter`` + ``_PreparedRequestStub``)
+# tried to bridge ``requests_oauthlib.OAuth1`` onto httpx but tripped a
+# TypeError because the stub did not expose ``prepare_headers()``. We
+# kept this pointer note so a future maintainer doesn't try to revive
+# the bridge.
 
-    httpx accepts callables matching ``Auth.auth_flow(request)``. We
-    delegate body+header signing to OAuth1 by wrapping a synthetic
-    ``requests.PreparedRequest`` shape. This avoids pulling the entire
-    ``requests`` runtime just for auth signing.
-    """
-
-    def __init__(self, oauth1):
-        self._oauth1 = oauth1
-
-    def auth_flow(self, request):
-        # Build a minimal PreparedRequest-like object the OAuth1 client
-        # can sign. We only need .url, .method, .headers, .body.
-        body = request.read()
-        prepared = _PreparedRequestStub(
-            method=request.method,
-            url=str(request.url),
-            headers=dict(request.headers),
-            body=body if body else None,
-        )
-        signed = self._oauth1(prepared)
-        # Copy back the Authorization header.
-        if "Authorization" in signed.headers:
-            request.headers["Authorization"] = signed.headers["Authorization"]
-        yield request
-
-
-class _PreparedRequestStub:
-    """Minimal duck-typed shape for ``requests_oauthlib.OAuth1.__call__``."""
-
-    def __init__(self, *, method, url, headers, body):
-        self.method = method
-        self.url = url
-        self.headers = headers
-        self.body = body

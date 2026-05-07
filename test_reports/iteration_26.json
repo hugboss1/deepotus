@@ -1,0 +1,64 @@
+{
+  "summary": "Sprint 17.5c pre-mint bug fixes testing complete. Both critical bugs are FIXED: (1) X dispatcher TypeError resolved via authlib OAuth1Auth swap - no ASGI crashes, dispatcher fails gracefully with 'no_credentials'. (2) DexScreener 429 rate-limit hardening implemented - POLL_SECONDS=60, exponential backoff schedule active, vault_state fields present. All 101 pytest tests pass. Frontend regression clean (AdminBots Preview + Cabinet tab working). Separate pre-existing bug found in news_repost.py (not Sprint 17.5c related).",
+
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "separate_issues": [
+      {
+        "file": "/app/backend/core/news_repost.py",
+        "issue": "TypeError: object bool can't be used in 'await' expression at lines 300 and 555",
+        "details": "_platform_creds_present() returns bool but is being awaited",
+        "impact": "news_repost_status_endpoint and news repost worker crash",
+        "fix_priority": "MEDIUM",
+        "note": "Pre-existing bug, NOT introduced by Sprint 17.5c"
+      }
+    ]
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": [
+    "✅ Pytest suite: 101/101 tests passed (90 prior + 11 new Sprint 17.5c tests)",
+    "✅ X dispatcher authlib swap: No '_OAuth1Adapter' or 'auth must inherit httpx.Auth' errors",
+    "✅ X dispatcher live mode: Queue item with platform='x' processed without ASGI crash",
+    "✅ X dispatcher graceful failure: Fails with 'no_credentials' when OAuth 1.0a creds missing",
+    "✅ DexScreener POLL_SECONDS: Verified 60s (was 30s)",
+    "✅ DexScreener backoff schedule: Monotonically increasing (60→180→300→600→1200→1800s)",
+    "✅ DexScreener vault_state fields: dex_backoff_until, dex_429_streak, dex_last_429_at present",
+    "✅ DexScreener poll loop: Running with 60s cadence, no errors",
+    "✅ Backend API: Admin login, bot config, generate-preview, preview/push all working",
+    "✅ Backend API: Release-now with kill-switch ON/OFF working",
+    "✅ Backend API: Cabinet endpoints (welcome-signal, interaction-bot) working",
+    "✅ Frontend: Homepage loads without errors",
+    "✅ Frontend: Admin login successful",
+    "✅ Frontend: AdminBots page accessible and functional",
+    "✅ Frontend: Cabinet tab renders correctly",
+    "✅ Frontend: No console errors detected"
+  ],
+
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/app/backend/tests/test_dispatcher_and_dexscreener_fixes.py",
+    "/app/backend/tests/test_cabinet_expansion.py"
+  ],
+
+  "success_percentage": {
+    "backend": "100% (all Sprint 17.5c features working)",
+    "frontend": "100% (regression tests passed)",
+    "pytest": "100% (101/101 tests passed)"
+  },
+
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+
+  "action_item_for_main_agent": "",
+
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "false"
+}

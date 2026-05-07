@@ -42,9 +42,40 @@ VAULT_DOC_ID = "protocol_delta_sigma"
 # BONK ticker mint on Solana — highly active memecoin, perfect for demo
 DEMO_TOKEN_ADDRESS = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
 
-POLL_SECONDS = 30
+# Sprint 17.5c — DexScreener public API rate-limit hardening.
+# DexScreener throttles aggressive callers to ~300 req/min per IP. Our
+# pre-mint demo loop was polling every 30s which collided with the
+# whale watcher + holders poller hitting the same host, occasionally
+# returning HTTP 429. Two mitigations apply:
+#   1. POLL_SECONDS bumped from 30 → 60s — halves baseline traffic.
+#   2. ``_BACKOFF_SCHEDULE`` kicks in on 429: each successive 429
+#      doubles the wait (capped at 30 min) and the loop sleeps until
+#      ``dex_backoff_until`` clears. The counter resets to 0 the next
+#      time we get a 200.
+POLL_SECONDS = 60
 HTTP_TIMEOUT = 8.0
 DEX_API = "https://api.dexscreener.com/latest/dex/tokens"
+
+# Exponential backoff schedule when DexScreener returns 429. Index =
+# consecutive 429 count; capped via the last entry so a stuck loop
+# can't melt down to silence forever (a 30-min cap means a worst-case
+# 1 missed cycle on the public site every half-hour).
+_BACKOFF_SCHEDULE_S: tuple[int, ...] = (
+    60,    # 1 min
+    180,   # 3 min
+    300,   # 5 min
+    600,   # 10 min
+    1200,  # 20 min
+    1800,  # 30 min — cap
+)
+
+
+def _backoff_seconds_for(attempt: int) -> int:
+    """Return the wait seconds for the Nth consecutive 429."""
+    if attempt <= 0:
+        return 0
+    idx = min(attempt - 1, len(_BACKOFF_SCHEDULE_S) - 1)
+    return _BACKOFF_SCHEDULE_S[idx]
 
 # Demo mode: emit 1 tick per N new buys detected (avoids blowing up the vault on BONK)
 DEMO_BUYS_PER_TICK = 5
@@ -58,33 +89,48 @@ def _now_iso() -> str:
 # ---------------------------------------------------------------------
 # Low-level fetch + normalization
 # ---------------------------------------------------------------------
-async def _fetch_token_stats(address: str) -> Optional[Dict[str, Any]]:
-    """Call DexScreener /tokens/{address} and return the BEST pair (highest liquidity)."""
+async def _fetch_token_stats(address: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Call DexScreener /tokens/{address} and return ``(pair, error)``.
+
+    Returns:
+        ``(pair, None)`` on success — pair is the most-active Solana pair.
+        ``(None, "rate_limited")`` when DexScreener answered HTTP 429 —
+            the orchestrator arms exponential backoff.
+        ``(None, "http_<status>")`` for other non-200 responses
+            (transient: 5xx, permanent: 4xx other than 429).
+        ``(None, "no_pairs")`` when the token has no Solana pair yet.
+        ``(None, "fetch_error")`` on network exceptions.
+    """
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
             r = await client.get(f"{DEX_API}/{address}")
+            if r.status_code == 429:
+                logging.warning("[dex] HTTP 429 from DexScreener — backing off")
+                return None, "rate_limited"
             if r.status_code != 200:
-                logging.warning(f"[dex] non-200 for {address}: {r.status_code}")
-                return None
+                logging.warning(
+                    "[dex] non-200 for %s: %d", address, r.status_code,
+                )
+                return None, f"http_{r.status_code}"
             data = r.json()
             pairs = data.get("pairs") or []
             if not pairs:
-                return None
+                return None, "no_pairs"
             # Keep Solana pairs, sort by trade activity (buys + sells on 24h window)
             # This ensures we track the LIVELY pair, not the deepest-but-idle one.
             solana_pairs = [p for p in pairs if p.get("chainId") == "solana"]
             if not solana_pairs:
-                return None
+                return None, "no_solana_pair"
 
             def _activity_score(p):
                 txns = (p.get("txns") or {}).get("h24") or {}
                 return int(txns.get("buys") or 0) + int(txns.get("sells") or 0)
 
             solana_pairs.sort(key=_activity_score, reverse=True)
-            return solana_pairs[0]
+            return solana_pairs[0], None
     except Exception as e:
         logging.exception(f"[dex] fetch error for {address}: {e}")
-        return None
+        return None, "fetch_error"
 
 
 def _extract_stats(pair: Dict[str, Any]) -> Dict[str, Any]:
@@ -273,7 +319,15 @@ async def _persist_fetch_error(db, error: str) -> None:
 # Orchestrator (cyclomatic complexity slimmed down from 24 → ~7)
 # ---------------------------------------------------------------------
 async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
-    """One polling iteration. Returns a diagnostic dict."""
+    """One polling iteration. Returns a diagnostic dict.
+
+    Sprint 17.5c — exponential backoff. The vault_state doc tracks:
+      * ``dex_backoff_until``      — ISO timestamp; when in the future,
+                                     poll() short-circuits with ``skipped``.
+      * ``dex_429_streak``         — consecutive 429 counter; resets on a
+                                     successful 200 fetch.
+      * ``dex_last_429_at``        — observability breadcrumb.
+    """
     doc = await db.vault_state.find_one({"_id": VAULT_DOC_ID}) or {}
     mode = (doc.get("dex_mode") or "off").lower()
 
@@ -282,14 +336,67 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
         # double-count by polling the DexScreener aggregate window too.
         return {"mode": mode, "skipped": True}
 
+    # Honour an active backoff window. We compare ISO timestamps as
+    # strings only as a fast-path — real comparison goes through
+    # datetime to handle malformed values gracefully.
+    backoff_until = doc.get("dex_backoff_until")
+    if backoff_until:
+        try:
+            bo_dt = datetime.fromisoformat(str(backoff_until).replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) < bo_dt:
+                return {
+                    "mode": mode,
+                    "skipped": True,
+                    "reason": "backoff_active",
+                    "backoff_until": backoff_until,
+                    "consecutive_429": int(doc.get("dex_429_streak") or 0),
+                }
+        except (TypeError, ValueError):
+            # Malformed value — clear it so we don't get stuck.
+            await db.vault_state.update_one(
+                {"_id": VAULT_DOC_ID},
+                {"$set": {"dex_backoff_until": None}},
+            )
+
     address, err = _resolve_token_address(doc, mode)
     if err or not address:
         return {"mode": mode, "skipped": True, "error": err or "no address"}
 
-    stats_pair = await _fetch_token_stats(address)
+    stats_pair, fetch_err = await _fetch_token_stats(address)
+
+    # 429 → arm exponential backoff and short-circuit.
+    if fetch_err == "rate_limited":
+        streak = int(doc.get("dex_429_streak") or 0) + 1
+        wait_s = _backoff_seconds_for(streak)
+        backoff_until_iso = (
+            datetime.now(timezone.utc) + _td_seconds(wait_s)
+        ).isoformat()
+        await db.vault_state.update_one(
+            {"_id": VAULT_DOC_ID},
+            {"$set": {
+                "dex_last_poll_at": _now_iso(),
+                "dex_error": "rate_limited",
+                "dex_backoff_until": backoff_until_iso,
+                "dex_429_streak": streak,
+                "dex_last_429_at": _now_iso(),
+            }},
+        )
+        logging.warning(
+            "[dex] arming backoff streak=%d wait=%ds until=%s",
+            streak, wait_s, backoff_until_iso,
+        )
+        return {
+            "mode": mode,
+            "skipped": True,
+            "error": "rate_limited",
+            "backoff_until": backoff_until_iso,
+            "consecutive_429": streak,
+            "wait_seconds": wait_s,
+        }
+
     if not stats_pair:
-        await _persist_fetch_error(db, "no pairs or HTTP error")
-        return {"mode": mode, "skipped": True, "error": "no pairs"}
+        await _persist_fetch_error(db, fetch_err or "no pairs or HTTP error")
+        return {"mode": mode, "skipped": True, "error": fetch_err or "no pairs"}
 
     s = _extract_stats(stats_pair)
     pair_symbol = f"{s['base_symbol']}/{s['quote_symbol']}"
@@ -324,7 +431,13 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
                 pair_symbol,
             )
 
+    # 200 OK — reset the 429 streak + clear any lingering backoff.
     await _persist_baselines(db, s, pair_symbol, label, new_carry)
+    if doc.get("dex_429_streak") or doc.get("dex_backoff_until"):
+        await db.vault_state.update_one(
+            {"_id": VAULT_DOC_ID},
+            {"$set": {"dex_429_streak": 0, "dex_backoff_until": None}},
+        )
 
     return {
         "mode": mode,
@@ -340,6 +453,12 @@ async def dex_poll_once(db, vault_mod) -> Dict[str, Any]:
         "carry_after": new_carry,
         "first_seen": first_seen,
     }
+
+
+def _td_seconds(s: int):
+    """Tiny helper — ``datetime.timedelta`` import-free shortcut."""
+    from datetime import timedelta
+    return timedelta(seconds=int(s))
 
 
 async def dex_loop(db, vault_mod):
