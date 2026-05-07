@@ -1,26 +1,26 @@
 [
   {
     "content": "Backend: harden Pydantic schemas + add /preview/push (real dispatcher) + /release-now (force jobs)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Backend: bot_scheduler.force_run_all_now() helper",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Frontend: 'Push to X/Telegram' button in Preview tab",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Frontend: dual-mode Release button in header (release kill OR force jobs)",
-    "status": "pending"
+    "content": "Frontend: dual-mode Release button in header",
+    "status": "completed"
   },
   {
-    "content": "Tests: backend + smoke",
-    "status": "pending"
+    "content": "Tests: backend (11 new, 90/90 total) + testing agent (100% pass)",
+    "status": "completed"
   },
   {
     "content": "Plan.md + commit-ready summary",
-    "status": "pending"
+    "status": "completed"
   }
 ]

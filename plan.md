@@ -1,5 +1,5 @@
 # DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ**
-(Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17 + Hardening 22.x → 24 + Sprint 23/24 + **Sprint 17.5 Cabinet Expansion**)
+(Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17 + Hardening 22.x → 24 + Sprint 23/24 + **Sprint 17.5 Cabinet Expansion** + **Sprint 17.5b Admin Bots Panel**)
 
 ## 1) Objectives
 - Stabiliser et clarifier le code **sans refactors risqués pré-launch** ; privilégier des fixes “safe” (build gates, guards sécurité, docs, tooling).
@@ -14,6 +14,10 @@
 - **Sprint 15 — Brain Connect & Treasury Architecture (MiCA)** : relier indexation on-chain (Helius) au lore **sans trading**, publier une politique de trésorerie transparente, outillage admin de disclosure + tokenomics tracker public.
 - **Nouvel objectif (Pre-mint UX / deep-linking)** : assurer un parcours “recrutement / accréditation” sans friction via un deep-link unique `/#accreditation`.
 - **Nouvel objectif (Sprint 17.5 — Cabinet Expansion)** : croissance automatisée et conversationnelle sur X avec garde-fous (2FA, audit, rate-limits), reconnaissance quotidienne des Agents (Welcome Signal) et replies lore (Prophet Interaction Bot).
+- **Nouvel objectif (Sprint 17.5b — Admin Bots Panel Ops)** :
+  - permettre un **push immédiat** du contenu généré (Preview) vers X/Telegram via le **Real Dispatcher**,
+  - éliminer les **exceptions ASGI** liées aux réponses partielles du générateur LLM (hardening Pydantic),
+  - rendre le bouton **Release** opératoire en prod pour **forcer une exécution manuelle** des jobs APScheduler.
 - **Ops post-prod** : réduire les erreurs humaines (déploiement, secrets, webhooks) via docs exécutables, endpoints diagnostics, et tests automatisés.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
@@ -24,7 +28,7 @@
 - **Cabinet Vault** : AES-256-GCM + lecture stricte par les dispatchers.
 - **Propaganda Engine** : dispatchers **X + Telegram LIVE** (réels) et branchés aux APIs, via secrets du vault.
 - **Transparence MiCA** : page `/transparency` alimentée dynamiquement par le **Public Wallet Registry** (badges LOCKED/PENDING) + intégration RugCheck.
-- **Tests** : backend Pytest (79 tests) + Playwright E2E + CI GitHub Actions.
+- **Tests** : backend Pytest (**90 tests**) + Playwright E2E + CI GitHub Actions.
 - **UX micro-sprint (deep-link)** : `#accreditation` **déplacé** de Whitelist → **VaultSection**. L’accès à `/#accreditation` ou un `hashchange` ouvre automatiquement le **TerminalPopup DS-GATE-02** et déclenche un pulse ambre 2.6s autour du CTA.
 - **Sprint 17.5 — Cabinet Expansion (X)** :
   - **Production Mode X** forcé : `dispatch_enabled=True`, `dispatch_dry_run=False`.
@@ -33,6 +37,12 @@
   - **Welcome Signal** : thread quotidien à 14:00 UTC, cite 2–5 Agents accrédités avec handle X.
   - **Prophet Interaction Bot** : replies lore 1–3/h, signé `— ΔΣ`, OFF par défaut → activation admin.
   - Frontend : champ `x_handle` optionnel dans Terminal (copy lore) + nouvel onglet **Cabinet** dans `/propaganda`.
+- **Sprint 17.5b — Admin Bots Panel updates** :
+  - ✅ **Push to X/Telegram** depuis l’onglet Preview (Admin Bots) : endpoint `POST /api/admin/bots/preview/push` → crée **1 item par plateforme** dans `propaganda_queue` avec `policy=auto` (prise en charge par le Real Dispatcher, tick ~5s).
+  - ✅ **Fix ASGI “Exception in ASGI application”** : durcissement Pydantic de `GeneratePreviewResponse` (extra ignore + defaults) + coercion défensive + fallback `502 preview_render_failed`.
+  - ✅ **Release button** dual-mode :
+    - kill-switch armé → release (comportement historique)
+    - kill-switch OFF → `POST /api/admin/bots/release-now` force l’exécution des jobs via `APScheduler.modify_job(next_run_time=now)`.
 - **Pré-launch standby** : prêt à push sur `main` + redéployer ; Helius live toujours bloqué jusqu’au mint/pool.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
@@ -62,7 +72,7 @@
 - Anchor `#accreditation` pointe désormais vers le **bouton d’accréditation** (Vault).
 - Auto-open TerminalPopup sur `/#accreditation` et sur `hashchange`.
 - Pulse CTA 2.6s.
-- Playwright : `e2e/specs/accreditation-deeplink.spec.ts` (3 tests, ~19.6s, green).
+- Playwright : `e2e/specs/accreditation-deeplink.spec.ts` (3 tests).
 
 #### Sprint 17.5 — Cabinet Expansion — ✅ COMPLET
 - **Dispatcher Unlocked / Prod Mode X** :
@@ -83,7 +93,7 @@
   - Fetch tweets via X v2 (bearer), compose via Tone Engine, signature `— ΔΣ` enforced, reply via `in_reply_to_tweet_id`.
   - Audit : collection `prophet_replies` + indexes.
   - Admin endpoints : `GET/PATCH/POST /api/admin/propaganda/interaction-bot`.
-- **X dispatcher** : support replies via `meta.reply_to_tweet_id` → body `reply.in_reply_to_tweet_id`.
+- **X dispatcher** : support replies via `meta.reply_to_tweet_id` → body `reply.reply_to_tweet_id`.
 - **Infiltration auto** : `verify_x_follow` live (X v2), cache 24h dans `x_follow_cache`, flags follow/mention/DM activés.
 - **Frontend** :
   - TerminalPopup : champ optionnel `x_handle` (copy lore “ID de transmission publique… recensement du Cabinet”).
@@ -91,7 +101,21 @@
 - **Qualité** :
   - `ruff` clean.
   - `pytest` : 79/79.
-  - Testing agent : 0 bugs critiques ; 2 faux positifs (403 “VAULT_SEALED” attendus en pré-mint).
+
+#### Sprint 17.5b — Admin Bots Panel Updates — ✅ COMPLET
+- **Push to X/Telegram (Preview tab)** :
+  - Backend : `POST /api/admin/bots/preview/push` → `dispatch_queue.propose(... policy=auto ...)` 1 item par plateforme.
+  - Frontend : bouton CTA vert sous l’output preview + dialog (checkboxes X/TG + toggle EN/FR).
+- **ASGI exception fix (requestID=11706258)** :
+  - `GeneratePreviewResponse` : `ConfigDict(extra="ignore")` + defaults sûrs.
+  - Coercion des champs (hashtags, emoji, strings, int) + `try/except` → `502 preview_render_failed` au lieu d’un crash ASGI.
+- **Release button (header)** :
+  - Frontend : bouton actif même quand kill-switch OFF (“Release · Run jobs now”).
+  - Backend : `POST /api/admin/bots/release-now` + helper `force_run_all_now()` (APScheduler.modify_job).
+- **Qualité** :
+  - `pytest` : **90/90** (11 nouveaux tests sur bots preview push + hardening).
+  - `tsc --noEmit` : clean.
+  - Testing agent : **100%** (backend + frontend).
 
 #### Helius live post-mint (Sprint 15/Brain Connect) — ⛔ BLOQUÉ
 - Attente du mint + pool DEX.
@@ -217,6 +241,26 @@ Objectif : forcer l’exécution live sur X et automatiser croissance + interact
 
 ---
 
+### Phase 17.5b — Admin Bots Panel Updates ✅ **COMPLETED**
+Objectif : rendre la console bots “actionnable” en prod (push immédiat + release jobs + zéro crash ASGI).
+
+1) **Push to X/Telegram depuis Preview**
+- ✅ Backend : `POST /api/admin/bots/preview/push` → enqueue `propaganda_queue` (policy=auto) 1 item / plateforme.
+- ✅ Frontend : bouton CTA sous output + dialog choix plateformes + toggle EN/FR.
+
+2) **Hardening Pydantic / Fix ASGI**
+- ✅ `GeneratePreviewResponse` : extra ignore + defaults + coercion + fallback 502.
+
+3) **Release (force job run)**
+- ✅ Backend : `POST /api/admin/bots/release-now` + helper `force_run_all_now()`.
+- ✅ Frontend : Release dual-mode (kill-switch OFF → force-run jobs).
+
+4) **Tests**
+- ✅ 11 nouveaux tests Pytest (suite totale 90/90).
+- ✅ Testing agent : 100%.
+
+---
+
 ### Phase 15 — **Brain Connect & Treasury Architecture (MiCA) — NEXT**
 Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine) **sans logique de trading**, publier une politique publique de trésorerie conforme MiCA, et ajouter l’outillage admin de disclosure + tokenomics tracker.
 - **Dépendances** : mint `$DEEPOTUS` + pool address DEX + passage Helius en mode live.
@@ -239,10 +283,12 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 ## 3) Next Actions
 
 ### Priorité immédiate (P0) — Push main + redéploiement
-- ✅ Sprint 17.5 prêt.
+- ✅ Sprint 17.5 + ✅ Sprint 17.5b prêts.
 - **Action utilisateur** : push sur `main` + redéploiement Render/Vercel.
 - Après déploiement :
   - vérifier logs Render backend (Mongo, Vault unlock, scheduler jobs),
+  - vérifier AdminBots → Preview → **Push to X/Telegram** (création d’items en queue + dispatch live),
+  - vérifier AdminBots → **Release · Run jobs now** (force-run des jobs),
   - vérifier queue Propaganda : approve → dispatch X (live),
   - vérifier que `dispatch_dry_run=false` est bien effectif en prod.
 
@@ -255,6 +301,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Split composants trop gros (behaviour inchangé) :
   - `TerminalPopup.tsx`
   - `Propaganda.tsx`
+  - `AdminPreviewSection.tsx`
 - Verrouiller via Playwright.
 
 ### P3 — Helius live post-mint
@@ -265,6 +312,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Ajouter smoke `/transparency`.
 - Ajouter smoke “Propaganda queue end-to-end” (approve → dispatch live, + verify reply mode).
 - Ajouter smoke “Cabinet tab” (render + toggles require 2FA).
+- Ajouter smoke “AdminBots Preview push” (generate preview → open dialog → push dry-run optional).
 
 ---
 
@@ -280,10 +328,14 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
   - Welcome Signal opérationnel (daily 14:00 UTC, cite 2–5 handles).
   - Interaction Bot prêt et activable via admin, replies signées `— ΔΣ`.
   - Champ `x_handle` collecte + stockage `clearance_levels` pour recensement.
+- **Admin Bots Panel (Sprint 17.5b)** :
+  - Preview push poste via Real Dispatcher (`/preview/push` → queue auto → dispatch worker).
+  - Zéro crash ASGI lié aux réponses LLM partielles/surplus (`GeneratePreviewResponse` durci).
+  - Bouton Release opératoire : force-run jobs via `/release-now` quand kill-switch OFF.
 - Qualité & hardening :
   - ✅ `tsc --noEmit` = 0 erreurs
   - ✅ `noImplicitAny: true`
-  - ✅ `pytest` backend : 79 tests passent
+  - ✅ `pytest` backend : **90** tests passent
   - ✅ Playwright E2E : specs + CI workflow
 
 ---
@@ -294,6 +346,10 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - ✅ Propaganda : orchestrateur + triggers + queue + templates + tone engine.
 - ✅ Dispatchers + worker APScheduler + routes admin + doc ops.
 - ✅ Sprint 17.5 : `bootstrap_production_mode()` + `welcome_signal` + `prophet_interaction`.
+- ✅ Sprint 17.5b :
+  - `POST /api/admin/bots/preview/push` (queue auto)
+  - `POST /api/admin/bots/release-now` + `force_run_all_now()`
+  - hardening `GeneratePreviewResponse` contre réponses LLM partielles.
 - ✅ Retry/backoff + preflight creds + diagnostics état.
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
 - ✅ Transparence : Wallet Registry CRUD + endpoint public.
@@ -305,6 +361,9 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - ✅ Whitelist : formulaire mailing list (désolidarisé du deep-link accréditation).
 - ✅ `/transparency` dynamique.
 - ✅ Admin Propaganda : onglet Cabinet (Welcome Signal + Interaction Bot).
+- ✅ Admin Bots :
+  - Preview → CTA **Push to X/Telegram** + dialog
+  - Release dual-mode (kill-switch OFF → run jobs now)
 - ✅ TS strict : `noImplicitAny: true`.
 
 **E2E (Playwright)**
