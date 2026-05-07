@@ -1,5 +1,5 @@
 # DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ**
-(Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17 + Hardening 22.x → 24 + Sprint 23/24 + **Sprint 17.5 Cabinet Expansion** + **Sprint 17.5b Admin Bots Panel**)
+(Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17 + Hardening 22.x → 24 + Sprint 23/24 + **Sprint 17.5 Cabinet Expansion** + **Sprint 17.5b Admin Bots Panel** + **Sprint 17.5c Pre‑Mint Blockers**)
 
 ## 1) Objectives
 - Stabiliser et clarifier le code **sans refactors risqués pré-launch** ; privilégier des fixes “safe” (build gates, guards sécurité, docs, tooling).
@@ -12,12 +12,16 @@
 - **PROTOCOL ΔΣ — Infiltration Brain** : livrer l’expérience publique “Proof of Intelligence” + surface admin conforme posture sécurité.
 - **Sprint 14.2 — Infiltration Automation** : vérifications semi-automatiques (TG live, X review queue), + KOL DM drafts (approval mode) via UI.
 - **Sprint 15 — Brain Connect & Treasury Architecture (MiCA)** : relier indexation on-chain (Helius) au lore **sans trading**, publier une politique de trésorerie transparente, outillage admin de disclosure + tokenomics tracker public.
-- **Nouvel objectif (Pre-mint UX / deep-linking)** : assurer un parcours “recrutement / accréditation” sans friction via un deep-link unique `/#accreditation`.
-- **Nouvel objectif (Sprint 17.5 — Cabinet Expansion)** : croissance automatisée et conversationnelle sur X avec garde-fous (2FA, audit, rate-limits), reconnaissance quotidienne des Agents (Welcome Signal) et replies lore (Prophet Interaction Bot).
-- **Nouvel objectif (Sprint 17.5b — Admin Bots Panel Ops)** :
+- **Pre-mint UX / deep-linking** : assurer un parcours “recrutement / accréditation” sans friction via un deep-link unique `/#accreditation`.
+- **Sprint 17.5 — Cabinet Expansion** : croissance automatisée et conversationnelle sur X avec garde-fous (2FA, audit, rate-limits), reconnaissance quotidienne des Agents (Welcome Signal) et replies lore (Prophet Interaction Bot).
+- **Sprint 17.5b — Admin Bots Panel Ops** :
   - permettre un **push immédiat** du contenu généré (Preview) vers X/Telegram via le **Real Dispatcher**,
   - éliminer les **exceptions ASGI** liées aux réponses partielles du générateur LLM (hardening Pydantic),
   - rendre le bouton **Release** opératoire en prod pour **forcer une exécution manuelle** des jobs APScheduler.
+- **Sprint 17.5c — Pre‑Mint Blockers** :
+  - fiabiliser **OAuth 1.0a sur X** (auth httpx‑native) pour débloquer les pushes manuels,
+  - réduire la pression sur **DexScreener** (cadence + backoff) pour éliminer les 429,
+  - corriger les TypeError “await bool” restant sur des routes/loops bots.
 - **Ops post-prod** : réduire les erreurs humaines (déploiement, secrets, webhooks) via docs exécutables, endpoints diagnostics, et tests automatisés.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
@@ -28,7 +32,7 @@
 - **Cabinet Vault** : AES-256-GCM + lecture stricte par les dispatchers.
 - **Propaganda Engine** : dispatchers **X + Telegram LIVE** (réels) et branchés aux APIs, via secrets du vault.
 - **Transparence MiCA** : page `/transparency` alimentée dynamiquement par le **Public Wallet Registry** (badges LOCKED/PENDING) + intégration RugCheck.
-- **Tests** : backend Pytest (**90 tests**) + Playwright E2E + CI GitHub Actions.
+- **Tests** : backend Pytest (**101 tests**) + Playwright E2E + CI GitHub Actions.
 - **UX micro-sprint (deep-link)** : `#accreditation` **déplacé** de Whitelist → **VaultSection**. L’accès à `/#accreditation` ou un `hashchange` ouvre automatiquement le **TerminalPopup DS-GATE-02** et déclenche un pulse ambre 2.6s autour du CTA.
 - **Sprint 17.5 — Cabinet Expansion (X)** :
   - **Production Mode X** forcé : `dispatch_enabled=True`, `dispatch_dry_run=False`.
@@ -43,6 +47,12 @@
   - ✅ **Release button** dual-mode :
     - kill-switch armé → release (comportement historique)
     - kill-switch OFF → `POST /api/admin/bots/release-now` force l’exécution des jobs via `APScheduler.modify_job(next_run_time=now)`.
+- **Sprint 17.5c — Pre‑Mint blockers (FIXED)** :
+  - ✅ **X Dispatcher TypeError** : remplacement du shim `_OAuth1Adapter` (incompatible httpx) par `authlib.integrations.httpx_client.OAuth1Auth` (hérite de `httpx.Auth`, implémente `auth_flow`). Dead code supprimé + test anti-régression.
+  - ✅ **DexScreener 429** : cadence `POLL_SECONDS` 30→60 + backoff exponentiel persistant (`dex_backoff_until`, `dex_429_streak`, reset sur succès 200).
+  - ✅ **Bonus** : fix de 4 TypeError “await bool” dans `core/news_repost.py` (fonction sync `_platform_creds_present()` ne doit pas être await).
+  - ✅ **Deps** : `Authlib==1.7.2` ajouté à `backend/requirements.txt`.
+  - ✅ **Qualité** : Pytest **101/101** + testing agent 100% backend/front (régression clean).
 - **Pré-launch standby** : prêt à push sur `main` + redéployer ; Helius live toujours bloqué jusqu’au mint/pool.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
@@ -113,9 +123,23 @@
   - Frontend : bouton actif même quand kill-switch OFF (“Release · Run jobs now”).
   - Backend : `POST /api/admin/bots/release-now` + helper `force_run_all_now()` (APScheduler.modify_job).
 - **Qualité** :
-  - `pytest` : **90/90** (11 nouveaux tests sur bots preview push + hardening).
+  - `pytest` : **90/90**.
   - `tsc --noEmit` : clean.
   - Testing agent : **100%** (backend + frontend).
+
+#### Sprint 17.5c — Pre‑Mint Blockers — ✅ COMPLET
+- **Bug 1 (X dispatcher TypeError)** :
+  - `core/dispatchers/x.py` : OAuth 1.0a via `authlib.integrations.httpx_client.OAuth1Auth`.
+  - Suppression du shim `_OAuth1Adapter` + stub PreparedRequest.
+  - Test anti-régression : s’assure que le dispatcher passe un `httpx.Auth` natif et que les classes mortes n’existent plus.
+- **Bug 2 (DexScreener 429)** :
+  - `dexscreener.POLL_SECONDS` : 60s.
+  - Backoff exponentiel : 60→180→300→600→1200→1800s (cap 30 min).
+  - Persistance : `vault_state.dex_backoff_until`, `vault_state.dex_429_streak`, `vault_state.dex_last_429_at`.
+  - Reset de streak sur fetch 200.
+- **Bonus** : fix `core/news_repost.py` (ne pas `await` un bool).
+- **Deps** : `Authlib==1.7.2` ajouté à `backend/requirements.txt`.
+- **Qualité** : Pytest **101/101** + QA agent 100%.
 
 #### Helius live post-mint (Sprint 15/Brain Connect) — ⛔ BLOQUÉ
 - Attente du mint + pool DEX.
@@ -256,8 +280,28 @@ Objectif : rendre la console bots “actionnable” en prod (push immédiat + re
 - ✅ Frontend : Release dual-mode (kill-switch OFF → force-run jobs).
 
 4) **Tests**
-- ✅ 11 nouveaux tests Pytest (suite totale 90/90).
+- ✅ 11 nouveaux tests Pytest.
 - ✅ Testing agent : 100%.
+
+---
+
+### Phase 17.5c — Pre‑Mint Blockers ✅ **COMPLETED**
+Objectif : éliminer les blockers production qui empêchent la communication et l’indexation avant mint.
+
+1) **X Dispatcher OAuth 1.0a httpx‑native**
+- ✅ Remplacement `_OAuth1Adapter` → `OAuth1Auth` (Authlib) (hérite de `httpx.Auth`).
+- ✅ Dead code supprimé, test anti-régression.
+
+2) **DexScreener rate limit hardening**
+- ✅ Cadence 60s.
+- ✅ Backoff exponentiel persistant + reset sur succès.
+
+3) **Bonus stability**
+- ✅ Fix `news_repost.py` (ne pas `await` `_platform_creds_present()` sync).
+
+4) **Deps + tests**
+- ✅ `Authlib==1.7.2` ajouté à `requirements.txt`.
+- ✅ Pytest : **101/101** + QA agent 100%.
 
 ---
 
@@ -283,14 +327,14 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 ## 3) Next Actions
 
 ### Priorité immédiate (P0) — Push main + redéploiement
-- ✅ Sprint 17.5 + ✅ Sprint 17.5b prêts.
+- ✅ Sprint 17.5 + ✅ Sprint 17.5b + ✅ Sprint 17.5c prêts.
 - **Action utilisateur** : push sur `main` + redéploiement Render/Vercel.
-- Après déploiement :
-  - vérifier logs Render backend (Mongo, Vault unlock, scheduler jobs),
-  - vérifier AdminBots → Preview → **Push to X/Telegram** (création d’items en queue + dispatch live),
-  - vérifier AdminBots → **Release · Run jobs now** (force-run des jobs),
-  - vérifier queue Propaganda : approve → dispatch X (live),
-  - vérifier que `dispatch_dry_run=false` est bien effectif en prod.
+- Après déploiement (checklist rapide) :
+  1. Vérifier logs Render backend (Mongo, vault unlock, scheduler jobs, pas de TypeError OAuth).
+  2. AdminBots → Preview → Generate → **Push to X/Telegram** (création d’items en queue + dispatch live).
+  3. AdminBots → **Release · Run jobs now** (force-run des jobs).
+  4. Propaganda queue : approve → dispatch X (live), et replies mode (`reply_to_tweet_id`) si utilisé.
+  5. DexScreener : vérifier que la boucle poll ne spam pas (60s) et que les 429 arment correctement le backoff.
 
 ### P1 — Exploitation Propaganda Engine (post-déploiement)
 - Valider cadence Welcome Signal (14:00 UTC) et seuils (min 2 / max 5).
@@ -312,7 +356,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Ajouter smoke `/transparency`.
 - Ajouter smoke “Propaganda queue end-to-end” (approve → dispatch live, + verify reply mode).
 - Ajouter smoke “Cabinet tab” (render + toggles require 2FA).
-- Ajouter smoke “AdminBots Preview push” (generate preview → open dialog → push dry-run optional).
+- Ajouter smoke “AdminBots Preview push” (generate preview → open dialog → push).
 
 ---
 
@@ -332,10 +376,13 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
   - Preview push poste via Real Dispatcher (`/preview/push` → queue auto → dispatch worker).
   - Zéro crash ASGI lié aux réponses LLM partielles/surplus (`GeneratePreviewResponse` durci).
   - Bouton Release opératoire : force-run jobs via `/release-now` quand kill-switch OFF.
+- **Pre‑Mint Blockers (Sprint 17.5c)** :
+  - X dispatcher OAuth 1.0a compatible httpx (`OAuth1Auth`), plus aucun TypeError `_OAuth1Adapter`.
+  - DexScreener : 60s + backoff persistant (plus de spam 429, dégradation contrôlée).
 - Qualité & hardening :
   - ✅ `tsc --noEmit` = 0 erreurs
   - ✅ `noImplicitAny: true`
-  - ✅ `pytest` backend : **90** tests passent
+  - ✅ `pytest` backend : **101** tests passent
   - ✅ Playwright E2E : specs + CI workflow
 
 ---
@@ -350,6 +397,10 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
   - `POST /api/admin/bots/preview/push` (queue auto)
   - `POST /api/admin/bots/release-now` + `force_run_all_now()`
   - hardening `GeneratePreviewResponse` contre réponses LLM partielles.
+- ✅ Sprint 17.5c :
+  - X OAuth1 via **Authlib OAuth1Auth** (httpx.Auth natif)
+  - DexScreener : cadence 60s + backoff exponentiel persistant
+  - fix `news_repost.py` (await bool)
 - ✅ Retry/backoff + preflight creds + diagnostics état.
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
 - ✅ Transparence : Wallet Registry CRUD + endpoint public.
@@ -376,6 +427,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Infiltration : `riddles`, `riddle_attempts` (TTL 24h), `clearance_levels`, `sleeper_cell`, `infiltration_audit`.
 - 14.2 : `x_share_submissions`, `kol_dm_drafts`.
 - Sprint 17.5 : `x_follow_cache`, `prophet_replies`.
+- DexScreener : champs ajoutés sur `vault_state` (`dex_backoff_until`, `dex_429_streak`, `dex_last_429_at`).
 - Treasury : `treasury_operations`.
 - Transparence : `wallet_registry`.
 - Vault : `cabinet_vault`, `cabinet_vault_audit`, `admin_2fa`.

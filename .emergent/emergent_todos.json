@@ -1,22 +1,26 @@
 [
   {
-    "content": "Bug 1: Replace _OAuth1Adapter with authlib.integrations.httpx_client.OAuth1Auth (inherits httpx.Auth)",
-    "status": "in_progress"
+    "content": "Bug 1: Replace _OAuth1Adapter with authlib.integrations.httpx_client.OAuth1Auth",
+    "status": "completed"
   },
   {
-    "content": "Bug 2: DexScreener — bump interval to 60s + exponential backoff on 429",
-    "status": "pending"
+    "content": "Bug 2: DexScreener — 60s interval + exponential backoff on 429",
+    "status": "completed"
   },
   {
-    "content": "Update requirements.txt via pip freeze (add authlib)",
-    "status": "pending"
+    "content": "Bonus: Fix pre-existing await bool TypeError in news_repost.py (4 sites)",
+    "status": "completed"
   },
   {
-    "content": "Tests: backend coverage for both fixes",
-    "status": "pending"
+    "content": "Update requirements.txt via pip freeze (added authlib==1.7.2)",
+    "status": "completed"
+  },
+  {
+    "content": "Tests: 11 new (101/101 total) + testing agent 100%",
+    "status": "completed"
   },
   {
     "content": "Plan.md + commit-ready summary",
-    "status": "pending"
+    "status": "completed"
   }
 ]
