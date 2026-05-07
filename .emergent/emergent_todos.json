@@ -1,26 +1,42 @@
 [
   {
-    "content": "Backend: core/wallet_registry.py + routers/wallet_registry.py + wire dans server.py — endpoints publics et admin testent OK",
+    "content": "Explore current X dispatcher + scheduler + tier-check code",
     "status": "completed"
   },
   {
-    "content": "Frontend admin: WalletRegistrySection.tsx (5 cartes éditables + Mint Address) + monté sur /admin",
+    "content": "Task 1: Remove X_TIER_REQUIRED gate, force PRODUCTION mode (dispatch_enabled=True, dispatch_dry_run=False, flip infiltration_auto flags)",
     "status": "in_progress"
   },
   {
-    "content": "Frontend public: hook useWalletRegistry() + modif Transparency.tsx (badges LOCKED/PENDING + bouton RugCheck)",
+    "content": "Add x_handle capture to accreditation flow (Pydantic model + clearance_levels + Terminal frontend form)",
     "status": "pending"
   },
   {
-    "content": "Audit credentials: confirmer Cabinet Vault AES-256-GCM dans dispatchers + doc CREDENTIAL_FLOW_AUDIT.md",
+    "content": "Task 2: Welcome Signal module (daily 5-agent shoutout) + scheduler job + admin toggle + manual fire endpoint",
     "status": "pending"
   },
   {
-    "content": "Tests pytest + lint + smoke visuel + doc SPRINT_TRANSPARENCY_TRUST.md",
+    "content": "Task 3: Prophet Interaction Bot module (poll followers, generate Lore reply, POST tweet with in_reply_to) + scheduler + admin toggle",
     "status": "pending"
   },
   {
-    "content": "Validation finale + status check pour push GitHub",
+    "content": "Extend X dispatcher to support reply mode (in_reply_to_tweet_id)",
+    "status": "pending"
+  },
+  {
+    "content": "Implement live verify_x_follow (X API v2 lookup using existing bearer pattern)",
+    "status": "pending"
+  },
+  {
+    "content": "Admin UI controls for Welcome Signal + Interaction Bot (Propaganda section)",
+    "status": "pending"
+  },
+  {
+    "content": "Backend tests + Playwright smoke",
+    "status": "pending"
+  },
+  {
+    "content": "Plan.md update + commit-ready summary",
     "status": "pending"
   }
 ]
