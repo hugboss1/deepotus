@@ -185,7 +185,7 @@ async def on_startup():
 
     # ---- Sprint 13.1 — Propaganda Engine ΔΣ ----
     try:
-        from core import market_analytics as _ma, templates_repo as _tpl
+        from core import market_analytics as _ma, templates_repo as _tpl, propaganda_engine as _pe
         await db.propaganda_templates.create_index([("trigger_key", 1), ("language", 1)])
         await db.propaganda_queue.create_index("proposed_at")
         await db.propaganda_queue.create_index("idem_hash")
@@ -193,12 +193,24 @@ async def on_startup():
         await db.propaganda_events.create_index("at")
         await _ma.ensure_indexes()
         seeded = await _tpl.seed_default_templates()
+        # Sprint 17.5 — Cabinet Expansion: force production dispatch
+        # mode + seed welcome_signal/interaction_bot sub-configs.
+        # Idempotent: subsequent boots are no-ops.
+        bootstrap_patch = await _pe.bootstrap_production_mode()
         logger.info(
-            "[startup] Propaganda engine ready (seeded %d default templates).",
-            seeded,
+            "[startup] Propaganda engine ready (seeded %d templates, prod-mode patch=%s).",
+            seeded, list(bootstrap_patch.keys()) if bootstrap_patch else "noop",
         )
     except Exception:
         logging.exception("[startup] propaganda engine failed to initialize")
+
+    # ---- Sprint 17.5 — Prophet Interaction Bot indexes ----
+    try:
+        from core import prophet_interaction as _pi
+        await _pi.ensure_indexes()
+        logger.info("[startup] Prophet Interaction Bot indexes ready.")
+    except Exception:
+        logging.exception("[startup] prophet interaction bot init failed")
 
     # ---- Sprint 14.1 — Pre-Launch Infiltration Brain ----
     try:

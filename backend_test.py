@@ -1,308 +1,332 @@
 #!/usr/bin/env python3
-"""
-Backend API Testing for DEEPOTUS Proof of Intelligence Flow
-Tests the infiltration endpoints that power the riddles terminal.
+"""Backend API tests for Sprint 17.5 — Cabinet Expansion.
+
+Tests:
+  1. POST /api/access-card/request with optional x_handle
+  2. Production mode bootstrap (dispatch_enabled=true, dispatch_dry_run=false)
+  3. GET /api/admin/propaganda/welcome-signal
+  4. PATCH /api/admin/propaganda/welcome-signal (requires 2FA)
+  5. POST /api/admin/propaganda/welcome-signal/fire-now (requires 2FA)
+  6. GET /api/admin/propaganda/interaction-bot
+  7. PATCH /api/admin/propaganda/interaction-bot (requires 2FA)
+  8. POST /api/admin/propaganda/interaction-bot/fire-now (requires 2FA)
 """
 
-import requests
 import sys
-import time
-import random
-import string
+import requests
 from datetime import datetime
 
-# Base58 alphabet for Solana wallet generation
-BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+# Public endpoint from frontend/.env
+BASE_URL = "https://prophet-ai-memecoin.preview.emergentagent.com"
+ADMIN_PASSWORD = "deepotus2026"
 
-class ProofOfIntelligenceAPITester:
-    def __init__(self, base_url="https://prophet-ai-memecoin.preview.emergentagent.com"):
-        self.base_url = base_url
+class CabinetExpansionTester:
+    def __init__(self):
+        self.base_url = BASE_URL
+        self.admin_token = None
         self.tests_run = 0
         self.tests_passed = 0
-        self.unique_suffix = int(time.time())
-        
-    def generate_unique_email(self):
-        """Generate unique email for testing (using @example.com as required)"""
-        timestamp = int(time.time())
-        random_num = random.randint(1000, 9999)
-        return f"agent-{timestamp}-{random_num}@example.com"
-    
-    def generate_unique_wallet(self):
-        """Generate unique base58 wallet address (32-44 chars)"""
-        length = random.randint(32, 44)
-        return ''.join(random.choices(BASE58_ALPHABET, k=length))
-    
-    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
+        self.test_email = f"test_cabinet_{datetime.now().strftime('%H%M%S')}@example.com"
+
+    def log(self, msg, status="INFO"):
+        prefix = "✅" if status == "PASS" else "❌" if status == "FAIL" else "🔍"
+        print(f"{prefix} {msg}")
+
+    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, params=None):
         """Run a single API test"""
-        url = f"{self.base_url}/api/{endpoint}"
-        if headers is None:
-            headers = {'Content-Type': 'application/json'}
+        url = f"{self.base_url}{endpoint}"
+        h = headers or {}
         
         self.tests_run += 1
-        print(f"\n🔍 Testing {name}...")
-        print(f"   URL: {url}")
+        self.log(f"Testing {name}...", "INFO")
         
         try:
-            if method == 'GET':
-                response = requests.get(url, headers=headers, timeout=30)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=30)
-            
+            if method == "GET":
+                response = requests.get(url, headers=h, params=params, timeout=15)
+            elif method == "POST":
+                response = requests.post(url, json=data, headers=h, params=params, timeout=15)
+            elif method == "PATCH":
+                response = requests.patch(url, json=data, headers=h, timeout=15)
+            else:
+                self.log(f"Unknown method {method}", "FAIL")
+                return False, {}
+
             success = response.status_code == expected_status
             if success:
                 self.tests_passed += 1
-                print(f"✅ Passed - Status: {response.status_code}")
-                try:
-                    response_data = response.json()
-                    if isinstance(response_data, dict) and len(str(response_data)) < 500:
-                        print(f"   Response: {response_data}")
-                except:
-                    pass
+                self.log(f"PASS - {name} (status: {response.status_code})", "PASS")
             else:
-                print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
-                try:
-                    error_data = response.json()
-                    print(f"   Error: {error_data}")
-                except:
-                    print(f"   Raw response: {response.text[:200]}")
-            
-            return success, response.json() if response.content else {}
-            
+                self.log(f"FAIL - {name} (expected {expected_status}, got {response.status_code})", "FAIL")
+                if response.text:
+                    self.log(f"  Response: {response.text[:200]}", "INFO")
+
+            try:
+                return success, response.json() if response.text else {}
+            except:
+                return success, {}
+
         except Exception as e:
-            print(f"❌ Failed - Error: {str(e)}")
+            self.log(f"FAIL - {name} (error: {str(e)})", "FAIL")
             return False, {}
 
-    def test_riddles_list(self):
-        """Test fetching riddles list"""
+    def admin_login(self):
+        """Login as admin to get JWT token"""
+        self.log("Logging in as admin...", "INFO")
         success, response = self.run_test(
-            "List Riddles (FR)",
-            "GET", 
-            "infiltration/riddles?locale=fr",
-            200
+            "Admin Login",
+            "POST",
+            "/api/admin/login",
+            200,
+            data={"password": ADMIN_PASSWORD}
+        )
+        if success and response.get("token"):
+            self.admin_token = response["token"]
+            self.log("Admin login successful", "PASS")
+            return True
+        self.log("Admin login failed", "FAIL")
+        return False
+
+    def test_access_card_with_x_handle(self):
+        """Test POST /api/access-card/request with x_handle field"""
+        self.log("\n=== Testing Access Card with X Handle ===", "INFO")
+        
+        # Test 1: Submit with x_handle
+        success, response = self.run_test(
+            "Access Card Request with X Handle",
+            "POST",
+            "/api/access-card/request",
+            200,
+            data={
+                "email": self.test_email,
+                "display_name": "Test Agent",
+                "x_handle": "@test_handle_123"
+            }
         )
         
-        if success and response.get('items'):
-            print(f"   Found {len(response['items'])} riddles")
-            return response['items']
-        return []
-
-    def test_riddles_list_en(self):
-        """Test fetching riddles list in English"""
-        success, response = self.run_test(
-            "List Riddles (EN)",
-            "GET", 
-            "infiltration/riddles?locale=en", 
-            200
+        if success:
+            self.log(f"  Email: {response.get('email')}", "INFO")
+            self.log(f"  Display Name: {response.get('display_name')}", "INFO")
+            self.log(f"  Message: {response.get('message')}", "INFO")
+        
+        # Test 2: Submit without x_handle (legacy path)
+        test_email_2 = f"test_no_handle_{datetime.now().strftime('%H%M%S')}@example.com"
+        success2, response2 = self.run_test(
+            "Access Card Request without X Handle (legacy)",
+            "POST",
+            "/api/access-card/request",
+            200,
+            data={
+                "email": test_email_2,
+                "display_name": "Test Agent No Handle"
+            }
         )
+        
+        return success and success2
+
+    def test_propaganda_settings(self):
+        """Test that production mode is enabled"""
+        self.log("\n=== Testing Production Mode Bootstrap ===", "INFO")
+        
+        if not self.admin_token:
+            self.log("Skipping - no admin token", "FAIL")
+            return False
+        
+        success, response = self.run_test(
+            "Get Propaganda Settings",
+            "GET",
+            "/api/admin/propaganda/settings",
+            200,
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        
+        if success:
+            dispatch_enabled = response.get("dispatch_enabled")
+            dispatch_dry_run = response.get("dispatch_dry_run")
+            
+            self.log(f"  dispatch_enabled: {dispatch_enabled}", "INFO")
+            self.log(f"  dispatch_dry_run: {dispatch_dry_run}", "INFO")
+            
+            # Production mode should have dispatch_enabled=True
+            if dispatch_enabled is True:
+                self.log("  Production mode: dispatch_enabled=True ✓", "PASS")
+            else:
+                self.log("  Production mode: dispatch_enabled not True", "FAIL")
+                
         return success
 
-    def test_riddle_attempt_correct(self, riddle_slug, email):
-        """Test submitting correct answer to first riddle"""
-        # Known correct answer for first riddle
-        correct_answers = {
-            "grand-architecte": "la fed",
-            "oeil-invisible": "algorithme", 
-            "contrat-social": "banques",
-            "verite-de-lagent": "deepotus",
-            "ouverture-du-coffre": "produit"
-        }
+    def test_welcome_signal_endpoints(self):
+        """Test Welcome Signal admin endpoints"""
+        self.log("\n=== Testing Welcome Signal Endpoints ===", "INFO")
         
-        answer = correct_answers.get(riddle_slug, "la fed")
+        if not self.admin_token:
+            self.log("Skipping - no admin token", "FAIL")
+            return False
         
-        success, response = self.run_test(
-            f"Submit Correct Answer ({riddle_slug})",
-            "POST",
-            f"infiltration/riddles/{riddle_slug}/attempt",
-            200,
-            data={
-                "answer": answer,
-                "email": email,
-                "locale": "fr"
-            }
-        )
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
         
-        if success and response.get('correct'):
-            print(f"   ✅ Correct answer accepted: {response.get('matched_keyword')}")
-            return True
-        return False
-
-    def test_riddle_attempt_wrong(self, riddle_slug, email):
-        """Test submitting wrong answer"""
-        success, response = self.run_test(
-            f"Submit Wrong Answer ({riddle_slug})",
-            "POST",
-            f"infiltration/riddles/{riddle_slug}/attempt", 
-            200,
-            data={
-                "answer": "wrong answer",
-                "email": email,
-                "locale": "fr"
-            }
-        )
-        
-        if success and not response.get('correct'):
-            print(f"   ✅ Wrong answer correctly rejected")
-            return True
-        return False
-
-    def test_clearance_status(self, email):
-        """Test getting clearance status"""
-        success, response = self.run_test(
-            "Get Clearance Status",
+        # Test 1: GET welcome-signal
+        success1, response1 = self.run_test(
+            "GET Welcome Signal Settings",
             "GET",
-            f"infiltration/clearance/{email}",
+            "/api/admin/propaganda/welcome-signal",
+            200,
+            headers=headers
+        )
+        
+        if success1:
+            settings = response1.get("settings", {})
+            self.log(f"  enabled: {settings.get('enabled')}", "INFO")
+            self.log(f"  hour_utc: {settings.get('hour_utc')}", "INFO")
+            self.log(f"  min_handles: {settings.get('min_handles')}", "INFO")
+            self.log(f"  max_handles: {settings.get('max_handles')}", "INFO")
+            self.log(f"  eligible_count: {response1.get('eligible_count')}", "INFO")
+        
+        # Test 2: PATCH welcome-signal (will fail without 2FA, which is expected)
+        success2, response2 = self.run_test(
+            "PATCH Welcome Signal (expect 403 without 2FA)",
+            "PATCH",
+            "/api/admin/propaganda/welcome-signal",
+            403,  # Expected to fail without 2FA
+            data={"hour_utc": 14},
+            headers=headers
+        )
+        
+        if success2:
+            self.log("  Correctly requires 2FA for PATCH", "PASS")
+        
+        # Test 3: POST fire-now (will fail without 2FA, which is expected)
+        success3, response3 = self.run_test(
+            "POST Welcome Signal Fire Now (expect 403 without 2FA)",
+            "POST",
+            "/api/admin/propaganda/welcome-signal/fire-now",
+            403,  # Expected to fail without 2FA
+            headers=headers
+        )
+        
+        if success3:
+            self.log("  Correctly requires 2FA for POST fire-now", "PASS")
+        
+        return success1 and success2 and success3
+
+    def test_interaction_bot_endpoints(self):
+        """Test Interaction Bot admin endpoints"""
+        self.log("\n=== Testing Interaction Bot Endpoints ===", "INFO")
+        
+        if not self.admin_token:
+            self.log("Skipping - no admin token", "FAIL")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Test 1: GET interaction-bot
+        success1, response1 = self.run_test(
+            "GET Interaction Bot Settings",
+            "GET",
+            "/api/admin/propaganda/interaction-bot",
+            200,
+            headers=headers
+        )
+        
+        if success1:
+            settings = response1.get("settings", {})
+            self.log(f"  enabled: {settings.get('enabled')}", "INFO")
+            self.log(f"  max_replies_per_hour: {settings.get('max_replies_per_hour')}", "INFO")
+            self.log(f"  min_replies_per_hour: {settings.get('min_replies_per_hour')}", "INFO")
+            self.log(f"  per_handle_cooldown_hours: {settings.get('per_handle_cooldown_hours')}", "INFO")
+            self.log(f"  total_replies_lifetime: {settings.get('total_replies_lifetime')}", "INFO")
+        
+        # Test 2: PATCH interaction-bot (will fail without 2FA, which is expected)
+        success2, response2 = self.run_test(
+            "PATCH Interaction Bot (expect 403 without 2FA)",
+            "PATCH",
+            "/api/admin/propaganda/interaction-bot",
+            403,  # Expected to fail without 2FA
+            data={"max_replies_per_hour": 3},
+            headers=headers
+        )
+        
+        if success2:
+            self.log("  Correctly requires 2FA for PATCH", "PASS")
+        
+        # Test 3: POST fire-now with dry_run (will fail without 2FA, which is expected)
+        success3, response3 = self.run_test(
+            "POST Interaction Bot Fire Now (expect 403 without 2FA)",
+            "POST",
+            "/api/admin/propaganda/interaction-bot/fire-now",
+            403,  # Expected to fail without 2FA
+            params={"dry_run": "true"},
+            headers=headers
+        )
+        
+        if success3:
+            self.log("  Correctly requires 2FA for POST fire-now", "PASS")
+        
+        return success1 and success2 and success3
+
+    def test_regression_endpoints(self):
+        """Test that existing endpoints still work"""
+        self.log("\n=== Testing Regression (Existing Endpoints) ===", "INFO")
+        
+        # Test 1: Whitelist endpoint
+        success1, _ = self.run_test(
+            "POST Whitelist (existing endpoint)",
+            "POST",
+            "/api/whitelist",
+            200,
+            data={"email": f"whitelist_{datetime.now().strftime('%H%M%S')}@example.com"}
+        )
+        
+        # Test 2: Vault status
+        success2, _ = self.run_test(
+            "GET Vault Classified Status",
+            "GET",
+            "/api/vault/classified-status",
             200
         )
         
-        if success:
-            level = response.get('level', 0)
-            riddles_solved = response.get('riddles_solved', [])
-            print(f"   Level: {level}, Riddles solved: {len(riddles_solved)}")
-            return response
-        return {}
+        # Test 3: Propaganda triggers (admin)
+        if self.admin_token:
+            success3, _ = self.run_test(
+                "GET Propaganda Triggers",
+                "GET",
+                "/api/admin/propaganda/triggers",
+                200,
+                headers={"Authorization": f"Bearer {self.admin_token}"}
+            )
+        else:
+            success3 = False
+        
+        return success1 and success2 and success3
 
-    def test_link_wallet_valid(self, email, wallet):
-        """Test linking valid wallet"""
-        success, response = self.run_test(
-            "Link Valid Wallet",
-            "POST",
-            "infiltration/clearance/link-wallet",
-            200,
-            data={
-                "email": email,
-                "wallet_address": wallet
-            }
-        )
+    def run_all_tests(self):
+        """Run all tests"""
+        self.log("=" * 60, "INFO")
+        self.log("Cabinet Expansion Backend Tests (Sprint 17.5)", "INFO")
+        self.log(f"Base URL: {self.base_url}", "INFO")
+        self.log("=" * 60, "INFO")
         
-        if success and response.get('wallet_address') == wallet:
-            print(f"   ✅ Wallet linked successfully")
-            return True
-        return False
-
-    def test_link_wallet_invalid(self, email):
-        """Test linking invalid wallet (should fail client-side validation)"""
-        success, response = self.run_test(
-            "Link Invalid Wallet",
-            "POST", 
-            "infiltration/clearance/link-wallet",
-            400,  # Should return 400 for invalid wallet
-            data={
-                "email": email,
-                "wallet_address": "abc"  # Too short
-            }
-        )
+        # Login first
+        if not self.admin_login():
+            self.log("\nCannot proceed without admin login", "FAIL")
+            return 1
         
-        if success:
-            print(f"   ✅ Invalid wallet correctly rejected")
-            return True
-        return False
-
-    def test_link_wallet_already_linked(self, email1, email2, wallet):
-        """Test linking wallet that's already linked to another agent"""
-        # First link wallet to email1
-        self.test_link_wallet_valid(email1, wallet)
+        # Run all test suites
+        self.test_access_card_with_x_handle()
+        self.test_propaganda_settings()
+        self.test_welcome_signal_endpoints()
+        self.test_interaction_bot_endpoints()
+        self.test_regression_endpoints()
         
-        # Try to link same wallet to email2 (should fail)
-        success, response = self.run_test(
-            "Link Already Linked Wallet",
-            "POST",
-            "infiltration/clearance/link-wallet", 
-            400,  # Should return 400 for already linked wallet
-            data={
-                "email": email2,
-                "wallet_address": wallet
-            }
-        )
+        # Print summary
+        self.log("\n" + "=" * 60, "INFO")
+        self.log(f"Tests passed: {self.tests_passed}/{self.tests_run}", "INFO")
+        self.log("=" * 60, "INFO")
         
-        if success:
-            print(f"   ✅ Already linked wallet correctly rejected")
-            return True
-        return False
-
-    def test_vault_status(self):
-        """Test vault classified status"""
-        success, response = self.run_test(
-            "Vault Classified Status",
-            "GET",
-            "vault/classified-status",
-            200
-        )
-        
-        if success:
-            sealed = response.get('sealed', False)
-            print(f"   Vault sealed: {sealed}")
-            return response
-        return {}
+        return 0 if self.tests_passed == self.tests_run else 1
 
 def main():
-    print("🚀 Starting DEEPOTUS Proof of Intelligence API Tests")
-    print("=" * 60)
-    
-    tester = ProofOfIntelligenceAPITester()
-    
-    # Generate unique test data
-    email1 = tester.generate_unique_email()
-    email2 = tester.generate_unique_email()
-    wallet1 = tester.generate_unique_wallet()
-    wallet2 = tester.generate_unique_wallet()
-    
-    print(f"Test email 1: {email1}")
-    print(f"Test email 2: {email2}")
-    print(f"Test wallet 1: {wallet1}")
-    print(f"Test wallet 2: {wallet2}")
-    
-    # Test vault status first
-    vault_status = tester.test_vault_status()
-    
-    # Test riddles listing
-    riddles = tester.test_riddles_list()
-    tester.test_riddles_list_en()
-    
-    if not riddles:
-        print("❌ No riddles found, cannot continue with riddle tests")
-        return 1
-    
-    first_riddle = riddles[0]
-    riddle_slug = first_riddle.get('slug')
-    
-    if not riddle_slug:
-        print("❌ No riddle slug found, cannot continue")
-        return 1
-    
-    print(f"\nTesting with riddle: {riddle_slug}")
-    
-    # Test wrong answer first
-    tester.test_riddle_attempt_wrong(riddle_slug, email1)
-    
-    # Test correct answer
-    if tester.test_riddle_attempt_correct(riddle_slug, email1):
-        # Check clearance status after correct answer
-        clearance = tester.test_clearance_status(email1)
-        
-        if clearance.get('level') >= 3:
-            print("✅ Level 3 clearance achieved!")
-            
-            # Test wallet linking
-            tester.test_link_wallet_valid(email1, wallet1)
-            tester.test_link_wallet_invalid(email1)
-            tester.test_link_wallet_already_linked(email1, email2, wallet1)
-        else:
-            print("❌ Level 3 clearance not achieved after correct answer")
-    
-    # Test clearance status for both emails
-    tester.test_clearance_status(email1)
-    tester.test_clearance_status(email2)
-    
-    # Print final results
-    print("\n" + "=" * 60)
-    print(f"📊 Test Results: {tester.tests_passed}/{tester.tests_run} passed")
-    
-    if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed!")
-        return 0
-    else:
-        print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed")
-        return 1
+    tester = CabinetExpansionTester()
+    return tester.run_all_tests()
 
 if __name__ == "__main__":
     sys.exit(main())

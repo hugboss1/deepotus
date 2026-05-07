@@ -38,19 +38,44 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "per_day": 24,
         "per_trigger_minutes": 15,
     },
-    # ---- Sprint 13.3 dispatcher toggles ----
-    # Both default to the SAFEST possible scaffold:
-    # - dispatch_enabled=False  → worker reads queue but does not
-    #   touch any item. Admin opts in explicitly to start sending.
-    # - dispatch_dry_run=True   → even when enabled, dispatchers
-    #   short-circuit the HTTP call and just log. Admin flips this
-    #   to False ONLY after credentials have been vaulted and
-    #   verified (e.g. via the "tick now" button + audit log).
-    "dispatch_enabled": False,
-    "dispatch_dry_run": True,
+    # ---- Sprint 17.5 dispatcher toggles (Cabinet Expansion) ----
+    # PRODUCTION MODE by default. The X account is on Pay-Per-Use
+    # credits and the operator confirmed approvals must hit X live.
+    # The 2FA-gated approve flow is the safety net (admin must opt in
+    # to fire each manual item; auto-policy items still go through
+    # the rate limits + per-trigger cooldown).
+    "dispatch_enabled": True,
+    "dispatch_dry_run": False,
     "default_delay_seconds_min": 10,
     "default_delay_seconds_max": 30,
     "platforms": ["telegram", "x"],
+    # ---- Sprint 17.5 sub-modules ----
+    # Welcome Signal — daily Cabinet recognition tweet citing the 5
+    # most-recently accredited Agents who provided their X handle.
+    # Defaults set in core.welcome_signal (DEFAULT_WELCOME_SIGNAL_CFG).
+    "welcome_signal": {
+        "enabled": True,
+        "hour_utc": 14,
+        "min_handles": 2,
+        "max_handles": 5,
+        "last_fired_at": None,
+        "last_skip_reason": None,
+        "last_cited_handles": [],
+    },
+    # Prophet Interaction Bot — hourly Lore-compliant replies to
+    # accredited followers. Defaults set in core.prophet_interaction
+    # (DEFAULT_INTERACTION_BOT_CFG). OFF by default — admin opts in
+    # once X creds are confirmed live in production.
+    "interaction_bot": {
+        "enabled": False,
+        "max_replies_per_hour": 3,
+        "min_replies_per_hour": 1,
+        "per_handle_cooldown_hours": 24,
+        "last_fired_at": None,
+        "last_skip_reason": None,
+        "last_replies": [],
+        "total_replies_lifetime": 0,
+    },
     "created_at": datetime.now(timezone.utc).isoformat(),
 }
 
@@ -64,6 +89,64 @@ async def get_settings() -> Dict[str, Any]:
         await db.propaganda_settings.insert_one(DEFAULT_SETTINGS)
         return dict(DEFAULT_SETTINGS)
     return doc
+
+
+async def bootstrap_production_mode() -> Dict[str, Any]:
+    """One-shot migration: ensure the prod DB has the new sub-config
+    rows + production dispatch defaults.
+
+    Sprint 17.5 — Cabinet Expansion. Prior installs (Sprint 13.3)
+    shipped with ``dispatch_enabled=False, dispatch_dry_run=True`` to
+    keep the bot inert until the operator opted in. The X account is
+    now Pay-Per-Use with credits and the operator confirmed every
+    approval must hit X live, so we:
+      1. Flip ``dispatch_enabled`` to True (idempotent).
+      2. Flip ``dispatch_dry_run`` to False **only if it has never
+         been explicitly set in the DB** (i.e. the row is still on
+         the legacy default). We respect any explicit override the
+         operator made via /api/admin/propaganda/dispatch-toggle.
+      3. Insert the ``welcome_signal`` and ``interaction_bot``
+         sub-config blocks if absent.
+
+    Idempotent — safe to call on every startup. Returns the patch
+    that was actually applied (empty dict on second-call no-ops).
+    """
+    doc = await db.propaganda_settings.find_one({"_id": SETTINGS_ID}) or {}
+    patch: Dict[str, Any] = {}
+
+    # 1) dispatch_enabled — always force True (the operator can flip
+    #    it back via the admin toggle if they ever want a soft pause).
+    if doc.get("dispatch_enabled") is not True:
+        patch["dispatch_enabled"] = True
+
+    # 2) dispatch_dry_run — only flip when the prod DB has never
+    #    transitioned away from the legacy default OR the row is
+    #    flagged ``_legacy_dry_run`` (which we set on first migration
+    #    so re-runs don't keep stomping a deliberate test mode).
+    if doc.get("dispatch_dry_run") is True and not doc.get("_dry_run_explicit"):
+        patch["dispatch_dry_run"] = False
+        # Mark the migration so subsequent operator-driven dry-run
+        # toggles aren't reversed on the next reboot.
+        patch["_dry_run_explicit"] = False
+
+    # 3) Sub-configs — copy the defaults if absent.
+    if not doc.get("welcome_signal"):
+        patch["welcome_signal"] = dict(DEFAULT_SETTINGS["welcome_signal"])
+    if not doc.get("interaction_bot"):
+        patch["interaction_bot"] = dict(DEFAULT_SETTINGS["interaction_bot"])
+
+    if not patch:
+        return {}
+
+    await db.propaganda_settings.update_one(
+        {"_id": SETTINGS_ID}, {"$set": patch}, upsert=True,
+    )
+    await _audit("production_mode_bootstrap", jti=None, meta={"patch_keys": list(patch.keys())})
+    logger.info(
+        "[propaganda] production-mode bootstrap applied keys=%s",
+        list(patch.keys()),
+    )
+    return patch
 
 
 async def set_panic(panic: bool, *, jti: Optional[str] = None) -> Dict[str, Any]:
@@ -102,6 +185,10 @@ async def set_dispatch_toggle(
         audit_meta["dispatch_enabled"] = bool(enabled)
     if dry_run is not None:
         patch["dispatch_dry_run"] = bool(dry_run)
+        # Mark the toggle as operator-explicit so the prod-mode
+        # bootstrap migration (Sprint 17.5) doesn't stomp it on the
+        # next process restart.
+        patch["_dry_run_explicit"] = True
         audit_meta["dispatch_dry_run"] = bool(dry_run)
     if not patch:
         return await get_settings()

@@ -113,6 +113,11 @@ def _view(doc: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         "updated_at": doc.get("updated_at"),
         "notes": doc.get("notes"),
         "source": doc.get("source"),
+        # Sprint 17.5 — Cabinet Expansion
+        "x_handle": doc.get("x_handle"),
+        "x_handle_set_at": doc.get("x_handle_set_at"),
+        "welcome_signaled_at": doc.get("welcome_signaled_at"),
+        "interaction_last_engaged_at": doc.get("interaction_last_engaged_at"),
     }
 
 
@@ -204,6 +209,51 @@ async def link_wallet(*, email: str, wallet_address: str) -> Dict[str, Any]:
         {"email": email_l},
         {"$set": {"wallet_address": addr, "wallet_linked_at": now,
                   "updated_at": now}},
+        return_document=True,
+    )
+    return _view(res) or {}
+
+
+async def upsert_x_handle(
+    *, email: str, x_handle: str, source: str = "terminal",
+) -> Dict[str, Any]:
+    """Sprint 17.5 — store / refresh the Agent's public X handle on
+    the clearance ledger so the Welcome Signal + Prophet Interaction
+    Bot can address them. Idempotent — repeated submissions overwrite
+    the previous handle (Agents may rebrand their X identity).
+
+    Validation: leading ``@`` is stripped, max 15 chars (X's enforced
+    handle limit), only ``[a-zA-Z0-9_]`` allowed. Empty/invalid
+    handles are silently dropped (we never raise — the accreditation
+    flow keeps working even if this fails).
+    """
+    await _ensure_row(email, source=source)
+    email_l = _normalise_email(email)
+    cleaned = (x_handle or "").strip().lstrip("@")[:15]
+    if not cleaned or not re.match(r"^[A-Za-z0-9_]+$", cleaned):
+        return _view(await db.clearance_levels.find_one({"email": email_l})) or {}
+
+    now = _iso()
+    res = await db.clearance_levels.find_one_and_update(
+        {"email": email_l},
+        {
+            "$set": {
+                "x_handle": cleaned,
+                "x_handle_set_at": now,
+                "x_handle_source": source,
+                "updated_at": now,
+                # Reset welcome_signaled flag so a returning Agent who
+                # NOW provides their handle becomes citable again.
+                "welcome_signaled_at": None,
+            },
+            "$push": {
+                "events": {
+                    "$each": [{"at": now, "type": "x_handle_set",
+                               "x_handle": cleaned, "source": source}],
+                    "$slice": -50,
+                },
+            },
+        },
         return_document=True,
     )
     return _view(res) or {}

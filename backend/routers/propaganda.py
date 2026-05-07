@@ -440,3 +440,118 @@ async def reject_item(item_id: str, body: RejectRequest, request: Request,
 async def list_activity(limit: int = 100, _p: dict = Depends(require_admin)):
     items = await propaganda_engine.list_activity(limit=limit)
     return {"items": items}
+
+
+
+# =====================================================================
+# Sprint 17.5 — Cabinet Expansion: Welcome Signal + Interaction Bot
+# =====================================================================
+class WelcomeSignalPatch(BaseModel):
+    """Fields the admin can tune live. All optional — partial patches."""
+
+    enabled: Optional[bool] = None
+    hour_utc: Optional[int] = Field(default=None, ge=0, le=23)
+    min_handles: Optional[int] = Field(default=None, ge=1, le=5)
+    max_handles: Optional[int] = Field(default=None, ge=1, le=5)
+
+
+class InteractionBotPatch(BaseModel):
+    """Same shape philosophy as WelcomeSignalPatch."""
+
+    enabled: Optional[bool] = None
+    max_replies_per_hour: Optional[int] = Field(default=None, ge=1, le=5)
+    min_replies_per_hour: Optional[int] = Field(default=None, ge=0, le=5)
+    per_handle_cooldown_hours: Optional[int] = Field(default=None, ge=1, le=168)
+
+
+# ---- Welcome Signal -------------------------------------------------------
+@router.get("/welcome-signal")
+async def get_welcome_signal(_p: dict = Depends(require_admin)):
+    from core import welcome_signal
+    cfg = await welcome_signal.get_settings()
+    eligible = await welcome_signal.select_eligible_handles(
+        max_handles=int(cfg.get("max_handles") or 5),
+    )
+    return {
+        "settings": cfg,
+        "eligible_count": len(eligible),
+        "eligible_preview": [
+            {"x_handle": e.get("x_handle"), "email": e.get("email")}
+            for e in eligible
+        ],
+    }
+
+
+@router.patch("/welcome-signal")
+async def patch_welcome_signal(
+    body: WelcomeSignalPatch,
+    request: Request,
+    p: dict = Depends(require_2fa_for_send),
+):
+    from core import welcome_signal
+    cfg = await welcome_signal.patch_settings(body.dict(exclude_none=True))
+    await propaganda_engine.audit(
+        "welcome_signal_patch", trigger_key="welcome_signal",
+        jti=p.get("jti"), ip=_client_ip(request),
+        meta=body.dict(exclude_none=True),
+    )
+    return {"settings": cfg}
+
+
+@router.post("/welcome-signal/fire-now")
+async def fire_welcome_signal_now(
+    request: Request, p: dict = Depends(require_2fa_for_send),
+):
+    """Manual fire — bypasses the daily-once gate so the operator can
+    preview the Welcome Signal without waiting for ``hour_utc``."""
+    from core import welcome_signal
+    res = await welcome_signal.fire(manual=True, by_jti=p.get("jti"))
+    await propaganda_engine.audit(
+        "welcome_signal_fire", trigger_key="welcome_signal",
+        jti=p.get("jti"), ip=_client_ip(request),
+        meta={"fired": res.get("fired"), "reason": res.get("reason")},
+    )
+    return res
+
+
+# ---- Prophet Interaction Bot ---------------------------------------------
+@router.get("/interaction-bot")
+async def get_interaction_bot(_p: dict = Depends(require_admin)):
+    from core import prophet_interaction
+    cfg = await prophet_interaction.get_settings()
+    replies = await prophet_interaction.list_replies(limit=20)
+    return {"settings": cfg, "recent_replies": replies}
+
+
+@router.patch("/interaction-bot")
+async def patch_interaction_bot(
+    body: InteractionBotPatch,
+    request: Request,
+    p: dict = Depends(require_2fa_for_send),
+):
+    from core import prophet_interaction
+    cfg = await prophet_interaction.patch_settings(body.dict(exclude_none=True))
+    await propaganda_engine.audit(
+        "interaction_bot_patch", trigger_key="interaction_bot",
+        jti=p.get("jti"), ip=_client_ip(request),
+        meta=body.dict(exclude_none=True),
+    )
+    return {"settings": cfg}
+
+
+@router.post("/interaction-bot/fire-now")
+async def fire_interaction_bot_now(
+    request: Request,
+    dry_run: bool = False,
+    p: dict = Depends(require_2fa_for_send),
+):
+    """Manual fire — runs ONE tick (1-3 replies) right now. Pass
+    ``?dry_run=true`` to render without posting (smoke test)."""
+    from core import prophet_interaction
+    res = await prophet_interaction.fire(manual=True, dry_run=dry_run)
+    await propaganda_engine.audit(
+        "interaction_bot_fire", trigger_key="interaction_bot",
+        jti=p.get("jti"), ip=_client_ip(request),
+        meta={"fired": res.get("fired"), "dry_run": dry_run, "reason": res.get("reason")},
+    )
+    return res

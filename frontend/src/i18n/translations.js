@@ -198,6 +198,10 @@ export const translations = {
       emailPlaceholder: "votre@email.com",
       nameLabel: "Nom d'agent (facultatif)",
       namePlaceholder: "AGENT OMEGA-042",
+      xHandleLabel: "ID de transmission publique (facultatif)",
+      xHandlePlaceholder: "@deepotus_ai",
+      xHandleHint:
+        "Renseignez votre handle X pour le recensement du Cabinet. ΔΣ pourra vous citer dans le Welcome Signal et engager directement vos transmissions.",
       emailInvalid: "Email invalide. Réessayez.",
       submit: "Transmettre la demande",
       back: "Retour",
@@ -1274,6 +1278,10 @@ export const translations = {
       emailPlaceholder: "you@email.com",
       nameLabel: "Agent name (optional)",
       namePlaceholder: "AGENT OMEGA-042",
+      xHandleLabel: "Public transmission ID (optional)",
+      xHandlePlaceholder: "@deepotus_ai",
+      xHandleHint:
+        "Provide your X handle for the Cabinet census. ΔΣ may cite you in the Welcome Signal and engage your transmissions directly.",
       emailInvalid: "Invalid email. Try again.",
       submit: "Transmit request",
       back: "Back",

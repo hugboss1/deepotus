@@ -18,6 +18,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 import resend
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
@@ -72,6 +73,13 @@ async def access_card_request(
     whitelisted = bool(wl)
 
     display_name = (req.display_name or "").strip() or None
+    # Sprint 17.5 — x_handle (optional) propagates from the popup form
+    # all the way to the clearance ledger so Welcome Signal +
+    # Interaction Bot have a usable target. Strip leading @ and trim
+    # to the X 15-char limit just to be defensive.
+    raw_handle = (req.x_handle or "").strip().lstrip("@")
+    x_handle: Optional[str] = raw_handle[:15] if raw_handle else None
+
     base_url = await get_public_base_url()
     card_doc = await access_card_mod.create_or_refresh_card(
         db,
@@ -79,7 +87,22 @@ async def access_card_request(
         display_name=display_name,
         whitelisted=whitelisted,
         base_url=base_url,
+        x_handle=x_handle,
     )
+
+    # Mirror the x_handle (and email) into clearance_levels so the
+    # Welcome Signal selector can find this Agent. We do this OUTSIDE
+    # the access_card path so the clearance row is created/refreshed
+    # whether the user is on the genesis broadcast path or the regular
+    # accreditation path. Errors here are logged but never raised —
+    # accreditation must succeed even if the ledger sync fails.
+    if x_handle:
+        try:
+            from core import clearance_levels as _clr  # local import — keeps cold-start light
+
+            await _clr.upsert_x_handle(email=email, x_handle=x_handle, source="terminal")
+        except Exception:  # noqa: BLE001
+            logging.exception("[access-card] x_handle mirror to clearance_levels failed")
 
     # Send the email in the background
     accred = card_doc["accreditation_number"]

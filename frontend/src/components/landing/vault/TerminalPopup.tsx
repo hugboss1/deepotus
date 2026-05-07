@@ -65,6 +65,11 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
   const [phase, setPhase] = useState<TerminalPhase>("denied");
   const [email, setEmail] = useState<string>("");
   const [displayName, setDisplayName] = useState<string>("");
+  // Sprint 17.5 — Cabinet Expansion. The Agent's optional public X
+  // handle (transmission ID), used by the Welcome Signal + Prophet
+  // Interaction Bot to recognise them in the Cabinet's broadcasts.
+  // Empty value preserves the legacy email-only flow.
+  const [xHandle, setXHandle] = useState<string>("");
   const [existingCode, setExistingCode] = useState<string>("");
   const [result, setResult] = useState<AccessSession | null>(null);
   const [genesisResult, setGenesisResult] = useState<GenesisResponse | null>(null);
@@ -117,6 +122,7 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
     setTypedLines([]);
     setEmail("");
     setDisplayName("");
+    setXHandle("");
     setExistingCode("");
     setResult(null);
     setGenesisResult(null);
@@ -191,6 +197,13 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
         body: JSON.stringify({
           email: trimmed,
           display_name: displayName.trim() || undefined,
+          // Sprint 17.5 — strip leading @ so the backend stores a
+          // canonical handle. Empty string is normalised to undefined
+          // so the optional flag stays semantic.
+          x_handle: (() => {
+            const cleaned = xHandle.trim().replace(/^@+/, "");
+            return cleaned ? cleaned : undefined;
+          })(),
         }),
       });
       if (!res.ok) {
@@ -710,6 +723,35 @@ export default function TerminalPopup({ open, onClose }: TerminalPopupProps) {
                         className="bg-black border-[#18C964]/40 focus-visible:ring-[#18C964]/60 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
                         data-testid="terminal-name-input"
                       />
+                    </div>
+                    {/* Sprint 17.5 — Cabinet Expansion. Optional public
+                        X handle (called "transmission ID" in the lore so
+                        the form stays in-character). When provided, the
+                        Welcome Signal cites the agent in its daily
+                        broadcast and the Prophet Interaction Bot may
+                        reply to their tweets. Hint copy explains the
+                        ⌬ Cabinet Census framing. */}
+                    <div>
+                      <label
+                        htmlFor="terminal-x-handle"
+                        className="text-[11px] text-[#18C964]/70 block mb-1"
+                      >
+                        &gt; {t("terminal.xHandleLabel")}
+                      </label>
+                      <Input
+                        id="terminal-x-handle"
+                        value={xHandle}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setXHandle(e.target.value)}
+                        placeholder={t("terminal.xHandlePlaceholder")}
+                        autoComplete="off"
+                        spellCheck={false}
+                        maxLength={20}
+                        className="bg-black border-[#18C964]/40 focus-visible:ring-[#18C964]/60 text-[#18C964] font-mono placeholder:text-[#18C964]/30"
+                        data-testid="terminal-x-handle-input"
+                      />
+                      <p className="mt-1 text-[10px] text-[#18C964]/50 leading-snug">
+                        {t("terminal.xHandleHint")}
+                      </p>
                     </div>
                   </div>
                   {errorMsg && (

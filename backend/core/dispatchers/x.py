@@ -65,6 +65,8 @@ async def send(
 
     Args:
         item: Normalised queue item; must contain ``rendered_content``.
+            Optionally carries ``meta.reply_to_tweet_id`` to post the
+            tweet as a reply (used by the Prophet Interaction Bot).
         dry_run: When True, no real HTTP call.
         settings: Reserved for future thread/reply support.
     """
@@ -80,11 +82,21 @@ async def send(
     if len(text) > _TWEET_MAX_CHARS:
         text = text[: _TWEET_MAX_CHARS - 1] + "…"
 
+    # Optional reply target — when present, X v2 requires the
+    # ``reply.in_reply_to_tweet_id`` shape inside the body. We extract
+    # it here (rather than mutating callers) so any flow that puts a
+    # tweet id under ``meta.reply_to_tweet_id`` automatically becomes
+    # a reply, with no other code change needed.
+    reply_to_id: Optional[str] = None
+    meta = item.get("meta") or {}
+    raw_reply = meta.get("reply_to_tweet_id") or item.get("reply_to_tweet_id")
+    if raw_reply is not None:
+        reply_to_id = str(raw_reply).strip() or None
+
     if dry_run:
         logger.info(
-            "[x.dry_run] would_post chars=%d preview=%r",
-            len(text),
-            text[:80],
+            "[x.dry_run] would_post chars=%d reply_to=%s preview=%r",
+            len(text), reply_to_id, text[:80],
         )
         return DispatchResult(
             outcome=DispatchOutcome.SENT,
@@ -124,7 +136,9 @@ async def send(
         signature_type="auth_header",
     )
 
-    body = {"text": text}
+    body: Dict[str, Any] = {"text": text}
+    if reply_to_id:
+        body["reply"] = {"in_reply_to_tweet_id": reply_to_id}
     try:
         async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
             resp = await client.post(_API_URL, json=body, auth=_OAuth1Adapter(auth))

@@ -25,6 +25,7 @@ import {
   Brain,
   CheckCircle2,
   Clock,
+  Crown,
   Flame,
   ListChecks,
   Loader2,
@@ -73,6 +74,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAdminToken } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import WhaleWatcherTab from "@/pages/admin/sections/WhaleWatcherTab";
+import CabinetTab from "@/pages/propaganda/CabinetTab";
 
 // ---------------------------------------------------------------------
 // Types
@@ -285,7 +287,7 @@ export default function Propaganda() {
 
       <main className="max-w-6xl mx-auto">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid grid-cols-6 w-full md:w-auto">
+          <TabsList className="grid grid-cols-7 w-full md:w-auto">
             <TabsTrigger value="triggers" data-testid="propaganda-tab-triggers">
               <Flame size={14} className="mr-2" /> Triggers
             </TabsTrigger>
@@ -303,6 +305,9 @@ export default function Propaganda() {
             </TabsTrigger>
             <TabsTrigger value="whales" data-testid="propaganda-tab-whales">
               <RadioTower size={14} className="mr-2" /> Whales
+            </TabsTrigger>
+            <TabsTrigger value="cabinet" data-testid="propaganda-tab-cabinet">
+              <Crown size={14} className="mr-2" /> Cabinet
             </TabsTrigger>
           </TabsList>
 
@@ -323,6 +328,9 @@ export default function Propaganda() {
           </TabsContent>
           <TabsContent value="whales" className="mt-6">
             <WhaleWatcherTab />
+          </TabsContent>
+          <TabsContent value="cabinet" className="mt-6">
+            <CabinetTab />
           </TabsContent>
         </Tabs>
       </main>

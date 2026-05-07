@@ -137,6 +137,12 @@ class AccessCardRequest(BaseModel):
     # if the email is NOT whitelisted we still proceed but flag it (we don't
     # want a dead-end for the narrative).
     require_whitelist: Optional[bool] = False
+    # Sprint 17.5 — Cabinet Expansion. The Agent's public X handle, used
+    # to (optionally) verify their follow status against @deepotus_ai
+    # AND to address them in the daily Welcome Signal broadcast +
+    # Prophet Interaction Bot replies. Optional: blank handle keeps
+    # the legacy email-only flow working.
+    x_handle: Optional[str] = Field(None, max_length=40)
 
 
 class AccessCardResponse(BaseModel):
@@ -482,6 +488,7 @@ async def create_or_refresh_card(
     display_name: Optional[str] = None,
     whitelisted: bool = False,
     base_url: Optional[str] = None,
+    x_handle: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create or refresh a card for the given email.
 
@@ -497,6 +504,9 @@ async def create_or_refresh_card(
     the QR code on the card encodes
     `{base_url}/classified-vault?code={accreditation_number}` so scanning
     opens the digicode page in the visitor's browser and auto-verifies.
+
+    x_handle: optional public X handle (Sprint 17.5). Stored on the card
+    doc so the Welcome Signal + Interaction Bot can address the agent.
     """
     email = email.lower().strip()
     existing = await find_card_by_email(db, email)
@@ -528,22 +538,32 @@ async def create_or_refresh_card(
         qr_payload=qr_payload,
     )
 
+    # Normalise x_handle: strip leading @ and whitespace; preserve None
+    # when caller didn't pass anything so we don't overwrite a previously
+    # stored value with null on a refresh.
+    x_handle_clean: Optional[str] = None
+    if x_handle is not None:
+        s = str(x_handle).strip().lstrip("@")
+        x_handle_clean = s or None
+
+    update_doc: Dict[str, Any] = {
+        "_id": doc_id,
+        "email": email,
+        "accreditation_number": accreditation,
+        "display_name": display_name,
+        "whitelisted": whitelisted,
+        "issued_at": issued_at.isoformat(),
+        "expires_at": expires_at.isoformat(),
+        "card_path": str(output_path),
+        "updated_at": _now_iso(),
+    }
+    if x_handle_clean is not None:
+        update_doc["x_handle"] = x_handle_clean
+
     # Upsert
     await db.access_cards.update_one(
         {"_id": doc_id},
-        {
-            "$set": {
-                "_id": doc_id,
-                "email": email,
-                "accreditation_number": accreditation,
-                "display_name": display_name,
-                "whitelisted": whitelisted,
-                "issued_at": issued_at.isoformat(),
-                "expires_at": expires_at.isoformat(),
-                "card_path": str(output_path),
-                "updated_at": _now_iso(),
-            }
-        },
+        {"$set": update_doc},
         upsert=True,
     )
     doc = await db.access_cards.find_one({"_id": doc_id})

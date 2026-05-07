@@ -4,36 +4,44 @@
     "status": "completed"
   },
   {
-    "content": "Task 1: Remove X_TIER_REQUIRED gate, force PRODUCTION mode (dispatch_enabled=True, dispatch_dry_run=False, flip infiltration_auto flags)",
+    "content": "Task 1: Remove X_TIER_REQUIRED gate, force PRODUCTION mode",
+    "status": "completed"
+  },
+  {
+    "content": "Add x_handle capture to accreditation flow",
+    "status": "completed"
+  },
+  {
+    "content": "Task 2: Welcome Signal module",
+    "status": "completed"
+  },
+  {
+    "content": "Task 3: Prophet Interaction Bot module",
+    "status": "completed"
+  },
+  {
+    "content": "Extend X dispatcher to support reply mode",
+    "status": "completed"
+  },
+  {
+    "content": "Implement live verify_x_follow",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend: x_handle field in TerminalPopup",
+    "status": "completed"
+  },
+  {
+    "content": "Admin UI controls (CabinetTab) for Welcome Signal + Interaction Bot",
+    "status": "completed"
+  },
+  {
+    "content": "Backend tests (16/16 pass) + full suite (79/79)",
+    "status": "completed"
+  },
+  {
+    "content": "Comprehensive testing agent sweep",
     "status": "in_progress"
-  },
-  {
-    "content": "Add x_handle capture to accreditation flow (Pydantic model + clearance_levels + Terminal frontend form)",
-    "status": "pending"
-  },
-  {
-    "content": "Task 2: Welcome Signal module (daily 5-agent shoutout) + scheduler job + admin toggle + manual fire endpoint",
-    "status": "pending"
-  },
-  {
-    "content": "Task 3: Prophet Interaction Bot module (poll followers, generate Lore reply, POST tweet with in_reply_to) + scheduler + admin toggle",
-    "status": "pending"
-  },
-  {
-    "content": "Extend X dispatcher to support reply mode (in_reply_to_tweet_id)",
-    "status": "pending"
-  },
-  {
-    "content": "Implement live verify_x_follow (X API v2 lookup using existing bearer pattern)",
-    "status": "pending"
-  },
-  {
-    "content": "Admin UI controls for Welcome Signal + Interaction Bot (Propaganda section)",
-    "status": "pending"
-  },
-  {
-    "content": "Backend tests + Playwright smoke",
-    "status": "pending"
   },
   {
     "content": "Plan.md update + commit-ready summary",

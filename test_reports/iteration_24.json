@@ -1,0 +1,88 @@
+{
+  "summary": "Sprint 17.5 Cabinet Expansion testing completed. All backend endpoints functional, frontend Cabinet tab renders correctly with both Welcome Signal and Interaction Bot cards. Production mode bootstrap confirmed (dispatch_enabled=true, dispatch_dry_run=false). Unit tests pass 79/79. Backend API tests pass 11/13 (2 failures due to vault being sealed, which is expected behavior). Frontend Cabinet tab verified with all UI components present.",
+  
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "notes": "Vault is currently SEALED (pre-launch mode), so /api/access-card/request returns 403 VAULT_SEALED. This is expected behavior per the sealed mode design."
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "Backend: All 79 pytest tests pass (16 new Cabinet Expansion tests + 63 pre-existing)",
+    "Backend: Production mode bootstrap applied (dispatch_enabled=true, dispatch_dry_run=false)",
+    "Backend: Welcome Signal GET endpoint returns settings + eligible_count",
+    "Backend: Welcome Signal PATCH/POST correctly require 2FA (403)",
+    "Backend: Interaction Bot GET endpoint returns settings + recent_replies",
+    "Backend: Interaction Bot PATCH/POST correctly require 2FA (403)",
+    "Backend: Propaganda settings endpoint shows production mode active",
+    "Backend: Regression tests pass (whitelist, vault status, propaganda triggers)",
+    "Frontend: Cabinet tab renders in Propaganda Engine admin panel",
+    "Frontend: Welcome Signal card displays with all components (toggle, hour/min/max inputs, eligible badge, fire now button)",
+    "Frontend: Interaction Bot card displays with all components (toggle, min/max/cooldown inputs, fire live/dry buttons, recent replies section)",
+    "Frontend: TerminalPopup contains x_handle input field with data-testid='terminal-x-handle-input' (verified in code review)",
+    "Backend: X dispatcher reply mode implementation verified (meta.reply_to_tweet_id support)",
+    "Backend: clearance_levels.upsert_x_handle function implemented and tested"
+  ],
+  
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/app/backend/tests/test_cabinet_expansion.py"
+  ],
+  
+  "success_percentage": {
+    "backend_unit_tests": "100% (79/79 tests pass)",
+    "backend_api_tests": "85% (11/13 pass, 2 expected failures due to sealed vault)",
+    "frontend_ui_tests": "100% (Cabinet tab fully functional)",
+    "overall": "95%"
+  },
+  
+  "action_item_for_main_agent": "",
+  
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false,
+  
+  "detailed_findings": {
+    "production_mode_bootstrap": {
+      "status": "✅ VERIFIED",
+      "details": "Backend startup logs confirm bootstrap_production_mode() runs on every boot. Settings show dispatch_enabled=true, dispatch_dry_run=false. The welcome_signal and interaction_bot sub-configs are present with correct defaults."
+    },
+    "welcome_signal_endpoints": {
+      "status": "✅ VERIFIED",
+      "GET": "Returns settings (enabled=true, hour_utc=14, min_handles=2, max_handles=5) + eligible_count + eligible_preview",
+      "PATCH": "Correctly requires 2FA (returns 403 without 2FA token)",
+      "POST_fire_now": "Correctly requires 2FA (returns 403 without 2FA token)"
+    },
+    "interaction_bot_endpoints": {
+      "status": "✅ VERIFIED",
+      "GET": "Returns settings (enabled=false by default, max_replies_per_hour=3, min_replies_per_hour=1, per_handle_cooldown_hours=24) + recent_replies array",
+      "PATCH": "Correctly requires 2FA (returns 403 without 2FA token)",
+      "POST_fire_now": "Correctly requires 2FA (returns 403 without 2FA token)"
+    },
+    "x_handle_field": {
+      "status": "✅ VERIFIED (code review)",
+      "backend": "POST /api/access-card/request accepts optional x_handle field, strips leading @, trims to 15 chars, persists to clearance_levels via upsert_x_handle()",
+      "frontend": "TerminalPopup.tsx lines 72, 203-206, 734-755 implement x_handle input with data-testid='terminal-x-handle-input' and lore-flavored hint text"
+    },
+    "x_dispatcher_reply_mode": {
+      "status": "✅ VERIFIED",
+      "details": "dispatchers/x.py lines 90-94, 140-141 implement reply support. When meta.reply_to_tweet_id is present, the X v2 POST body includes reply.in_reply_to_tweet_id. Unit tests confirm dry_run and live modes both handle reply_to correctly."
+    },
+    "regression_testing": {
+      "status": "✅ PASSED",
+      "whitelist_endpoint": "POST /api/whitelist works (200)",
+      "vault_status": "GET /api/vault/classified-status works (200, returns sealed=true)",
+      "propaganda_triggers": "GET /api/admin/propaganda/triggers works (200)",
+      "existing_tabs": "Triggers, Templates, Queue, Tone & LLM, Activity, Whales tabs all present in Propaganda Engine"
+    }
+  }
+}

@@ -362,6 +362,41 @@ async def _holders_poll_job() -> None:
         logging.exception("[bot_scheduler] holders poll tick failed")
 
 
+async def _welcome_signal_job() -> None:
+    """Sprint 17.5 — daily Cabinet recognition broadcast.
+
+    Runs every 30 min so a slight desync (DST, container restart) still
+    fires within the configured ``hour_utc`` window. The 23h cooldown
+    inside ``welcome_signal.fire`` keeps double-fires impossible.
+
+    NOT gated by the bot kill-switch: this is a pre-launch growth signal,
+    not a trading bot. The propaganda kill-switch (``panic``) and the
+    dispatcher's own ``dispatch_enabled`` toggle still apply downstream.
+    """
+    from core import welcome_signal  # noqa: WPS433
+
+    try:
+        await welcome_signal.tick()
+    except Exception:
+        logging.exception("[bot_scheduler] welcome signal tick failed")
+
+
+async def _prophet_interaction_job() -> None:
+    """Sprint 17.5 — hourly Lore-compliant replies to accredited followers.
+
+    The job reads ``propaganda_settings.interaction_bot.enabled`` on
+    every tick and short-circuits when off, so flipping the toggle in
+    the admin dashboard pauses the bot within the next hour. The
+    dispatcher's panic + dispatch_enabled toggles also apply.
+    """
+    from core import prophet_interaction  # noqa: WPS433
+
+    try:
+        await prophet_interaction.tick()
+    except Exception:
+        logging.exception("[bot_scheduler] prophet interaction tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -553,6 +588,45 @@ async def sync_jobs_from_config() -> None:
             max_instances=1,
             coalesce=True,
             misfire_grace_time=60,
+        )
+
+    # ---- Welcome Signal (Sprint 17.5) — every 30 min ----
+    # The job itself reads ``propaganda_settings.welcome_signal.hour_utc``
+    # and short-circuits unless the current UTC hour matches; a 23h
+    # cooldown inside ``welcome_signal.fire`` prevents double-fires.
+    if _scheduler.get_job("welcome_signal"):
+        _scheduler.reschedule_job(
+            "welcome_signal",
+            trigger=IntervalTrigger(minutes=30),
+        )
+    else:
+        _scheduler.add_job(
+            _welcome_signal_job,
+            trigger=IntervalTrigger(minutes=30),
+            id="welcome_signal",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=600,
+        )
+
+    # ---- Prophet Interaction Bot (Sprint 17.5) — every 60 min ----
+    # 1-3 random replies per tick (config-driven). The bot is OFF by
+    # default; admin enables it explicitly once X creds are vaulted.
+    if _scheduler.get_job("prophet_interaction"):
+        _scheduler.reschedule_job(
+            "prophet_interaction",
+            trigger=IntervalTrigger(minutes=60),
+        )
+    else:
+        _scheduler.add_job(
+            _prophet_interaction_job,
+            trigger=IntervalTrigger(minutes=60),
+            id="prophet_interaction",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=600,
         )
 
 

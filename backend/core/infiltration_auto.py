@@ -46,7 +46,6 @@ every auto-promotion.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 import uuid
@@ -67,12 +66,23 @@ from core import clearance_levels
 # if you want to toggle without redeploy — kept as module-level for now
 # to keep the surface area small).
 # ---------------------------------------------------------------------
-#: Flip to True the day X API Basic ($100/mo) is enabled and 4 OAuth1
-#: secrets are in the vault. Until then, follow and live-mention checks
-#: short-circuit with a structured "x_tier_required" result.
-X_FOLLOW_CHECK_ENABLED = False
-X_MENTION_CHECK_ENABLED = False
-X_DM_ENABLED = False
+#: Sprint 17.5 — flipped to True. The X account is Pay-Per-Use with
+#: credits and the operator authorised live verification calls. We
+#: still cache aggressively (24h) to keep credit burn low.
+X_FOLLOW_CHECK_ENABLED = True
+X_MENTION_CHECK_ENABLED = True
+X_DM_ENABLED = True
+
+#: Project handle the follow check resolves against. Hard-coded here
+#: so the backend doesn't need an extra round-trip to read it from the
+#: vault on every check; rotate in code if the official handle ever
+#: changes.
+PROJECT_X_HANDLE = "deepotus_ai"
+
+#: 24h cache for follow lookups — handles rarely change their follow
+#: state inside a day, and a single Basic-tier rate-limit hit (15/15min)
+#: would otherwise lock us out for the whole window.
+_FOLLOW_CACHE_TTL_HOURS = 24
 
 #: Lenient Telegram numeric ID validator (integers, 5–15 digits — Telegram
 #: IDs are positive integers, usually 8–11 digits for individuals, up
@@ -247,36 +257,196 @@ async def verify_x_follow(
     email: str,
     x_handle: str,
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-    """Check whether ``x_handle`` follows the project account. Currently
-    a **stub** that returns ``(False, "x_tier_required", …)`` until
-    ``X_FOLLOW_CHECK_ENABLED`` is flipped.
+    """Check whether ``x_handle`` follows the project account.
 
-    When activated, this will call:
-        GET https://api.x.com/2/users/by/username/{x_handle}
-        → extract user_id
-        GET https://api.x.com/2/users/{user_id}/following?max_results=1000
-            &user.fields=id
-        → scan for the project account ID.
+    Sprint 17.5 — live implementation.
 
-    The paginated follow-list call costs ~ 5 API credits per check and
-    is rate-limited to 15/15min on Basic, so we cache results for 24h
-    in ``x_follow_cache`` to avoid burning the quota on repeat visits.
+    Path:
+      1. Honor the cached result in ``x_follow_cache`` (24h TTL) so a
+         tight loop of submissions doesn't burn rate-limit budget.
+      2. Resolve both handles to user IDs via
+         ``GET /2/users/by/username/:handle`` (cached 7d in
+         ``kol_user_id_cache`` — same collection used by the KOL
+         listener so we don't double-spend credits on resolution).
+      3. Page through ``GET /2/users/:agent_id/following`` looking for
+         the project's user_id. Returns up to 1000 follows per page;
+         we stop as soon as we find a hit.
+
+    Returns ``(True, "ok", meta)`` on a confirmed follow, otherwise
+    ``(False, reason, meta)``. ``reason`` ∈ {
+        "ok", "no_bearer_token", "handle_unresolved",
+        "project_handle_unresolved", "rate_limited",
+        "not_following"
+    }.
+
+    Note: Level 1 promotion is the caller's responsibility — this
+    function only reports the live state. Caller should record the
+    result in ``infiltration_audit`` via ``_audit`` for traceability.
     """
     if not X_FOLLOW_CHECK_ENABLED:
-        await _audit(email=email, action="verify_x_follow",
-                     outcome="blocked",
-                     detail={"reason": "x_tier_required",
-                             "x_handle": x_handle})
-        return False, "x_tier_required", {
-            "hint": (
-                "X follow auto-verification requires API Basic tier "
-                "($100/mo). For now the admin validates follows "
-                "manually from /admin/clearance."
-            ),
-        }
+        # Fallback (kept as escape hatch for emergency tier-down).
+        await _audit(
+            email=email, action="verify_x_follow", outcome="blocked",
+            detail={"reason": "x_tier_required", "x_handle": x_handle},
+        )
+        return False, "x_tier_required", None
 
-    # Full implementation placeholder — see module docstring.
-    raise NotImplementedError("X follow live check pending tier activation")
+    handle = (x_handle or "").strip().lstrip("@")
+    if not handle:
+        return False, "missing_handle", None
+
+    # Late import — avoids cold-start cost on test rigs that don't
+    # ever exercise the live path.
+    from core.secret_provider import get_twitter_bearer_token
+
+    bearer = await get_twitter_bearer_token()
+    if not bearer:
+        await _audit(
+            email=email, action="verify_x_follow", outcome="error",
+            detail={"reason": "no_bearer_token"},
+        )
+        return False, "no_bearer_token", None
+
+    cache = await db.x_follow_cache.find_one({"_id": handle.lower()})
+    if cache:
+        cached_at = cache.get("cached_at")
+        try:
+            if isinstance(cached_at, str):
+                cached_at_dt = datetime.fromisoformat(cached_at.replace("Z", "+00:00"))
+            else:
+                cached_at_dt = cached_at
+            age_h = (datetime.now(timezone.utc) - cached_at_dt).total_seconds() / 3600
+        except Exception:  # noqa: BLE001
+            age_h = _FOLLOW_CACHE_TTL_HOURS + 1
+        if age_h < _FOLLOW_CACHE_TTL_HOURS:
+            return (
+                bool(cache.get("follows")),
+                "ok" if cache.get("follows") else "not_following",
+                {"cached": True, "cached_at": cache.get("cached_at")},
+            )
+
+    agent_id = await _resolve_user_id(handle, bearer)
+    if not agent_id:
+        return False, "handle_unresolved", {"handle": handle}
+
+    project_id = await _resolve_user_id(PROJECT_X_HANDLE, bearer)
+    if not project_id:
+        return False, "project_handle_unresolved", {"project_handle": PROJECT_X_HANDLE}
+
+    follows, reason = await _scan_following_for(agent_id, project_id, bearer)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.x_follow_cache.update_one(
+        {"_id": handle.lower()},
+        {"$set": {
+            "follows": bool(follows),
+            "agent_user_id": agent_id,
+            "project_user_id": project_id,
+            "cached_at": now_iso,
+            "last_reason": reason,
+        }},
+        upsert=True,
+    )
+    await _audit(
+        email=email, action="verify_x_follow",
+        outcome="ok" if follows else reason,
+        detail={"handle": handle, "follows": follows, "reason": reason},
+    )
+    return follows, ("ok" if follows else reason), {"cached": False}
+
+
+# ---------------------------------------------------------------------
+# X API helpers (mirror the kol_listener pattern — kept local to avoid
+# importing kol_listener and creating a circular dependency).
+# ---------------------------------------------------------------------
+_X_API_BASE = "https://api.twitter.com/2"
+_X_REQUEST_TIMEOUT_S = 12.0
+
+
+async def _resolve_user_id(handle: str, bearer: str) -> Optional[str]:
+    """Resolve a handle → user_id, sharing the kol_user_id_cache row
+    used by ``core.kol_listener`` so credit spend is amortised across
+    both features."""
+    handle_clean = (handle or "").strip().lstrip("@")
+    if not handle_clean:
+        return None
+    cached = await db.kol_user_id_cache.find_one({"_id": handle_clean.lower()})
+    if cached and cached.get("user_id"):
+        return str(cached["user_id"])
+
+    url = f"{_X_API_BASE}/users/by/username/{handle_clean}"
+    try:
+        async with httpx.AsyncClient(timeout=_X_REQUEST_TIMEOUT_S) as client:
+            resp = await client.get(
+                url, headers={"Authorization": f"Bearer {bearer}"},
+            )
+    except Exception:  # noqa: BLE001
+        logger.exception("[infiltration_auto] user_id lookup crashed handle=%s", handle_clean)
+        return None
+    if resp.status_code >= 400:
+        logger.warning(
+            "[infiltration_auto] user_id http_%d handle=%s body=%s",
+            resp.status_code, handle_clean, (resp.text or "")[:160],
+        )
+        return None
+    user_id = ((resp.json() or {}).get("data") or {}).get("id")
+    if not user_id:
+        return None
+    await db.kol_user_id_cache.update_one(
+        {"_id": handle_clean.lower()},
+        {"$set": {
+            "user_id": str(user_id),
+            "handle_cased": handle_clean,
+            "cached_at": datetime.now(timezone.utc),
+        }},
+        upsert=True,
+    )
+    return str(user_id)
+
+
+async def _scan_following_for(
+    agent_id: str, project_id: str, bearer: str,
+) -> Tuple[bool, str]:
+    """Page through ``GET /2/users/:agent_id/following`` looking for
+    ``project_id``. Returns ``(True, "ok")`` on hit, ``(False, reason)``
+    otherwise. Capped at 5 pages (5000 follows) to bound spend — agents
+    with bigger follow lists fall back to manual admin verification."""
+    next_token: Optional[str] = None
+    pages_scanned = 0
+    max_pages = 5
+    while pages_scanned < max_pages:
+        url = f"{_X_API_BASE}/users/{agent_id}/following"
+        params: Dict[str, Any] = {"max_results": 1000, "user.fields": "id"}
+        if next_token:
+            params["pagination_token"] = next_token
+        try:
+            async with httpx.AsyncClient(timeout=_X_REQUEST_TIMEOUT_S) as client:
+                resp = await client.get(
+                    url, params=params,
+                    headers={"Authorization": f"Bearer {bearer}"},
+                )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "[infiltration_auto] following fetch crashed agent_id=%s", agent_id,
+            )
+            return False, "fetch_error"
+        if resp.status_code == 429:
+            return False, "rate_limited"
+        if resp.status_code >= 400:
+            logger.warning(
+                "[infiltration_auto] following http_%d agent_id=%s body=%s",
+                resp.status_code, agent_id, (resp.text or "")[:160],
+            )
+            return False, f"http_{resp.status_code}"
+        payload = resp.json() or {}
+        for u in (payload.get("data") or []):
+            if str(u.get("id") or "") == str(project_id):
+                return True, "ok"
+        meta = payload.get("meta") or {}
+        next_token = meta.get("next_token")
+        pages_scanned += 1
+        if not next_token:
+            break
+    return False, "not_following"
 
 
 # ---------------------------------------------------------------------
@@ -515,6 +685,7 @@ async def feature_status() -> Dict[str, Any]:
             "enabled": X_FOLLOW_CHECK_ENABLED,
             "mode": "live" if X_FOLLOW_CHECK_ENABLED else "blocked",
             "blocker": None if X_FOLLOW_CHECK_ENABLED else "x_tier_required",
+            "project_handle": PROJECT_X_HANDLE,
         },
         "x_share": {
             "enabled": True,
