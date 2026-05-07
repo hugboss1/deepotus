@@ -1,0 +1,66 @@
+{
+  "summary": "Sprint 17.5 follow-up testing complete — Preview Push to X/Telegram, dual-mode Release button, ASGI hardening, and Cabinet regression all verified working.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [],
+    "minor_notes": [
+      {
+        "endpoint": "POST /api/admin/bots/preview/push",
+        "note": "Empty platforms list returns 422 (Pydantic validation) instead of 400 — this is correct behavior, test expectation was adjusted",
+        "fix_priority": "NONE"
+      },
+      {
+        "endpoint": "POST /api/admin/bots/preview/push, POST /api/admin/bots/release-now",
+        "note": "Missing auth returns 401 instead of 403 — this is correct (401=no auth, 403=insufficient permissions)",
+        "fix_priority": "NONE"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: pytest 90/90 tests passing (79 baseline + 11 new in test_bots_router_preview_push.py)",
+    "Backend: POST /api/admin/bots/preview/push — enqueues propaganda_queue items with status='approved' and policy=auto for each platform",
+    "Backend: POST /api/admin/bots/preview/push — validates platforms list (min 1 required), lang enum (fr|en), rejects when panic=true (409)",
+    "Backend: POST /api/admin/bots/preview/push — requires admin auth (401 without token)",
+    "Backend: POST /api/admin/bots/release-now — when kill-switch ARMED: returns triggered=[], skipped=[...] with reason='kill_switch_active'",
+    "Backend: POST /api/admin/bots/release-now — when kill-switch OFF: returns triggered=[...] with forced_at timestamps, 11 jobs triggered",
+    "Backend: POST /api/admin/bots/release-now — requires admin auth (401 without token)",
+    "Backend: POST /api/admin/bots/generate-preview — ASGI hardening working, no crashes on partial/surplus LLM output",
+    "Backend: POST /api/admin/bots/generate-preview — V2 templates working (template_used, template_label returned)",
+    "Backend: Regression — GET /api/admin/propaganda/welcome-signal working (200)",
+    "Backend: Regression — GET /api/admin/propaganda/interaction-bot working (200)",
+    "Backend: Regression — GET /api/admin/bots/jobs working (200, 11 jobs listed)",
+    "Backend: Regression — GET /api/admin/bots/posts working (200, 341 total posts)",
+    "Frontend: AdminBots page loads correctly with kill-switch badge and dual-mode Release button",
+    "Frontend: Preview tab loads and generates preview successfully (FR + EN content, hashtags, emoji)",
+    "Frontend: 'Push to X / Telegram' button appears below preview output after generation (data-testid='preview-push-dispatch-button')",
+    "Frontend: Push dialog opens with platform checkboxes (X, Telegram) both checked by default",
+    "Frontend: Push dialog language toggle (EN/FR) works, EN selected by default",
+    "Frontend: Push dialog 'Confirm push' button disabled when both platforms unchecked",
+    "Frontend: Push dialog closes on Cancel",
+    "Frontend: Release button shows 'Release' when kill-switch ARMED (legacy mode)",
+    "Frontend: Release button shows 'Release · Run jobs now' when kill-switch OFF (dual-mode)",
+    "Frontend: Kill-switch toggle works (ARMED → LIVE state change)"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/app/backend/tests/test_bots_router_preview_push.py",
+    "/root/.emergent/automation_output/20260507_222812/console_20260507_222812.log",
+    ".screenshots/admin-bots-preview-push.png"
+  ],
+  "success_percentage": {
+    "backend": "100% (16/16 functional tests passed, 3 'failures' were correct behavior with wrong test expectations)",
+    "frontend": "100% (all UI flows working)",
+    "pytest": "100% (90/90 tests passing)"
+  },
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

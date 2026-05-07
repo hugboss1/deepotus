@@ -45,6 +45,7 @@ __all__ = [
     "DEFAULT_BOT_CONFIG",
     "POSTS_COLLECTION",
     "ensure_bot_config",
+    "force_run_all_now",
     "get_bot_config",
     "update_bot_config",
     "log_post_attempt",
@@ -678,3 +679,64 @@ def describe_jobs() -> list[Dict[str, Any]]:
             }
         )
     return out
+
+
+
+async def force_run_all_now(*, skip_when_killed: bool = False) -> Dict[str, list]:
+    """Force every registered job to fire on the next scheduler loop.
+
+    Implementation: APScheduler exposes ``modify_job(next_run_time=...)``
+    which reschedules the next firing without altering the underlying
+    trigger. We set ``next_run_time = utcnow()`` so the scheduler's main
+    loop (`_run_jobs`) picks it up within its tick interval (~1s).
+
+    Sprint 17.5 follow-up — backs the admin "Release" button which now
+    serves a dual purpose:
+        * when the kill-switch is armed → the existing PUT
+          /kill-switch path releases it,
+        * when bots are live → this path forces every cadence /
+          background job to run immediately so the operator can verify
+          end-to-end before the next scheduled tick.
+
+    Args:
+        skip_when_killed: When True, return an empty triggered list and
+            stamp every job under ``skipped`` so the UI can render a
+            "kill-switch active" toast without changing scheduler state.
+
+    Returns:
+        ``{"triggered": [...], "skipped": [...]}`` — each entry carries
+        ``{"id", "next_run_time"}`` for the operator dashboard.
+    """
+    triggered: list[Dict[str, Any]] = []
+    skipped: list[Dict[str, Any]] = []
+
+    if _scheduler is None:
+        return {"triggered": triggered, "skipped": skipped}
+
+    now = datetime.now(timezone.utc)
+    for job in _scheduler.get_jobs():
+        if skip_when_killed:
+            skipped.append({
+                "id": job.id,
+                "reason": "kill_switch_active",
+                "next_run_time": (
+                    job.next_run_time.isoformat() if job.next_run_time else None
+                ),
+            })
+            continue
+        try:
+            _scheduler.modify_job(job.id, next_run_time=now)
+            triggered.append({
+                "id": job.id,
+                "forced_at": now.isoformat(),
+            })
+        except Exception:  # noqa: BLE001
+            logging.exception(
+                "[bot_scheduler.force_run_all_now] could not modify job=%s",
+                job.id,
+            )
+            skipped.append({
+                "id": job.id,
+                "reason": "modify_failed",
+            })
+    return {"triggered": triggered, "skipped": skipped}

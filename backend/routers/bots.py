@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.bot_scheduler import (
     POSTS_COLLECTION,
@@ -253,15 +253,31 @@ class GeneratedImage(BaseModel):
 
 
 class GeneratePreviewResponse(BaseModel):
-    content_type: str
-    platform: str
-    char_budget: int
-    provider: str
-    model: str
-    content_fr: str
-    content_en: str
-    hashtags: List[str]
-    primary_emoji: str
+    """Response for the dry-run Prophet preview endpoint.
+
+    Hardened (Sprint 17.5 follow-up — ASGI exception fix):
+      * ``model_config = extra='ignore'`` so any surplus key the LLM
+        generator adds (V2 templates, A/B fields, future ablations) is
+        silently dropped rather than raising and bubbling as an
+        ``Exception in ASGI application``.
+      * ``hashtags`` defaults to ``[]`` and ``primary_emoji`` to ``""``
+        so a partial LLM response (no emoji extracted, no hashtags
+        parsed) never trips Pydantic validation.
+      * Numeric fields default to safe sentinels so the UI gracefully
+        renders an empty card instead of a 500.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    content_type: str = ""
+    platform: str = ""
+    char_budget: int = 0
+    provider: str = ""
+    model: str = ""
+    content_fr: str = ""
+    content_en: str = ""
+    hashtags: List[str] = Field(default_factory=list)
+    primary_emoji: str = ""
     image: Optional[GeneratedImage] = None
     image_error: Optional[str] = None
     # V2-only fields, populated when use_v2=true. None on v1 responses.
@@ -907,11 +923,50 @@ async def generate_preview(
             "template_label",
         }
     }
-    return GeneratePreviewResponse(
-        **response_kwargs,
-        image=image_payload,
-        image_error=image_error,
-    )
+    # Sprint 17.5 follow-up — ASGI exception hardening.
+    # We've seen production tracebacks (requestID=11706258 +
+    # neighbours) where the LLM returned a partial result missing one
+    # of the fields the response model used to require. Even with
+    # `extra='ignore'` and Optional defaults on the model, a stray
+    # ``None`` for ``hashtags`` (instead of ``[]``) or a non-string
+    # ``primary_emoji`` would still 500 the route. Coerce to safe
+    # types here so the response is always well-formed and the admin
+    # gets a usable preview card instead of a stack trace.
+    if not isinstance(response_kwargs.get("hashtags"), list):
+        response_kwargs["hashtags"] = []
+    if not isinstance(response_kwargs.get("primary_emoji"), str):
+        response_kwargs["primary_emoji"] = ""
+    for str_key in ("content_fr", "content_en", "content_type", "platform",
+                    "provider", "model"):
+        if not isinstance(response_kwargs.get(str_key), str):
+            response_kwargs[str_key] = ""
+    if not isinstance(response_kwargs.get("char_budget"), int):
+        try:
+            response_kwargs["char_budget"] = int(
+                response_kwargs.get("char_budget") or 0,
+            )
+        except (TypeError, ValueError):
+            response_kwargs["char_budget"] = 0
+    try:
+        return GeneratePreviewResponse(
+            **response_kwargs,
+            image=image_payload,
+            image_error=image_error,
+        )
+    except Exception:  # noqa: BLE001
+        logging.exception(
+            "[bots.generate-preview] response build crashed — "
+            "falling back to a defensive empty preview. "
+            "result_keys=%s image_present=%s",
+            sorted(list(result.keys())),
+            image_payload is not None,
+        )
+        # Surface a structured 502 so the admin UI shows a clean error
+        # toast instead of the browser swallowing the ASGI traceback.
+        raise HTTPException(
+            status_code=502,
+            detail="preview_render_failed",
+        ) from None
 
 
 # ---------------------------------------------------------------------
@@ -1328,3 +1383,195 @@ async def news_repost_test_send_endpoint(
         hint=result.get("hint"),
     )
 
+
+
+# =====================================================================
+# Sprint 17.5 follow-up — Preview "Push to X/Telegram" + Release Now
+# =====================================================================
+class PreviewPushRequest(BaseModel):
+    """Push a generated preview straight to the Real Dispatcher.
+
+    The admin clicks "Push to X/Telegram" below the preview card, picks
+    the target platforms + a primary language, and we enqueue ONE
+    propaganda_queue item per platform with policy=auto. The dispatch
+    worker picks them up on its next 5s tick and posts via the live
+    X / Telegram dispatchers — the same code path approvals go through
+    (Sprint 13.3), with the same rate-limits, panic + audit guarantees.
+
+    Note on language: the preview generator returns FR + EN. We pick the
+    chosen ``lang`` (defaults to EN — the wider audience for a Solana
+    memecoin) for the rendered_content and stash the other locale in
+    the payload so we have an audit-trail and could replay it later in
+    the alternate language if needed.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    content_fr: str = Field(..., min_length=1, max_length=4000)
+    content_en: str = Field(..., min_length=1, max_length=4000)
+    platforms: List[str] = Field(
+        ..., min_length=1, max_length=2,
+        description="Subset of ['x', 'telegram'] — at least one required.",
+    )
+    lang: str = Field(
+        default="en", pattern="^(fr|en)$",
+        description="Which locale to ship as rendered_content. The "
+                    "other is preserved in the queue payload.",
+    )
+    primary_emoji: Optional[str] = Field(default=None, max_length=8)
+    hashtags: Optional[List[str]] = Field(default=None, max_length=12)
+    template_used: Optional[str] = Field(default=None, max_length=64)
+    image_base64: Optional[str] = Field(default=None, max_length=8_000_000)
+    image_mime: Optional[str] = Field(default=None, max_length=64)
+
+
+class PreviewPushItemResult(BaseModel):
+    platform: str
+    queue_item_id: str
+    status: str  # approved | proposed | failed
+    scheduled_for: Optional[str] = None
+
+
+class PreviewPushResponse(BaseModel):
+    items: List[PreviewPushItemResult]
+    dispatch_dry_run: bool
+    rendered_lang: str
+    rendered_chars: int
+
+
+@router.post("/preview/push", response_model=PreviewPushResponse)
+async def preview_push(
+    payload: PreviewPushRequest,
+    _p: dict = Depends(require_admin),
+):
+    """Hand the preview to the Real Dispatcher (Sprint 13.3).
+
+    Each platform gets its own queue item so failures stay isolated
+    (an X rate-limit doesn't abort the Telegram send, etc.). All items
+    are policy=auto → the dispatch worker wakes up on its next tick
+    (~5s) and ships them live, honouring the global panic switch and
+    propaganda_settings.dispatch_dry_run flag.
+    """
+    from core import dispatch_queue, propaganda_engine
+
+    valid_platforms = {"x", "telegram"}
+    chosen = [p.strip().lower() for p in (payload.platforms or [])]
+    chosen = [p for p in chosen if p in valid_platforms]
+    if not chosen:
+        raise HTTPException(
+            status_code=400,
+            detail=f"invalid_platforms — expected subset of {sorted(valid_platforms)}",
+        )
+
+    rendered = (
+        payload.content_fr if payload.lang == "fr" else payload.content_en
+    ).strip()
+    if not rendered:
+        raise HTTPException(status_code=400, detail="empty_rendered_content")
+
+    settings = await propaganda_engine.get_settings()
+    if settings.get("panic"):
+        raise HTTPException(
+            status_code=409,
+            detail="propaganda_panic_active — clear panic before pushing",
+        )
+
+    operator_jti = (_p or {}).get("jti") or "admin"
+    items: List[PreviewPushItemResult] = []
+    for plat in chosen:
+        queue_item = await dispatch_queue.propose(
+            trigger_key="preview_push",
+            template_id=payload.template_used,
+            rendered_content=rendered,
+            platforms=[plat],
+            payload={
+                "kind": "preview_push",
+                "lang_chosen": payload.lang,
+                "content_fr": payload.content_fr,
+                "content_en": payload.content_en,
+                "primary_emoji": payload.primary_emoji,
+                "hashtags": payload.hashtags or [],
+                "template_used": payload.template_used,
+                # Image base64 is stored on the queue doc so the
+                # dispatcher could attach it later. Today's X / TG
+                # dispatchers ship text-only; the image is preserved
+                # for future media-aware sends and audit replay.
+                "has_image": bool(payload.image_base64),
+                "image_mime": payload.image_mime,
+            },
+            policy="auto",
+            delay_seconds=5,
+            by_jti=operator_jti,
+            manual=True,
+        )
+        items.append(
+            PreviewPushItemResult(
+                platform=plat,
+                queue_item_id=str(queue_item.get("id") or queue_item.get("_id") or ""),
+                status=str(queue_item.get("status") or "unknown"),
+                scheduled_for=queue_item.get("scheduled_for"),
+            )
+        )
+        await propaganda_engine.audit(
+            "preview_push", trigger_key="preview_push",
+            jti=operator_jti, ip=None,
+            meta={
+                "platform": plat,
+                "queue_item_id": items[-1].queue_item_id,
+                "lang": payload.lang,
+                "chars": len(rendered),
+            },
+        )
+
+    return PreviewPushResponse(
+        items=items,
+        dispatch_dry_run=bool(settings.get("dispatch_dry_run", False)),
+        rendered_lang=payload.lang,
+        rendered_chars=len(rendered),
+    )
+
+
+class ReleaseNowResponse(BaseModel):
+    triggered: List[Dict[str, Any]]
+    skipped: List[Dict[str, Any]]
+    kill_switch_active: bool
+    note: str
+
+
+@router.post("/release-now", response_model=ReleaseNowResponse)
+async def release_now(_p: dict = Depends(require_admin)):
+    """Force every registered bot job to run immediately.
+
+    Behaviour by job kind:
+      * Background polling jobs (whale watcher, KOL listener, news
+        refresh, holders poll, news repost, loyalty email, heartbeat,
+        cadence tick): ``modify_job(next_run_time=now)`` so APScheduler
+        wakes them on the next loop iteration (≤ 1s). The job's own
+        guards (kill-switch, rate limits, dispatch_dry_run) still apply.
+      * Welcome Signal & Prophet Interaction Bot: same mechanism —
+        their internal cooldown / enabled toggle remain authoritative.
+
+    When the global kill-switch is armed we don't actually trigger the
+    bot jobs (they'd no-op anyway) but we still return the list so the
+    UI can show "skipped: kill-switch active" and surface the gate.
+    """
+    cfg = await get_bot_config()
+    kill_active = bool(cfg.get("kill_switch_active"))
+
+    # Re-sync first so a recently changed config reaches the scheduler.
+    await sync_jobs_from_config()
+
+    from core.bot_scheduler import force_run_all_now  # local import
+
+    report = await force_run_all_now(skip_when_killed=kill_active)
+    note = (
+        "kill-switch armed — jobs left untouched"
+        if kill_active
+        else f"forced {len(report.get('triggered', []))} job(s) to run now"
+    )
+    return ReleaseNowResponse(
+        triggered=report.get("triggered", []),
+        skipped=report.get("skipped", []),
+        kill_switch_active=kill_active,
+        note=note,
+    )

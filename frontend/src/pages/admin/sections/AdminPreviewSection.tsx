@@ -25,16 +25,28 @@ import axios from "axios";
 import { toast } from "sonner";
 import {
   AlertTriangle,
+  CheckCircle2,
   Download,
   Image as ImageIcon,
   Languages,
+  Loader2,
   Newspaper,
   RefreshCcw,
+  Send,
   Sparkles,
   Wand2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -125,6 +137,80 @@ export default function AdminPreviewSection({ api, headers, llmInfo }: Props) {
   // ---- Output ----
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
+
+  // ---- Sprint 17.5 follow-up: Push to X/Telegram (Real Dispatcher) ----
+  // Dialog state stays local — once the admin confirms, we POST to
+  // /api/admin/bots/preview/push and show a toast on success/failure.
+  const [pushDialogOpen, setPushDialogOpen] = useState(false);
+  const [pushPlatformX, setPushPlatformX] = useState(true);
+  const [pushPlatformTg, setPushPlatformTg] = useState(true);
+  const [pushLang, setPushLang] = useState<"fr" | "en">("en");
+  const [pushBusy, setPushBusy] = useState(false);
+
+  const openPushDialog = useCallback((): void => {
+    if (!preview) return;
+    // Default to X (the higher-leverage channel) — admin can untick.
+    setPushPlatformX(true);
+    setPushPlatformTg(true);
+    setPushLang("en");
+    setPushDialogOpen(true);
+  }, [preview]);
+
+  const submitPush = useCallback(async (): Promise<void> => {
+    if (!preview) return;
+    const platforms: string[] = [];
+    if (pushPlatformX) platforms.push("x");
+    if (pushPlatformTg) platforms.push("telegram");
+    if (platforms.length === 0) {
+      toast.error("Pick at least one platform");
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const { data } = await axios.post(
+        `${api}/api/admin/bots/preview/push`,
+        {
+          content_fr: preview.content_fr,
+          content_en: preview.content_en,
+          platforms,
+          lang: pushLang,
+          primary_emoji: preview.primary_emoji || undefined,
+          hashtags: preview.hashtags || undefined,
+          template_used: preview.template_used || undefined,
+          image_base64: preview.image?.image_base64 || undefined,
+          image_mime: preview.image?.mime_type || undefined,
+        },
+        { headers },
+      );
+      const fired = (data?.items as Array<{ platform: string; status: string }> | undefined) || [];
+      if (fired.length > 0) {
+        toast.success(
+          `Pushed to ${fired.map((f) => f.platform).join(", ")} · ${data?.dispatch_dry_run ? "DRY-RUN" : "LIVE"}`,
+          {
+            description: `${data?.rendered_chars} chars in ${String(data?.rendered_lang || "").toUpperCase()}.`,
+          },
+        );
+      } else {
+        toast.warning("No queue items created — check propaganda settings");
+      }
+      setPushDialogOpen(false);
+    } catch (err) {
+      // eslint-disable-next-line
+      const detail = (err as any)?.response?.data?.detail;
+      // eslint-disable-next-line
+      const status = (err as any)?.response?.status;
+      if (status === 409) {
+        toast.error("Propaganda PANIC active — clear panic before pushing");
+      } else if (status === 403) {
+        toast.error("Admin auth required");
+      } else {
+        toast.error(typeof detail === "string" ? detail : "Push failed");
+      }
+      logger.error(err);
+    } finally {
+      setPushBusy(false);
+    }
+  }, [api, headers, preview, pushPlatformX, pushPlatformTg, pushLang]);
 
   // -------------------------------------------------------------------
   // Catalogue fetchers — invoked once on mount.
@@ -743,8 +829,160 @@ export default function AdminPreviewSection({ api, headers, llmInfo }: Props) {
             <div className="font-mono text-[10px] text-muted-foreground">
               text via {preview.provider}/{preview.model}
             </div>
+
+            {/* Sprint 17.5 — Push to X/Telegram (Real Dispatcher).
+                Lives at the bottom of the preview card so it's the
+                logical "next step" once the admin is happy with the
+                generated text/image. Disabled while the preview is
+                being regenerated to avoid posting stale content. */}
+            <div
+              className="rounded-lg border border-[#18C964]/30 bg-[#18C964]/5 p-4 flex items-start gap-4 flex-wrap"
+              data-testid="preview-push-dispatch-block"
+            >
+              <div className="flex-1 min-w-[220px]">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-[#18C964]">
+                  Real Dispatcher · Sprint 13.3
+                </div>
+                <p className="text-sm text-foreground/85 mt-1">
+                  Ship this exact preview to X / Telegram via the live
+                  propaganda queue (auto-approved, ~5s delay). All
+                  rate-limits, panic + audit guarantees still apply.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                onClick={openPushDialog}
+                disabled={previewBusy || pushBusy}
+                className="rounded-[var(--btn-radius)] btn-press font-semibold bg-[#18C964] hover:bg-[#18C964]/90 text-black"
+                data-testid="preview-push-dispatch-button"
+              >
+                {pushBusy ? (
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Send size={16} className="mr-2" />
+                )}
+                Push to X / Telegram
+              </Button>
+            </div>
           </div>
         )}
+
+        {/* Push confirmation dialog — platform picker + language radio */}
+        <Dialog open={pushDialogOpen} onOpenChange={setPushDialogOpen}>
+          <DialogContent
+            className="sm:max-w-md"
+            data-testid="preview-push-dialog"
+          >
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send size={16} className="text-[#18C964]" /> Confirm dispatch
+              </DialogTitle>
+              <DialogDescription>
+                The preview will be enqueued with{" "}
+                <span className="font-mono">policy=auto</span> for each
+                selected platform. The dispatch worker picks it up
+                within ~5 seconds and posts via the live X / Telegram
+                dispatchers.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div>
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">
+                  Platforms
+                </Label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={pushPlatformX}
+                      onCheckedChange={(v: boolean | "indeterminate"): void => {
+                        setPushPlatformX(v === true);
+                      }}
+                      data-testid="preview-push-platform-x"
+                    />
+                    <span className="font-mono text-sm">X (Twitter)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={pushPlatformTg}
+                      onCheckedChange={(v: boolean | "indeterminate"): void => {
+                        setPushPlatformTg(v === true);
+                      }}
+                      data-testid="preview-push-platform-telegram"
+                    />
+                    <span className="font-mono text-sm">Telegram</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground mb-2 block">
+                  Language to ship
+                </Label>
+                <div
+                  className="inline-flex rounded-md border border-border overflow-hidden"
+                  data-testid="preview-push-lang"
+                  role="radiogroup"
+                  aria-label="Push language"
+                >
+                  {(["en", "fr"] as const).map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      role="radio"
+                      aria-checked={pushLang === code}
+                      onClick={(): void => setPushLang(code)}
+                      className={`px-4 py-1.5 font-mono text-xs transition-colors ${
+                        pushLang === code
+                          ? "bg-foreground text-background"
+                          : "bg-transparent text-foreground/70 hover:bg-muted"
+                      }`}
+                      data-testid={`preview-push-lang-${code}`}
+                    >
+                      {code.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {preview && (
+                <div className="rounded border border-border/60 bg-background/40 p-3 max-h-32 overflow-auto">
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
+                    Preview ({pushLang.toUpperCase()})
+                  </div>
+                  <div className="text-xs whitespace-pre-wrap text-foreground/90">
+                    {pushLang === "fr" ? preview.content_fr : preview.content_en}
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={(): void => setPushDialogOpen(false)}
+                disabled={pushBusy}
+                data-testid="preview-push-cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={(): void => {
+                  void submitPush();
+                }}
+                disabled={pushBusy || (!pushPlatformX && !pushPlatformTg)}
+                className="bg-[#18C964] hover:bg-[#18C964]/90 text-black"
+                data-testid="preview-push-confirm"
+              >
+                {pushBusy ? (
+                  <>
+                    <Loader2 size={14} className="mr-1.5 animate-spin" /> Pushing…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={14} className="mr-1.5" /> Confirm push
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

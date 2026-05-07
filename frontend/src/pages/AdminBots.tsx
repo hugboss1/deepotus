@@ -218,6 +218,56 @@ export default function AdminBots() {
     }
   }
 
+  /**
+   * Sprint 17.5 follow-up — dual-mode "Release" button.
+   *
+   * When the kill-switch is ARMED → release it (legacy behaviour).
+   * When the kill-switch is OFF (bots live) → force every registered
+   * scheduler job to fire on the next loop iteration so the operator
+   * can verify end-to-end without waiting for the next cadence tick.
+   * The backend's ``force_run_all_now()`` honours every per-job
+   * guard (panic, dispatch_dry_run, per-trigger cooldown), so
+   * mashing this button can never push a forbidden post.
+   */
+  async function releaseAction() {
+    if (killOn) {
+      // Legacy path — un-arm the kill-switch.
+      await toggleKillSwitch(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data } = await axios.post(
+        `${API}/api/admin/bots/release-now`,
+        {},
+        { headers },
+      );
+      const triggered = (data?.triggered as Array<{ id: string }> | undefined) || [];
+      if (triggered.length === 0) {
+        toast.warning(
+          (data?.note as string) || "No jobs to force-run",
+        );
+      } else {
+        toast.success(
+          `Forced ${triggered.length} job(s) to run now`,
+          {
+            description: triggered
+              .slice(0, 6)
+              .map((t) => t.id)
+              .join(" · "),
+          },
+        );
+      }
+    } catch (err) {
+      // eslint-disable-next-line
+      const detail = (err as any)?.response?.data?.detail;
+      logger.error(err);
+      toast.error(typeof detail === "string" ? detail : "Release-now failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // generatePreview() and downloadPreviewImage() moved to <AdminPreviewSection />
   // along with the entire preview state. (Sprint 21 split.)
 
@@ -325,12 +375,18 @@ export default function AdminBots() {
               <Button
                 variant={killOn ? "default" : "outline"}
                 size="lg"
-                onClick={() => toggleKillSwitch(false)}
-                disabled={!killOn || busy}
+                onClick={() => releaseAction()}
+                disabled={busy}
                 className="rounded-[var(--btn-radius)] btn-press font-semibold"
                 data-testid="admin-bots-kill-off"
+                title={
+                  killOn
+                    ? "Release the kill-switch — bots resume on schedule"
+                    : "Force every scheduled job to run now (bypasses cadence wait, respects panic + rate limits)"
+                }
               >
-                <PlayCircle size={18} className="mr-2" /> Release
+                <PlayCircle size={18} className="mr-2" />
+                {killOn ? "Release" : "Release · Run jobs now"}
               </Button>
               <Button
                 variant={killOn ? "outline" : "destructive"}
