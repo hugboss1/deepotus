@@ -40,11 +40,11 @@
     "status": "completed"
   },
   {
-    "content": "Comprehensive testing agent sweep",
-    "status": "in_progress"
+    "content": "Comprehensive testing agent sweep — 0 critical bugs",
+    "status": "completed"
   },
   {
     "content": "Plan.md update + commit-ready summary",
-    "status": "pending"
+    "status": "completed"
   }
 ]

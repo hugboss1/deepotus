@@ -1,5 +1,5 @@
 # DEEPOTUS — Plan de finalisation TypeScript & sécurité “Cabinet Vault” **+ Propaganda Engine ΔΣ**
-(Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17 + Hardening 22.x → 24 + Sprint 23/24)
+(Sprints 6 → 13.3 + Infiltration 14.x + Brain Connect 15.x + Déploiements 17 + Hardening 22.x → 24 + Sprint 23/24 + **Sprint 17.5 Cabinet Expansion**)
 
 ## 1) Objectives
 - Stabiliser et clarifier le code **sans refactors risqués pré-launch** ; privilégier des fixes “safe” (build gates, guards sécurité, docs, tooling).
@@ -13,6 +13,7 @@
 - **Sprint 14.2 — Infiltration Automation** : vérifications semi-automatiques (TG live, X review queue), + KOL DM drafts (approval mode) via UI.
 - **Sprint 15 — Brain Connect & Treasury Architecture (MiCA)** : relier indexation on-chain (Helius) au lore **sans trading**, publier une politique de trésorerie transparente, outillage admin de disclosure + tokenomics tracker public.
 - **Nouvel objectif (Pre-mint UX / deep-linking)** : assurer un parcours “recrutement / accréditation” sans friction via un deep-link unique `/#accreditation`.
+- **Nouvel objectif (Sprint 17.5 — Cabinet Expansion)** : croissance automatisée et conversationnelle sur X avec garde-fous (2FA, audit, rate-limits), reconnaissance quotidienne des Agents (Welcome Signal) et replies lore (Prophet Interaction Bot).
 - **Ops post-prod** : réduire les erreurs humaines (déploiement, secrets, webhooks) via docs exécutables, endpoints diagnostics, et tests automatisés.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
@@ -23,9 +24,16 @@
 - **Cabinet Vault** : AES-256-GCM + lecture stricte par les dispatchers.
 - **Propaganda Engine** : dispatchers **X + Telegram LIVE** (réels) et branchés aux APIs, via secrets du vault.
 - **Transparence MiCA** : page `/transparency` alimentée dynamiquement par le **Public Wallet Registry** (badges LOCKED/PENDING) + intégration RugCheck.
-- **Tests** : backend Pytest (63 tests) + Playwright E2E + CI GitHub Actions.
+- **Tests** : backend Pytest (79 tests) + Playwright E2E + CI GitHub Actions.
 - **UX micro-sprint (deep-link)** : `#accreditation` **déplacé** de Whitelist → **VaultSection**. L’accès à `/#accreditation` ou un `hashchange` ouvre automatiquement le **TerminalPopup DS-GATE-02** et déclenche un pulse ambre 2.6s autour du CTA.
-- **Pré-launch standby** : en attente de vérification finale déploiement/production par l’utilisateur.
+- **Sprint 17.5 — Cabinet Expansion (X)** :
+  - **Production Mode X** forcé : `dispatch_enabled=True`, `dispatch_dry_run=False`.
+  - Migration idempotente au démarrage : `bootstrap_production_mode()`.
+  - Vérifs X follow/mention/DM : flags activés (live), cache follow 24h.
+  - **Welcome Signal** : thread quotidien à 14:00 UTC, cite 2–5 Agents accrédités avec handle X.
+  - **Prophet Interaction Bot** : replies lore 1–3/h, signé `— ΔΣ`, OFF par défaut → activation admin.
+  - Frontend : champ `x_handle` optionnel dans Terminal (copy lore) + nouvel onglet **Cabinet** dans `/propaganda`.
+- **Pré-launch standby** : prêt à push sur `main` + redéployer ; Helius live toujours bloqué jusqu’au mint/pool.
 
 #### Cabinet Vault (Sprints 12.x) — ✅ COMPLET
 - Backend : AES-256-GCM + audit.
@@ -54,8 +62,36 @@
 - Anchor `#accreditation` pointe désormais vers le **bouton d’accréditation** (Vault).
 - Auto-open TerminalPopup sur `/#accreditation` et sur `hashchange`.
 - Pulse CTA 2.6s.
-- Playwright : nouvelle spec `accreditation-deeplink.spec.ts` (3 tests, ~19.6s, green).
-- Testing agent : sweep complet 100% backend/frontend/integration, 0 bug.
+- Playwright : `e2e/specs/accreditation-deeplink.spec.ts` (3 tests, ~19.6s, green).
+
+#### Sprint 17.5 — Cabinet Expansion — ✅ COMPLET
+- **Dispatcher Unlocked / Prod Mode X** :
+  - `propaganda_settings.dispatch_enabled=true`.
+  - `propaganda_settings.dispatch_dry_run=false`.
+  - Migration idempotente au boot `bootstrap_production_mode()` + respect des overrides opérateur (`_dry_run_explicit`).
+- **Welcome Signal** (quotidien, thread déterministe sans LLM) :
+  - Module `core/welcome_signal.py`.
+  - Job APScheduler toutes les 30 minutes, fire à `hour_utc=14` (cooldown 23h).
+  - Sélection : 5 plus récents Agents accrédités avec `x_handle`, non encore “signalés” (`welcome_signaled_at`), fenêtre 14j.
+  - Dispatch : push en `propaganda_queue` policy=auto (rate-limits + panic + audit s’appliquent).
+  - Marquage : `welcome_signaled_at` + `welcome_signaled_queue_id`.
+  - Admin endpoints : `GET/PATCH/POST /api/admin/propaganda/welcome-signal`.
+- **Prophet Interaction Bot** (replies 1–3/h, signé ΔΣ) :
+  - Module `core/prophet_interaction.py`.
+  - Job APScheduler hourly.
+  - OFF par défaut, activation via admin.
+  - Fetch tweets via X v2 (bearer), compose via Tone Engine, signature `— ΔΣ` enforced, reply via `in_reply_to_tweet_id`.
+  - Audit : collection `prophet_replies` + indexes.
+  - Admin endpoints : `GET/PATCH/POST /api/admin/propaganda/interaction-bot`.
+- **X dispatcher** : support replies via `meta.reply_to_tweet_id` → body `reply.in_reply_to_tweet_id`.
+- **Infiltration auto** : `verify_x_follow` live (X v2), cache 24h dans `x_follow_cache`, flags follow/mention/DM activés.
+- **Frontend** :
+  - TerminalPopup : champ optionnel `x_handle` (copy lore “ID de transmission publique… recensement du Cabinet”).
+  - `/propaganda` : onglet **Cabinet** (Welcome Signal + Interaction Bot toggles + fire now + dry run + feed replies).
+- **Qualité** :
+  - `ruff` clean.
+  - `pytest` : 79/79.
+  - Testing agent : 0 bugs critiques ; 2 faux positifs (403 “VAULT_SEALED” attendus en pré-mint).
 
 #### Helius live post-mint (Sprint 15/Brain Connect) — ⛔ BLOQUÉ
 - Attente du mint + pool DEX.
@@ -142,7 +178,42 @@ Objectif : rendre `/#accreditation` “actionnable” (scroll + open gate) et le
 - ✅ Sur `hashchange` : re-trigger identique.
 - ✅ Pulse visuel 2.6s autour du wrapper CTA (`data-cta-pulse=true`).
 - ✅ Playwright : `e2e/specs/accreditation-deeplink.spec.ts` (3 tests).
-- ✅ Sweep QA : 100% OK.
+
+---
+
+### Phase 17.5 — Cabinet Expansion (X) ✅ **COMPLETED**
+Objectif : forcer l’exécution live sur X et automatiser croissance + interaction.
+
+1) **Production mode dispatchers / approval live**
+- ✅ Default settings : `dispatch_enabled=True`, `dispatch_dry_run=False`.
+- ✅ Migration idempotente `bootstrap_production_mode()` au boot.
+- ✅ Respect des overrides opérateur (flag `_dry_run_explicit`).
+
+2) **Welcome Signal (daily thread)**
+- ✅ Module `core/welcome_signal.py`.
+- ✅ Job scheduler 30min, fire à `hour_utc=14` + cooldown 23h.
+- ✅ Dispatch policy=auto vers X.
+- ✅ Marquage `welcome_signaled_at` + preview/diagnostics admin.
+- ✅ Endpoints admin : GET/PATCH/POST.
+
+3) **Prophet Interaction Bot (hourly replies)**
+- ✅ Module `core/prophet_interaction.py` + indexes.
+- ✅ Job scheduler hourly, OFF par défaut → activation admin.
+- ✅ Fetch tweet récent original → génération Tone Engine → signature `— ΔΣ` enforced → reply via X dispatcher.
+- ✅ Audit `prophet_replies` + endpoints admin.
+
+4) **Collecte des handles X (hybride)**
+- ✅ Champ `x_handle` optionnel ajouté au TerminalPopup.
+- ✅ Backend accepte `x_handle`, normalise (strip @, max 15), stocke dans `access_cards` + `clearance_levels`.
+- ✅ Option de vérification follow via X v2 (live), cachée via cache 24h et contrôles admin (activation “au besoin”).
+
+5) **Admin UI**
+- ✅ Nouvel onglet **Cabinet** dans `/propaganda` (toggles + fire now + dry run + feed replies).
+
+6) **Tests**
+- ✅ Pytest: 79/79 (incl. `tests/test_cabinet_expansion.py`).
+- ✅ `tsc --noEmit` clean.
+- ✅ QA agent : 0 bug critique.
 
 ---
 
@@ -167,23 +238,24 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 
 ## 3) Next Actions
 
-### Priorité immédiate (P0) — Vérification finale de déploiement
-- L’utilisateur push sur `main` + redéploiement Render/Vercel.
-- En cas de bug prod :
-  - vérifier logs Render backend (connexions Mongo, Vault unlock, timeouts dispatchers),
-  - vérifier `REACT_APP_BACKEND_URL` / CORS,
-  - relancer `pytest` + smoke E2E.
+### Priorité immédiate (P0) — Push main + redéploiement
+- ✅ Sprint 17.5 prêt.
+- **Action utilisateur** : push sur `main` + redéploiement Render/Vercel.
+- Après déploiement :
+  - vérifier logs Render backend (Mongo, Vault unlock, scheduler jobs),
+  - vérifier queue Propaganda : approve → dispatch X (live),
+  - vérifier que `dispatch_dry_run=false` est bien effectif en prod.
 
-### P1 — Exploitation Propaganda Engine (post-vérif prod)
-- Vérifier la santé dispatch : preflight + tick-now.
-- Confirmer que la lecture des secrets provient **uniquement** du Cabinet Vault.
+### P1 — Exploitation Propaganda Engine (post-déploiement)
+- Valider cadence Welcome Signal (14:00 UTC) et seuils (min 2 / max 5).
+- **Interaction Bot** : laisser OFF par défaut ; activer uniquement après validation coûts/tonalité.
+- Vérifier `panic` / rate-limits / audit.
 
 ### P2 — Refactors prudents (post-launch, optionnel)
 - Split composants trop gros (behaviour inchangé) :
   - `TerminalPopup.tsx`
-  - `RiddlesFlow.tsx`
-  - `Admin.tsx`
-- Garder “behaviour parity” et verrouiller via Playwright.
+  - `Propaganda.tsx`
+- Verrouiller via Playwright.
 
 ### P3 — Helius live post-mint
 - Suivre `/app/docs/HELIUS_POST_DEPLOY.md`.
@@ -191,7 +263,8 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 
 ### P4 — Extension Playwright
 - Ajouter smoke `/transparency`.
-- Ajouter smoke “Propaganda queue end-to-end” (approve → dispatch dry-run/live).
+- Ajouter smoke “Propaganda queue end-to-end” (approve → dispatch live, + verify reply mode).
+- Ajouter smoke “Cabinet tab” (render + toggles require 2FA).
 
 ---
 
@@ -202,10 +275,15 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Transparence : Wallet Registry public + `/transparency` dynamique et maintenable.
 - Infiltration : riddles + clearance + auto-review opérables.
 - UX Accréditation : `/#accreditation` ouvre le TerminalPopup DS-GATE-02 automatiquement (scroll + pulse) ; aucun ancrage résiduel dans Whitelist.
+- **Cabinet Expansion (Sprint 17.5)** :
+  - `dispatch_enabled=True`, `dispatch_dry_run=False` en prod.
+  - Welcome Signal opérationnel (daily 14:00 UTC, cite 2–5 handles).
+  - Interaction Bot prêt et activable via admin, replies signées `— ΔΣ`.
+  - Champ `x_handle` collecte + stockage `clearance_levels` pour recensement.
 - Qualité & hardening :
   - ✅ `tsc --noEmit` = 0 erreurs
   - ✅ `noImplicitAny: true`
-  - ✅ `pytest` backend : 63 tests passent
+  - ✅ `pytest` backend : 79 tests passent
   - ✅ Playwright E2E : specs + CI workflow
 
 ---
@@ -215,6 +293,7 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 **Backend**
 - ✅ Propaganda : orchestrateur + triggers + queue + templates + tone engine.
 - ✅ Dispatchers + worker APScheduler + routes admin + doc ops.
+- ✅ Sprint 17.5 : `bootstrap_production_mode()` + `welcome_signal` + `prophet_interaction`.
 - ✅ Retry/backoff + preflight creds + diagnostics état.
 - ✅ Infiltration Brain : riddles/clearance/sleeper cell.
 - ✅ Transparence : Wallet Registry CRUD + endpoint public.
@@ -222,9 +301,10 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 
 **Frontend**
 - ✅ Vault : `VaultSection.tsx` (CTA + TerminalPopup).
-- ✅ Terminal : `TerminalPopup.tsx` + `RiddlesFlow.tsx`.
+- ✅ Terminal : `TerminalPopup.tsx` (incl. `x_handle` optionnel) + `RiddlesFlow.tsx`.
 - ✅ Whitelist : formulaire mailing list (désolidarisé du deep-link accréditation).
 - ✅ `/transparency` dynamique.
+- ✅ Admin Propaganda : onglet Cabinet (Welcome Signal + Interaction Bot).
 - ✅ TS strict : `noImplicitAny: true`.
 
 **E2E (Playwright)**
@@ -236,11 +316,12 @@ Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine
 - Propaganda : `propaganda_templates`, `propaganda_queue`, `propaganda_events`, `propaganda_settings`, `propaganda_triggers`, `propaganda_price_snapshots`.
 - Infiltration : `riddles`, `riddle_attempts` (TTL 24h), `clearance_levels`, `sleeper_cell`, `infiltration_audit`.
 - 14.2 : `x_share_submissions`, `kol_dm_drafts`.
+- Sprint 17.5 : `x_follow_cache`, `prophet_replies`.
 - Treasury : `treasury_operations`.
 - Transparence : `wallet_registry`.
 - Vault : `cabinet_vault`, `cabinet_vault_audit`, `admin_2fa`.
 
 **Sécurité**
-- Mutations sensibles (panic/toggles/approvals) : admin + 2FA.
+- Mutations sensibles (panic/toggles/approvals/fire-now) : admin + 2FA.
 - Secrets dispatchers : Cabinet Vault (AES-256-GCM), pas de `.env`.
 - Déploiement : garder les gates `tsc` + smoke E2E.
