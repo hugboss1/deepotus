@@ -39,6 +39,7 @@ formatting → "would-send" log) without making real calls.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from typing import Any, Dict, Optional
@@ -115,42 +116,72 @@ async def send(
             duration_ms=_elapsed_ms(started),
         )
 
-    # OAuth 1.0a is required for v2 POST /2/tweets in Elevated tier.
-    # We use ``authlib.integrations.httpx_client.OAuth1Auth`` which
-    # inherits directly from ``httpx.Auth`` and implements the full
-    # ``auth_flow`` contract — no shim, no manual signing.
+    # OAuth 1.0a is required for v2 POST /2/tweets.
     #
-    # This replaces the previous home-rolled ``_OAuth1Adapter`` that
-    # tried to bridge ``requests_oauthlib.OAuth1`` onto httpx via a
-    # synthetic PreparedRequest stub. The bridge worked at signature
-    # level but the OAuth1 client called ``prepare_headers()`` on the
-    # stub (which doesn't exist), raising a TypeError that surfaced
-    # in production as "Exception in ASGI application" whenever the
-    # admin clicked Approve / Push on a real tweet item.
+    # We **manually sign with oauthlib** (rather than letting
+    # ``authlib.integrations.httpx_client.OAuth1Auth.auth_flow`` mutate
+    # the request) for one critical reason:
+    #
+    # The X v2 endpoint expects a JSON body (``{"text": "..."}``) but
+    # OAuth 1.0a's signature spec only mandates body-inclusion for
+    # ``application/x-www-form-urlencoded`` requests. authlib's
+    # ``auth_flow`` reads ``request.content`` and re-injects it after
+    # signing — but in practice, depending on header ordering and the
+    # oauthlib internal path, the JSON body sometimes gets stripped or
+    # re-encoded as form-data. The symptom in production was X
+    # returning ``HTTP 400 — Please include either text or media in
+    # your Tweet``: the signature was valid but the body was empty.
+    #
+    # The manual-sign path:
+    #   1. Build the JSON bytes ourselves.
+    #   2. Ask oauthlib to compute the Authorization header with
+    #      ``body=None`` (so the body is NOT included in the signature
+    #      base string — correct for application/json).
+    #   3. Hand httpx the raw bytes via ``content=`` + the signed
+    #      ``Authorization`` header. httpx will not touch the body.
+    #
+    # This is the path tweepy v2 + most production X clients use.
     try:
-        from authlib.integrations.httpx_client import (  # type: ignore[import-not-found]
-            OAuth1Auth,
-        )
+        from oauthlib.oauth1 import Client as OAuth1Client  # type: ignore[import-not-found]
     except ImportError:
         return DispatchResult(
             outcome=DispatchOutcome.FAILED,
-            error="missing_dep_authlib",
+            error="missing_dep_oauthlib",
             duration_ms=_elapsed_ms(started),
         )
-
-    auth = OAuth1Auth(
-        client_id=creds["api_key"],
-        client_secret=creds["api_secret"],
-        token=creds["access_token"],
-        token_secret=creds["access_token_secret"],
-    )
 
     body: Dict[str, Any] = {"text": text}
     if reply_to_id:
         body["reply"] = {"in_reply_to_tweet_id": reply_to_id}
+    body_bytes = json.dumps(body, ensure_ascii=False).encode("utf-8")
+
+    oauth_client = OAuth1Client(
+        client_key=creds["api_key"],
+        client_secret=creds["api_secret"],
+        resource_owner_key=creds["access_token"],
+        resource_owner_secret=creds["access_token_secret"],
+        signature_type="AUTH_HEADER",
+    )
+    # body=None on purpose — JSON bodies are NOT part of the OAuth1
+    # signature base string. force_include_body defaults to False;
+    # we keep it that way so oauthlib doesn't try to URL-encode the
+    # JSON we're about to ship.
+    _signed_url, signed_headers, _signed_body = oauth_client.sign(
+        _API_URL,
+        http_method="POST",
+        body=None,
+        headers={"Content-Type": "application/json"},
+    )
+    # signed_headers carries Authorization + Content-Type. Make sure
+    # Content-Type stays JSON for httpx.
+    signed_headers = dict(signed_headers)
+    signed_headers["Content-Type"] = "application/json"
+
     try:
         async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
-            resp = await client.post(_API_URL, json=body, auth=auth)
+            resp = await client.post(
+                _API_URL, content=body_bytes, headers=signed_headers,
+            )
         snippet = resp.text[:200] if resp.text else None
         if resp.status_code == 401:
             return DispatchResult(
@@ -344,30 +375,46 @@ async def verify_identity() -> Dict[str, Any]:
 
     Never raises — always returns a structured dict so the route can
     surface it directly to the UI.
+
+    Sprint 17.5f — switched to manual oauthlib signing (same path as
+    ``send()``) for consistency. GET requests carry no body, so the
+    body-inclusion edge case doesn't bite here, but unifying the path
+    keeps both flows on the same oauth client and makes it easier to
+    reason about credentials issues.
     """
     creds = await _resolve_x_credentials()
     if not creds:
         return {"ok": False, "error": "no_credentials"}
 
     try:
-        from authlib.integrations.httpx_client import OAuth1Auth
+        from oauthlib.oauth1 import Client as OAuth1Client  # type: ignore[import-not-found]
     except ImportError:
-        return {"ok": False, "error": "missing_dep_authlib"}
+        return {"ok": False, "error": "missing_dep_oauthlib"}
 
-    auth = OAuth1Auth(
-        client_id=creds["api_key"],
+    me_url = "https://api.twitter.com/2/users/me"
+    # Append GET params before signing so they're included in the
+    # OAuth1 signature base string (mandatory for GET requests).
+    params = {"user.fields": "username,id,name,verified"}
+    qs = "&".join(f"{k}={v}" for k, v in params.items())
+    signed_url = f"{me_url}?{qs}"
+
+    oauth_client = OAuth1Client(
+        client_key=creds["api_key"],
         client_secret=creds["api_secret"],
-        token=creds["access_token"],
-        token_secret=creds["access_token_secret"],
+        resource_owner_key=creds["access_token"],
+        resource_owner_secret=creds["access_token_secret"],
+        signature_type="AUTH_HEADER",
+    )
+    _signed_url, signed_headers, _ = oauth_client.sign(
+        signed_url,
+        http_method="GET",
+        body=None,
+        headers={},
     )
 
     try:
         async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
-            resp = await client.get(
-                "https://api.twitter.com/2/users/me",
-                auth=auth,
-                params={"user.fields": "username,id,name,verified"},
-            )
+            resp = await client.get(signed_url, headers=dict(signed_headers))
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": f"network_error: {exc}"}
 

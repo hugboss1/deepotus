@@ -53,18 +53,28 @@ class TestXDispatcherAuthlibSwap:
         assert not hasattr(x_dispatcher, "_OAuth1Adapter")
         assert not hasattr(x_dispatcher, "_PreparedRequestStub")
 
-    def test_authlib_oauth1auth_is_imported_in_send(self) -> None:
-        """Smoke check — the new live-mode path uses authlib."""
-        # Import path must resolve without ImportError so the dispatcher
-        # never falls into the ``missing_dep_authlib`` branch.
-        from authlib.integrations.httpx_client import OAuth1Auth  # noqa: WPS433
-        import httpx
-        assert issubclass(OAuth1Auth, httpx.Auth)
+    def test_oauthlib_is_imported_in_send(self) -> None:
+        """Smoke check — Sprint 17.5f swapped from authlib's auth_flow
+        to manual oauthlib signing because authlib was mangling JSON
+        bodies. The dispatcher now imports ``oauthlib.oauth1.Client``
+        lazily inside ``send()``."""
+        from oauthlib.oauth1 import Client as OAuth1Client  # noqa: WPS433
+        # Smoke — the class must be instantiable with the 4 OAuth secrets.
+        c = OAuth1Client(
+            client_key="x", client_secret="y",
+            resource_owner_key="z", resource_owner_secret="w",
+            signature_type="AUTH_HEADER",
+        )
+        assert c.client_key == "x"
 
-    def test_live_post_passes_httpx_auth_subclass(self) -> None:
-        """The auth handed to httpx.AsyncClient.post must be an
-        ``httpx.Auth`` subclass (concretely ``OAuth1Auth``). This
-        is the regression test for the production TypeError."""
+    def test_live_post_uses_manual_signing_path(self) -> None:
+        """Sprint 17.5f regression — the dispatcher must (a) sign with
+        oauthlib, (b) send the body as raw ``content`` bytes, and
+        (c) carry an ``Authorization: OAuth ...`` header. This is the
+        regression test for the production HTTP 400 ``Please include
+        either text or media in your Tweet`` (caused by authlib's
+        auth_flow eating the JSON body)."""
+        import json as _json
         captured: Dict[str, Any] = {}
 
         class _FakeResp:
@@ -87,9 +97,14 @@ class TestXDispatcherAuthlibSwap:
             async def __aexit__(self, *_a: Any) -> None:
                 return None
 
-            async def post(self, _url: str, *, json: Dict[str, Any], auth: Any) -> _FakeResp:  # noqa: A002
-                captured["auth_class"] = type(auth)
-                captured["body"] = json
+            async def post(  # noqa: A002
+                self, _url: str, *,
+                content: bytes,
+                headers: Dict[str, str],
+            ) -> _FakeResp:
+                captured["raw_content"] = content
+                captured["body"] = _json.loads(content.decode("utf-8"))
+                captured["headers"] = dict(headers)
                 return _FakeResp()
 
         async def _fake_creds() -> Dict[str, str]:
@@ -100,9 +115,6 @@ class TestXDispatcherAuthlibSwap:
                 "access_token_secret": "ats",
             }
 
-        import httpx
-        from authlib.integrations.httpx_client import OAuth1Auth
-
         with patch.object(x_dispatcher, "_resolve_x_credentials", _fake_creds), \
              patch("httpx.AsyncClient", _FakeClient):
             result = asyncio.run(x_dispatcher.send(
@@ -112,12 +124,12 @@ class TestXDispatcherAuthlibSwap:
 
         assert result.outcome.value == "sent"
         assert result.platform_message_id == "ok-123"
-        # The crucial assertion — auth IS an httpx.Auth subclass.
-        assert issubclass(captured["auth_class"], httpx.Auth), (
-            f"auth must inherit httpx.Auth; got {captured['auth_class'].__mro__}"
-        )
-        # And specifically the authlib implementation.
-        assert captured["auth_class"] is OAuth1Auth
+        # The crucial assertions — the body is preserved AND the
+        # Authorization header is OAuth-signed.
+        assert captured["body"]["text"] == "Prophet speaks. — ΔΣ"
+        assert captured["raw_content"], "body must NOT be empty"
+        assert "application/json" in captured["headers"]["Content-Type"]
+        assert captured["headers"]["Authorization"].startswith("OAuth ")
 
 
 # =====================================================================

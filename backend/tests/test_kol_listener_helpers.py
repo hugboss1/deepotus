@@ -8,7 +8,6 @@ the integration test harness, not here.
 
 from __future__ import annotations
 
-import pytest
 
 from core.kol_listener import _match_terms_hit
 

@@ -148,7 +148,13 @@ class TestDispatcherReplyMode:
 
     def test_live_post_includes_reply_field(self) -> None:
         """When dry_run=False, the dispatcher must put the tweet_id in
-        ``body['reply']['in_reply_to_tweet_id']`` per X API v2 spec."""
+        ``body['reply']['in_reply_to_tweet_id']`` per X API v2 spec.
+
+        Sprint 17.5f — the dispatcher now uses manual oauthlib signing
+        and ``httpx.post(content=bytes, headers=signed_headers)`` so we
+        capture ``content`` (raw JSON bytes) and decode it to assert
+        the body structure."""
+        import json as _json
         captured: Dict[str, Any] = {}
 
         class _FakeResp:
@@ -171,9 +177,14 @@ class TestDispatcherReplyMode:
             async def __aexit__(self, *_a: Any) -> None:
                 return None
 
-            async def post(self, _url: str, *, json: Dict[str, Any], auth: Any) -> _FakeResp:  # noqa: A002
-                captured["body"] = json
-                captured["auth_type"] = type(auth).__name__
+            async def post(  # noqa: A002
+                self, _url: str, *,
+                content: bytes,
+                headers: Dict[str, str],
+            ) -> _FakeResp:
+                captured["raw_content"] = content
+                captured["body"] = _json.loads(content.decode("utf-8"))
+                captured["headers"] = dict(headers)
                 return _FakeResp()
 
         # The dispatcher's _verify_creds reads from the cabinet vault; we
@@ -199,12 +210,19 @@ class TestDispatcherReplyMode:
             ))
 
         assert result.outcome.value == "sent"
+        # The crucial check: body MUST contain the text + reply structure.
         assert captured["body"]["text"].endswith("— ΔΣ")
         assert captured["body"]["reply"] == {"in_reply_to_tweet_id": "tweet-42"}
+        # Content-Type header is application/json (not form-urlencoded —
+        # that was the root cause of the production 400).
+        assert "application/json" in captured["headers"]["Content-Type"]
+        # OAuth1 Authorization header is computed by oauthlib.
+        assert captured["headers"]["Authorization"].startswith("OAuth ")
 
     def test_no_reply_field_when_meta_absent(self) -> None:
         """Default behaviour — without ``meta.reply_to_tweet_id`` we
         post a regular tweet (no ``reply`` key in the body)."""
+        import json as _json
         captured: Dict[str, Any] = {}
 
         class _FakeResp:
@@ -227,8 +245,13 @@ class TestDispatcherReplyMode:
             async def __aexit__(self, *_a: Any) -> None:
                 return None
 
-            async def post(self, _url: str, *, json: Dict[str, Any], auth: Any) -> _FakeResp:  # noqa: A002
-                captured["body"] = json
+            async def post(  # noqa: A002
+                self, _url: str, *,
+                content: bytes,
+                headers: Dict[str, str],
+            ) -> _FakeResp:
+                captured["body"] = _json.loads(content.decode("utf-8"))
+                captured["headers"] = dict(headers)
                 return _FakeResp()
 
         async def _fake_creds() -> Dict[str, str]:
@@ -260,7 +283,11 @@ class TestX400ErrorParsing:
 
     def _run_with_400_body(self, body_dict: Dict[str, Any], *, status: int = 400) -> Any:
         """Run send() with a fake httpx client that returns ``body_dict``
-        as the response JSON + raw text. Returns the DispatchResult."""
+        as the response JSON + raw text. Returns the DispatchResult.
+
+        Sprint 17.5f — updated for the new manual-signing path: the
+        fake client's ``post`` now accepts ``content=`` + ``headers=``
+        instead of ``json=`` + ``auth=``."""
         import json as _json
 
         body_text = _json.dumps(body_dict)
@@ -283,7 +310,11 @@ class TestX400ErrorParsing:
             async def __aexit__(self, *_a: Any) -> None:
                 return None
 
-            async def post(self, _url: str, *, json: Dict[str, Any], auth: Any) -> _FakeResp:  # noqa: A002, ARG002
+            async def post(  # noqa: A002, ARG002
+                self, _url: str, *,
+                content: bytes,
+                headers: Dict[str, str],
+            ) -> _FakeResp:
                 return _FakeResp()
 
         async def _fake_creds() -> Dict[str, str]:
