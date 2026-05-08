@@ -127,6 +127,15 @@ interface QueueItem {
   sent_at: string | null;
   error: string | null;
   reject_reason: string | null;
+  // Sprint 17.5d — per-platform dispatch outcomes, populated by the
+  // dispatch_worker. Used to surface "View on X" / "View on Telegram"
+  // links once a tweet/message ID is known.
+  results?: Record<string, {
+    outcome: string;
+    platform_message_id?: string | null;
+    error?: string | null;
+    dry_run?: boolean;
+  }>;
 }
 
 interface ActivityEvent {
@@ -1294,6 +1303,40 @@ function QueueTab() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Sprint 17.5d — "Verify X identity" diagnostic. Calls
+  // /api/admin/propaganda/x-identity which in turn calls
+  // GET /2/users/me with the Cabinet Vault credentials, so the
+  // operator can confirm the OAuth account matches @Deepotus_AI
+  // (or whatever they expect).
+  const [identity, setIdentity] = useState<{
+    ok: boolean;
+    username?: string;
+    name?: string;
+    id?: string;
+    error?: string;
+    snippet?: string;
+  } | null>(null);
+  const [identityBusy, setIdentityBusy] = useState<boolean>(false);
+
+  const checkIdentity = useCallback(async (): Promise<void> => {
+    setIdentityBusy(true);
+    try {
+      const { data } = await axios.get(
+        `${API}/api/admin/propaganda/x-identity`,
+        { headers: authHeaders() },
+      );
+      setIdentity(data);
+      if (data?.ok) {
+        toast.success(`Auth → @${data.username}`);
+      } else {
+        toast.error(`X identity check: ${data?.error || "unknown"}`);
+      }
+    } catch (err) {
+      handleError(err, "Identity check failed");
+    } finally {
+      setIdentityBusy(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1354,7 +1397,7 @@ function QueueTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-9 w-[180px] text-xs">
             <SelectValue />
@@ -1369,6 +1412,52 @@ function QueueTab() {
             <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Sprint 17.5d — Verify X identity. Tells the operator
+            which X handle the vault credentials authenticate as. */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(): void => {
+            void checkIdentity();
+          }}
+          disabled={identityBusy}
+          className="h-9 text-xs font-mono"
+          data-testid="queue-verify-x-identity"
+        >
+          {identityBusy ? (
+            <Loader2 size={14} className="mr-1.5 animate-spin" />
+          ) : (
+            <CheckCircle2 size={14} className="mr-1.5" />
+          )}
+          Verify X identity
+        </Button>
+
+        {identity && (
+          <div
+            className="text-xs font-mono px-2 py-1 rounded border"
+            data-testid="queue-x-identity-result"
+          >
+            {identity.ok ? (
+              <span className="text-[#18C964]">
+                Auth →{" "}
+                <a
+                  href={`https://x.com/${identity.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-dotted"
+                >
+                  @{identity.username}
+                </a>{" "}
+                ({identity.name})
+              </span>
+            ) : (
+              <span className="text-[#FF4D4D]">
+                X identity: {identity.error}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {(() => {
@@ -1452,6 +1541,61 @@ function QueueRow({ item, onApprove, onReject }: QueueRowProps) {
               ? new Date(item.scheduled_for).toLocaleString()
               : "—"}
           </div>
+
+          {/* Sprint 17.5d — direct links to the published artefacts.
+              Once dispatch_worker stores ``results.<platform>.platform_message_id``
+              (tweet ID for X, message ID for Telegram), we render
+              clickable "View on X / Telegram" badges so the operator
+              can verify the post landed on the right account. If the
+              link 404s on X, the OAuth credentials in the vault are
+              for a DIFFERENT X account than the one the operator
+              expects (use the "Verify X identity" button below the
+              tab header to check). */}
+          {item.results && Object.keys(item.results).length > 0 && (
+            <div
+              className="mt-1 flex flex-wrap items-center gap-1.5"
+              data-testid={`queue-item-result-links-${item.id}`}
+            >
+              {Object.entries(item.results).map(([plat, r]) => {
+                const tweetId = r?.platform_message_id;
+                if (!tweetId || tweetId === "dry-run" || r?.outcome !== "sent") {
+                  return null;
+                }
+                let href: string | null = null;
+                if (plat === "x") {
+                  // X resolves /i/web/status/<id> to the canonical tweet
+                  // URL regardless of which @username posted it — so the
+                  // 404 vs redirect tells us instantly whether the
+                  // OAuth account matches expectations.
+                  href = `https://x.com/i/web/status/${tweetId}`;
+                } else if (plat === "telegram") {
+                  // Telegram message links require the channel/chat
+                  // username; without it we just surface the message ID.
+                  href = null;
+                }
+                return href ? (
+                  <a
+                    key={plat}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[#18C964]/40 bg-[#18C964]/10 text-[10px] font-mono text-[#18C964] hover:bg-[#18C964]/20 transition-colors"
+                    data-testid={`queue-item-view-${plat}-${item.id}`}
+                  >
+                    View on {plat === "x" ? "X" : plat} →
+                  </a>
+                ) : (
+                  <span
+                    key={plat}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border text-[10px] font-mono text-muted-foreground"
+                  >
+                    {plat}: {tweetId}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
           {item.error && (
             <div className="mt-1 text-[11px] text-[#FF4D4D] font-mono">
               error: {item.error}

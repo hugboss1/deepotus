@@ -442,6 +442,27 @@ async def list_activity(limit: int = 100, _p: dict = Depends(require_admin)):
     return {"items": items}
 
 
+# ---- X identity diagnostic (Sprint 17.5d) ---------------------------------
+@router.get("/x-identity")
+async def get_x_identity(_p: dict = Depends(require_admin)):
+    """Tell the operator which X account the vault credentials publish AS.
+
+    Use case: "I clicked Push, the queue says SENT, but the tweet is
+    nowhere on @Deepotus_AI — are these creds even for the right account?".
+
+    The endpoint calls ``GET /2/users/me`` with the OAuth 1.0a
+    credentials currently in the Cabinet Vault and returns the
+    authenticated handle. The frontend renders a clear "Auth account:
+    @<username> — does this match @Deepotus_AI?" panel.
+
+    No 2FA gate: this is a READ-ONLY diagnostic, no state change, and
+    we never echo the secrets themselves.
+    """
+    from core.dispatchers import x as x_dispatcher
+    return await x_dispatcher.verify_identity()
+
+
+
 
 # =====================================================================
 # Sprint 17.5 — Cabinet Expansion: Welcome Signal + Interaction Bot

@@ -273,3 +273,66 @@ def _elapsed_ms(started_monotonic: float) -> int:
 # kept this pointer note so a future maintainer doesn't try to revive
 # the bridge.
 
+
+
+
+async def verify_identity() -> Dict[str, Any]:
+    """Diagnostic helper — calls ``GET /2/users/me`` with the OAuth 1.0a
+    credentials currently stored in the Cabinet Vault, and returns the
+    handle / id / name of the X account those credentials authenticate
+    AS.
+
+    Used by the admin's "Verify X identity" button (Sprint 17.5d) to
+    answer the question: "I clicked Push, the queue reports SENT, but
+    I don't see the tweet on @Deepotus_AI — are the credentials
+    actually for that account?".
+
+    Return shape:
+      ``{ok: True,  username: "Deepotus_AI", id: "...", name: "..."}``
+      ``{ok: False, error: "no_credentials" | "x_billing_required" | "http_<n>"}``
+
+    Never raises — always returns a structured dict so the route can
+    surface it directly to the UI.
+    """
+    creds = await _resolve_x_credentials()
+    if not creds:
+        return {"ok": False, "error": "no_credentials"}
+
+    try:
+        from authlib.integrations.httpx_client import OAuth1Auth
+    except ImportError:
+        return {"ok": False, "error": "missing_dep_authlib"}
+
+    auth = OAuth1Auth(
+        client_id=creds["api_key"],
+        client_secret=creds["api_secret"],
+        token=creds["access_token"],
+        token_secret=creds["access_token_secret"],
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
+            resp = await client.get(
+                "https://api.twitter.com/2/users/me",
+                auth=auth,
+                params={"user.fields": "username,id,name,verified"},
+            )
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"network_error: {exc}"}
+
+    if resp.status_code == 401:
+        return {"ok": False, "error": "x_unauthorized"}
+    if resp.status_code == 402:
+        return {"ok": False, "error": "x_billing_required"}
+    if resp.status_code >= 400:
+        return {"ok": False, "error": f"http_{resp.status_code}",
+                "snippet": (resp.text or "")[:240]}
+
+    user = (resp.json() or {}).get("data") or {}
+    return {
+        "ok": True,
+        "id": str(user.get("id") or ""),
+        "username": str(user.get("username") or ""),
+        "name": str(user.get("name") or ""),
+        "verified": bool(user.get("verified", False)),
+    }
