@@ -159,6 +159,31 @@ async def send(
                 duration_ms=_elapsed_ms(started),
                 response_snippet=snippet,
             )
+        if resp.status_code == 402:
+            # X's "Payment Required" — the API tier on the connected
+            # account does NOT permit POST /2/tweets, OR Pay-Per-Use
+            # credits are exhausted / not enabled for this endpoint.
+            # Code-side this is fine: the tweet was formed + signed
+            # correctly, X simply refuses on billing grounds. Surface
+            # an explicit error so the admin doesn't go hunting for a
+            # phantom code bug.
+            logger.error(
+                "[x] HTTP 402 Payment Required — X account tier does NOT "
+                "permit POST /2/tweets (or Pay-Per-Use credits exhausted). "
+                "Visit https://developer.x.com/en/portal/dashboard → "
+                "verify the App is on a paid tier or top up credits. "
+                "snippet=%s", snippet,
+            )
+            return DispatchResult(
+                outcome=DispatchOutcome.FAILED,
+                error="x_billing_required",
+                duration_ms=_elapsed_ms(started),
+                response_snippet=(
+                    "X HTTP 402 — paid tier required for POST /2/tweets. "
+                    "Check developer.x.com → App tier / Pay-Per-Use credits. "
+                    + (snippet or "")
+                )[:480],
+            )
         if resp.status_code == 403:
             return DispatchResult(
                 outcome=DispatchOutcome.FAILED,

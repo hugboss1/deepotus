@@ -1455,6 +1455,32 @@ function QueueRow({ item, onApprove, onReject }: QueueRowProps) {
           {item.error && (
             <div className="mt-1 text-[11px] text-[#FF4D4D] font-mono">
               error: {item.error}
+              {/* Sprint 17.5d — actionable hint for the X billing / tier
+                  refusal codes. The error string is per-platform and
+                  may contain prefixes like "x=x_billing_required". We
+                  match the substring to stay tolerant of future
+                  multi-platform error formats. */}
+              {(item.error.includes("x_billing_required") ||
+                item.error.includes("x_tier_locked") ||
+                item.error.includes("http_402")) && (
+                <div className="mt-1 text-foreground/85 font-sans whitespace-normal">
+                  ⚠ X HTTP 402 / 403 — votre compte X n'est pas sur un
+                  tier autorisant <span className="font-mono">POST /2/tweets</span>.
+                  Vérifiez sur{" "}
+                  <a
+                    href="https://developer.x.com/en/portal/dashboard"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-dotted"
+                    data-testid="queue-error-x-portal-link"
+                  >
+                    developer.x.com
+                  </a>{" "}
+                  que l'App est en Basic ($200/mo) ou en Pay-Per-Use
+                  avec crédits actifs pour cet endpoint. Le code envoie
+                  bien le tweet — c'est X qui refuse au billing.
+                </div>
+              )}
             </div>
           )}
           {item.reject_reason && (
