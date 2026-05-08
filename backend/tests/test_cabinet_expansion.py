@@ -248,3 +248,111 @@ class TestDispatcherReplyMode:
 
         assert "reply" not in captured["body"]
         assert captured["body"]["text"] == "regular post"
+
+
+# =====================================================================
+# Sprint 17.5d/e — Structured 400 error parsing
+# =====================================================================
+class TestX400ErrorParsing:
+    """The dispatcher must classify common X 400 reasons into specific
+    error codes so the queue UI can render an actionable hint instead
+    of the opaque ``http_400``."""
+
+    def _run_with_400_body(self, body_dict: Dict[str, Any], *, status: int = 400) -> Any:
+        """Run send() with a fake httpx client that returns ``body_dict``
+        as the response JSON + raw text. Returns the DispatchResult."""
+        import json as _json
+
+        body_text = _json.dumps(body_dict)
+
+        class _FakeResp:
+            def __init__(self) -> None:
+                self.status_code = status
+                self.text = body_text
+
+            def json(self) -> Dict[str, Any]:
+                return body_dict
+
+        class _FakeClient:
+            def __init__(self, *_a: Any, **_kw: Any) -> None:
+                pass
+
+            async def __aenter__(self) -> "_FakeClient":
+                return self
+
+            async def __aexit__(self, *_a: Any) -> None:
+                return None
+
+            async def post(self, _url: str, *, json: Dict[str, Any], auth: Any) -> _FakeResp:  # noqa: A002, ARG002
+                return _FakeResp()
+
+        async def _fake_creds() -> Dict[str, str]:
+            return {
+                "api_key": "ck", "api_secret": "cs",
+                "access_token": "at", "access_token_secret": "ats",
+            }
+
+        with patch.object(x_dispatcher, "_resolve_x_credentials", _fake_creds), \
+             patch("httpx.AsyncClient", _FakeClient):
+            return asyncio.run(x_dispatcher.send(
+                {"id": "t-400", "rendered_content": "test"},
+                dry_run=False,
+            ))
+
+    def test_duplicate_content_detected_via_type_url(self) -> None:
+        """X v2 standard 'duplicate-rules' type URL."""
+        result = self._run_with_400_body({
+            "title": "Forbidden",
+            "type": "https://api.twitter.com/2/problems/duplicate-rules",
+            "detail": "You are not permitted to create a duplicate Tweet.",
+        })
+        assert result.error == "x_duplicate_content"
+        # Snippet must surface X's own detail message.
+        assert "duplicate" in (result.response_snippet or "").lower()
+
+    def test_duplicate_content_detected_via_detail_text(self) -> None:
+        """Defensive — even if X's type URL changes, detail text wins."""
+        result = self._run_with_400_body({
+            "title": "Forbidden",
+            "type": "https://api.twitter.com/2/problems/some-future-type",
+            "detail": "Status is a duplicate.",
+        })
+        assert result.error == "x_duplicate_content"
+
+    def test_text_too_long_detected(self) -> None:
+        result = self._run_with_400_body({
+            "errors": [{
+                "message": "Tweet needs to be a bit shorter.",
+                "code": 186,
+            }],
+            "detail": "Your Tweet is too long.",
+        })
+        assert result.error == "x_text_too_long"
+
+    def test_invalid_payload_falls_through(self) -> None:
+        result = self._run_with_400_body({
+            "title": "Invalid Request",
+            "errors": [{"message": "Field 'text' is required."}],
+            "detail": "One or more parameters to your request was invalid.",
+        })
+        assert result.error == "x_invalid_payload"
+        assert "invalid" in (result.response_snippet or "").lower()
+
+    def test_unknown_400_keeps_generic_code_but_surfaces_detail(self) -> None:
+        """A 400 we can't classify must still pass through the snippet."""
+        result = self._run_with_400_body({
+            "title": "Some New Reason",
+            "detail": "Some never-seen-before failure.",
+        })
+        assert result.error == "http_400"
+        # Detail must be surfaced in response_snippet.
+        assert "never-seen" in (result.response_snippet or "")
+
+    def test_5xx_marked_transient(self) -> None:
+        """5xx are transient — the worker should retry."""
+        result = self._run_with_400_body(
+            {"title": "Service Unavailable", "detail": "Try again."},
+            status=503,
+        )
+        assert result.error == "http_503"
+        assert result.transient_failure is True

@@ -134,6 +134,7 @@ interface QueueItem {
     outcome: string;
     platform_message_id?: string | null;
     error?: string | null;
+    response_snippet?: string | null;
     dry_run?: boolean;
   }>;
 }
@@ -1599,14 +1600,15 @@ function QueueRow({ item, onApprove, onReject }: QueueRowProps) {
           {item.error && (
             <div className="mt-1 text-[11px] text-[#FF4D4D] font-mono">
               error: {item.error}
-              {/* Sprint 17.5d — actionable hint for the X billing / tier
-                  refusal codes. The error string is per-platform and
-                  may contain prefixes like "x=x_billing_required". We
-                  match the substring to stay tolerant of future
-                  multi-platform error formats. */}
+              {/* Sprint 17.5d/e — actionable hint for the X billing / tier
+                  refusal codes + parsed 400 reasons. The error string is
+                  per-platform and may contain prefixes like
+                  "x=x_billing_required". We match the substring to stay
+                  tolerant of future multi-platform error formats. */}
               {(item.error.includes("x_billing_required") ||
                 item.error.includes("x_tier_locked") ||
-                item.error.includes("http_402")) && (
+                item.error.includes("http_402") ||
+                item.error.includes("http_403")) && (
                 <div className="mt-1 text-foreground/85 font-sans whitespace-normal">
                   ⚠ X HTTP 402 / 403 — votre compte X n'est pas sur un
                   tier autorisant <span className="font-mono">POST /2/tweets</span>.
@@ -1625,6 +1627,53 @@ function QueueRow({ item, onApprove, onReject }: QueueRowProps) {
                   bien le tweet — c'est X qui refuse au billing.
                 </div>
               )}
+              {item.error.includes("x_duplicate_content") && (
+                <div className="mt-1 text-foreground/85 font-sans whitespace-normal">
+                  ⚠ X refuse le tweet : <strong>contenu dupliqué</strong>.
+                  X bloque les tweets identiques (texte exact) postés
+                  récemment depuis le même compte. Régénérez la preview
+                  ou attendez ~24h. Astuce : rajoutez un suffixe unique
+                  (timestamp, emoji différent) si vous voulez vraiment
+                  re-poster le même message.
+                </div>
+              )}
+              {item.error.includes("x_text_too_long") && (
+                <div className="mt-1 text-foreground/85 font-sans whitespace-normal">
+                  ⚠ Le tweet dépasse 280 caractères. Le dispatcher tronque
+                  normalement à 260, vérifiez la preview pour un edge-case
+                  (caractères Unicode comptant double).
+                </div>
+              )}
+              {item.error.includes("x_policy_violation") && (
+                <div className="mt-1 text-foreground/85 font-sans whitespace-normal">
+                  ⚠ X juge le tweet contraire à ses règles (spam,
+                  contenu sensible, mots-clés filtrés...). Reformulez
+                  la prompt LLM pour adoucir le ton.
+                </div>
+              )}
+              {item.error.includes("x_invalid_payload") && (
+                <div className="mt-1 text-foreground/85 font-sans whitespace-normal">
+                  ⚠ Payload invalide côté X (caractères mal encodés,
+                  champ manquant). Voir le snippet ci-dessous.
+                </div>
+              )}
+              {/* Sprint 17.5d/e — surface the per-platform response_snippet
+                  so the operator sees X's exact verdict (parsed
+                  detail/message). Helps when the error code doesn't map
+                  cleanly to a known reason. */}
+              {item.results &&
+                Object.entries(item.results)
+                  .filter(([, r]) => r?.outcome !== "sent" && (r?.response_snippet || r?.error))
+                  .slice(0, 3)
+                  .map(([plat, r]) => (
+                    <div
+                      key={plat}
+                      className="mt-1 text-foreground/70 font-mono text-[10px] whitespace-pre-wrap break-words"
+                      data-testid={`queue-item-snippet-${plat}-${item.id}`}
+                    >
+                      ↳ {plat}: {r.response_snippet || r.error}
+                    </div>
+                  ))}
             </div>
           )}
           {item.reject_reason && (

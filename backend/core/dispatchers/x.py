@@ -201,14 +201,65 @@ async def send(
             )
         if resp.status_code >= 400:
             # 5xx are transient (X gateway issue); 4xx other than the
-            # ones already handled above (401/403/429) are permanent
-            # (bad payload, invalid chars, etc.).
+            # ones already handled above (401/402/403/429) are
+            # permanent (bad payload, duplicate, invalid chars, etc.).
             transient = resp.status_code >= 500
+
+            # Sprint 17.5d follow-up — parse X's structured 400 body so
+            # the operator sees WHAT X reproached. POST /2/tweets typical
+            # 400 shapes:
+            #   { "title":"Forbidden",
+            #     "type":".../duplicate-rules",
+            #     "detail":"You are not permitted to create a duplicate Tweet." }
+            #   { "title":"Invalid Request",
+            #     "errors":[{"parameters":{"text":["..."]}, "message":"..."}],
+            #     "detail":"One or more parameters to your request was invalid." }
+            #   { "errors":[{"message":"Tweet needs to be a bit shorter.",
+            #               "code":186}], ... }
+            error_code = f"http_{resp.status_code}"
+            error_detail: Optional[str] = None
+            try:
+                err_body = resp.json() if resp.text else {}
+            except Exception:  # noqa: BLE001
+                err_body = {}
+
+            if isinstance(err_body, dict):
+                # Top-level "type" URL is the cleanest classifier.
+                err_type = str(err_body.get("type") or "").lower()
+                err_title = str(err_body.get("title") or "").lower()
+                err_detail = str(err_body.get("detail") or err_body.get("message") or "")
+                # Specific reasons we promote to first-class error codes
+                # so the queue UI can render an actionable hint.
+                if "duplicate" in err_type or "duplicate" in err_detail.lower():
+                    error_code = "x_duplicate_content"
+                elif "too-long" in err_type or "shorter" in err_detail.lower() \
+                        or "too long" in err_detail.lower():
+                    error_code = "x_text_too_long"
+                elif "rule-violation" in err_type or "violates" in err_detail.lower():
+                    error_code = "x_policy_violation"
+                elif err_title in {"invalid request", "unprocessable entity"}:
+                    error_code = "x_invalid_payload"
+                # Fallback — keep the http_<n> code but surface the detail.
+                error_detail = err_detail or err_title or None
+                # Drill into "errors[*].message" if no top-level detail.
+                if not error_detail:
+                    inner = err_body.get("errors") or []
+                    if isinstance(inner, list) and inner:
+                        first = inner[0] or {}
+                        error_detail = str(first.get("message") or "") or None
+
+            logger.error(
+                "[x] HTTP %d on POST /2/tweets → code=%s detail=%s body=%s",
+                resp.status_code, error_code, error_detail, snippet,
+            )
             return DispatchResult(
                 outcome=DispatchOutcome.FAILED,
-                error=f"http_{resp.status_code}",
+                error=error_code,
                 duration_ms=_elapsed_ms(started),
-                response_snippet=snippet,
+                response_snippet=(
+                    f"X HTTP {resp.status_code}: "
+                    + (error_detail or snippet or "(no detail)")
+                )[:480],
                 transient_failure=transient,
             )
         data = resp.json()
