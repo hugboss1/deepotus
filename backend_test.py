@@ -447,6 +447,307 @@ def main():
             data={"active": True}
         )
 
+    # ========================================================================
+    # Sprint 17.6 — Operation Incinerator (Burn Logs + Proof of Scarcity)
+    # ========================================================================
+    print("\n" + "=" * 70)
+    print("Sprint 17.6 — Operation Incinerator Testing")
+    print("=" * 70)
+
+    # Valid Solana signature for testing
+    VALID_SIG = "5VfYK9JNwNqaQ8MnGqV7sLB4mTrHGD2Cs1KfWX3hRyBxJvY7uA8nP6jKLNcEwQzTHxYi2P9MFXuVbR4tDcN1ABCD"
+    
+    # ---- Test 16: GET /api/transparency/stats (public endpoint) ----
+    saved_token = tester.token
+    tester.token = None  # Public endpoint, no auth needed
+    
+    success, stats = tester.run_test(
+        "GET /api/transparency/stats (public)",
+        "GET",
+        "/api/transparency/stats",
+        200
+    )
+    
+    if success:
+        print(f"   initial_supply: {stats.get('initial_supply')}")
+        print(f"   treasury_locked: {stats.get('treasury_locked')}")
+        print(f"   team_locked: {stats.get('team_locked')}")
+        print(f"   locked_total: {stats.get('locked_total')}")
+        print(f"   locked_percent: {stats.get('locked_percent')}")
+        print(f"   total_burned: {stats.get('total_burned')}")
+        print(f"   effective_circulating: {stats.get('effective_circulating')}")
+        print(f"   burn_count: {stats.get('burn_count')}")
+        
+        # Verify math: effective_circulating = initial - burned - locked_total
+        initial = stats.get('initial_supply', 0)
+        burned = stats.get('total_burned', 0)
+        locked = stats.get('locked_total', 0)
+        effective = stats.get('effective_circulating', 0)
+        expected_effective = initial - burned - locked
+        
+        if effective == expected_effective:
+            print(f"   ✅ Math correct: {initial} - {burned} - {locked} = {effective}")
+        else:
+            print(f"   ❌ Math wrong: expected {expected_effective}, got {effective}")
+        
+        # Verify locked allocations
+        if stats.get('treasury_locked') == 300_000_000 and stats.get('team_locked') == 150_000_000:
+            print("   ✅ Locked allocations correct (300M + 150M)")
+        else:
+            print("   ❌ Locked allocations incorrect")
+        
+        # With zero burns, effective_circulating should be 550M
+        if burned == 0 and effective == 550_000_000:
+            print("   ✅ Zero burns: effective_circulating = 550M")
+        elif burned == 0:
+            print(f"   ❌ Zero burns but effective_circulating = {effective} (expected 550M)")
+    
+    # ---- Test 17: GET /api/transparency/burns?limit=5 (public endpoint) ----
+    success, burns_public = tester.run_test(
+        "GET /api/transparency/burns?limit=5 (public)",
+        "GET",
+        "/api/transparency/burns?limit=5",
+        200
+    )
+    
+    if success:
+        items = burns_public.get('items', [])
+        count = burns_public.get('count', 0)
+        print(f"   items: {len(items)}")
+        print(f"   count: {count}")
+        if count == 0:
+            print("   ✅ Empty by default (no burns yet)")
+    
+    tester.token = saved_token  # Restore admin token
+    
+    # ---- Test 18: POST /api/admin/burns/disclose (happy path) ----
+    success, burn1 = tester.run_test(
+        "POST /api/admin/burns/disclose (happy path)",
+        "POST",
+        "/api/admin/burns/disclose",
+        200,
+        data={
+            "amount": 50_000_000,
+            "tx_signature": VALID_SIG,
+            "note": "Test burn Q1",
+            "announce": False  # Don't trigger propaganda
+        }
+    )
+    
+    burn1_id = None
+    if success:
+        burn1_id = burn1.get('burn', {}).get('id')
+        print(f"   burn_id: {burn1_id}")
+        print(f"   amount: {burn1.get('burn', {}).get('amount')}")
+        print(f"   tx_link: {burn1.get('burn', {}).get('tx_link')}")
+        print(f"   announced: {burn1.get('announced')}")
+        if burn1.get('burn', {}).get('amount') == 50_000_000:
+            print("   ✅ Burn recorded with correct amount")
+    
+    # ---- Test 19: Verify stats updated after burn ----
+    tester.token = None
+    success, stats_after = tester.run_test(
+        "GET /api/transparency/stats (after burn)",
+        "GET",
+        "/api/transparency/stats",
+        200
+    )
+    
+    if success:
+        total_burned = stats_after.get('total_burned', 0)
+        effective = stats_after.get('effective_circulating', 0)
+        print(f"   total_burned: {total_burned}")
+        print(f"   effective_circulating: {effective}")
+        
+        if total_burned == 50_000_000:
+            print("   ✅ total_burned updated to 50M")
+        if effective == 500_000_000:  # 1B - 50M - 450M
+            print("   ✅ effective_circulating = 500M (1B - 50M - 450M)")
+    
+    tester.token = saved_token
+    
+    # ---- Test 20: POST /api/admin/burns/disclose (duplicate tx_signature) ----
+    success, burn_dup = tester.run_test(
+        "POST /api/admin/burns/disclose (duplicate tx_signature)",
+        "POST",
+        "/api/admin/burns/disclose",
+        409,
+        data={
+            "amount": 10_000_000,
+            "tx_signature": VALID_SIG,  # Same signature
+            "announce": False
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected duplicate with 409")
+    
+    # ---- Test 21: POST /api/admin/burns/disclose (short tx_signature) ----
+    success, _ = tester.run_test(
+        "POST /api/admin/burns/disclose (short tx_signature)",
+        "POST",
+        "/api/admin/burns/disclose",
+        422,
+        data={
+            "amount": 10_000_000,
+            "tx_signature": "TOOSHORT",  # <32 chars
+            "announce": False
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected short signature with 422")
+    
+    # ---- Test 22: POST /api/admin/burns/disclose (zero amount) ----
+    success, _ = tester.run_test(
+        "POST /api/admin/burns/disclose (zero amount)",
+        "POST",
+        "/api/admin/burns/disclose",
+        400,
+        data={
+            "amount": 0,
+            "tx_signature": "5VfYK9JNwNqaQ8MnGqV7sLB4mTrHGD2Cs1KfWX3hRyBxJvY7uA8nP6jKLNcEwQzTHxYi2P9MFXuVbR4tDcN1ABCE",
+            "announce": False
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected zero amount with 400")
+    
+    # ---- Test 23: POST /api/admin/burns/disclose (negative amount) ----
+    # Pydantic should reject this at 422 level
+    success, _ = tester.run_test(
+        "POST /api/admin/burns/disclose (negative amount)",
+        "POST",
+        "/api/admin/burns/disclose",
+        422,
+        data={
+            "amount": -1000,
+            "tx_signature": "5VfYK9JNwNqaQ8MnGqV7sLB4mTrHGD2Cs1KfWX3hRyBxJvY7uA8nP6jKLNcEwQzTHxYi2P9MFXuVbR4tDcN1ABCF",
+            "announce": False
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected negative amount with 422")
+    
+    # ---- Test 24: GET /api/admin/burns (admin list) ----
+    success, admin_burns = tester.run_test(
+        "GET /api/admin/burns (admin list)",
+        "GET",
+        "/api/admin/burns?limit=100",
+        200
+    )
+    
+    if success:
+        items = admin_burns.get('items', [])
+        count = admin_burns.get('count', 0)
+        stats_in_list = admin_burns.get('stats', {})
+        print(f"   items: {len(items)}")
+        print(f"   count: {count}")
+        print(f"   stats.effective_circulating: {stats_in_list.get('effective_circulating')}")
+        if len(items) >= 1:
+            print("   ✅ Admin list includes burn records")
+    
+    # ---- Test 25: POST /api/admin/burns/{burn_id}/redact ----
+    if burn1_id:
+        success, redacted = tester.run_test(
+            f"POST /api/admin/burns/{burn1_id}/redact",
+            "POST",
+            f"/api/admin/burns/{burn1_id}/redact",
+            200
+        )
+        
+        if success:
+            print(f"   redacted_at: {redacted.get('burn', {}).get('redacted_at')}")
+            if redacted.get('burn', {}).get('redacted_at'):
+                print("   ✅ Burn soft-deleted (redacted_at set)")
+        
+        # ---- Test 26: Verify stats after redaction ----
+        tester.token = None
+        success, stats_redacted = tester.run_test(
+            "GET /api/transparency/stats (after redaction)",
+            "GET",
+            "/api/transparency/stats",
+            200
+        )
+        
+        if success:
+            total_burned = stats_redacted.get('total_burned', 0)
+            effective = stats_redacted.get('effective_circulating', 0)
+            print(f"   total_burned: {total_burned}")
+            print(f"   effective_circulating: {effective}")
+            
+            if total_burned == 0:
+                print("   ✅ total_burned reverted to 0 after redaction")
+            if effective == 550_000_000:
+                print("   ✅ effective_circulating back to 550M")
+        
+        tester.token = saved_token
+        
+        # ---- Test 27: Double-redact (idempotent) ----
+        success, redacted2 = tester.run_test(
+            f"POST /api/admin/burns/{burn1_id}/redact (double-redact)",
+            "POST",
+            f"/api/admin/burns/{burn1_id}/redact",
+            200
+        )
+        
+        if success:
+            noop = redacted2.get('noop', False)
+            print(f"   noop: {noop}")
+            if noop:
+                print("   ✅ Double-redact returned noop=true (idempotent)")
+        
+        # ---- Test 28: Re-disclose same tx_signature after redaction ----
+        success, burn_redisclose = tester.run_test(
+            "POST /api/admin/burns/disclose (re-disclose after redaction)",
+            "POST",
+            "/api/admin/burns/disclose",
+            200,
+            data={
+                "amount": 25_000_000,
+                "tx_signature": VALID_SIG,  # Same signature, but previous is redacted
+                "note": "Re-disclosed after redaction",
+                "announce": False
+            }
+        )
+        
+        if success:
+            print(f"   burn_id: {burn_redisclose.get('burn', {}).get('id')}")
+            print("   ✅ Re-disclosure after redaction succeeded")
+    
+    # ---- Test 29: POST /api/admin/burns/disclose with announce=true ----
+    # This should attempt to fire burn_event trigger
+    VALID_SIG_2 = "5VfYK9JNwNqaQ8MnGqV7sLB4mTrHGD2Cs1KfWX3hRyBxJvY7uA8nP6jKLNcEwQzTHxYi2P9MFXuVbR4tDcN1ABCG"
+    success, burn_announce = tester.run_test(
+        "POST /api/admin/burns/disclose (announce=true)",
+        "POST",
+        "/api/admin/burns/disclose",
+        200,
+        data={
+            "amount": 10_000_000,
+            "tx_signature": VALID_SIG_2,
+            "note": "Test announcement",
+            "announce": True,
+            "language": "en"
+        }
+    )
+    
+    if success:
+        announced = burn_announce.get('announced', False)
+        queue_item_id = burn_announce.get('queue_item_id')
+        announce_error = burn_announce.get('announce_error')
+        print(f"   announced: {announced}")
+        print(f"   queue_item_id: {queue_item_id}")
+        print(f"   announce_error: {announce_error}")
+        
+        if announced and queue_item_id:
+            print("   ✅ Burn announcement queued successfully")
+        elif announce_error:
+            print(f"   ℹ️  Announcement failed (benign): {announce_error}")
+            print("   ✅ Burn record succeeded despite announcement failure")
+
     # ---- Summary ----
     print("\n" + "=" * 70)
     print(f"📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")

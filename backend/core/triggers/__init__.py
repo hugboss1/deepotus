@@ -19,6 +19,7 @@ from .base import (
     register_trigger,
 )
 from . import (  # noqa: F401  — side-effect imports register triggers
+    burn_event,
     founder_buy,
     jeet_dip,
     kol_mention,

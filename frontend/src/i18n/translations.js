@@ -1061,6 +1061,27 @@ export const translations = {
       opsLoading: "Chargement du journal…",
       opsEmpty: "Aucune opération journalisée · Phase 1 active",
       opsError: "Impossible de charger le journal — réessayez plus tard",
+      // Sprint 17.6 — Operation Incinerator : Proof of Scarcity
+      scarcity: {
+        kicker: "— PROOF OF SCARCITY · OPÉRATION INCINÉRATEUR",
+        title: "Le Cabinet n'imprime pas. Il retranche.",
+        subtitle:
+          "Chaque burn est signé on-chain, archivé, et publié ici en temps réel. Aucune approximation, aucune comptabilité créative — la rareté est une preuve, pas une promesse.",
+        initialLabel: "Supply initial",
+        burnedLabel: "Total brûlé",
+        circulatingLabel: "Supply circulante réelle",
+        circulatingHint: "(temps réel)",
+        disclaimer:
+          "Supply circulante temps réel, excluant les 45 % actuellement sous multisig public / vesting locks (300 M Treasury + 150 M Team).",
+        burnedPctLabel: "du supply détruit",
+        lockedPctLabel: "verrouillés (Treasury + Team)",
+        feedTitle: "Derniers burns publiés",
+        feedEmpty: "Aucun burn n'a encore été déclaré. Le compteur s'éveillera après le mint.",
+        feedViewProof: "Voir la preuve on-chain",
+        feedLatest: "Dernier burn",
+        feedAmount: "brûlés",
+        loadError: "Impossible de charger la preuve de rareté — réessayez plus tard.",
+      },
       // Sprint 17.B — Visualisation carousel
       viz: {
         sectionKicker: "— ÉCRANS DU CONSEIL",
@@ -2126,6 +2147,27 @@ export const translations = {
       opsLoading: "Loading log…",
       opsEmpty: "No operations logged yet · Phase 1 active",
       opsError: "Unable to load log — please retry",
+      // Sprint 17.6 — Operation Incinerator : Proof of Scarcity
+      scarcity: {
+        kicker: "— PROOF OF SCARCITY · OPERATION INCINERATOR",
+        title: "The Cabinet doesn't print. It subtracts.",
+        subtitle:
+          "Every burn is signed on-chain, archived, and published here in real time. No approximation, no creative accounting — scarcity is a proof, not a promise.",
+        initialLabel: "Initial supply",
+        burnedLabel: "Total burned",
+        circulatingLabel: "Real circulating supply",
+        circulatingHint: "(real-time)",
+        disclaimer:
+          "Real-time circulating supply, excluding the 45% currently under public multisig/vesting locks (300M Treasury + 150M Team).",
+        burnedPctLabel: "of supply destroyed",
+        lockedPctLabel: "locked (Treasury + Team)",
+        feedTitle: "Latest disclosed burns",
+        feedEmpty: "No burn has been disclosed yet. The counter wakes up post-mint.",
+        feedViewProof: "View on-chain proof",
+        feedLatest: "Last burn",
+        feedAmount: "burned",
+        loadError: "Unable to load Proof of Scarcity — please retry.",
+      },
       // Sprint 17.B — Visualisation carousel
       viz: {
         sectionKicker: "— COUNCIL SCREENS",

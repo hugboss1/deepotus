@@ -51,6 +51,8 @@ import {
   Loader2,
   Map as MapIcon,
   AlertTriangle,
+  Flame,
+  Info,
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWalletRegistry } from "@/hooks/useWalletRegistry";
@@ -67,6 +69,12 @@ import {
   VIZ_SLIDE_DEFAULTS,
   type VizSlide,
 } from "@/components/transparency/TransparencyDataCarousel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -92,6 +100,49 @@ interface RugCheckSummary {
   // RugCheck v1 returns more fields we don't render; keep loose typing.
   // eslint-disable-next-line
   [key: string]: any;
+}
+
+// Sprint 17.6 — Operation Incinerator (Proof of Scarcity)
+interface ScarcityStats {
+  initial_supply: number;
+  total_burned: number;
+  circulating_supply: number;        // raw = initial - burned
+  treasury_locked: number;
+  team_locked: number;
+  locked_total: number;
+  locked_percent: number;
+  effective_circulating: number;     // the HONEST one (UI must display this)
+  burn_count: number;
+  burned_percent: number;
+  latest_burn: {
+    id: string;
+    amount: number;
+    tx_signature: string;
+    tx_link: string;
+    burned_at: string;
+  } | null;
+}
+
+interface BurnFeedItem {
+  id: string;
+  amount: number;
+  tx_signature: string;
+  tx_link: string;
+  burned_at: string;
+  note: string | null;
+  queue_item_id: string | null;
+}
+
+// Format helpers — tweet-friendly and locale-independent.
+function fmtTokens(amount: number): string {
+  if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(2)}B`;
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(2)}M`;
+  if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`;
+  return amount.toLocaleString("en-US");
+}
+
+function fmtFullTokens(amount: number): string {
+  return amount.toLocaleString("en-US");
 }
 
 // ---------------------------------------------------------------------
@@ -623,6 +674,259 @@ const OperationsSlideContent: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------
+// Proof of Scarcity (Sprint 17.6 — Operation Incinerator)
+// ---------------------------------------------------------------------
+const ProofOfScarcityHero: React.FC = () => {
+  const { t } = useI18n();
+  const [stats, setStats] = useState<ScarcityStats | null>(null);
+  const [burns, setBurns] = useState<BurnFeedItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [s, b] = await Promise.all([
+        axios.get<ScarcityStats>(`${API}/transparency/stats`),
+        axios.get<{ items: BurnFeedItem[]; count: number }>(
+          `${API}/transparency/burns?limit=5`,
+        ),
+      ]);
+      setStats(s.data);
+      setBurns(b.data?.items ?? []);
+    } catch (_err) {
+      setError(t("transparencyPage.scarcity.loadError") as string);
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Loading skeleton — keep the layout footprint stable so the Hero
+  // above doesn't pop into a different vertical position when stats
+  // resolve. Skeleton heights mirror the final card heights (~h-28).
+  if (loading) {
+    return (
+      <section
+        className="mt-10 border-y border-foreground/10 py-10"
+        data-testid="proof-of-scarcity-loading"
+      >
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-[#FF6B35] font-mono mb-3">
+          <Flame size={14} className="animate-pulse" />
+          {t("transparencyPage.scarcity.kicker") as string}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-28 rounded-md border border-foreground/10 bg-foreground/5 animate-pulse"
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <section
+        className="mt-10 border-y border-foreground/10 py-10 text-sm text-foreground/60"
+        data-testid="proof-of-scarcity-error"
+      >
+        <AlertTriangle size={16} className="inline mr-2 text-[#F59E0B]" />
+        {error ?? (t("transparencyPage.scarcity.loadError") as string)}
+      </section>
+    );
+  }
+
+  const lockedPct = stats.locked_percent.toFixed(0);
+  const burnedPct = stats.burned_percent.toFixed(stats.burned_percent < 0.01 ? 4 : 2);
+  const latestBurnDate = stats.latest_burn
+    ? new Date(stats.latest_burn.burned_at).toLocaleString()
+    : null;
+
+  return (
+    <section
+      className="mt-10 border-y border-foreground/10 py-10"
+      data-testid="proof-of-scarcity-section"
+    >
+      {/* Kicker + heading */}
+      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-[#FF6B35] font-mono">
+        <Flame size={14} />
+        {t("transparencyPage.scarcity.kicker") as string}
+      </div>
+      <h2
+        className="mt-3 font-display text-2xl sm:text-3xl lg:text-4xl font-semibold leading-tight tracking-tight"
+        data-testid="proof-of-scarcity-title"
+      >
+        {t("transparencyPage.scarcity.title") as string}
+      </h2>
+      <p className="mt-3 text-sm text-foreground/70 leading-relaxed max-w-2xl">
+        {t("transparencyPage.scarcity.subtitle") as string}
+      </p>
+
+      {/* Three metric cards */}
+      <div className="mt-7 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Initial Supply */}
+        <div
+          className="rounded-md border border-foreground/15 bg-foreground/[0.02] px-5 py-4"
+          data-testid="scarcity-initial-card"
+        >
+          <p className="text-[10px] font-mono uppercase tracking-widest text-foreground/55">
+            {t("transparencyPage.scarcity.initialLabel") as string}
+          </p>
+          <p
+            className="mt-2 font-mono text-2xl sm:text-3xl font-semibold text-foreground"
+            data-testid="scarcity-initial-value"
+          >
+            {fmtFullTokens(stats.initial_supply)}
+          </p>
+          <p className="mt-1 text-[10px] text-foreground/45 font-mono">
+            $DEEPOTUS · Hard cap
+          </p>
+        </div>
+
+        {/* Total Burned */}
+        <div
+          className="rounded-md border border-[#FF6B35]/30 bg-[#FF6B35]/[0.05] px-5 py-4"
+          data-testid="scarcity-burned-card"
+        >
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#FF6B35]">
+            {t("transparencyPage.scarcity.burnedLabel") as string}
+          </p>
+          <p
+            className="mt-2 font-mono text-2xl sm:text-3xl font-semibold text-foreground flex items-baseline gap-2"
+            data-testid="scarcity-burned-value"
+          >
+            <Flame size={20} className="text-[#FF6B35]" />
+            {fmtFullTokens(stats.total_burned)}
+          </p>
+          <p className="mt-1 text-[10px] text-foreground/55 font-mono">
+            {burnedPct}% {t("transparencyPage.scarcity.burnedPctLabel") as string}
+          </p>
+        </div>
+
+        {/* Real / Effective Circulating */}
+        <div
+          className="rounded-md border border-[#33FF33]/30 bg-[#33FF33]/[0.04] px-5 py-4"
+          data-testid="scarcity-circulating-card"
+        >
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#33FF33] flex items-center gap-1.5">
+            {t("transparencyPage.scarcity.circulatingLabel") as string}
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center text-foreground/55 hover:text-foreground/80 transition-colors"
+                    aria-label="Disclosure"
+                    data-testid="scarcity-circulating-tooltip-trigger"
+                  >
+                    <Info size={11} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="max-w-xs bg-foreground text-background text-[11px] leading-relaxed normal-case tracking-normal font-body"
+                  data-testid="scarcity-circulating-tooltip"
+                >
+                  {t("transparencyPage.scarcity.disclaimer") as string}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </p>
+          <p
+            className="mt-2 font-mono text-2xl sm:text-3xl font-semibold text-foreground"
+            data-testid="scarcity-circulating-value"
+          >
+            {fmtFullTokens(stats.effective_circulating)}
+          </p>
+          <p className="mt-1 text-[10px] text-foreground/55 font-mono">
+            {t("transparencyPage.scarcity.circulatingHint") as string} · {lockedPct}%{" "}
+            {t("transparencyPage.scarcity.lockedPctLabel") as string}
+          </p>
+        </div>
+      </div>
+
+      {/* Disclaimer (also visible inline, not only in tooltip — full
+          mathematical honesty requires it to be readable without
+          interaction). */}
+      <p
+        className="mt-4 text-[11px] text-foreground/55 leading-relaxed italic max-w-3xl"
+        data-testid="scarcity-disclaimer-inline"
+      >
+        ⚖ {t("transparencyPage.scarcity.disclaimer") as string}
+      </p>
+
+      {/* Burn feed */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-mono uppercase tracking-widest text-foreground/55">
+            {t("transparencyPage.scarcity.feedTitle") as string}
+          </p>
+          {latestBurnDate && (
+            <p className="text-[10px] font-mono text-foreground/45">
+              {t("transparencyPage.scarcity.feedLatest") as string}: {latestBurnDate}
+            </p>
+          )}
+        </div>
+        {burns.length === 0 ? (
+          <div
+            className="rounded-md border border-dashed border-foreground/15 px-5 py-6 text-center text-xs text-foreground/55"
+            data-testid="scarcity-feed-empty"
+          >
+            {t("transparencyPage.scarcity.feedEmpty") as string}
+          </div>
+        ) : (
+          <ul
+            className="space-y-2"
+            data-testid="scarcity-feed-list"
+          >
+            {burns.map((b) => (
+              <li
+                key={b.id}
+                className="rounded-md border border-foreground/10 bg-foreground/[0.02] px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
+                data-testid={`scarcity-burn-${b.id}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Flame size={14} className="text-[#FF6B35] shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-sm font-medium text-foreground truncate">
+                      {fmtTokens(b.amount)}{" "}
+                      <span className="text-foreground/50 text-xs">
+                        {t("transparencyPage.scarcity.feedAmount") as string}
+                      </span>
+                    </p>
+                    <p className="text-[10px] font-mono text-foreground/45 mt-0.5">
+                      {new Date(b.burned_at).toLocaleString()}
+                      {b.note && <span className="ml-2 italic">· {b.note}</span>}
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={b.tx_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-[#33FF33] hover:text-[#22D3EE] transition-colors"
+                  data-testid={`scarcity-burn-link-${b.id}`}
+                >
+                  {t("transparencyPage.scarcity.feedViewProof") as string}
+                  <ExternalLink size={11} />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+};
+
+// ---------------------------------------------------------------------
 // Page shell
 // ---------------------------------------------------------------------
 const Transparency: React.FC = () => {
@@ -695,6 +999,9 @@ const Transparency: React.FC = () => {
               other on-page interaction. */}
           <RugCheckCta />
         </section>
+
+        {/* ---- Proof of Scarcity (Sprint 17.6 — Operation Incinerator) ---- */}
+        <ProofOfScarcityHero />
 
         {/* ---- Wallets + Locks (above the carousel) ---- */}
         <WalletsSection />

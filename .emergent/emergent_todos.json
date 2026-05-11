@@ -1,26 +1,46 @@
 [
   {
-    "content": "Bug 1: Replace _OAuth1Adapter with authlib.integrations.httpx_client.OAuth1Auth",
+    "content": "Phase A.1 — Étendre core/burn_logs.stats() avec TREASURY_LOCKED + TEAM_LOCKED + effective_circulating",
     "status": "completed"
   },
   {
-    "content": "Bug 2: DexScreener — 60s interval + exponential backoff on 429",
+    "content": "Phase A.2 — Wire ensure_indexes() at startup in server.py",
     "status": "completed"
   },
   {
-    "content": "Bonus: Fix pre-existing await bool TypeError in news_repost.py (4 sites)",
+    "content": "Phase A.3 — Create core/triggers/burn_event.py + register",
     "status": "completed"
   },
   {
-    "content": "Update requirements.txt via pip freeze (added authlib==1.7.2)",
+    "content": "Phase A.4 — Add 4 burn_event templates (FR+EN) to templates_repo",
     "status": "completed"
   },
   {
-    "content": "Tests: 11 new (101/101 total) + testing agent 100%",
+    "content": "Phase A.5 — Create routers/burns.py with admin + public endpoints",
     "status": "completed"
   },
   {
-    "content": "Plan.md + commit-ready summary",
+    "content": "Phase A.6 — Mount burns router in server.py",
     "status": "completed"
+  },
+  {
+    "content": "Phase B.3 — i18n FR+EN keys for scarcity + incinerator",
+    "status": "completed"
+  },
+  {
+    "content": "Phase B.1 — Add ProofOfScarcityHero to Transparency.tsx with tooltip",
+    "status": "completed"
+  },
+  {
+    "content": "Phase B.2 — Add IncineratorCard to CabinetTab.tsx",
+    "status": "completed"
+  },
+  {
+    "content": "Phase C.1 — Pytest 140/140 + lint clean + tsc clean",
+    "status": "completed"
+  },
+  {
+    "content": "Phase C.2 — testing_agent backend + frontend sweep",
+    "status": "in_progress"
   }
 ]

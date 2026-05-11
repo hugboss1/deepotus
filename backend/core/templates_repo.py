@@ -258,6 +258,15 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "Le Cabinet a pris note : @{kol_handle} a mentionné $DEEPOTUS. « {kol_tweet_excerpt} » — Le Coffre observe. {kol_tweet_url}"},
     {"trigger_key": "kol_mention", "language": "fr",
      "content": "Signal enregistré. @{kol_handle} vient d'effleurer le dossier : « {kol_tweet_excerpt} » Le Cabinet ne croit pas aux coïncidences. {kol_tweet_url}"},
+    # ----- Burn disclosure event (Sprint 17.6 — Operation Incinerator) -----
+    {"trigger_key": "burn_event", "language": "en",
+     "content": "Operation Incinerator — {burn_amount_pretty} $DEEPOTUS just left the cap table forever. {burn_pct}% of supply, gone. Cabinet doesn't print. Cabinet subtracts. Proof: {tx_link}"},
+    {"trigger_key": "burn_event", "language": "en",
+     "content": "Scarcity, on-chain. {burn_amount_pretty} $DEEPOTUS burned. Effective float now {burn_circulating_after_pretty}. Every sandwich-bot tear is a feature. {tx_link}"},
+    {"trigger_key": "burn_event", "language": "fr",
+     "content": "Opération Incinérateur — {burn_amount_pretty} $DEEPOTUS quittent la cap table à jamais. {burn_pct}% du supply, partis. Le Cabinet n'imprime pas. Le Cabinet retranche. Preuve : {tx_link}"},
+    {"trigger_key": "burn_event", "language": "fr",
+     "content": "Rareté, on-chain. {burn_amount_pretty} $DEEPOTUS brûlés. Float effectif désormais {burn_circulating_after_pretty}. Chaque larme de bot sandwich est une feature. {tx_link}"},
 ]
 
 

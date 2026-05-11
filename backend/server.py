@@ -34,6 +34,7 @@ from routers import (
     access_card as access_card_router,
     admin as admin_router,
     bots as bots_router,
+    burns as burns_router,
     cabinet_vault as cabinet_vault_router,
     founder as founder_router,
     infiltration as infiltration_router,
@@ -81,6 +82,11 @@ app.include_router(treasury_router.admin_router)
 # and the RugCheck deeplink on /transparency).
 app.include_router(wallet_registry_router.public_router)
 app.include_router(wallet_registry_router.admin_router)
+# Sprint 17.6 — Operation Incinerator: burn disclosures + Proof of
+# Scarcity public stats. Admin endpoints under /api/admin/burns/*,
+# public read-only under /api/transparency/{stats,burns}.
+app.include_router(burns_router.public_router)
+app.include_router(burns_router.admin_router)
 
 # ---------------------------------------------------------------------
 # Static assets (email hero illustrations, etc.)
@@ -241,6 +247,17 @@ async def on_startup():
         logger.info("[startup] KOL Mention Listener foundation ready (polling DISABLED until X tier confirmed).")
     except Exception:
         logging.exception("[startup] kol listener failed to initialize")
+
+    # ---- Sprint 17.6 — Operation Incinerator (burn logs) ----
+    # Burn disclosures feed /transparency's "Proof of Scarcity" header
+    # and the burn_event Propaganda trigger. Indexes are idempotent so
+    # this is safe to run on every boot.
+    try:
+        from core import burn_logs as _burn
+        await _burn.ensure_indexes()
+        logger.info("[startup] Operation Incinerator burn_logs indexes ready.")
+    except Exception:
+        logging.exception("[startup] burn_logs init failed")
 
 
 @app.on_event("shutdown")

@@ -1,0 +1,79 @@
+{
+  "summary": "Sprint 17.6 — Operation Incinerator (Burn Logs + Proof of Scarcity) — Complete E2E Testing",
+  "backend_issues": {
+    "critical_bugs": [],
+    "minor_issues": [
+      {
+        "endpoint": "POST /api/admin/burns/disclose",
+        "issue": "Zero amount returns 422 instead of 400 (Pydantic validation)",
+        "impact": "None - still correctly rejects zero amounts",
+        "fix_priority": "LOW"
+      }
+    ],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "✅ GET /api/transparency/stats - Returns correct locked allocations (300M Treasury + 150M Team = 450M = 45%)",
+    "✅ GET /api/transparency/stats - Math correct: effective_circulating = 1B - burned - 450M locked",
+    "✅ GET /api/transparency/stats - With zero burns: effective_circulating = 550M",
+    "✅ GET /api/transparency/burns?limit=5 - Returns empty list by default",
+    "✅ POST /api/admin/burns/disclose - Happy path with 50M burn succeeds",
+    "✅ POST /api/admin/burns/disclose - Duplicate tx_signature returns 409 (idempotency)",
+    "✅ POST /api/admin/burns/disclose - Short tx_signature (<32 chars) returns 422",
+    "✅ POST /api/admin/burns/disclose - Negative amount rejected with 422",
+    "✅ POST /api/admin/burns/disclose - announce=true fires burn_event trigger successfully",
+    "✅ GET /api/admin/burns - Returns items, count, and stats with locked allocations",
+    "✅ POST /api/admin/burns/{burn_id}/redact - Soft-deletes burn (redacted_at set)",
+    "✅ Stats after redaction - total_burned reverts to 0, effective_circulating back to 550M",
+    "✅ POST /api/admin/burns/{burn_id}/redact (double-redact) - Returns noop=true (idempotent)",
+    "✅ POST /api/admin/burns/disclose (re-disclose) - Same tx_signature can be re-disclosed after redaction",
+    "✅ Backend startup logs - '[startup] Operation Incinerator burn_logs indexes ready.'",
+    "✅ Pytest - All 33 tests in test_operation_incinerator.py pass",
+    "✅ Frontend /transparency - proof-of-scarcity-section renders with 3 metric cards",
+    "✅ Frontend /transparency - Initial supply shows 1,000,000,000",
+    "✅ Frontend /transparency - Total burned shows correct value with flame icon",
+    "✅ Frontend /transparency - Real circulating supply shows correct calculation",
+    "✅ Frontend /transparency - Tooltip trigger exists and shows disclaimer on hover",
+    "✅ Frontend /transparency - Tooltip contains '45%' and 'Real-time circulating supply' text",
+    "✅ Frontend /transparency - Inline disclaimer visible with ⚖ prefix",
+    "✅ Frontend /transparency - Inline disclaimer mentions 45% locks",
+    "✅ Frontend /transparency - Burn feed list shows burn items when present",
+    "✅ Frontend /transparency - Burn items have Solscan links (solscan.io/tx/{signature})",
+    "✅ Frontend /transparency - Empty state shown when no burns exist",
+    "✅ Admin Cabinet - cabinet-incinerator-card renders",
+    "✅ Admin Cabinet - incinerator-amount-input present",
+    "✅ Admin Cabinet - incinerator-sig-input present",
+    "✅ Admin Cabinet - incinerator-when-input present",
+    "✅ Admin Cabinet - incinerator-lang-select present",
+    "✅ Admin Cabinet - incinerator-note-input present",
+    "✅ Admin Cabinet - incinerator-announce-toggle present",
+    "✅ Admin Cabinet - incinerator-submit-btn present",
+    "✅ Admin Cabinet - incinerator-ledger-list shows burn records",
+    "✅ Admin Cabinet - incinerator-redact-{id} buttons present for each burn",
+    "✅ Admin Cabinet - Form fields can be filled and interacted with",
+    "✅ TypeScript compilation - npx tsc --noEmit passes with no errors"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/app/backend/tests/test_operation_incinerator.py",
+    "/app/.screenshots/proof-of-scarcity.png",
+    "/app/.screenshots/admin-incinerator-card.png"
+  ],
+  "success_percentage": {
+    "backend": "97% (30/31 tests passed - 1 minor status code difference)",
+    "frontend": "100% (All UI elements present and functional)",
+    "pytest": "100% (33/33 tests passed)",
+    "integration": "100% (Burn disclosure → stats update → frontend display working)"
+  },
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}
