@@ -1067,6 +1067,10 @@ export const translations = {
         title: "Le Cabinet n'imprime pas. Il retranche.",
         subtitle:
           "Chaque burn est signé on-chain, archivé, et publié ici en temps réel. Aucune approximation, aucune comptabilité créative — la rareté est une preuve, pas une promesse.",
+        bannerCaption: "INCINÉRATEUR · CHAMBRE 01",
+        bannerAlt:
+          "Chambre d'incinération du Cabinet ΔΣ — pièces $DEEPOTUS calcinées sur grille industrielle",
+        bannerOverlay: "CHAMBRE THERMIQUE ACTIVE",
         initialLabel: "Supply initial",
         burnedLabel: "Total brûlé",
         circulatingLabel: "Supply circulante réelle",
@@ -2153,6 +2157,10 @@ export const translations = {
         title: "The Cabinet doesn't print. It subtracts.",
         subtitle:
           "Every burn is signed on-chain, archived, and published here in real time. No approximation, no creative accounting — scarcity is a proof, not a promise.",
+        bannerCaption: "INCINERATOR · CHAMBER 01",
+        bannerAlt:
+          "Cabinet ΔΣ incineration chamber — $DEEPOTUS coins burning on industrial grate",
+        bannerOverlay: "THERMAL CHAMBER ACTIVE",
         initialLabel: "Initial supply",
         burnedLabel: "Total burned",
         circulatingLabel: "Real circulating supply",

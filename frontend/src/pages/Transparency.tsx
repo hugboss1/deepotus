@@ -769,6 +769,48 @@ const ProofOfScarcityHero: React.FC = () => {
         {t("transparencyPage.scarcity.subtitle") as string}
       </p>
 
+      {/* Cinematic incinerator banner — illustration of the Cabinet
+          thermal chamber. picture/source picks webp first, falls back
+          to jpg on legacy browsers. The aspect-[21/9] crop puts the
+          flame + coins band at viewer eye-level, while the bottom
+          gradient bridges into the metric cards underneath. */}
+      <div
+        className="mt-7 relative overflow-hidden rounded-md border border-[#FF6B35]/40 ring-1 ring-[#FF6B35]/10 shadow-[0_0_40px_-12px_rgba(255,107,53,0.45)] aspect-[21/9] sm:aspect-[24/9] bg-black"
+        data-testid="scarcity-banner"
+      >
+        <picture>
+          <source srcSet="/burns.webp" type="image/webp" />
+          <img
+            src="/burns.jpg"
+            alt={t("transparencyPage.scarcity.bannerAlt") as string}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            data-testid="scarcity-banner-img"
+          />
+        </picture>
+
+        {/* Top status chip — anchors the "live operation" vibe and
+            doubles as accessible label for screen readers. */}
+        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-2 px-2.5 py-1 rounded-sm bg-black/55 backdrop-blur-sm border border-[#FF6B35]/45">
+          <span className="relative inline-flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[#FF6B35] opacity-75 animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FF6B35]" />
+          </span>
+          <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#FFB68C]">
+            {t("transparencyPage.scarcity.bannerOverlay") as string}
+          </span>
+        </div>
+
+        {/* Bottom caption + gradient — preserves the "industrial
+            terminal" aesthetic and bridges visually into the metric
+            cards below. */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
+        <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.22em] text-[#FFB68C]/85">
+          {t("transparencyPage.scarcity.bannerCaption") as string}
+        </div>
+      </div>
+
       {/* Three metric cards */}
       <div className="mt-7 grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Initial Supply */}
