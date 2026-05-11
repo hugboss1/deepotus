@@ -25,8 +25,8 @@
 - **Sprint 17.6 — Operation Incinerator (Pre‑Mint P0)** :
   - publier des **burn disclosures** audités (preuve de rareté) + feed public,
   - annoncer les burns via le Propaganda Engine (trigger dédié),
-  - mettre à jour `/transparency` avec un **Proof of Scarcity** conforme à la “mathematical honesty” demandée,
-  - calculer et afficher la **Real/Efficient Circulating Supply** en excluant les allocations verrouillées.
+  - mettre à jour `/transparency` avec un **Proof of Scarcity** conforme à la “mathematical honesty”,
+  - calculer et afficher la **Real-time circulating supply** en excluant les allocations verrouillées (Treasury + Team).
 - **Ops post-prod** : réduire les erreurs humaines (déploiement, secrets, webhooks) via docs exécutables, endpoints diagnostics, et tests automatisés.
 
 > Stratégie : “migration gates” (tsc/build + smoke tests) à chaque sprint + validation API (curl/testing) avant activation en prod.
@@ -37,7 +37,7 @@
 - **Cabinet Vault** : AES-256-GCM + lecture stricte par les dispatchers.
 - **Propaganda Engine** : dispatchers **X + Telegram LIVE** (réels) et branchés aux APIs, via secrets du vault.
 - **Transparence MiCA** : page `/transparency` alimentée dynamiquement par le **Public Wallet Registry** (badges LOCKED/PENDING) + intégration RugCheck.
-- **Tests** : backend Pytest (**101 tests**) + Playwright E2E + CI GitHub Actions.
+- **Tests** : backend Pytest (**140 tests**) + Playwright E2E + CI GitHub Actions.
 - **UX micro-sprint (deep-link)** : `#accreditation` **déplacé** de Whitelist → **VaultSection**. L’accès à `/#accreditation` ou un `hashchange` ouvre automatiquement le **TerminalPopup DS-GATE-02** et déclenche un pulse ambre 2.6s autour du CTA.
 
 #### Sprint 17.5 — Cabinet Expansion (X) — ✅ COMPLET
@@ -60,14 +60,41 @@
 - ✅ **DexScreener 429** : cadence 60s + backoff exponentiel persistant.
 - ✅ **Bonus** : fix des `await bool` résiduels.
 - ✅ **Deps** : `Authlib==1.7.2` ajouté (sans `pip freeze`).
-- ✅ **Qualité** : Pytest **101/101** + testing agent 100% backend/front.
+- ✅ **Qualité** : Pytest **101/101** + testing agent 100% backend/front (à l’époque).
 
-#### Sprint 17.6 — Operation Incinerator — 🟡 EN COURS (wiring restant)
-- ✅ **Data layer** : `core/burn_logs.py` est **déjà implémenté** (record/redact/total/stats/list + validation + idempotence + indexes).
-- ⛔ **Wiring manquant** : indexes au startup, routes admin/public, trigger Propaganda, templates, UI `/transparency` + admin Cabinet.
-- ⚠️ **Tweak critique (Cabinet Investors)** : calcul de **Real-time circulating supply** doit exclure les locks :
-  - `effective_circulating = 1_000_000_000 - total_burned - treasury_locked(300_000_000) - team_locked(150_000_000)`
-  - Disclaimer/tooltip : « Supply circulante temps réel, excluant les 45 % actuellement sous multisig public / vesting locks. » (+ EN).
+#### Sprint 17.6 — Operation Incinerator — ✅ COMPLET
+**Tweak critique (Cabinet Investors) appliqué** :
+- **Real Circulating Supply** affiché sur `/transparency` =
+  `1_000_000_000 - total_burned - 300_000_000 (Treasury) - 150_000_000 (Team)`.
+- **Tooltip + disclaimer inline bilingue** :
+  - EN : “Real-time circulating supply, excluding the 45% currently under public multisig/vesting locks (300M Treasury + 150M Team).”
+  - FR : “Supply circulante temps réel, excluant les 45 % actuellement sous multisig public / vesting locks (300 M Treasury + 150 M Team).”
+
+Livrables — Backend :
+- `core/burn_logs.py` :
+  - Ajout constantes `TREASURY_LOCKED=300M`, `TEAM_LOCKED=150M`, `LOCKED_TOTAL=450M (45%)`.
+  - Extension de `stats()` : `effective_circulating`, `locked_percent`, et conservation de `circulating_supply` (raw) pour compat.
+- `core/triggers/burn_event.py` : nouveau trigger **manual-only**, idempotent sur `tx_signature`, calcule `burn_pct` et `burn_circulating_after`, validation base58 + garde cap.
+- `core/triggers/__init__.py` : enregistre `burn_event`.
+- `core/templates_repo.py` : 4 templates cyniques Prophet (2 EN, 2 FR) utilisant `{burn_amount_pretty}`, `{tx_link}`, `{burn_pct}`.
+- `routers/burns.py` : router dédié (5 endpoints) :
+  - Admin : `POST /api/admin/burns/disclose`, `GET /api/admin/burns`, `POST /api/admin/burns/{id}/redact`
+  - Public : `GET /api/transparency/stats`, `GET /api/transparency/burns`
+- `server.py` :
+  - `burn_logs.ensure_indexes()` au startup.
+  - Montage du router burns.
+
+Livrables — Frontend :
+- `Transparency.tsx` : `ProofOfScarcityHero` (3 métriques + tooltip Radix + disclaimer inline + feed burns avec lien Solscan).
+- `CabinetTab.tsx` : `IncineratorCard` (form disclose + ledger admin + bouton redact).
+- `i18n/translations.js` : section `transparencyPage.scarcity` FR + EN.
+
+Tests & qualité :
+- **33 nouveaux tests Pytest** : `tests/test_operation_incinerator.py`.
+- **Pytest total : 140 tests** (107 existants + 33 nouveaux), **0 régression**.
+- **TypeScript** : `tsc --noEmit` clean.
+- **Lint** : ruff OK sur les nouveaux fichiers.
+- **Testing agent** : Backend 97% (30/31, différence mineure 422 vs 400 sur amount=0), Frontend 100%, Intégration 100%, **0 bug critique**.
 
 #### Helius live post-mint (Sprint 15/Brain Connect) — ⛔ BLOQUÉ
 - Attente du mint + pool DEX.
@@ -167,132 +194,89 @@ Docs récentes :
 
 ---
 
-### Phase 17.6 — **Operation Incinerator (Burn Transparency Layer)** — **NEXT (P0)**
+### Phase 17.6 — **Operation Incinerator (Burn Transparency Layer)** ✅ **COMPLETED (P0)**
 Objectif : enregistrer les burns (auditables), alimenter `/transparency` avec une preuve de rareté et déclencher des annonces Prophet (X/TG) **avec un calcul de circulating supply mathématiquement honnête**.
 
-#### A) Backend — Data + triggers + routes
+#### A) Backend — Data + triggers + routes ✅
 1) **Index bootstrap**
-- Ajouter au startup (`backend/server.py`) :
-  - `from core import burn_logs as _burn`
-  - `await _burn.ensure_indexes()`
+- `burn_logs.ensure_indexes()` branché au startup (`backend/server.py`).
 
-2) **Étendre `core/burn_logs.stats()` pour inclure le “Real Circulating Supply”**
-- Constantes :
-  - `TREASURY_LOCKED = 300_000_000`
-  - `TEAM_LOCKED = 150_000_000`
-  - `LOCKED_TOTAL = 450_000_000`
-- Ajouter à la réponse `stats()` :
-  - `treasury_locked`, `team_locked`, `locked_total`
-  - `effective_circulating = max(0, INITIAL_SUPPLY - total_burned - locked_total)`
-  - conserver `circulating_supply` si déjà utilisé ailleurs, mais l’UI `/transparency` doit afficher **effective_circulating**.
+2) **`core/burn_logs.stats()` — Real Circulating Supply “honest”**
+- Ajout constantes `TREASURY_LOCKED`, `TEAM_LOCKED`, `LOCKED_TOTAL`.
+- Ajout `effective_circulating = initial - burned - locked_total` + `locked_percent`.
+- Compat conservée : `circulating_supply = initial - burned`.
 
 3) **Trigger Propaganda : `burn_event` (manual-only)**
-- Créer `core/triggers/burn_event.py` sur le pattern de `founder_buy` :
-  - manual-only
-  - idempotent sur `tx_signature`
-  - payload attendu : `burn_amount`, `tx_signature`, `tx_link`, `burned_at`, `burn_note`
-  - payload dérivé utile pour templates : `burn_pct` (vs initial supply), `burn_amount_pretty`
-- Enregistrer dans `core/triggers/__init__.py`.
+- Trigger sur le pattern `founder_buy`.
+- Idempotent sur `tx_signature`.
+- Payload + champs dérivés : `burn_pct`, `burn_circulating_after`, formats pretty.
 
-4) **Templates Prophet (cyniques) — 4 templates (2 FR, 2 EN)**
-- Ajouter dans `core/templates_repo.DEFAULT_TEMPLATES` :
-  - `trigger_key="burn_event"` avec variantes FR/EN.
+4) **Templates Prophet cyniques — 4 templates (2 FR, 2 EN)**
+- Ajout dans `core/templates_repo.DEFAULT_TEMPLATES`.
 
-5) **Routes Burn (admin + public) — nouveau router dédié**
-- Créer `routers/burns.py` (recommandé) ou extension ciblée d’un router existant.
-- Admin :
-  - `POST /api/admin/burns/disclose`
-    - body : `amount`, `tx_signature`, `burned_at?`, `note?`, `language?`, `announce?` (toggle)
-    - appelle `burn_logs.record_burn(...)`
-    - si `announce=true` : appelle `propaganda_engine.fire(trigger_key="burn_event", manual=True, payload_override=...)`
-    - renvoie : burn doc + éventuellement `queue_item_id`
-  - `GET /api/admin/burns?limit=...&include_redacted=true`
-  - `POST /api/admin/burns/{id}/redact` (soft-delete)
-- Public :
-  - `GET /api/transparency/stats`
-    - renvoie `initial_supply`, `total_burned`, `treasury_locked`, `team_locked`, `locked_total`, `effective_circulating`, `burn_count`, `latest_burn`, etc.
-  - `GET /api/transparency/burns?limit=...`
+5) **Routes burns (admin + public)**
+- Router `routers/burns.py` :
+  - Admin : disclose/list/redact
+  - Public : stats/burn feed
 
-6) **Wiring des routers**
-- Monter le router dans `server.py` (`app.include_router(burns_router.admin_router/public_router)`) en gardant la logique de tags `/api` vs `/api/admin` cohérente.
+6) **Montage router**
+- Router monté dans `server.py`.
 
-#### B) Frontend — Transparency + Admin Cabinet
+#### B) Frontend — Transparency + Admin Cabinet ✅
 1) **/transparency : section “Proof of Scarcity”**
-- Ajouter un composant `ProofOfScarcityHero` (dans `Transparency.tsx` ou `components/transparency/`), rendu **juste après le Hero**.
-- Fetch :
-  - `GET ${BACKEND}/api/transparency/stats`
-  - `GET ${BACKEND}/api/transparency/burns?limit=5`
-- Affichage :
-  - Initial Supply : `1,000,000,000`
-  - Total Burned : dynamique
-  - **Real-time / Effective Circulating** : `effective_circulating` (avec tooltip/disclaimer)
-  - % burned + date du dernier burn
-  - liste 3–5 burns récents avec lien Solscan.
-- Disclaimer obligatoire (FR/EN) :
-  - FR : « Supply circulante temps réel, excluant les 45 % actuellement sous multisig public / vesting locks. »
-  - EN : « Real-time circulating supply, excluding the 45% currently under public multisig/vesting locks. »
+- `ProofOfScarcityHero` rendu juste après le Hero.
+- Fetch : `GET /api/transparency/stats` + `GET /api/transparency/burns?limit=5`.
+- 3 cards : Initial / Total Burned / Real Circulating.
+- Tooltip Radix + disclaimer inline (bilingue via i18n).
+- Feed burns (liens Solscan).
 
 2) **i18n**
-- Ajouter clés `transparencyPage.scarcity.*` (FR + EN) : titre, labels, tooltip, empty state, last burn label.
+- Ajout clés `transparencyPage.scarcity.*` (FR + EN).
 
-3) **Admin /propaganda → CabinetTab : bloc “Operation Incinerator”**
-- Ajouter `IncineratorCard` en bas du tab :
-  - Form disclose : amount, tx_signature, burned_at optionnel, note, language, toggle `announce`
-  - Submit vers `POST /api/admin/burns/disclose`
-  - Liste burns récents (admin) avec bouton `Redact`.
-- Respecter `getAdminToken()` et le comportement 403/2FA de la page.
+3) **Admin /propaganda → CabinetTab**
+- `IncineratorCard` : disclose form + ledger + redact.
 
-#### C) Tests & validation
+#### C) Tests & validation ✅
 1) **Pytest**
-- Ajouter tests unitaires `core/burn_logs.py` :
-  - validation amount/signature
-  - idempotence duplicate signature
-  - `stats()` inclut `effective_circulating` et respecte locks.
-- Ajouter tests endpoints :
-  - disclose (admin)
-  - list public stats/burns
-  - redact
-  - announce via propaganda fire (mock) si activé.
+- Ajout `tests/test_operation_incinerator.py` (33 tests).
+- Suite globale : **140 tests**.
 
 2) **TypeScript**
-- `yarn tsc --noEmit` doit rester 0 erreur.
+- `tsc --noEmit` : 0 erreurs.
 
-3) **Playwright (optionnel P4, mais recommandé post‑P0)**
-- smoke `/transparency` : vérifier présence du bloc “Proof of Scarcity” + rendu des métriques.
+3) **Testing agent**
+- Backend 97% (diff mineure 422 vs 400 sur amount=0), Frontend 100%, Intégration 100%.
 
 ---
 
 ### Phase 15 — **Brain Connect & Treasury Architecture (MiCA) — NEXT (bloqué)**
-(identique : attente mint + pool DEX)
+Objectif : connecter l’indexation on-chain (Helius) au lore (Propaganda Engine) **sans logique de trading**, publier une politique publique de trésorerie conforme MiCA, et ajouter l’outillage admin de disclosure + tokenomics tracker.
+- **Dépendances** : mint `$DEEPOTUS` + pool address DEX + passage Helius en mode live.
+- **Doc ops** : `/app/docs/HELIUS_POST_DEPLOY.md`.
 
 ---
 
 ## 3) Next Actions
 
-### Priorité immédiate (P0) — **Sprint 17.6 Operation Incinerator**
-1) Backend :
-- Brancher `ensure_indexes()` au startup
-- Créer trigger `burn_event` + templates
-- Ajouter routes admin/public
-- Étendre `stats()` avec `effective_circulating` et locks (300M + 150M)
+### Priorité immédiate (P0) — Post‑merge / déploiement
+- ✅ Sprint 17.6 est livré et testé.
+- Actions opérateur (prod) :
+  1. Merge/push sur `main`.
+  2. Redéployer Render (backend) + Vercel (frontend).
+  3. Smoke test rapide :
+     - `/transparency` → Proof of Scarcity visible + tooltip + disclaimer
+     - `/api/transparency/stats` → `effective_circulating` correct
+     - `/admin/propaganda` → onglet Cabinet → disclose burn (announce toggle ON/OFF)
 
-2) Frontend :
-- Ajouter “Proof of Scarcity” sur `/transparency` + tooltip/disclaimer
-- Ajouter `IncineratorCard` dans `/propaganda` → onglet Cabinet
-- i18n FR/EN
-
-3) Tests :
-- Pytest nouveaux tests + run suite complète
-- `tsc --noEmit` + build frontend
-
-### P1 — Exploitation Propaganda Engine (post-déploiement)
-- Valider que `burn_event` suit la policy souhaitée (approval vs auto) selon déclenchement admin.
+### P1 — Exploitation Propaganda Engine (post‑déploiement)
+- Vérifier la policy `burn_event` (approval vs auto) selon l’opération.
+- Confirmer que la disclosure “announce” alimente bien la queue (X/TG).
 - Vérifier `panic` / rate-limits / audit.
 
 ### P3 — Helius live post-mint
 - Suivre `/app/docs/HELIUS_POST_DEPLOY.md`.
 
-### P4 — Extension Playwright
+### P4 — Extension Playwright (optionnel)
 - Ajouter smoke `/transparency` (Proof of Scarcity).
 
 ---
@@ -305,21 +289,23 @@ Objectif : enregistrer les burns (auditables), alimenter `/transparency` avec un
 - Infiltration : riddles + clearance + auto-review opérables.
 - UX Accréditation : `/#accreditation` ouvre le TerminalPopup DS-GATE-02 automatiquement.
 
-### Critères spécifiques Sprint 17.6 — Operation Incinerator
-- `burn_logs` indexé au startup (pas d’insertion duplicate silencieuse).
+### Critères spécifiques Sprint 17.6 — Operation Incinerator ✅
+- `burn_logs` indexé au startup (idempotent).
 - Endpoint public `/api/transparency/stats` expose :
   - `initial_supply = 1_000_000_000`
   - `total_burned`
   - `treasury_locked = 300_000_000`
   - `team_locked = 150_000_000`
   - `locked_total = 450_000_000`
+  - `locked_percent = 45.0`
   - `effective_circulating = initial - burned - locked_total`
-- `/transparency` affiche clairement le calcul + disclaimer/tooltip.
+- `/transparency` affiche clairement la preuve de rareté + disclaimer/tooltip.
 - Admin peut : disclose, lister, redact.
 - Option “announce” crée un item de queue Propaganda via trigger `burn_event`.
 - Qualité & hardening :
   - ✅ `tsc --noEmit` = 0 erreurs
-  - ✅ `pytest` suite complète passe
+  - ✅ `pytest` suite complète passe (140 tests)
+  - ✅ 0 bug critique au testing_agent
 
 ---
 
@@ -331,15 +317,16 @@ Objectif : enregistrer les burns (auditables), alimenter `/transparency` avec un
 - ✅ Sprint 17.5 : `bootstrap_production_mode()` + `welcome_signal` + `prophet_interaction`.
 - ✅ Sprint 17.5b : `/preview/push`, `/release-now`, hardening Pydantic.
 - ✅ Sprint 17.5c : X OAuth1 via Authlib + DexScreener backoff.
-- 🟡 Sprint 17.6 : `core/burn_logs.py` déjà prêt ; il reste wiring routes + trigger + templates + stats locks + startup indexes.
+- ✅ Sprint 17.6 : burn ledger + trigger `burn_event` + router public/admin + stats “honest circulating” + indexes au boot.
 
 **Frontend**
-- ✅ `/transparency` page existante.
-- 🟡 Sprint 17.6 : ajouter Proof of Scarcity + fetch stats/burns + tooltip/disclaimer.
-- 🟡 Sprint 17.6 : ajouter IncineratorCard dans `CabinetTab.tsx`.
+- ✅ `/transparency` : Proof of Scarcity (3 métriques + tooltip/disclaimer + feed burns).
+- ✅ `/admin/propaganda` → onglet `Cabinet` : `IncineratorCard` (disclose + ledger + redact).
+- ✅ TS strict : `noImplicitAny`.
 
 **DB Collections**
-- Ajouter/activer : `burn_logs` (déjà défini via module) + indexes.
+- `burn_logs` : collection active + indexes.
+- `propaganda_templates` : templates `burn_event` seedés idempotemment.
 
 **Sécurité**
 - Mutations sensibles : admin + 2FA selon endpoints.
