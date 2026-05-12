@@ -21,11 +21,11 @@ schedule you can pull from Streamflow / Squads dashboards.
 | Slice                    | %    | Tokens         | On-chain owner               | Lock / Schedule                                |
 |--------------------------|------|----------------|------------------------------|------------------------------------------------|
 | **Treasury (project)**   | 30 % | 300,000,000    | `Wallet_TREASURY` (Squads multisig, 2-of-3) | Subject to the Treasury Take-Profit Policy in §3 |
-| **Team vesting**         | 15 % | 150,000,000    | `Wallet_TEAM_VESTING` (Streamflow contract) | **3-month cliff + 12-month linear vest**       |
+| **Team vesting**         | 15 % | 150,000,000    | `Wallet_TEAM_VESTING` (Streamflow contract) | **2-month cliff + 12-month linear vest**       |
 | **Public liquidity**     | 25 % | 250,000,000    | Pump.fun bonding curve, then PumpSwap LP burned at migration | **Burned LP** at PumpSwap migration (no team rug possible) |
 | **Airdrop & Clearance**  | 10 % | 100,000,000    | `Wallet_AIRDROPS`           | Reserved for Proof-of-Intelligence holders (§4) |
 | **Marketing & KOLs**     | 10 % | 100,000,000    | `Wallet_MARKETING`           | Spent on disclosed line items (§5)             |
-| **Founder allocation**   | 10 % | 100,000,000    | `Wallet_FOUNDER`             | **3-month cliff + 12-month linear vest** (Streamflow), parity with team |
+| **Founder allocation**   | 10 % | 100,000,000    | `Wallet_FOUNDER`             | **2-month cliff + 12-month linear vest** (Streamflow), parity with team |
 
 > Wallet addresses are published on `/transparency` of the website 24 hours
 > before mint. Any difference between the on-chain reality and this table
@@ -45,7 +45,7 @@ schedule you can pull from Streamflow / Squads dashboards.
 ## 2. Team vesting — `Wallet_TEAM_VESTING`
 
 - **Mechanism**: [Streamflow](https://streamflow.finance) on-chain vesting contract.
-- **Schedule**: 3-month cliff (no token releasable for 90 days post-mint),
+- **Schedule**: 2-month cliff (no token releasable for 60 days post-mint),
   followed by 12 months linear release (1/365 per day for 365 days).
 - **Beneficiaries**: each team member has their own Streamflow stream so the
   release is per-person, not pooled.

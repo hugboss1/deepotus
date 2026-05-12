@@ -12,24 +12,30 @@ import {
 
 // Static art mapping — stable across re-renders. The illustrations are
 // AI-generated "classified contract pages" stored in /public.
+// Each phase ships a WebP variant (~5–15% of the PNG size) consumed
+// via <picture> for modern browsers, with PNG fallback for legacy.
 const PHASE_VISUALS = [
   {
     image: "/phase_01_launch.png",
+    imageWebp: "/phase_01_launch.webp",
     icon: Sparkles,
     accent: "#F59E0B",
   },
   {
     image: "/phase_02_bonding_curve.png",
+    imageWebp: "/phase_02_bonding_curve.webp",
     icon: Sparkles,
     accent: "#22D3EE",
   },
   {
     image: "/phase_03_pumpswap_migration.png",
+    imageWebp: "/phase_03_pumpswap_migration.webp",
     icon: Shield,
     accent: "#E11D48",
   },
   {
     image: "/phase_04_anti_dump.png",
+    imageWebp: "/phase_04_anti_dump.webp",
     icon: Lock,
     accent: "#18C964",
   },
@@ -151,12 +157,21 @@ function PhaseSlide({ phase, phaseLabel, visual, Icon, delay }: any) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-[420px] md:min-h-[460px]">
         {/* ---- Left: contract illustration with overlaid stamp ---- */}
         <div className="lg:col-span-6 relative bg-[#0B0D10] overflow-hidden">
-          {/* Background image */}
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${visual.image})` }}
-          />
+          {/* Background illustration — picture lets modern browsers pick
+              the lightweight WebP while legacy browsers fall back to
+              the PNG. Lazy + async decode so the carousel doesn't
+              block first paint of the page. */}
+          <picture aria-hidden>
+            <source srcSet={visual.imageWebp} type="image/webp" />
+            <img
+              src={visual.image}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              data-testid={`transparency-phase-img-${phaseLabel}`}
+            />
+          </picture>
           {/* Subtle gradient to anchor the right side */}
           <div
             aria-hidden

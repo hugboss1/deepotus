@@ -437,7 +437,7 @@ export const translations = {
         },
         team: {
           name: "Équipe & Prophète",
-          detail: "Vesting linéaire 12 mois + cliff 3 mois. Verrouillage public via Streamflow.",
+          detail: "Vesting linéaire 12 mois + cliff 2 mois. Verrouillage public via Streamflow.",
         },
       },
       totalLabel: "Supply total",
@@ -471,7 +471,7 @@ export const translations = {
         },
         team: {
           name: "Team",
-          locked: "🔒 6mo cliff + 12mo vesting",
+          locked: "🔒 2mo cliff + 12mo vesting",
         },
         lockPending: "🔒 Lock activé après mint",
         summary: "45% verrouillés · 5 portefeuilles transparents · Voir /transparency",
@@ -496,7 +496,7 @@ export const translations = {
         },
         shadows: {
           title: "Les Ombres du Conseil",
-          locked: "🔒 6mo cliff + 12mo vesting",
+          locked: "🔒 2mo cliff + 12mo vesting",
           alt: "Trois silhouettes anonymes en pardessus noir dans un long couloir de marbre.",
         },
         burn: {
@@ -522,7 +522,7 @@ export const translations = {
           bullets: [
             "Mint 1 000 000 000 $DEEPOTUS · standard SPL Pump.fun",
             "Dev-buy modéré du fondateur pour crédibilité (annoncé on-chain)",
-            "Tokens équipe lockés immédiatement via Streamflow (vesting 12m + cliff 3m)",
+            "Tokens équipe lockés immédiatement via Streamflow (vesting 12m + cliff 2m)",
             "Trésor (30%) scellé en multisig public",
           ],
         },
@@ -790,7 +790,7 @@ export const translations = {
         },
         {
           q: "Y a-t-il du vesting sur l'équipe ?",
-          a: "Oui — cliff 3 mois, vesting linéaire 12 mois. Aucun unlock surprise.",
+          a: "Oui — cliff 2 mois, vesting linéaire 12 mois. Aucun unlock surprise.",
         },
         {
           q: "Est-ce que $DEEPOTUS est conforme MiCA ?",
@@ -1020,7 +1020,7 @@ export const translations = {
         },
         team: {
           name: "Team",
-          purpose: "15% du supply · Cliff 6 mois + vesting linéaire 12 mois",
+          purpose: "15% du supply · Cliff 2 mois + vesting linéaire 12 mois",
         },
         creator_fees: {
           name: "Creator Fees",
@@ -1036,7 +1036,7 @@ export const translations = {
       locksTitle: "Preuves de lock",
       locks: {
         team: {
-          terms: "Cliff 6 mois + vesting linéaire 12 mois",
+          terms: "Cliff 2 mois + vesting linéaire 12 mois",
         },
         treasury: {
           terms: "Cliff 6 mois — déblocage progressif sur résolution publique",
@@ -1538,7 +1538,7 @@ export const translations = {
         },
         team: {
           name: "Team & Prophet",
-          detail: "12-month linear vesting + 3-month cliff. Public lock via Streamflow.",
+          detail: "12-month linear vesting + 2-month cliff. Public lock via Streamflow.",
         },
       },
       totalLabel: "Total supply",
@@ -1572,7 +1572,7 @@ export const translations = {
         },
         team: {
           name: "Team",
-          locked: "🔒 6mo cliff + 12mo vesting",
+          locked: "🔒 2mo cliff + 12mo vesting",
         },
         lockPending: "🔒 Lock pending — activated post-mint",
         summary: "45% locked · 5 wallets transparent · See /transparency",
@@ -1597,7 +1597,7 @@ export const translations = {
         },
         shadows: {
           title: "The Council's Shadows",
-          locked: "🔒 6mo cliff + 12mo vesting",
+          locked: "🔒 2mo cliff + 12mo vesting",
           alt: "Three anonymous figures in black overcoats walking down a marble corridor.",
         },
         burn: {
@@ -1622,7 +1622,7 @@ export const translations = {
           bullets: [
             "Mint 1,000,000,000 $DEEPOTUS · Pump.fun SPL standard",
             "Moderate founder dev-buy for credibility (announced on-chain)",
-            "Team tokens immediately locked via Streamflow (12-month vesting + 3-month cliff)",
+            "Team tokens immediately locked via Streamflow (12-month vesting + 2-month cliff)",
             "Treasury (30%) sealed in public multisig",
           ],
         },
@@ -1886,7 +1886,7 @@ export const translations = {
         },
         {
           q: "Is there vesting on the team?",
-          a: "Yes — 3-month cliff, 12-month linear vesting. No surprise unlock.",
+          a: "Yes — 2-month cliff, 12-month linear vesting. No surprise unlock.",
         },
         {
           q: "Is $DEEPOTUS MiCA-compliant?",
@@ -2111,7 +2111,7 @@ export const translations = {
         },
         team: {
           name: "Team",
-          purpose: "15% supply · 6-month cliff + 12-month linear vesting",
+          purpose: "15% supply · 2-month cliff + 12-month linear vesting",
         },
         creator_fees: {
           name: "Creator Fees",
@@ -2127,7 +2127,7 @@ export const translations = {
       locksTitle: "Lock proofs",
       locks: {
         team: {
-          terms: "6-month cliff + 12-month linear vesting",
+          terms: "2-month cliff + 12-month linear vesting",
         },
         treasury: {
           terms: "6-month cliff — progressive release on public resolution",

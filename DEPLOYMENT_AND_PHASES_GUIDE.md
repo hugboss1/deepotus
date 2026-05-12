@@ -236,7 +236,7 @@ Au moment du mint, Pump.fun te demande :
 | **Token mint** | `<TON_MINT>` |
 | **Recipient** | `<TON_ADRESSE_PUBLIQUE>` *(toi-même, à débloquer plus tard)* |
 | **Amount** | 15% de la supply (équipe) |
-| **Vesting** | Cliff 6 mois, puis linear sur 12 mois |
+| **Vesting** | Cliff 2 mois, puis linear sur 12 mois |
 | **Cancellable** | NON *(important, un lock cancellable ne compte pas)* |
 
 3. Confirm → tu reçois une **URL publique** style `https://lock.jup.ag/lock/xxxxxx` → **copie-la**

@@ -1,46 +1,22 @@
 [
   {
-    "content": "Phase A.1 — Étendre core/burn_logs.stats() avec TREASURY_LOCKED + TEAM_LOCKED + effective_circulating",
+    "content": "T1 — Renommer phase_03_raydium_migration.png → phase_03_pumpswap_migration.{png,webp} + optimiser en webp",
     "status": "completed"
   },
   {
-    "content": "Phase A.2 — Wire ensure_indexes() at startup in server.py",
+    "content": "T2 — Optimisé aussi les autres phase_*.png en webp (gain ~85%)",
     "status": "completed"
   },
   {
-    "content": "Phase A.3 — Create core/triggers/burn_event.py + register",
+    "content": "T3 — Harmoniser Team vesting → \"2-month cliff + 12-month linear vesting\" partout (FR + EN)",
     "status": "completed"
   },
   {
-    "content": "Phase A.4 — Add 4 burn_event templates (FR+EN) to templates_repo",
+    "content": "T4 — Mis à jour docs/TOKENOMICS_TREASURY_POLICY.md + DEPLOYMENT_AND_PHASES_GUIDE.md (3-month cliff & 6-month cliff team → 2-month cliff)",
     "status": "completed"
   },
   {
-    "content": "Phase A.5 — Create routers/burns.py with admin + public endpoints",
-    "status": "completed"
-  },
-  {
-    "content": "Phase A.6 — Mount burns router in server.py",
-    "status": "completed"
-  },
-  {
-    "content": "Phase B.3 — i18n FR+EN keys for scarcity + incinerator",
-    "status": "completed"
-  },
-  {
-    "content": "Phase B.1 — Add ProofOfScarcityHero to Transparency.tsx with tooltip",
-    "status": "completed"
-  },
-  {
-    "content": "Phase B.2 — Add IncineratorCard to CabinetTab.tsx",
-    "status": "completed"
-  },
-  {
-    "content": "Phase C.1 — Pytest 140/140 + lint clean + tsc clean",
-    "status": "completed"
-  },
-  {
-    "content": "Phase C.2 — testing_agent backend 97% + frontend 100% (zero critical bugs)",
+    "content": "T5 — Validé tsc clean + Pytest 140/140 + screenshots Transparency/Tokenomics/Timeline-03",
     "status": "completed"
   }
 ]
