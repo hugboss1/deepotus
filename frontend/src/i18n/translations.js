@@ -1221,7 +1221,7 @@ export const translations = {
       pool: {
         kicker: "DOTATION TOTALE",
         amountSuffix: "SOL",
-        copy: "Distribués entre 5 agents tirés au sort parmi les éligibles.",
+        copy: "Distribués entre {winnersCount} agents tirés au sort parmi les éligibles.",
       },
       rules: {
         kicker: "— PROTOCOLE D'ÉLIGIBILITÉ",
@@ -1245,7 +1245,7 @@ export const translations = {
         step1: "Snapshot on-chain à 18:00 UTC précises.",
         step2: "Croisement avec la base des parrainages Telegram confirmés.",
         step3: "Tirage VRF Solana publié on-chain — vérifiable par tous.",
-        step4: "5 gagnants annoncés sur X + Telegram dans les 6h.",
+        step4: "{winnersCount} gagnants annoncés sur X + Telegram dans les 6h.",
       },
       footer:
         "Aucun achat n'est requis pour participer — la règle 02 peut être satisfaite via airdrop, faucet partenaire ou échange P2P. Le Cabinet décline toute responsabilité fiscale.",
@@ -1255,7 +1255,6 @@ export const translations = {
       },
     },
   },
-
   // ====================================================================
   en: {
     nav: {
@@ -2450,7 +2449,7 @@ export const translations = {
       pool: {
         kicker: "TOTAL ALLOCATION",
         amountSuffix: "SOL",
-        copy: "Distributed among 5 agents randomly drawn from the eligible pool.",
+        copy: "Distributed among {winnersCount} agents randomly drawn from the eligible pool.",
       },
       rules: {
         kicker: "— ELIGIBILITY PROTOCOL",
@@ -2474,7 +2473,7 @@ export const translations = {
         step1: "On-chain snapshot at 18:00 UTC sharp.",
         step2: "Cross-referenced with confirmed Telegram referral database.",
         step3: "Solana VRF draw published on-chain — verifiable by anyone.",
-        step4: "5 winners announced on X + Telegram within 6 hours.",
+        step4: "{winnersCount} winners announced on X + Telegram within 6 hours.",
       },
       footer:
         "No purchase is required to participate — rule 02 can be satisfied via airdrop, partner faucet, or P2P swap. The Cabinet declines all tax liability.",

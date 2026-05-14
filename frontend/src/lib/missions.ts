@@ -139,6 +139,10 @@ export const GIVEAWAY = {
   drawDateIso: "2026-05-20T18:00:00Z",
   /** Reward pool — single source of truth. */
   rewardSol: 5,
+  /** Number of winners selected by the provably-fair extractor.
+   *  Mirrors ``DEFAULT_WINNERS_COUNT`` in ``backend/core/giveaway.py``.
+   *  If you change one, change BOTH in the same commit. */
+  winnersCount: 2,
   /** Eligibility — both rules MUST be satisfied. */
   rules: {
     minInvites: 3,

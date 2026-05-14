@@ -167,7 +167,7 @@ const Giveaway: React.FC = () => {
               </span>
             </p>
             <p className="mt-3 text-xs text-foreground/65 leading-relaxed">
-              {t("giveawayPage.pool.copy") as string}
+              {(t("giveawayPage.pool.copy") as string).replace("{winnersCount}", String(GIVEAWAY.winnersCount))}
             </p>
           </div>
         </section>
@@ -233,7 +233,7 @@ const Giveaway: React.FC = () => {
               t("giveawayPage.mechanism.step1") as string,
               t("giveawayPage.mechanism.step2") as string,
               t("giveawayPage.mechanism.step3") as string,
-              t("giveawayPage.mechanism.step4") as string,
+              (t("giveawayPage.mechanism.step4") as string).replace("{winnersCount}", String(GIVEAWAY.winnersCount)),
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-foreground/80" data-testid={`giveaway-step-${i + 1}`}>
                 <span className="shrink-0 mt-0.5 w-6 h-6 grid place-items-center rounded-full border border-[#F59E0B]/45 text-[#F59E0B] font-mono text-[10px] font-semibold">

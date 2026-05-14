@@ -1,34 +1,34 @@
 [
   {
-    "content": "T1 — lib/missions.ts : data layer (5 missions actives + 1 [REDACTED] + giveaway config)",
+    "content": "T1 — core/giveaway.py : eligibility + Helius/DexScreener holding check + provably fair RNG + snapshot persistence",
     "status": "completed"
   },
   {
-    "content": "T2 — i18n FR+EN keys missions/giveaway",
+    "content": "T2 — core/triggers/giveaway_extraction.py + 4 templates Prophet",
     "status": "completed"
   },
   {
-    "content": "T3 — pages/Missions.tsx : full Classified Dossiers hub",
+    "content": "T3 — routers/giveaway.py : 6 admin endpoints (preview, extract, snapshots, announce, cancel, eligible)",
     "status": "completed"
   },
   {
-    "content": "T4 — pages/Giveaway.tsx : May 20 draw rules + countdown live",
+    "content": "T4 — Mount router + ensure_indexes au startup",
     "status": "completed"
   },
   {
-    "content": "T5 — components/landing/MissionsSection.tsx : preview teaser sur Landing",
+    "content": "T5 — Frontend : GiveawayExtractionCard dans CabinetTab",
     "status": "completed"
   },
   {
-    "content": "T6 — Pulse.tsx : tab MISSIONS 🛡️ via Drawer + auto-skip intro (localStorage)",
+    "content": "T6 — Sync WINNERS_COUNT 5→2 sur /giveaway public + i18n templating {winnersCount}",
     "status": "completed"
   },
   {
-    "content": "T7 — Routes /missions /giveaway dans App.tsx + section sur Landing",
+    "content": "T7 — Pytest 32 nouveaux tests + total 172/172 + lint Python clean + tsc clean",
     "status": "completed"
   },
   {
-    "content": "T8 — Validation : tsc clean + Pytest 140/140 + screenshots tous OK",
+    "content": "T8 — Live integration confirmed (6 candidats, 2 winners, propaganda fire, duplicate 409, cancel)",
     "status": "completed"
   }
 ]

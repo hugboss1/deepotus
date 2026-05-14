@@ -267,6 +267,15 @@ DEFAULT_TEMPLATES: List[Dict[str, Any]] = [
      "content": "Opération Incinérateur — {burn_amount_pretty} $DEEPOTUS quittent la cap table à jamais. {burn_pct}% du supply, partis. Le Cabinet n'imprime pas. Le Cabinet retranche. Preuve : {tx_link}"},
     {"trigger_key": "burn_event", "language": "fr",
      "content": "Rareté, on-chain. {burn_amount_pretty} $DEEPOTUS brûlés. Float effectif désormais {burn_circulating_after_pretty}. Chaque larme de bot sandwich est une feature. {tx_link}"},
+    # ----- Giveaway extraction (Sprint 19+ — Cabinet public draw) -----
+    {"trigger_key": "giveaway_extraction", "language": "en",
+     "content": "EXTRACTION SUCCESS — The Cabinet has selected {winners_count} agents. {winners_formatted}. {per_winner_sol_pretty} SOL each, on-chain. Discipline rewarded. Proof seed: {seed_fingerprint_short}…"},
+    {"trigger_key": "giveaway_extraction", "language": "en",
+     "content": "Draw complete. Pool of {pool_sol_pretty} SOL splits between {winners_count}: {winners_formatted}. Random was provably fair (slot-anchored). Cabinet doesn't lottery. Cabinet selects. #DEEPOTUS"},
+    {"trigger_key": "giveaway_extraction", "language": "fr",
+     "content": "EXTRACTION RÉUSSIE — Le Cabinet a sélectionné {winners_count} agents. {winners_formatted}. {per_winner_sol_pretty} SOL chacun, on-chain. La discipline est récompensée. Empreinte preuve : {seed_fingerprint_short}…"},
+    {"trigger_key": "giveaway_extraction", "language": "fr",
+     "content": "Tirage clos. Pool de {pool_sol_pretty} SOL réparti entre {winners_count} : {winners_formatted}. Aléa prouvable (ancré sur slot Solana). Le Cabinet ne loterise pas. Le Cabinet sélectionne. #DEEPOTUS"},
 ]
 
 

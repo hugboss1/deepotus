@@ -37,6 +37,7 @@ from routers import (
     burns as burns_router,
     cabinet_vault as cabinet_vault_router,
     founder as founder_router,
+    giveaway as giveaway_router,
     infiltration as infiltration_router,
     kol_listener as kol_listener_router,
     operation as operation_router,
@@ -87,6 +88,8 @@ app.include_router(wallet_registry_router.admin_router)
 # public read-only under /api/transparency/{stats,burns}.
 app.include_router(burns_router.public_router)
 app.include_router(burns_router.admin_router)
+# Sprint 19+ — Giveaway Extraction admin endpoints under /api/admin/giveaway/*
+app.include_router(giveaway_router.router)
 
 # ---------------------------------------------------------------------
 # Static assets (email hero illustrations, etc.)
@@ -258,6 +261,16 @@ async def on_startup():
         logger.info("[startup] Operation Incinerator burn_logs indexes ready.")
     except Exception:
         logging.exception("[startup] burn_logs init failed")
+
+    # ---- Sprint 19+ — Giveaway Extraction pipeline ----
+    # Snapshot collection holds every preview + real extraction with
+    # full audit trail (eligible candidates, seed math, winners).
+    try:
+        from core import giveaway as _giveaway
+        await _giveaway.ensure_indexes()
+        logger.info("[startup] Giveaway extraction indexes ready.")
+    except Exception:
+        logging.exception("[startup] giveaway init failed")
 
 
 @app.on_event("shutdown")

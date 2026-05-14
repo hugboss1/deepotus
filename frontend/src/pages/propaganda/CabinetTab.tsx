@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/card";
 import { getAdminToken } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
+import { GiveawayExtractionCard } from "./GiveawayExtractionCard";
 
 const API: string = process.env.REACT_APP_BACKEND_URL || "";
 
@@ -1023,6 +1024,7 @@ export default function CabinetTab(): React.ReactElement {
       <WelcomeSignalCard />
       <InteractionBotCard />
       <IncineratorCard />
+      <GiveawayExtractionCard />
     </div>
   );
 }

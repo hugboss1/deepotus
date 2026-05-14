@@ -21,6 +21,7 @@ from .base import (
 from . import (  # noqa: F401  — side-effect imports register triggers
     burn_event,
     founder_buy,
+    giveaway_extraction,
     jeet_dip,
     kol_mention,
     mc_milestone,
