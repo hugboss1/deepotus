@@ -1,26 +1,34 @@
 [
   {
-    "content": "T1 — Téléchargé pulse-bg.{webp 305KB, jpg 390KB} dans /public",
+    "content": "T1 — lib/missions.ts : data layer (5 missions actives + 1 [REDACTED] + giveaway config)",
     "status": "completed"
   },
   {
-    "content": "T2 — Créé Pulse.tsx (background pulse+glitch RGB-split, vignette, scanlines CRT, floats avec drift, HUD live+TAPS counter)",
+    "content": "T2 — i18n FR+EN keys missions/giveaway",
     "status": "completed"
   },
   {
-    "content": "T3 — useClickSound : synthése Web Audio (noise burst HPF + triangle osc pitch-variant) — 0 asset audio",
+    "content": "T3 — pages/Missions.tsx : full Classified Dossiers hub",
     "status": "completed"
   },
   {
-    "content": "T4 — useTelegramWebApp : lazy load SDK + ready()/expand() + détection isExpanded",
+    "content": "T4 — pages/Giveaway.tsx : May 20 draw rules + countdown live",
     "status": "completed"
   },
   {
-    "content": "T5 — Route /pulse montée dans App.tsx",
+    "content": "T5 — components/landing/MissionsSection.tsx : preview teaser sur Landing",
     "status": "completed"
   },
   {
-    "content": "T6 — tsc clean, Pytest 140/140, screenshot validé, CTA stopPropagation confirmé, href + label corrects",
+    "content": "T6 — Pulse.tsx : tab MISSIONS 🛡️ via Drawer + auto-skip intro (localStorage)",
+    "status": "completed"
+  },
+  {
+    "content": "T7 — Routes /missions /giveaway dans App.tsx + section sur Landing",
+    "status": "completed"
+  },
+  {
+    "content": "T8 — Validation : tsc clean + Pytest 140/140 + screenshots tous OK",
     "status": "completed"
   }
 ]

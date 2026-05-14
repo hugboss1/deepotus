@@ -1115,6 +1115,145 @@ export const translations = {
       footer:
         "Toutes les adresses, locks et opérations sont vérifiables on-chain. PROTOCOL ΔΣ s'engage à une transparence totale.",
     },
+
+    // ====================================================================
+    // Sprint 19 — Missions Hub & Giveaway
+    // ====================================================================
+    missionsPage: {
+      hero: {
+        kicker: "— DOSSIERS DÉCLASSIFIÉS · CABINET ΔΣ",
+        title: "Missions du Conseil",
+        subtitle:
+          "Six dossiers ouverts. Chacun récompense ceux qui suivent les ordres avant les autres. Le Conseil ne demande pas d'argent — il demande de la discipline.",
+        statusChip: "QG · MISSIONS ACTIVES",
+      },
+      stats: {
+        active: "Missions actives",
+        redacted: "Dossiers classifiés",
+        nextDrop: "Prochain tirage",
+      },
+      list: {
+        sectionKicker: "— OPÉRATIONS EN COURS",
+        sectionTitle: "Cinq protocoles à exécuter",
+      },
+      cards: {
+        infiltration: {
+          title: "OPÉRATION : INFILTRATION",
+          brief:
+            "Recruter 3 agents via votre lien de parrainage Telegram. Le Cabinet retient l'adresse de chaque recrue confirmée.",
+          reward: "Éligibilité tirage 20 mai · Place sur la whitelist Phase 2",
+          action: "DÉCRYPTER LA MISSION",
+        },
+        liquidity: {
+          title: "PROTOCOLE : LIQUIDITY",
+          brief:
+            "Conserver au moins 30 $ de $DEEP sur votre wallet jusqu'au snapshot du 20 mai. Position vérifiée on-chain.",
+          reward: "Éligibilité tirage 20 mai · Multiplicateur airdrop Phase 2",
+          action: "DÉCRYPTER LA MISSION",
+          secondaryAction: "ACHETER $DEEP",
+        },
+        amplification: {
+          title: "DIRECTIVE : AMPLIFICATION",
+          brief:
+            "Relayer 3 transmissions officielles du Prophet sur X (retweet + commentaire signé). Le Cabinet audite les engagements bots-free.",
+          reward: "Badge Cabinet · Boost priorité whitelist",
+          action: "DÉCRYPTER LA MISSION",
+        },
+        archive: {
+          title: "ARCHIVE : WHITELIST",
+          brief:
+            "Soumettre votre handle X + email dans le Terminal du Coffre. Le Cabinet active votre dossier individuel.",
+          reward: "Accès anticipé · Notifications classifiées",
+          action: "DÉCRYPTER LA MISSION",
+        },
+        signal: {
+          title: "SIGNAL : AUTHORITY",
+          brief:
+            "Rejoindre @deepotus sur Telegram + valider votre statut humain via le bot Prophet (Captcha + signal de présence).",
+          reward: "Statut Citoyen · Droit de vote sur les missions Phase 2",
+          action: "DÉCRYPTER LA MISSION",
+        },
+        future_06: {
+          title: "OPÉRATION ████████",
+          brief:
+            "Dossier scellé — déverrouillage post-mint. Seuls les agents avec statut Citoyen recevront le signal de déclenchement.",
+          reward: "Récompense ████████",
+          action: "[REDACTED]",
+        },
+      },
+      statusLabel: {
+        live: "ACTIVE",
+        redacted: "CLASSIFIÉE",
+        completed: "ARCHIVÉE",
+      },
+      rewardLabel: "Récompense",
+      future: {
+        kicker: "— FILE D'ATTENTE",
+        title: "FUTURE MISSIONS [REDACTED]",
+        copy:
+          "Le Cabinet a déjà rédigé les opérations 06 à 12. Elles seront dévoilées à mesure que les seuils on-chain sont franchis. Restez en veille — les ordres tombent sans préavis.",
+      },
+      giveawayCta: {
+        kicker: "TIRAGE 20 MAI",
+        title: "Le Pool Cabinet vous attend",
+        copy:
+          "Compléter Operation 001 + Protocol 002 vous rend automatiquement éligible. Aucune inscription manuelle.",
+        button: "LIRE LES RÈGLES DU TIRAGE",
+      },
+    },
+
+    giveawayPage: {
+      hero: {
+        kicker: "— OPÉRATION CABINET · TIRAGE PUBLIC",
+        title: "Pool Liquidity · 20 Mai",
+        subtitle:
+          "Le Cabinet récompense les agents disciplinés. Aucun formulaire, aucune adresse à donner. Le snapshot on-chain identifie automatiquement les éligibles.",
+      },
+      countdown: {
+        label: "TEMPS RESTANT AVANT LE TIRAGE",
+        days: "JOURS",
+        hours: "H",
+        minutes: "MIN",
+        seconds: "SEC",
+        live: "TIRAGE EN COURS",
+        ended: "TIRAGE TERMINÉ",
+      },
+      pool: {
+        kicker: "DOTATION TOTALE",
+        amountSuffix: "SOL",
+        copy: "Distribués entre 5 agents tirés au sort parmi les éligibles.",
+      },
+      rules: {
+        kicker: "— PROTOCOLE D'ÉLIGIBILITÉ",
+        title: "Deux conditions. Aucune exception.",
+        rule1: {
+          tag: "RÈGLE 01",
+          title: "Recruter 3 agents",
+          body:
+            "Trois utilisateurs Telegram distincts doivent rejoindre @deepotus via votre lien de parrainage personnel. Comptes <24h ignorés.",
+        },
+        rule2: {
+          tag: "RÈGLE 02",
+          title: "Détenir 30 $ de $DEEP",
+          body:
+            "Au moment du snapshot (20 mai · 18:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $DEEP. Vérification on-chain via Helius.",
+        },
+      },
+      mechanism: {
+        kicker: "— MÉCANIQUE DU TIRAGE",
+        title: "Comment le Cabinet choisit",
+        step1: "Snapshot on-chain à 18:00 UTC précises.",
+        step2: "Croisement avec la base des parrainages Telegram confirmés.",
+        step3: "Tirage VRF Solana publié on-chain — vérifiable par tous.",
+        step4: "5 gagnants annoncés sur X + Telegram dans les 6h.",
+      },
+      footer:
+        "Aucun achat n'est requis pour participer — la règle 02 peut être satisfaite via airdrop, faucet partenaire ou échange P2P. Le Cabinet décline toute responsabilité fiscale.",
+      cta: {
+        primary: "VOIR LES MISSIONS",
+        secondary: "ACHETER $DEEP",
+      },
+    },
   },
 
   // ====================================================================
@@ -2204,6 +2343,145 @@ export const translations = {
       },
       footer:
         "All addresses, locks, and operations are publicly verifiable on-chain. PROTOCOL ΔΣ is committed to full transparency.",
+    },
+
+    // ====================================================================
+    // Sprint 19 — Missions Hub & Giveaway
+    // ====================================================================
+    missionsPage: {
+      hero: {
+        kicker: "— DECLASSIFIED DOSSIERS · CABINET ΔΣ",
+        title: "Council Missions",
+        subtitle:
+          "Six dossiers open. Each rewards those who follow orders before the rest. The Council doesn't ask for money — it asks for discipline.",
+        statusChip: "HQ · MISSIONS LIVE",
+      },
+      stats: {
+        active: "Active missions",
+        redacted: "Classified files",
+        nextDrop: "Next draw",
+      },
+      list: {
+        sectionKicker: "— ONGOING OPERATIONS",
+        sectionTitle: "Five protocols to execute",
+      },
+      cards: {
+        infiltration: {
+          title: "OPERATION: INFILTRATION",
+          brief:
+            "Recruit 3 agents via your Telegram referral link. The Cabinet records the address of every confirmed recruit.",
+          reward: "May 20 draw eligibility · Phase 2 whitelist seat",
+          action: "DECODE MISSION",
+        },
+        liquidity: {
+          title: "PROTOCOL: LIQUIDITY",
+          brief:
+            "Hold at least $30 worth of $DEEP on your wallet through the May 20 snapshot. Position verified on-chain.",
+          reward: "May 20 draw eligibility · Phase 2 airdrop multiplier",
+          action: "DECODE MISSION",
+          secondaryAction: "BUY $DEEP",
+        },
+        amplification: {
+          title: "DIRECTIVE: AMPLIFICATION",
+          brief:
+            "Relay 3 official Prophet transmissions on X (retweet + signed comment). The Cabinet audits for bots-free engagement.",
+          reward: "Cabinet badge · Whitelist priority boost",
+          action: "DECODE MISSION",
+        },
+        archive: {
+          title: "ARCHIVE: WHITELIST",
+          brief:
+            "Submit your X handle + email through the Vault Terminal. The Cabinet activates your individual file.",
+          reward: "Early access · Classified notifications",
+          action: "DECODE MISSION",
+        },
+        signal: {
+          title: "SIGNAL: AUTHORITY",
+          brief:
+            "Join @deepotus on Telegram + verify human status via the Prophet bot (Captcha + presence signal).",
+          reward: "Citizen status · Vote rights on Phase 2 missions",
+          action: "DECODE MISSION",
+        },
+        future_06: {
+          title: "OPERATION ████████",
+          brief:
+            "File sealed — unlocks post-mint. Only agents with Citizen status will receive the trigger signal.",
+          reward: "Reward ████████",
+          action: "[REDACTED]",
+        },
+      },
+      statusLabel: {
+        live: "ACTIVE",
+        redacted: "CLASSIFIED",
+        completed: "ARCHIVED",
+      },
+      rewardLabel: "Reward",
+      future: {
+        kicker: "— QUEUE",
+        title: "FUTURE MISSIONS [REDACTED]",
+        copy:
+          "The Cabinet has already drafted operations 06 through 12. They will be revealed as on-chain thresholds are crossed. Stay on watch — orders drop without warning.",
+      },
+      giveawayCta: {
+        kicker: "MAY 20 DRAW",
+        title: "The Cabinet Pool awaits",
+        copy:
+          "Completing Operation 001 + Protocol 002 makes you automatically eligible. No manual sign-up.",
+        button: "READ THE DRAW RULES",
+      },
+    },
+
+    giveawayPage: {
+      hero: {
+        kicker: "— CABINET OPERATION · PUBLIC DRAW",
+        title: "Liquidity Pool · May 20",
+        subtitle:
+          "The Cabinet rewards disciplined agents. No form, no address to hand over. The on-chain snapshot automatically identifies eligible parties.",
+      },
+      countdown: {
+        label: "TIME LEFT BEFORE THE DRAW",
+        days: "DAYS",
+        hours: "H",
+        minutes: "MIN",
+        seconds: "SEC",
+        live: "DRAW IN PROGRESS",
+        ended: "DRAW CLOSED",
+      },
+      pool: {
+        kicker: "TOTAL ALLOCATION",
+        amountSuffix: "SOL",
+        copy: "Distributed among 5 agents randomly drawn from the eligible pool.",
+      },
+      rules: {
+        kicker: "— ELIGIBILITY PROTOCOL",
+        title: "Two conditions. No exceptions.",
+        rule1: {
+          tag: "RULE 01",
+          title: "Recruit 3 agents",
+          body:
+            "Three distinct Telegram users must join @deepotus through your personal referral link. Accounts under 24h are ignored.",
+        },
+        rule2: {
+          tag: "RULE 02",
+          title: "Hold $30 of $DEEP",
+          body:
+            "At snapshot time (May 20 · 18:00 UTC) your wallet must hold at least $30 worth of $DEEP. On-chain verification via Helius.",
+        },
+      },
+      mechanism: {
+        kicker: "— DRAW MECHANICS",
+        title: "How the Cabinet picks",
+        step1: "On-chain snapshot at 18:00 UTC sharp.",
+        step2: "Cross-referenced with confirmed Telegram referral database.",
+        step3: "Solana VRF draw published on-chain — verifiable by anyone.",
+        step4: "5 winners announced on X + Telegram within 6 hours.",
+      },
+      footer:
+        "No purchase is required to participate — rule 02 can be satisfied via airdrop, partner faucet, or P2P swap. The Cabinet declines all tax liability.",
+      cta: {
+        primary: "VIEW MISSIONS",
+        secondary: "BUY $DEEP",
+      },
     },
   },
 };

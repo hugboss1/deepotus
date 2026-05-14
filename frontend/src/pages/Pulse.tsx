@@ -36,10 +36,30 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ExternalLink, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  ArrowRight,
+  ExternalLink,
+  FileLock2,
+  Lock,
+  Megaphone,
+  Radar,
+  Shield,
+  Target,
+  Wallet,
+  X as XIcon,
+  Zap,
+} from "lucide-react";
 
 import { useClickSound } from "./pulse/useClickSound";
 import { useTelegramWebApp } from "./pulse/useTelegramWebApp";
+import {
+  MISSIONS,
+  GIVEAWAY,
+  TELEGRAM_CHANNEL_URL,
+  type MissionFamily,
+} from "@/lib/missions";
+import type { LucideIcon } from "lucide-react";
 
 // ---------------------------------------------------------------------
 // Tunables
@@ -91,6 +111,7 @@ function randomSolAmount(): string {
 
 const Pulse: React.FC = () => {
   const [floats, setFloats] = useState<SolFloat[]>([]);
+  const [missionsOpen, setMissionsOpen] = useState<boolean>(false);
   const nextId = useRef<number>(0);
   // Track scheduled timeouts so we can cancel on unmount. Without
   // this, a quick route change after a burst of taps would call
@@ -104,6 +125,25 @@ const Pulse: React.FC = () => {
   // overlay. Kept separately from the floats array so the readout
   // doesn't churn the heavy render path.
   const [tapCount, setTapCount] = useState<number>(0);
+
+  // Sprint 19 — Pre-stamp the DeepStateIntro cooldown so a TMA user
+  // who later navigates from /pulse to / does NOT face the 14s intro.
+  // The intro logic in DeepStateIntro.tsx skips when
+  // `deepstate.intro.lastSeenAt` is within the 24h cooldown window;
+  // we set it to "now" the moment /pulse mounts, which is exactly
+  // the right semantic — the user is already deep inside the brand.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        "deepstate.intro.lastSeenAt",
+        Date.now().toString(),
+      );
+    } catch {
+      // Private mode / quota — silently no-op, user just sees the
+      // intro on next nav. Not worth a UX prompt.
+    }
+  }, []);
 
   const handleTap = useCallback(
     (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>): void => {
@@ -243,6 +283,29 @@ const Pulse: React.FC = () => {
           )}
         </div>
 
+        {/* ---------- MISSIONS button (Sprint 19) ---------- */}
+        <button
+          type="button"
+          className="pulse-missions-btn"
+          onClick={(e: React.MouseEvent<HTMLButtonElement>): void => {
+            // Don't spawn a float / play click — opening the drawer
+            // is a deliberate UI action, not a "pulse" tap.
+            e.stopPropagation();
+            setMissionsOpen(true);
+          }}
+          onTouchStart={(e: React.TouchEvent<HTMLButtonElement>): void => {
+            e.stopPropagation();
+          }}
+          aria-label="Open missions drawer"
+          data-testid="pulse-missions-btn"
+        >
+          <Shield size={14} />
+          <span>MISSIONS</span>
+          <span className="pulse-missions-badge" data-testid="pulse-missions-badge">
+            {MISSIONS.filter((m) => m.status === "live").length}
+          </span>
+        </button>
+
         <div className="pulse-hud-counter" aria-live="polite" data-testid="pulse-tap-counter">
           <span className="pulse-hud-counter-label">TAPS</span>
           <span className="pulse-hud-counter-value">{tapCount.toLocaleString("en-US")}</span>
@@ -295,12 +358,211 @@ const Pulse: React.FC = () => {
             Tap anywhere to feel the pulse · BonkBot referral · Telegram
           </p>
         </div>
+
+        {/* ---------- MISSIONS drawer (Sprint 19) ---------- */}
+        {missionsOpen && (
+          <PulseMissionsDrawer onClose={(): void => setMissionsOpen(false)} />
+        )}
       </div>
     </>
   );
 };
 
 export default Pulse;
+
+// ---------------------------------------------------------------------
+// Missions drawer (Sprint 19)
+// ---------------------------------------------------------------------
+
+const FAMILY_ACCENT_PULSE: Record<MissionFamily, string> = {
+  infiltration: "#F59E0B",
+  liquidity: "#33FF66",
+  amplification: "#E11D48",
+  archive: "#22D3EE",
+  signal: "#A78BFA",
+  classified: "#FF3B3B",
+};
+
+const FAMILY_ICON_PULSE: Record<MissionFamily, LucideIcon> = {
+  infiltration: Target,
+  liquidity: Wallet,
+  amplification: Megaphone,
+  archive: FileLock2,
+  signal: Radar,
+  classified: Lock,
+};
+
+interface PulseMissionsDrawerProps {
+  onClose: () => void;
+}
+
+const PulseMissionsDrawer: React.FC<PulseMissionsDrawerProps> = ({ onClose }) => {
+  // Close on ESC for desktop users.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const drawDate = useMemo(() => {
+    try {
+      return new Date(GIVEAWAY.drawDateIso).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return "May 20";
+    }
+  }, []);
+
+  return (
+    <div
+      className="pulse-drawer-overlay"
+      onClick={(e: React.MouseEvent<HTMLDivElement>): void => {
+        // Click on backdrop closes; clicks on the panel are
+        // stopPropagation'd below so they don't bubble.
+        e.stopPropagation();
+        onClose();
+      }}
+      onTouchStart={(e: React.TouchEvent<HTMLDivElement>): void => {
+        e.stopPropagation();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Missions panel"
+      data-testid="pulse-missions-drawer"
+    >
+      <aside
+        className="pulse-drawer-panel"
+        onClick={(e: React.MouseEvent<HTMLElement>): void => {
+          e.stopPropagation();
+        }}
+        onTouchStart={(e: React.TouchEvent<HTMLElement>): void => {
+          e.stopPropagation();
+        }}
+      >
+        <header className="pulse-drawer-header">
+          <div>
+            <p className="pulse-drawer-kicker">MISSIONS · CABINET ΔΣ</p>
+            <h2 className="pulse-drawer-title">
+              Goals · {MISSIONS.filter((m) => m.status === "live").length} active
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="pulse-drawer-close"
+            aria-label="Close missions"
+            data-testid="pulse-missions-drawer-close"
+          >
+            <XIcon size={18} />
+          </button>
+        </header>
+
+        <div className="pulse-drawer-scroll">
+          {/* Giveaway sticky chip at the top — most TMA traffic comes
+              for the reward so we surface it first. */}
+          <Link
+            to="/giveaway"
+            className="pulse-drawer-giveaway"
+            data-testid="pulse-missions-giveaway"
+          >
+            <span className="pulse-drawer-giveaway-tag">★ DRAW {drawDate}</span>
+            <span className="pulse-drawer-giveaway-copy">
+              {GIVEAWAY.rewardSol} SOL pool · {GIVEAWAY.rules.minInvites} invites + ${GIVEAWAY.rules.minHoldingUsd} hold
+            </span>
+            <ArrowRight size={12} />
+          </Link>
+
+          <ul className="pulse-drawer-list" data-testid="pulse-missions-list">
+            {MISSIONS.map((m) => {
+              const Icon = FAMILY_ICON_PULSE[m.family];
+              const accent = FAMILY_ACCENT_PULSE[m.family];
+              const isRedacted = m.status === "redacted";
+              return (
+                <li
+                  key={m.id}
+                  className="pulse-drawer-item"
+                  style={{
+                    borderColor: isRedacted ? "rgba(255,59,59,0.35)" : accent + "55",
+                  }}
+                  data-testid={`pulse-mission-${m.id}`}
+                >
+                  <div className="pulse-drawer-item-head">
+                    <span
+                      className="pulse-drawer-item-icon"
+                      style={{ color: accent, borderColor: accent + "66" }}
+                    >
+                      <Icon size={14} />
+                    </span>
+                    <span
+                      className="pulse-drawer-item-ref"
+                      style={{ color: accent }}
+                    >
+                      {m.dossierRef}
+                    </span>
+                    {isRedacted && (
+                      <span className="pulse-drawer-item-redacted">CLASSIFIED</span>
+                    )}
+                  </div>
+                  <p className={`pulse-drawer-item-title ${isRedacted ? "is-redacted" : ""}`}>
+                    {/* We deliberately do NOT use i18n here — Pulse
+                        drawer is operator-facing copy in EN by design
+                        (the bot's UI language is English in TMA). The
+                        full /missions page is i18n-driven. */}
+                    {missionShortLabel(m.id)}
+                  </p>
+                  {!isRedacted ? (
+                    <a
+                      href={m.ctaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="pulse-drawer-item-cta"
+                      style={{ color: accent, borderColor: accent + "60" }}
+                      data-testid={`pulse-mission-cta-${m.id}`}
+                    >
+                      DECODE <ExternalLink size={10} />
+                    </a>
+                  ) : (
+                    <span className="pulse-drawer-item-cta is-disabled">
+                      <Lock size={10} /> SEALED
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          <Link
+            to="/missions"
+            className="pulse-drawer-allcta"
+            data-testid="pulse-missions-see-all"
+          >
+            View full dossiers hub <ArrowRight size={12} />
+          </Link>
+        </div>
+      </aside>
+    </div>
+  );
+};
+
+/** Pulse drawer uses condensed labels (no i18n) — keeps the TMA UI
+ *  tight on tiny mobile heights where a 12-word card title would
+ *  blow up the layout. The /missions page renders full bilingual
+ *  copy. */
+function missionShortLabel(id: string): string {
+  switch (id) {
+    case "infiltration": return "OPERATION: INFILTRATION — 3 invites";
+    case "liquidity":    return "PROTOCOL: LIQUIDITY — Hold $30 of $DEEP";
+    case "amplification": return "DIRECTIVE: AMPLIFICATION — 3 retweets";
+    case "archive":      return "ARCHIVE: WHITELIST — Submit handle";
+    case "signal":       return "SIGNAL: AUTHORITY — Join + verify";
+    case "future_06":    return "OPERATION ████████";
+    default:             return id.toUpperCase();
+  }
+}
 
 // ---------------------------------------------------------------------
 // CSS — co-located. Inlined via <style> so we don't need a
@@ -588,4 +850,243 @@ const PULSE_KEYFRAMES = `
     animation: none !important;
   }
 }
+
+/* ---------- MISSIONS button + drawer (Sprint 19) ---------- */
+.pulse-missions-btn {
+  position: absolute;
+  /* Place it below the LIVE chip on the left so it stacks with the
+     TAPS counter on the right — both peripheral, neither obstructing
+     the central artwork. */
+  top: calc(env(safe-area-inset-top, 16px) + 44px);
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px 7px 9px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(225,29,72,0.18) 0%, rgba(245,158,11,0.16) 100%);
+  border: 1px solid rgba(255, 59, 59, 0.55);
+  color: #FFB68C;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  z-index: 11;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 18px -6px rgba(225, 29, 72, 0.65);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+.pulse-missions-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 0 24px -4px rgba(225, 29, 72, 0.85);
+}
+.pulse-missions-btn:active { transform: translateY(1px); }
+.pulse-missions-btn:focus-visible { outline: 2px solid #F59E0B; outline-offset: 3px; }
+.pulse-missions-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #F59E0B;
+  color: #1A0E03;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* Drawer overlay + panel */
+.pulse-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  animation: pulse-drawer-fade 220ms ease-out both;
+}
+@keyframes pulse-drawer-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.pulse-drawer-panel {
+  width: min(420px, 100vw);
+  height: 100%;
+  background: linear-gradient(180deg, rgba(8, 4, 4, 0.98) 0%, rgba(15, 8, 8, 0.98) 100%);
+  border-left: 1px solid rgba(255, 59, 59, 0.45);
+  box-shadow: -24px 0 60px -20px rgba(225, 29, 72, 0.45);
+  display: flex;
+  flex-direction: column;
+  animation: pulse-drawer-slide 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pulse-drawer-slide {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.pulse-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid rgba(255, 59, 59, 0.18);
+}
+.pulse-drawer-kicker {
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: #FF6B6B;
+  margin: 0;
+}
+.pulse-drawer-title {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #FFE4D4;
+}
+.pulse-drawer-close {
+  background: transparent;
+  border: 1px solid rgba(255, 59, 59, 0.35);
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #FFB68C;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+.pulse-drawer-close:hover { background: rgba(255, 59, 59, 0.12); }
+.pulse-drawer-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px 24px;
+}
+.pulse-drawer-giveaway {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  background: linear-gradient(135deg, rgba(245,158,11,0.14) 0%, rgba(225,29,72,0.08) 100%);
+  color: #FFD7A0;
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.pulse-drawer-giveaway:hover {
+  background: linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(225,29,72,0.12) 100%);
+  transform: translateY(-1px);
+}
+.pulse-drawer-giveaway-tag {
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #FFB94A;
+  white-space: nowrap;
+}
+.pulse-drawer-giveaway-copy {
+  flex: 1;
+  font-size: 10px;
+  color: rgba(255, 215, 160, 0.85);
+  letter-spacing: 0.06em;
+}
+.pulse-drawer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pulse-drawer-item {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 12px 14px;
+  background: rgba(20, 10, 10, 0.6);
+}
+.pulse-drawer-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.pulse-drawer-item-icon {
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  border: 1px solid;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.4);
+}
+.pulse-drawer-item-ref {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+}
+.pulse-drawer-item-redacted {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  padding: 2px 6px;
+  border: 1px solid rgba(255,59,59,0.5);
+  color: #FF6B6B;
+  border-radius: 2px;
+}
+.pulse-drawer-item-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #FFE4D4;
+  line-height: 1.4;
+}
+.pulse-drawer-item-title.is-redacted {
+  color: rgba(255, 107, 107, 0.55);
+  font-style: italic;
+}
+.pulse-drawer-item-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(0,0,0,0.3);
+  transition: background 160ms ease;
+}
+.pulse-drawer-item-cta:hover { background: rgba(255,255,255,0.04); }
+.pulse-drawer-item-cta.is-disabled {
+  color: rgba(255, 107, 107, 0.6);
+  border-color: rgba(255, 59, 59, 0.35);
+  cursor: not-allowed;
+}
+.pulse-drawer-allcta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: #F59E0B;
+  color: #1A0E03;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  width: 100%;
+  justify-content: center;
+  transition: background 160ms ease;
+}
+.pulse-drawer-allcta:hover { background: #FFB94A; }
 `;

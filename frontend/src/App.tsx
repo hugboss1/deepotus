@@ -25,6 +25,8 @@ import PublicStats from "@/pages/PublicStats";
 import HowToBuy from "@/pages/HowToBuy";
 import Transparency from "@/pages/Transparency";
 import Pulse from "@/pages/Pulse";
+import Missions from "@/pages/Missions";
+import Giveaway from "@/pages/Giveaway";
 
 // `document.title` and SEO meta tags are synced dynamically by
 // I18nProvider based on the active language (FR / EN) — see
@@ -41,6 +43,9 @@ function App(): JSX.Element {
               <Route path="/transparency" element={<Transparency />} />
               {/* Sprint 18 — The Liquidity Pulse (omnichannel TMA landing) */}
               <Route path="/pulse" element={<Pulse />} />
+              {/* Sprint 19 — Missions Hub + Giveaway */}
+              <Route path="/missions" element={<Missions />} />
+              <Route path="/giveaway" element={<Giveaway />} />
               <Route path="/operation" element={<Operation />} />
               <Route path="/classified-vault" element={<ClassifiedVault />} />
               <Route path="/admin" element={<Admin />} />

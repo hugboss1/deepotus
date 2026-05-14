@@ -1,0 +1,317 @@
+/**
+ * /missions — Missions Hub (Sprint 19).
+ *
+ * Classified Dossiers aesthetic. Every mission card is a 'dossier'
+ * with a kicker ref (OPERATION · 001), a status chip (ACTIVE /
+ * CLASSIFIED), a brief, a reward line, and a primary CTA that opens
+ * the Telegram channel where the actual proof submission happens.
+ *
+ * The page also surfaces the May 20 giveaway via a dedicated banner
+ * so a user landing here from the Pulse TMA tab gets the full
+ * picture without an extra hop.
+ *
+ * Visual palette — red neon + amber, per Sprint 19 spec.
+ */
+import React, { useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  FileLock2,
+  Lock,
+  Megaphone,
+  Radar,
+  Send,
+  ShieldCheck,
+  Target,
+  Wallet,
+} from "lucide-react";
+import { useI18n } from "@/i18n/I18nProvider";
+import ThemeToggle from "@/components/landing/ThemeToggle";
+import {
+  MISSIONS,
+  GIVEAWAY,
+  TELEGRAM_CHANNEL_URL,
+  type Mission,
+  type MissionFamily,
+} from "@/lib/missions";
+import type { LucideIcon } from "lucide-react";
+
+// Family → icon + accent. Single source of truth so a future family
+// (e.g. "governance") only needs an entry here, not a component edit.
+const FAMILY_META: Record<MissionFamily, { icon: LucideIcon; accent: string; accentSoft: string }> = {
+  infiltration: { icon: Target, accent: "#F59E0B", accentSoft: "rgba(245,158,11,0.12)" },
+  liquidity: { icon: Wallet, accent: "#33FF66", accentSoft: "rgba(51,255,102,0.12)" },
+  amplification: { icon: Megaphone, accent: "#E11D48", accentSoft: "rgba(225,29,72,0.12)" },
+  archive: { icon: FileLock2, accent: "#22D3EE", accentSoft: "rgba(34,211,238,0.12)" },
+  signal: { icon: Radar, accent: "#A78BFA", accentSoft: "rgba(167,139,250,0.12)" },
+  classified: { icon: Lock, accent: "#FF3B3B", accentSoft: "rgba(255,59,59,0.10)" },
+};
+
+function daysUntil(iso: string): number {
+  const target = new Date(iso).getTime();
+  const now = Date.now();
+  return Math.max(0, Math.ceil((target - now) / (1000 * 60 * 60 * 24)));
+}
+
+const MissionCard: React.FC<{ mission: Mission; index: number }> = ({ mission, index }) => {
+  const { t } = useI18n();
+  const meta = FAMILY_META[mission.family];
+  const Icon = meta.icon;
+  const root = `missionsPage.cards.${mission.i18nKey}`;
+  const isRedacted = mission.status === "redacted";
+  const statusKey = `missionsPage.statusLabel.${mission.status}`;
+
+  return (
+    <article
+      className="group relative rounded-md border bg-background overflow-hidden transition-transform hover:-translate-y-0.5"
+      style={{
+        borderColor: isRedacted ? "rgba(255,59,59,0.35)" : meta.accent + "40",
+        boxShadow: isRedacted ? "0 0 26px -10px rgba(255,59,59,0.4)" : `0 0 28px -14px ${meta.accent}66`,
+      }}
+      data-testid={`mission-card-${mission.id}`}
+    >
+      {/* Top stripe: dossier ref + status chip */}
+      <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 border-b" style={{ borderColor: meta.accent + "24", background: meta.accentSoft }}>
+        <span className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: meta.accent }}>
+          {mission.dossierRef}
+        </span>
+        <span
+          className="font-mono text-[9px] uppercase tracking-[0.2em] px-2 py-0.5 rounded-sm border"
+          style={{
+            borderColor: isRedacted ? "#FF3B3B" : meta.accent,
+            color: isRedacted ? "#FF3B3B" : meta.accent,
+            background: isRedacted ? "rgba(255,59,59,0.06)" : "transparent",
+          }}
+          data-testid={`mission-status-${mission.id}`}
+        >
+          {t(statusKey) as string}
+        </span>
+      </div>
+
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start gap-3 mb-3">
+          <div
+            className="shrink-0 w-9 h-9 rounded-md grid place-items-center border"
+            style={{
+              borderColor: meta.accent + "55",
+              background: meta.accentSoft,
+              color: meta.accent,
+            }}
+            aria-hidden
+          >
+            <Icon size={16} />
+          </div>
+          <h3
+            className={`font-display text-lg sm:text-xl font-semibold leading-tight tracking-tight ${isRedacted ? "redacted-title" : ""}`}
+            data-testid={`mission-title-${mission.id}`}
+          >
+            {t(`${root}.title`) as string}
+          </h3>
+        </div>
+
+        <p className={`text-sm leading-relaxed text-foreground/75 mb-4 ${isRedacted ? "text-foreground/45 italic" : ""}`}>
+          {t(`${root}.brief`) as string}
+        </p>
+
+        <div className="flex items-start gap-2 text-[11px] font-mono uppercase tracking-wider text-foreground/55 mb-5" data-testid={`mission-reward-${mission.id}`}>
+          <ShieldCheck size={12} style={{ color: meta.accent }} className="mt-0.5 shrink-0" />
+          <span>
+            <span className="text-foreground/40">{t("missionsPage.rewardLabel") as string} · </span>
+            {t(`${root}.reward`) as string}
+          </span>
+        </div>
+
+        {/* Action row — primary always Telegram. Liquidity has a
+            secondary CTA into BonkBot for the buy-flow shortcut. */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isRedacted ? (
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-[#FF3B3B]/40 text-[#FF3B3B]/70 font-mono text-xs uppercase tracking-widest cursor-not-allowed"
+              data-testid={`mission-cta-${mission.id}-disabled`}
+            >
+              <Lock size={12} /> {t(`${root}.action`) as string}
+            </button>
+          ) : (
+            <a
+              href={mission.ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md font-mono text-xs uppercase tracking-widest text-background transition-transform hover:translate-x-0.5"
+              style={{ background: meta.accent }}
+              data-testid={`mission-cta-${mission.id}`}
+            >
+              <Send size={12} /> {t(`${root}.action`) as string} <ArrowRight size={12} />
+            </a>
+          )}
+          {mission.secondaryCtaUrl && !isRedacted && (
+            <a
+              href={mission.secondaryCtaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/15 hover:border-foreground/35 transition-colors"
+              data-testid={`mission-cta-secondary-${mission.id}`}
+            >
+              {t(`${root}.secondaryAction`) as string} <ExternalLink size={11} />
+            </a>
+          )}
+          {/* Index badge — tiny visual cue echoing the dossier ref. */}
+          <span className="ml-auto font-mono text-[10px] text-foreground/35 tracking-widest">
+            {String(index + 1).padStart(2, "0")} / {MISSIONS.length.toString().padStart(2, "0")}
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+};
+
+const Missions: React.FC = () => {
+  const { t } = useI18n();
+
+  useEffect(() => {
+    const prev = document.title;
+    document.title = `Missions · PROTOCOL ΔΣ`;
+    return () => {
+      document.title = prev;
+    };
+  }, []);
+
+  const activeCount = useMemo(() => MISSIONS.filter((m) => m.status === "live").length, []);
+  const redactedCount = useMemo(() => MISSIONS.filter((m) => m.status === "redacted").length, []);
+  const drawDaysLeft = useMemo(() => daysUntil(GIVEAWAY.drawDateIso), []);
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-body" data-testid="missions-page">
+      <style>{`
+        /* Redacted title visual — black bar over the text, mimicking
+           a classified marker on a leaked dossier. */
+        .redacted-title { position: relative; color: rgba(255,59,59,0.65); }
+        .redacted-title::after {
+          content: ""; position: absolute; left: -2px; right: -2px; top: 35%; bottom: 28%;
+          background: linear-gradient(90deg, rgba(255,59,59,0.85) 0%, rgba(124,28,40,0.95) 100%);
+          border-radius: 1px; mix-blend-mode: multiply;
+        }
+        @keyframes mission-pulse-amber {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.45); }
+          50% { box-shadow: 0 0 0 6px rgba(245,158,11,0.0); }
+        }
+        .live-dot {
+          width: 6px; height: 6px; border-radius: 999px;
+          background: #F59E0B; animation: mission-pulse-amber 1.6s ease-in-out infinite;
+        }
+      `}</style>
+
+      <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-4 flex items-center justify-between">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/55 hover:text-foreground transition-colors"
+          data-testid="missions-back-link"
+        >
+          <ArrowLeft size={14} /> {t("common.backHome") as string}
+        </Link>
+        <ThemeToggle />
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
+        {/* ---- Hero ---- */}
+        <section className="pt-6 pb-10 border-b border-foreground/10">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-[#FF3B3B] font-mono mb-3">
+            <span className="live-dot" />
+            {t("missionsPage.hero.kicker") as string}
+          </div>
+          <h1
+            className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight tracking-tight"
+            data-testid="missions-hero-title"
+          >
+            {t("missionsPage.hero.title") as string}
+          </h1>
+          <p className="mt-4 text-sm sm:text-base text-foreground/70 leading-relaxed max-w-2xl">
+            {t("missionsPage.hero.subtitle") as string}
+          </p>
+
+          {/* Hero stats strip — 3 KPIs, fits in one line on >= md. */}
+          <div className="mt-7 grid grid-cols-3 gap-3 max-w-xl">
+            <div className="rounded-md border border-[#F59E0B]/35 bg-[#F59E0B]/5 px-3 py-2" data-testid="missions-stat-active">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-[#F59E0B]">{t("missionsPage.stats.active") as string}</p>
+              <p className="font-mono text-xl sm:text-2xl font-semibold mt-0.5">{activeCount}</p>
+            </div>
+            <div className="rounded-md border border-[#FF3B3B]/35 bg-[#FF3B3B]/5 px-3 py-2" data-testid="missions-stat-redacted">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-[#FF3B3B]">{t("missionsPage.stats.redacted") as string}</p>
+              <p className="font-mono text-xl sm:text-2xl font-semibold mt-0.5">{redactedCount}</p>
+            </div>
+            <div className="rounded-md border border-foreground/15 bg-foreground/[0.03] px-3 py-2" data-testid="missions-stat-draw">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-foreground/55">{t("missionsPage.stats.nextDrop") as string}</p>
+              <p className="font-mono text-xl sm:text-2xl font-semibold mt-0.5">
+                {drawDaysLeft}<span className="text-foreground/45 text-sm ml-1">d</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ---- Mission grid ---- */}
+        <section className="py-10">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-foreground/55 font-mono mb-2">
+            {t("missionsPage.list.sectionKicker") as string}
+          </div>
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold leading-tight tracking-tight mb-7">
+            {t("missionsPage.list.sectionTitle") as string}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5" data-testid="missions-grid">
+            {MISSIONS.map((m, i) => (
+              <MissionCard key={m.id} mission={m} index={i} />
+            ))}
+          </div>
+        </section>
+
+        {/* ---- FUTURE MISSIONS [REDACTED] anticipation block ---- */}
+        <section className="py-10 border-t border-foreground/10" data-testid="missions-future-block">
+          <div className="rounded-md border border-[#FF3B3B]/30 bg-[#FF3B3B]/[0.04] px-5 sm:px-7 py-7 relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none opacity-15" aria-hidden style={{
+              backgroundImage: "repeating-linear-gradient(135deg, transparent 0 14px, rgba(255,59,59,0.4) 14px 16px)"
+            }} />
+            <div className="relative">
+              <p className="text-[11px] uppercase tracking-[0.25em] text-[#FF3B3B] font-mono">
+                {t("missionsPage.future.kicker") as string}
+              </p>
+              <h3 className="mt-2 font-display text-xl sm:text-2xl font-semibold tracking-tight">
+                {t("missionsPage.future.title") as string}
+              </h3>
+              <p className="mt-3 text-sm text-foreground/70 leading-relaxed max-w-2xl">
+                {t("missionsPage.future.copy") as string}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ---- Giveaway cross-link ---- */}
+        <section className="py-6" data-testid="missions-giveaway-cta">
+          <div className="rounded-md border border-[#F59E0B]/45 bg-gradient-to-br from-[#F59E0B]/10 to-[#FF3B3B]/5 px-5 sm:px-7 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#F59E0B]">
+                {t("missionsPage.giveawayCta.kicker") as string}
+              </p>
+              <h3 className="mt-1 font-display text-xl sm:text-2xl font-semibold tracking-tight">
+                {t("missionsPage.giveawayCta.title") as string}
+              </h3>
+              <p className="mt-2 text-sm text-foreground/70 leading-relaxed max-w-xl">
+                {t("missionsPage.giveawayCta.copy") as string}
+              </p>
+            </div>
+            <Link
+              to="/giveaway"
+              className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-md bg-[#F59E0B] text-background font-mono text-xs uppercase tracking-[0.18em] hover:bg-[#FFB94A] transition-colors"
+              data-testid="missions-giveaway-cta-btn"
+            >
+              {t("missionsPage.giveawayCta.button") as string} <ArrowRight size={12} />
+            </Link>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+};
+
+export default Missions;

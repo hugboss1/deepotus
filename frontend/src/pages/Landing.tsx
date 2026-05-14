@@ -17,6 +17,7 @@ import Whitelist from "@/components/landing/Whitelist";
 import Socials from "@/components/landing/Socials";
 import Footer from "@/components/landing/Footer";
 import DeepStateIntro from "@/components/intro/DeepStateIntro";
+import MissionsSection from "@/components/landing/MissionsSection";
 
 export default function Landing() {
   return (
@@ -32,6 +33,10 @@ export default function Landing() {
         <PropheciesFeed />
         <Mission />
         <Tokenomics />
+        {/* Sprint 19 \u2014 Missions Hub teaser (before TransparencyTimeline
+            because Mission/Tokenomics establish "what" then Missions
+            tells "how to earn", before the roadmap shows "when"). */}
+        <MissionsSection />
         <TransparencyTimeline />
         <ROISimulator />
         <Roadmap />
