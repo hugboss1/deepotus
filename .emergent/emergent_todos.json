@@ -1,22 +1,26 @@
 [
   {
-    "content": "T1 — Renommer phase_03_raydium_migration.png → phase_03_pumpswap_migration.{png,webp} + optimiser en webp",
+    "content": "T1 — Téléchargé pulse-bg.{webp 305KB, jpg 390KB} dans /public",
     "status": "completed"
   },
   {
-    "content": "T2 — Optimisé aussi les autres phase_*.png en webp (gain ~85%)",
+    "content": "T2 — Créé Pulse.tsx (background pulse+glitch RGB-split, vignette, scanlines CRT, floats avec drift, HUD live+TAPS counter)",
     "status": "completed"
   },
   {
-    "content": "T3 — Harmoniser Team vesting → \"2-month cliff + 12-month linear vesting\" partout (FR + EN)",
+    "content": "T3 — useClickSound : synthése Web Audio (noise burst HPF + triangle osc pitch-variant) — 0 asset audio",
     "status": "completed"
   },
   {
-    "content": "T4 — Mis à jour docs/TOKENOMICS_TREASURY_POLICY.md + DEPLOYMENT_AND_PHASES_GUIDE.md (3-month cliff & 6-month cliff team → 2-month cliff)",
+    "content": "T4 — useTelegramWebApp : lazy load SDK + ready()/expand() + détection isExpanded",
     "status": "completed"
   },
   {
-    "content": "T5 — Validé tsc clean + Pytest 140/140 + screenshots Transparency/Tokenomics/Timeline-03",
+    "content": "T5 — Route /pulse montée dans App.tsx",
+    "status": "completed"
+  },
+  {
+    "content": "T6 — tsc clean, Pytest 140/140, screenshot validé, CTA stopPropagation confirmé, href + label corrects",
     "status": "completed"
   }
 ]
