@@ -70,25 +70,52 @@ export const MissionsSection: React.FC = () => {
             <Link
               key={m.id}
               to="/missions"
-              className="group rounded-md border bg-background p-4 sm:p-5 transition-transform hover:-translate-y-0.5"
+              className="group rounded-md border bg-background overflow-hidden transition-transform hover:-translate-y-0.5"
               style={{ borderColor: accent + "40", boxShadow: `0 0 22px -14px ${accent}99` }}
               data-testid={`landing-mission-teaser-${m.id}`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.22em]" style={{ color: accent }}>
-                  {m.dossierRef}
-                </span>
-                <Icon size={14} style={{ color: accent }} />
+              {/* Thumbnail — same illustration as the /missions hub, but
+                  rendered as a 16:9 strip on the landing teaser to keep
+                  the section dense. WebP first / JPG fallback. */}
+              <div className="relative w-full aspect-[16/9] bg-black overflow-hidden">
+                <picture>
+                  <source srcSet={`/missions/mission_${m.id}.webp`} type="image/webp" />
+                  <img
+                    src={`/missions/mission_${m.id}.jpg`}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                  />
+                </picture>
+                <div
+                  aria-hidden
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: `linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.85) 100%)`,
+                  }}
+                />
+                {/* Floating dossier ref + icon, anchored bottom-left so
+                    they don't clash with the illustration's subject. */}
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] px-1.5 py-0.5 rounded-sm bg-black/55 backdrop-blur-[2px]" style={{ color: accent }}>
+                    {m.dossierRef}
+                  </span>
+                  <Icon size={14} style={{ color: accent }} />
+                </div>
               </div>
-              <h3 className="font-display text-base sm:text-lg font-semibold tracking-tight leading-snug">
-                {t(`missionsPage.cards.${m.i18nKey}.title`) as string}
-              </h3>
-              <p className="mt-2 text-xs text-foreground/65 leading-relaxed line-clamp-3">
-                {t(`missionsPage.cards.${m.i18nKey}.brief`) as string}
-              </p>
-              <div className="mt-4 inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-widest" style={{ color: accent }}>
-                {t("missionsPage.giveawayCta.button") as string}
-                <ArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
+
+              <div className="p-4 sm:p-5">
+                <h3 className="font-display text-base sm:text-lg font-semibold tracking-tight leading-snug">
+                  {t(`missionsPage.cards.${m.i18nKey}.title`) as string}
+                </h3>
+                <p className="mt-2 text-xs text-foreground/65 leading-relaxed line-clamp-3">
+                  {t(`missionsPage.cards.${m.i18nKey}.brief`) as string}
+                </p>
+                <div className="mt-4 inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-widest" style={{ color: accent }}>
+                  {t("missionsPage.teaserCta") as string}
+                  <ArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
+                </div>
               </div>
             </Link>
           );

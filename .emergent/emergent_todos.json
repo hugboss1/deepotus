@@ -1,34 +1,30 @@
 [
   {
-    "content": "T1 — core/giveaway.py : eligibility + Helius/DexScreener holding check + provably fair RNG + snapshot persistence",
+    "content": "T1 — Script generate_missions_art.py : 6 missions + 1 bingo machine, prompts Deep State unifiés",
     "status": "completed"
   },
   {
-    "content": "T2 — core/triggers/giveaway_extraction.py + 4 templates Prophet",
+    "content": "T2 — Run le script + 7/7 PNG générés avec succès via gpt-image-1",
     "status": "completed"
   },
   {
-    "content": "T3 — routers/giveaway.py : 6 admin endpoints (preview, extract, snapshots, announce, cancel, eligible)",
+    "content": "T3 — Optimisé WebP + JPG fallback (38-76 KB / 67-142 KB selon asset)",
     "status": "completed"
   },
   {
-    "content": "T4 — Mount router + ensure_indexes au startup",
+    "content": "T4 — Update Missions.tsx : ajouter <picture> dans chaque MissionCard + overlay REDACTED",
     "status": "completed"
   },
   {
-    "content": "T5 — Frontend : GiveawayExtractionCard dans CabinetTab",
+    "content": "T5 — Update Missions.tsx : ajouter section Bingo Drum 16:9 cinématique avec HUD overlay",
     "status": "completed"
   },
   {
-    "content": "T6 — Sync WINNERS_COUNT 5→2 sur /giveaway public + i18n templating {winnersCount}",
+    "content": "T6 — Update MissionsSection.tsx (landing teaser) avec thumbnails + fix CTA copy",
     "status": "completed"
   },
   {
-    "content": "T7 — Pytest 32 nouveaux tests + total 172/172 + lint Python clean + tsc clean",
-    "status": "completed"
-  },
-  {
-    "content": "T8 — Live integration confirmed (6 candidats, 2 winners, propaganda fire, duplicate 409, cancel)",
+    "content": "T7 — tsc clean + Pytest 172/172 + screenshots tous validés",
     "status": "completed"
   }
 ]

@@ -1187,6 +1187,7 @@ export const translations = {
         completed: "ARCHIVÉE",
       },
       rewardLabel: "Récompense",
+      teaserCta: "OUVRIR LE DOSSIER",
       future: {
         kicker: "— FILE D'ATTENTE",
         title: "FUTURE MISSIONS [REDACTED]",
@@ -1199,6 +1200,13 @@ export const translations = {
         copy:
           "Compléter Operation 001 + Protocol 002 vous rend automatiquement éligible. Aucune inscription manuelle.",
         button: "LIRE LES RÈGLES DU TIRAGE",
+      },
+      bingo: {
+        kicker: "— MACHINE D'EXTRACTION · CABINET ΔΣ",
+        title: "La Roue tourne le 20 mai",
+        copy:
+          "Le tambour de la Cabine n'aime pas le hasard du hasard. Chaque jeton ΔΣ qui en sort est ancré sur un slot Solana publiquement vérifiable. Aucune chance, juste de la cryptographie.",
+        tagline: "RNG ancré on-chain · 2 gagnants extraits · Aucune intervention humaine",
       },
     },
 
@@ -2415,6 +2423,7 @@ export const translations = {
         completed: "ARCHIVED",
       },
       rewardLabel: "Reward",
+      teaserCta: "OPEN DOSSIER",
       future: {
         kicker: "— QUEUE",
         title: "FUTURE MISSIONS [REDACTED]",
@@ -2427,6 +2436,13 @@ export const translations = {
         copy:
           "Completing Operation 001 + Protocol 002 makes you automatically eligible. No manual sign-up.",
         button: "READ THE DRAW RULES",
+      },
+      bingo: {
+        kicker: "— EXTRACTION MACHINE · CABINET ΔΣ",
+        title: "The wheel turns on May 20",
+        copy:
+          "The Cabinet drum doesn't trust randomness alone. Every ΔΣ token that drops out is anchored to a publicly verifiable Solana slot. No luck — just cryptography.",
+        tagline: "On-chain anchored RNG · 2 winners extracted · No human intervention",
       },
     },
 

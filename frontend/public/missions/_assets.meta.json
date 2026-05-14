@@ -1,0 +1,85 @@
+{
+  "generated_at": "2026-05-14T21:07:01.063855+00:00",
+  "model": "manual_upload_tech_noir_v2",
+  "count": 7,
+  "assets": [
+    {
+      "basename": "mission_infiltration",
+      "raw_sha256": "2358b98e85042f5b",
+      "raw_bytes": 1444504,
+      "width": 768,
+      "height": 768,
+      "webp_bytes": 40180,
+      "jpg_bytes": 80375,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:06:59.995758+00:00"
+    },
+    {
+      "basename": "mission_liquidity",
+      "raw_sha256": "38d92c11f0648e5e",
+      "raw_bytes": 1931836,
+      "width": 768,
+      "height": 768,
+      "webp_bytes": 123014,
+      "jpg_bytes": 160977,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:07:00.204372+00:00"
+    },
+    {
+      "basename": "mission_amplification",
+      "raw_sha256": "07e7a3307b6f3a51",
+      "raw_bytes": 1501335,
+      "width": 768,
+      "height": 768,
+      "webp_bytes": 77664,
+      "jpg_bytes": 118336,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:07:00.365299+00:00"
+    },
+    {
+      "basename": "mission_archive",
+      "raw_sha256": "8e1f2a3ab56cb525",
+      "raw_bytes": 1481237,
+      "width": 768,
+      "height": 768,
+      "webp_bytes": 63136,
+      "jpg_bytes": 106822,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:07:00.516225+00:00"
+    },
+    {
+      "basename": "mission_signal",
+      "raw_sha256": "959197df7f807b0a",
+      "raw_bytes": 1675800,
+      "width": 768,
+      "height": 768,
+      "webp_bytes": 82796,
+      "jpg_bytes": 128400,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:07:00.687943+00:00"
+    },
+    {
+      "basename": "mission_future_06",
+      "raw_sha256": "7df1cdb8242d9225",
+      "raw_bytes": 1709977,
+      "width": 768,
+      "height": 768,
+      "webp_bytes": 86998,
+      "jpg_bytes": 123952,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:07:00.862753+00:00"
+    },
+    {
+      "basename": "bingo_drum",
+      "raw_sha256": "041d261b4840988b",
+      "raw_bytes": 1872985,
+      "width": 1024,
+      "height": 576,
+      "webp_bytes": 151080,
+      "jpg_bytes": 188303,
+      "source": "manual_upload_tech_noir_v2",
+      "generated_at": "2026-05-14T21:07:01.062170+00:00"
+    }
+  ],
+  "previous": "2026-05-14T13:04:36.073064+00:00"
+}
