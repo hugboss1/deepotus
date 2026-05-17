@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/card";
 import { getAdminToken } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
+import { GIVEAWAY } from "@/lib/missions";
 
 const API: string = (import.meta as unknown as { env: { REACT_APP_BACKEND_URL?: string } }).env?.REACT_APP_BACKEND_URL
   || (process as unknown as { env: { REACT_APP_BACKEND_URL?: string } }).env?.REACT_APP_BACKEND_URL
@@ -134,11 +135,13 @@ interface EligibleResponse {
 // Component
 // =====================================================================
 export function GiveawayExtractionCard(): React.ReactElement {
-  // Form state
-  const [drawDate, setDrawDate] = useState<string>("2026-05-20T18:00:00Z");
-  const [poolSol, setPoolSol] = useState<string>("5");
-  const [winnersCount, setWinnersCount] = useState<string>("2");
-  const [minUsd, setMinUsd] = useState<string>("30");
+  // Form state — defaults sourced from lib/missions.GIVEAWAY so the
+  // admin form, the public /giveaway page, and the backend extraction
+  // run against the same single source of truth.
+  const [drawDate, setDrawDate] = useState<string>(GIVEAWAY.drawDateIso);
+  const [poolSol, setPoolSol] = useState<string>(String(GIVEAWAY.rewardSol));
+  const [winnersCount, setWinnersCount] = useState<string>(String(GIVEAWAY.winnersCount));
+  const [minUsd, setMinUsd] = useState<string>(String(GIVEAWAY.rules.minHoldingUsd));
 
   // Data state
   const [eligible, setEligible] = useState<EligibleResponse | null>(null);

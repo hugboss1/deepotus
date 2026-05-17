@@ -54,7 +54,7 @@ class ExtractRequest(BaseModel):
 
     Defaults mirror ``core.giveaway`` constants and the public
     /giveaway page so the operator can post an empty body and it
-    'just works' for the May 20 draw.
+    'just works' for the May 22 draw.
     """
 
     model_config = ConfigDict(extra="ignore")

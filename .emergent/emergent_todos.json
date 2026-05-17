@@ -1,30 +1,26 @@
 [
   {
-    "content": "T1 — Script generate_missions_art.py : 6 missions + 1 bingo machine, prompts Deep State unifiés",
+    "content": "P1 — Update draw date partout (lib/missions.ts + backend defaults + i18n) → 22/05/2026 12:00 UTC",
     "status": "completed"
   },
   {
-    "content": "T2 — Run le script + 7/7 PNG générés avec succès via gpt-image-1",
+    "content": "P2 — Audit bug token mint admin vault → ROUTE ORDERING bug identifié (route /{slot} interceptait /mint-address)",
     "status": "completed"
   },
   {
-    "content": "T3 — Optimisé WebP + JPG fallback (38-76 KB / 67-142 KB selon asset)",
+    "content": "P3 — Fix bug — réordonné routes (mint-address AVANT {slot}) + comment de garde + test de régression",
     "status": "completed"
   },
   {
-    "content": "T4 — Update Missions.tsx : ajouter <picture> dans chaque MissionCard + overlay REDACTED",
+    "content": "P4 — Test end-to-end : admin SET → public snapshot live + Giveaway pipeline pickup PRE-MINT → POST-MINT auto",
     "status": "completed"
   },
   {
-    "content": "T5 — Update Missions.tsx : ajouter section Bingo Drum 16:9 cinématique avec HUD overlay",
-    "status": "completed"
+    "content": "P5 — Write LAUNCH_PLAYBOOK.md (pre-mint + post-mint actions, fail-proof)",
+    "status": "in_progress"
   },
   {
-    "content": "T6 — Update MissionsSection.tsx (landing teaser) avec thumbnails + fix CTA copy",
-    "status": "completed"
-  },
-  {
-    "content": "T7 — tsc clean + Pytest 172/172 + screenshots tous validés",
+    "content": "P6 — Final tests : Pytest 175/175 + tsc clean + screenshots May 22 validé",
     "status": "completed"
   }
 ]

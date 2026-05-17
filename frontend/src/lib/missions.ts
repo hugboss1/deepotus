@@ -135,8 +135,8 @@ export const FEATURED_MISSION_KEYS: readonly string[] = [
  * displayed date is done in the page component via `toLocaleString`.
  */
 export const GIVEAWAY = {
-  /** UTC ISO of the draw moment (May 20, 2026 — 18:00 UTC). */
-  drawDateIso: "2026-05-20T18:00:00Z",
+  /** UTC ISO of the draw moment (May 22, 2026 — 12:00 UTC). */
+  drawDateIso: "2026-05-22T12:00:00Z",
   /** Reward pool — single source of truth. */
   rewardSol: 5,
   /** Number of winners selected by the provably-fair extractor.

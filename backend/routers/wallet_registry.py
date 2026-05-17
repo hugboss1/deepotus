@@ -87,32 +87,15 @@ async def admin_list(_admin: Dict[str, Any] = Depends(require_admin)) -> Dict[st
     }
 
 
-@admin_router.put("/{slot}")
-async def admin_upsert(
-    payload: WalletPatch,
-    slot: str = Path(..., pattern=r"^[a-z_]{2,32}$"),
-    admin: Dict[str, Any] = Depends(require_admin),
-) -> Dict[str, Any]:
-    if slot not in wallet_registry.WALLET_SLOTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"unknown slot {slot!r} — expected one of {wallet_registry.WALLET_SLOTS}",
-        )
-    try:
-        result = await wallet_registry.upsert_wallet(
-            slot,
-            address=payload.address,
-            lock_url=payload.lock_url,
-            label=payload.label,
-            actor_jti=str(admin.get("jti") or ""),
-        )
-    except ValueError as exc:
-        # Surface validation errors as 422 so the admin UI can
-        # display them inline next to the offending field.
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return {"ok": True, "wallet": result}
-
-
+# IMPORTANT: ``/mint-address`` is declared BEFORE the generic
+# ``/{slot}`` route. FastAPI matches in declaration order; if /{slot}
+# were declared first it would try to match "mint-address" against
+# the ``[a-z_]{2,32}`` slot regex (which fails because of the hyphen)
+# and the admin form would silently 422 with
+# ``loc: ["path", "slot"]``. That was the production bug pre-launch:
+# the operator pasted a valid mint address, the UI showed "save",
+# the row never updated, and /transparency stayed mint-less.
+# Do NOT reorder.
 @admin_router.put("/mint-address")
 async def admin_set_mint(
     payload: MintAddressPayload,
@@ -144,3 +127,31 @@ async def admin_clear_mint(
         actor_jti=str(admin.get("jti") or ""),
     )
     return {"ok": True, "mint_address": addr}
+
+
+# Generic slot upsert — declared AFTER /mint-address so the literal
+# route wins. See the comment above for the production bug history.
+@admin_router.put("/{slot}")
+async def admin_upsert(
+    payload: WalletPatch,
+    slot: str = Path(..., pattern=r"^[a-z_]{2,32}$"),
+    admin: Dict[str, Any] = Depends(require_admin),
+) -> Dict[str, Any]:
+    if slot not in wallet_registry.WALLET_SLOTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown slot {slot!r} — expected one of {wallet_registry.WALLET_SLOTS}",
+        )
+    try:
+        result = await wallet_registry.upsert_wallet(
+            slot,
+            address=payload.address,
+            lock_url=payload.lock_url,
+            label=payload.label,
+            actor_jti=str(admin.get("jti") or ""),
+        )
+    except ValueError as exc:
+        # Surface validation errors as 422 so the admin UI can
+        # display them inline next to the offending field.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"ok": True, "wallet": result}

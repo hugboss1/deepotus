@@ -1141,14 +1141,14 @@ export const translations = {
           title: "OPÉRATION : INFILTRATION",
           brief:
             "Recruter 3 agents via votre lien de parrainage Telegram. Le Cabinet retient l'adresse de chaque recrue confirmée.",
-          reward: "Éligibilité tirage 20 mai · Place sur la whitelist Phase 2",
+          reward: "Éligibilité tirage 22 mai · Place sur la whitelist Phase 2",
           action: "DÉCRYPTER LA MISSION",
         },
         liquidity: {
           title: "PROTOCOLE : LIQUIDITY",
           brief:
-            "Conserver au moins 30 $ de $DEEP sur votre wallet jusqu'au snapshot du 20 mai. Position vérifiée on-chain.",
-          reward: "Éligibilité tirage 20 mai · Multiplicateur airdrop Phase 2",
+            "Conserver au moins 30 $ de $DEEP sur votre wallet jusqu'au snapshot du 22 mai. Position vérifiée on-chain.",
+          reward: "Éligibilité tirage 22 mai · Multiplicateur airdrop Phase 2",
           action: "DÉCRYPTER LA MISSION",
           secondaryAction: "ACHETER $DEEP",
         },
@@ -1195,7 +1195,7 @@ export const translations = {
           "Le Cabinet a déjà rédigé les opérations 06 à 12. Elles seront dévoilées à mesure que les seuils on-chain sont franchis. Restez en veille — les ordres tombent sans préavis.",
       },
       giveawayCta: {
-        kicker: "TIRAGE 20 MAI",
+        kicker: "TIRAGE 22 MAI",
         title: "Le Pool Cabinet vous attend",
         copy:
           "Compléter Operation 001 + Protocol 002 vous rend automatiquement éligible. Aucune inscription manuelle.",
@@ -1203,7 +1203,7 @@ export const translations = {
       },
       bingo: {
         kicker: "— MACHINE D'EXTRACTION · CABINET ΔΣ",
-        title: "La Roue tourne le 20 mai",
+        title: "La Roue tourne le 22 mai",
         copy:
           "Le tambour de la Cabine n'aime pas le hasard du hasard. Chaque jeton ΔΣ qui en sort est ancré sur un slot Solana publiquement vérifiable. Aucune chance, juste de la cryptographie.",
         tagline: "RNG ancré on-chain · 2 gagnants extraits · Aucune intervention humaine",
@@ -1213,7 +1213,7 @@ export const translations = {
     giveawayPage: {
       hero: {
         kicker: "— OPÉRATION CABINET · TIRAGE PUBLIC",
-        title: "Pool Liquidity · 20 Mai",
+        title: "Pool Liquidity · 22 Mai",
         subtitle:
           "Le Cabinet récompense les agents disciplinés. Aucun formulaire, aucune adresse à donner. Le snapshot on-chain identifie automatiquement les éligibles.",
       },
@@ -1244,13 +1244,13 @@ export const translations = {
           tag: "RÈGLE 02",
           title: "Détenir 30 $ de $DEEP",
           body:
-            "Au moment du snapshot (20 mai · 18:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $DEEP. Vérification on-chain via Helius.",
+            "Au moment du snapshot (22 mai · 12:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $DEEP. Vérification on-chain via Helius.",
         },
       },
       mechanism: {
         kicker: "— MÉCANIQUE DU TIRAGE",
         title: "Comment le Cabinet choisit",
-        step1: "Snapshot on-chain à 18:00 UTC précises.",
+        step1: "Snapshot on-chain à 12:00 UTC précises.",
         step2: "Croisement avec la base des parrainages Telegram confirmés.",
         step3: "Tirage VRF Solana publié on-chain — vérifiable par tous.",
         step4: "{winnersCount} gagnants annoncés sur X + Telegram dans les 6h.",
@@ -2377,14 +2377,14 @@ export const translations = {
           title: "OPERATION: INFILTRATION",
           brief:
             "Recruit 3 agents via your Telegram referral link. The Cabinet records the address of every confirmed recruit.",
-          reward: "May 20 draw eligibility · Phase 2 whitelist seat",
+          reward: "May 22 draw eligibility · Phase 2 whitelist seat",
           action: "DECODE MISSION",
         },
         liquidity: {
           title: "PROTOCOL: LIQUIDITY",
           brief:
-            "Hold at least $30 worth of $DEEP on your wallet through the May 20 snapshot. Position verified on-chain.",
-          reward: "May 20 draw eligibility · Phase 2 airdrop multiplier",
+            "Hold at least $30 worth of $DEEP on your wallet through the May 22 snapshot. Position verified on-chain.",
+          reward: "May 22 draw eligibility · Phase 2 airdrop multiplier",
           action: "DECODE MISSION",
           secondaryAction: "BUY $DEEP",
         },
@@ -2431,7 +2431,7 @@ export const translations = {
           "The Cabinet has already drafted operations 06 through 12. They will be revealed as on-chain thresholds are crossed. Stay on watch — orders drop without warning.",
       },
       giveawayCta: {
-        kicker: "MAY 20 DRAW",
+        kicker: "MAY 22 DRAW",
         title: "The Cabinet Pool awaits",
         copy:
           "Completing Operation 001 + Protocol 002 makes you automatically eligible. No manual sign-up.",
@@ -2439,7 +2439,7 @@ export const translations = {
       },
       bingo: {
         kicker: "— EXTRACTION MACHINE · CABINET ΔΣ",
-        title: "The wheel turns on May 20",
+        title: "The wheel turns on May 22",
         copy:
           "The Cabinet drum doesn't trust randomness alone. Every ΔΣ token that drops out is anchored to a publicly verifiable Solana slot. No luck — just cryptography.",
         tagline: "On-chain anchored RNG · 2 winners extracted · No human intervention",
@@ -2449,7 +2449,7 @@ export const translations = {
     giveawayPage: {
       hero: {
         kicker: "— CABINET OPERATION · PUBLIC DRAW",
-        title: "Liquidity Pool · May 20",
+        title: "Liquidity Pool · May 22",
         subtitle:
           "The Cabinet rewards disciplined agents. No form, no address to hand over. The on-chain snapshot automatically identifies eligible parties.",
       },
@@ -2480,13 +2480,13 @@ export const translations = {
           tag: "RULE 02",
           title: "Hold $30 of $DEEP",
           body:
-            "At snapshot time (May 20 · 18:00 UTC) your wallet must hold at least $30 worth of $DEEP. On-chain verification via Helius.",
+            "At snapshot time (May 22 · 12:00 UTC) your wallet must hold at least $30 worth of $DEEP. On-chain verification via Helius.",
         },
       },
       mechanism: {
         kicker: "— DRAW MECHANICS",
         title: "How the Cabinet picks",
-        step1: "On-chain snapshot at 18:00 UTC sharp.",
+        step1: "On-chain snapshot at 12:00 UTC sharp.",
         step2: "Cross-referenced with confirmed Telegram referral database.",
         step3: "Solana VRF draw published on-chain — verifiable by anyone.",
         step4: "{winnersCount} winners announced on X + Telegram within 6 hours.",
