@@ -59,8 +59,13 @@ function App(): JSX.Element {
               <Route path="/" element={<Landing />} />
               <Route path="/how-to-buy" element={<HowToBuy />} />
               <Route path="/transparency" element={<Transparency />} />
-              {/* Sprint 18 — The Liquidity Pulse (omnichannel TMA landing) */}
+              {/* Sprint 18 — The Liquidity Pulse (omnichannel TMA landing).
+                  The /pulse/* catch-all ensures any deep-link variant
+                  (e.g. /pulse/anything, future startapp paths) resolves
+                  to the Pulse shell rather than falling through to the
+                  Landing wildcard route below. */}
               <Route path="/pulse" element={<Pulse />} />
+              <Route path="/pulse/*" element={<Pulse />} />
               {/* Sprint 19 — Missions Hub + Giveaway */}
               <Route path="/missions" element={<Missions />} />
               <Route path="/giveaway" element={<Giveaway />} />

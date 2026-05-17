@@ -211,6 +211,48 @@ const Pulse: React.FC = () => {
     };
   }, []);
 
+  // Sprint 19.5 — De-index /pulse from search engines.
+  //
+  // The site-wide <meta name="robots" content="index, follow"> in
+  // public/index.html is correct for the landing + marketing pages.
+  // But /pulse is a Telegram Mini App surface; surfacing it in
+  // Google as a "page" with thin content would (a) hurt SEO of the
+  // real landing, (b) confuse organic visitors. We inject a
+  // route-scoped noindex/nofollow tag at mount and remove it at
+  // unmount so navigating to / from /pulse restores the normal
+  // indexing posture.
+  //
+  // ``X-Robots-Tag`` is ALSO sent at the HTTP level via vercel.json
+  // for the same path — this <meta> is a belt-and-braces fallback
+  // when the page is served from CDN cache that didn't include the
+  // header (rare but possible).
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const PREV_SEL = "meta[name='robots']";
+    const previous = document.head.querySelector<HTMLMetaElement>(PREV_SEL);
+    const previousContent = previous?.getAttribute("content") || null;
+    // Mutate the existing tag in place if present (cheaper than
+    // toggling two tags), otherwise inject a new one.
+    if (previous) {
+      previous.setAttribute("content", "noindex, nofollow, noarchive");
+    } else {
+      const m = document.createElement("meta");
+      m.setAttribute("name", "robots");
+      m.setAttribute("content", "noindex, nofollow, noarchive");
+      m.setAttribute("data-pulse-injected", "true");
+      document.head.appendChild(m);
+    }
+    return () => {
+      const cur = document.head.querySelector<HTMLMetaElement>(PREV_SEL);
+      if (!cur) return;
+      if (cur.getAttribute("data-pulse-injected") === "true") {
+        cur.remove();
+      } else if (previousContent !== null) {
+        cur.setAttribute("content", previousContent);
+      }
+    };
+  }, []);
+
   // Determine if we're rendering inside Telegram — used to subtly
   // tweak the CTA label ("OPEN BOT" vs "EXECUTE ORDER" makes more
   // sense once you're already in Telegram).
