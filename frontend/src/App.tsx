@@ -4,6 +4,24 @@
  * Sprint 22 — migrated from .js → .tsx. The component itself takes no
  * props but we now have a fully typed router setup with explicit
  * page-component imports.
+ *
+ * # Standalone TMA / immersive routes (Sprint 19.5 hardening)
+ *
+ * The following routes MUST never be wrapped in a global layout,
+ * never render the DeepStateIntro, never show a top nav / footer.
+ * They are first-class immersive experiences (Telegram Mini App,
+ * trading widget, etc.) and any landing-page chrome would break the
+ * UX:
+ *
+ *   • ``/pulse``  — Liquidity Pulse clicker (Sprint 18)
+ *   • ``/trade``  — reserved for future TMA trading shell
+ *
+ * The router below already enforces this because the App has NO
+ * global wrapper components — each ``<Route element=…>`` is fully
+ * self-contained and responsible for its own chrome. A second guard
+ * lives in ``DeepStateIntro.shouldShowIntro()`` which path-blacklists
+ * these routes in case a future contributor wraps everything in a
+ * shared layout that includes the intro.
  */
 
 import "@/App.css";

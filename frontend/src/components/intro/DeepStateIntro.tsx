@@ -56,9 +56,34 @@ const PHASES = {
   fadeOut: { start: 12_000, end: 14_000 },
 };
 
+/**
+ * Routes on which the intro MUST NEVER play, even if it's mounted
+ * accidentally by a future layout refactor. These are immersive /
+ * TMA surfaces where any landing-page chrome would break the
+ * experience.
+ *
+ * Sprint 19.5 hardening — the intro is currently only mounted in
+ * Landing.tsx, but this guard makes the contract self-enforcing:
+ * a contributor who later wraps the whole router in a global layout
+ * that includes <DeepStateIntro/> will NOT inadvertently leak it
+ * onto /pulse or /trade.
+ */
+const INTRO_BLACKLIST_PATHS: readonly string[] = ["/pulse", "/trade"];
+
 function shouldShowIntro() {
   // SSR safety
   if (typeof window === "undefined") return false;
+
+  // Hard route-level blacklist — runs BEFORE the cooldown/force checks
+  // so even ``?intro=force`` cannot resurrect the intro on /pulse.
+  try {
+    const path = window.location.pathname || "";
+    if (INTRO_BLACKLIST_PATHS.some((p) => path === p || path.startsWith(`${p}/`))) {
+      return false;
+    }
+  } catch (e) {
+    logger.debug("[intro] pathname probe failed:", e);
+  }
 
   // Force replay via ?intro=force
   try {
