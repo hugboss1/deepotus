@@ -166,7 +166,7 @@ async def _generate_one(*, prompt: str, size: str, key: str) -> bytes:
     downstream when a different aspect ratio is needed.
     """
     del size  # not yet supported via the Emergent proxy SDK
-    from emergentintegrations.llm.openai.image_generation import (  # type: ignore[import-not-found]
+    from core.openai_image_compat import (  # type: ignore[import-not-found]
         OpenAIImageGeneration,
     )
     gen = OpenAIImageGeneration(api_key=key)
