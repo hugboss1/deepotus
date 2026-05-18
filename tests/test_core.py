@@ -22,7 +22,9 @@ from dotenv import load_dotenv
 BACKEND_ENV = Path("/app/backend/.env")
 load_dotenv(BACKEND_ENV)
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage  # noqa: E402
+import sys as _sys, pathlib as _pl  # noqa: E402
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent / "backend"))  # noqa: E402
+from core.llm_compat import LlmChat, UserMessage  # noqa: E402  (Mode A/B compat shim)
 
 API_KEY = os.environ.get("EMERGENT_LLM_KEY")
 assert API_KEY, "EMERGENT_LLM_KEY missing in /app/backend/.env"

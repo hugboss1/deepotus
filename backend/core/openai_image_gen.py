@@ -127,7 +127,7 @@ async def generate_image_openai(
     # that haven't installed emergentintegrations yet. Any ImportError
     # surfaces as a clean ``image_llm_failure`` to the caller.
     try:
-        from emergentintegrations.llm.openai.image_generation import (  # type: ignore[import-not-found]
+        from core.openai_image_compat import (
             OpenAIImageGeneration,
         )
     except ImportError as exc:

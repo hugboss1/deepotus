@@ -109,6 +109,11 @@ Dans **Environment**, ajouter chaque variable (toutes obligatoires sauf indicati
 > 1. **Recommandé (prod)** : fournir des clés natives `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` et laisser `llm_compat.py` basculer en **Mode B** (SDKs natifs — aucune dép sur la lib Emergent).
 > 2. **Alternatif** : ajouter à la config Render → Environment → `PIP_EXTRA_INDEX_URL=https://d33sy5i8bnduwe.cloudfront.net/simple/` puis pinner `emergentintegrations==0.1.0` dans `requirements.txt`. Garde `EMERGENT_LLM_KEY` comme passthrough universel.
 >
+> **Couverture Mode B** (SDKs natifs, sans la lib Emergent) : les trois chemins LLM sont supportés —
+> - chat texte → `core.llm_compat.LlmChat.send_message` (`openai` / `anthropic` / `google-generativeai`)
+> - images Gemini "Nano Banana" → `core.llm_compat.LlmChat.send_message_multimodal_response` (`google-generativeai`)
+> - images OpenAI `gpt-image-1` → `core.openai_image_compat.OpenAIImageGeneration.generate_images` (`openai`)
+>
 > Détails : [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md).
 
 ### Étape 3 : Webhooks externes
