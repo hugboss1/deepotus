@@ -205,6 +205,69 @@ except ImportError:
                     f"Supported: {sorted(_DISPATCH.keys())}"
                 ) from exc
 
+        # ----- Multimodal (image) send ------------------------------------
+        async def send_message_multimodal_response(
+            self, message: UserMessage
+        ) -> Tuple[str, list]:
+            """Image-capable counterpart of :meth:`send_message`.
+
+            Mirrors the Emergent proxy's
+            ``LlmChat.send_message_multimodal_response`` return shape::
+
+                (text, [{"data": <base64-str>, "mime_type": "image/png"}, …])
+
+            so ``prophet_studio.generate_image`` consumes it unchanged.
+
+            In Mode B only the ``gemini`` provider can generate images
+            through this path (Nano Banana). Any other provider raises
+            ``ValueError`` — OpenAI image generation goes through
+            :mod:`core.openai_image_compat` instead.
+            """
+            if not self._provider or not self._model:
+                raise ValueError(
+                    "LlmChat: .with_model(provider, model) must be called "
+                    "before .send_message_multimodal_response()."
+                )
+            if not isinstance(message, UserMessage):
+                raise TypeError(
+                    "send_message_multimodal_response expects a "
+                    "UserMessage instance"
+                )
+
+            provider = self._provider
+            if provider != "gemini":
+                raise ValueError(
+                    "send_message_multimodal_response (Mode B) only "
+                    f"supports provider='gemini' for image generation, got "
+                    f"provider={provider!r}. Use core.openai_image_compat "
+                    f"for OpenAI image generation."
+                )
+
+            api_key, source = await _resolve_api_key(
+                provider, fallback=self._fallback_api_key
+            )
+            if not api_key:
+                raise LlmCompatNoKeyError(
+                    f"No API key configured for provider={provider!r}. "
+                    f"Set the {provider.upper()}_API_KEY env var, store "
+                    f"it in the Cabinet Vault under llm_custom/, or pass "
+                    f"it as api_key to LlmChat()."
+                )
+            logger.info(
+                "[llm_compat] multimodal provider=%s model=%s source=%s "
+                "session=%s",
+                provider,
+                self._model,
+                source,
+                self._session_id,
+            )
+            return await _gemini_image_dispatch(
+                api_key=api_key,
+                model=self._model,
+                system_message=self._system_message,
+                user_text=message.text,
+            )
+
     # ---------------------------------------------------------------------
     # Key resolution (Mode B only)
     # ---------------------------------------------------------------------
@@ -293,6 +356,52 @@ except ImportError:
         )
         resp = await model_obj.generate_content_async(user_text or "")
         return getattr(resp, "text", "") or ""
+
+    async def _gemini_image_dispatch(
+        *, api_key: str, model: str, system_message: str, user_text: str
+    ) -> Tuple[str, list]:
+        """Native Gemini (Nano Banana) image generation.
+
+        Returns ``(text, images)`` where ``images`` is a list of
+        ``{"data": <base64-str>, "mime_type": str}`` dicts — the exact
+        shape the Emergent proxy's ``send_message_multimodal_response``
+        produces, so downstream code stays untouched.
+        """
+        import base64  # lazy
+        import google.generativeai as genai  # lazy import
+
+        genai.configure(api_key=api_key)
+        model_obj = genai.GenerativeModel(
+            model_name=model,
+            system_instruction=system_message or None,
+        )
+        resp = await model_obj.generate_content_async(user_text or "")
+
+        text_parts: list[str] = []
+        images: list[dict] = []
+        for cand in getattr(resp, "candidates", None) or []:
+            content = getattr(cand, "content", None)
+            if content is None:
+                continue
+            for part in getattr(content, "parts", None) or []:
+                inline = getattr(part, "inline_data", None)
+                raw = getattr(inline, "data", None) if inline is not None else None
+                if raw:
+                    if isinstance(raw, (bytes, bytearray)):
+                        b64 = base64.b64encode(bytes(raw)).decode("ascii")
+                    else:
+                        # Some SDK versions already hand back base64 text
+                        b64 = str(raw)
+                    mime = (
+                        getattr(inline, "mime_type", None) or "image/png"
+                    )
+                    images.append({"data": b64, "mime_type": mime})
+                    continue
+                ptxt = getattr(part, "text", None)
+                if ptxt:
+                    text_parts.append(ptxt)
+
+        return "".join(text_parts), images
 
     _DISPATCH = {
         "openai": _call_openai,
