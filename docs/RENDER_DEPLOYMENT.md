@@ -9,7 +9,10 @@
   - **Mode A** (preferred) : si `emergentintegrations` est importable → re-export direct de `LlmChat` / `UserMessage` (proxy Emergent, EMERGENT_LLM_KEY fonctionne)
   - **Mode B** (fallback) : sinon → SDKs natifs (`openai`, `anthropic`, `google-generativeai`) avec des clés provider-spécifiques
   - Aucune API publique modifiée — les callers voient la même classe quelle que soit la mode active.
-- ✅ Même comportement pour les images : Nano Banana (Gemini) + `gpt-image-1` (Sprint 17.F) supportent les 2 modes.
+- ✅ Couverture Mode B complète sur les **trois chemins LLM** (aucune dép `emergentintegrations`) :
+  - chat texte → `core.llm_compat.LlmChat.send_message`
+  - images Gemini "Nano Banana" → `core.llm_compat.LlmChat.send_message_multimodal_response`
+  - images OpenAI `gpt-image-1` → `core.openai_image_compat.OpenAIImageGeneration.generate_images`
 - ✅ Sprint 13.3 — scaffold dispatchers Telegram/X ajouté (`core/dispatchers/`, `core/dispatch_worker.py`). Dry-run par défaut. Voir [`SPRINT_13_3_DISPATCHERS.md`](./SPRINT_13_3_DISPATCHERS.md).
 
 ## Stratégie LLM sur Render — 2 choix
