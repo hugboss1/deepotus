@@ -76,7 +76,7 @@ export default function TopNav() {
             data-testid="nav-buy-button"
           >
             <a
-              href={PUMPFUN_URL ? getBuyUrl() : "#whitelist"}
+              href={getBuyUrl()}
               target={isBuyUrlExternal() ? "_blank" : undefined}
               rel={isBuyUrlExternal() ? "noopener noreferrer" : undefined}
             >

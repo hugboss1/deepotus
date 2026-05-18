@@ -109,15 +109,15 @@ export function HeroHeadline() {
       return {
         primary: {
           label: t("hero.cta.tradePumpswap") as string,
-          href: PHASE_URLS.pumpswap || "#",
-          external: true,
+          href: getBuyUrl(),
+          external: isBuyUrlExternal(),
           testId: "hero-cta-pumpswap",
         },
         secondary: PHASE_URLS.pumpswap
           ? {
               label: t("hero.cta.tradePumpSwap") as string,
-              href: PHASE_URLS.pumpswap,
-              external: true,
+              href: getBuyUrl(),
+              external: isBuyUrlExternal(),
               testId: "hero-cta-pumpswap",
             }
           : null,
@@ -127,8 +127,8 @@ export function HeroHeadline() {
       return {
         primary: {
           label: t("hero.cta.buyPumpfun") as string,
-          href: PHASE_URLS.pumpfun || "#",
-          external: true,
+          href: getBuyUrl(),
+          external: isBuyUrlExternal(),
           testId: "hero-cta-pumpfun",
         },
         secondary: {

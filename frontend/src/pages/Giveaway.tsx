@@ -19,14 +19,14 @@ import {
   ArrowRight,
   CheckCircle2,
   Coins,
-  ExternalLink,
   Gauge,
   Sparkles,
   Users,
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import ThemeToggle from "@/components/landing/ThemeToggle";
-import { BONKBOT_REF_URL, GIVEAWAY } from "@/lib/missions";
+import { GIVEAWAY } from "@/lib/missions";
+import { getBuyUrl } from "@/lib/links";
 
 function useCountdown(targetIso: string): {
   days: number;
@@ -255,15 +255,13 @@ const Giveaway: React.FC = () => {
             >
               {t("giveawayPage.cta.primary") as string} <ArrowRight size={12} />
             </Link>
-            <a
-              href={BONKBOT_REF_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={getBuyUrl()}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-md border border-[#33FF66]/50 text-[#33FF66] hover:bg-[#33FF66]/10 font-mono text-xs uppercase tracking-[0.18em] transition-colors"
               data-testid="giveaway-cta-secondary"
             >
-              {t("giveawayPage.cta.secondary") as string} <ExternalLink size={12} />
-            </a>
+              {t("giveawayPage.cta.secondary") as string} <ArrowRight size={12} />
+            </Link>
             <span className="ml-auto text-[10px] font-mono text-foreground/45 uppercase tracking-widest inline-flex items-center gap-1">
               <CheckCircle2 size={11} /> ON-CHAIN VRF
             </span>

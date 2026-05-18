@@ -53,18 +53,35 @@ export function hasAnyLock(): boolean {
 }
 
 /**
- * Return the best "Buy $DEEPOTUS" URL.
- *   - Once the mint is live on Pump.fun → link straight to the coin page
- *   - Before launch → anchor to the whitelist/countdown section
+ * Internal route of the immersive Liquidity Pulse mini-app.
  *
- * Opens in a new tab when external.
+ * Every "Buy $DEEP" / BonkBot buy-flow CTA across the marketing site
+ * now funnels here instead of bouncing the visitor straight out to
+ * Pump.fun / Telegram — the Pulse page is the on-site buy experience
+ * and its own CTA forwards to the BonkBot Telegram app. This keeps the
+ * funnel on-domain and adds the "wow" transition into the mini-app.
+ *
+ * NOTE: the BonkBot link *inside* the Pulse page (pages/Pulse.tsx) is
+ * intentionally NOT routed here — it remains the real Telegram exit.
+ */
+export const PULSE_ROUTE = "/pulse";
+
+/**
+ * Return the "Buy $DEEPOTUS" destination.
+ *
+ * Always the internal Pulse route now (single source of truth for the
+ * whole site's buy funnel). Pump.fun / PumpSwap URLs remain exported
+ * above for non-CTA contexts (informational labels, dexscreener, …).
  */
 export function getBuyUrl(): string {
-  if (PUMPFUN_URL) return PUMPFUN_URL;
-  if (PUMPSWAP_URL) return PUMPSWAP_URL;
-  return "#whitelist";
+  return PULSE_ROUTE;
 }
 
+/**
+ * Buy CTAs are now an internal SPA route, never an external tab.
+ * Kept as a function so existing callers ({ target, rel } gating)
+ * keep working without edits.
+ */
 export function isBuyUrlExternal(): boolean {
-  return Boolean(PUMPFUN_URL || PUMPSWAP_URL);
+  return false;
 }

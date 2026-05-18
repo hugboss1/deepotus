@@ -17,7 +17,6 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
-  ExternalLink,
   FileLock2,
   Lock,
   Megaphone,
@@ -36,6 +35,7 @@ import {
   type Mission,
   type MissionFamily,
 } from "@/lib/missions";
+import { getBuyUrl } from "@/lib/links";
 import type { LucideIcon } from "lucide-react";
 
 // Family → icon + accent. Single source of truth so a future family
@@ -200,13 +200,11 @@ const MissionCard: React.FC<{ mission: Mission; index: number }> = ({ mission, i
           )}
           {mission.secondaryCtaUrl && !isRedacted && (
             <a
-              href={mission.secondaryCtaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={getBuyUrl()}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/15 hover:border-foreground/35 transition-colors"
               data-testid={`mission-cta-secondary-${mission.id}`}
             >
-              {t(`${root}.secondaryAction`) as string} <ExternalLink size={11} />
+              {t(`${root}.secondaryAction`) as string} <ArrowRight size={11} />
             </a>
           )}
           {/* Index badge — tiny visual cue echoing the dossier ref. */}

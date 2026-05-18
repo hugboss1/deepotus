@@ -26,6 +26,7 @@ import { ExternalLink, Wallet, Coins, Mail, Bell, Cpu, Activity, Zap, Rocket } f
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { getLaunchPhase, URLS as PHASE_URLS } from "@/lib/launchPhase";
+import { getBuyUrl, isBuyUrlExternal } from "@/lib/links";
 
 interface PhaseStep {
   icon: React.ReactNode;
@@ -40,8 +41,8 @@ function getStepsForPhase(phase: ReturnType<typeof getLaunchPhase>): PhaseStep[]
       {
         icon: <Rocket size={14} />,
         labelKey: "howToBuyPhased.graduated.s1",
-        href: PHASE_URLS.pumpswap,
-        external: true,
+        href: getBuyUrl(),
+        external: isBuyUrlExternal(),
       },
       { icon: <Wallet size={14} />, labelKey: "howToBuyPhased.graduated.s2" },
       { icon: <Activity size={14} />, labelKey: "howToBuyPhased.graduated.s3" },
@@ -50,8 +51,8 @@ function getStepsForPhase(phase: ReturnType<typeof getLaunchPhase>): PhaseStep[]
             {
               icon: <ExternalLink size={14} />,
               labelKey: "howToBuyPhased.graduated.s4_pumpswap",
-              href: PHASE_URLS.pumpswap,
-              external: true,
+              href: getBuyUrl(),
+              external: isBuyUrlExternal(),
             },
           ]
         : []),
@@ -62,8 +63,8 @@ function getStepsForPhase(phase: ReturnType<typeof getLaunchPhase>): PhaseStep[]
       {
         icon: <Zap size={14} />,
         labelKey: "howToBuyPhased.live.s1",
-        href: PHASE_URLS.pumpfun,
-        external: true,
+        href: getBuyUrl(),
+        external: isBuyUrlExternal(),
       },
       { icon: <Wallet size={14} />, labelKey: "howToBuyPhased.live.s2" },
       { icon: <Coins size={14} />, labelKey: "howToBuyPhased.live.s3" },
@@ -179,27 +180,22 @@ export function HowToBuyPhasedSteps() {
           {t("howToBuyPhased.live.note") as string}
         </p>
       )}
-      {/* BonkBot CTA — present in every phase, especially useful on mobile. */}
-      {PHASE_URLS.bonkbot && (
-        <div className="mt-4 pt-4 border-t border-foreground/10">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="rounded-[var(--btn-radius)]"
-            data-testid="howtobuy-bonkbot-cta"
-          >
-            <a
-              href={PHASE_URLS.bonkbot}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              📲 {t("howToBuyPhased.bonkbotCta") as string}
-              <ExternalLink size={12} className="ml-1.5" />
-            </a>
-          </Button>
-        </div>
-      )}
+      {/* BonkBot CTA — present in every phase, especially useful on mobile.
+          Now funnels into the on-site Pulse mini-app (which itself forwards
+          to the BonkBot Telegram app) instead of leaving the site. */}
+      <div className="mt-4 pt-4 border-t border-foreground/10">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="rounded-[var(--btn-radius)]"
+          data-testid="howtobuy-bonkbot-cta"
+        >
+          <a href={getBuyUrl()}>
+            📲 {t("howToBuyPhased.bonkbotCta") as string}
+          </a>
+        </Button>
+      </div>
     </section>
   );
 }
