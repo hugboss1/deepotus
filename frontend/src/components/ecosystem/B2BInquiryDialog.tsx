@@ -1,7 +1,7 @@
 /**
  * B2BInquiryDialog — modal for the white-label royaltie-25% contact form.
  */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import {
   Dialog,
@@ -22,15 +22,36 @@ import { submitB2BInquiry } from "@/lib/ecosystem";
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Optional pre-filled message body — used by Sprint 20.1 subscription CTA. */
+  prefilledMessage?: string;
+  /** Optional override for the dialog title (e.g. subscription inquiry context). */
+  titleOverride?: string;
+  /** Optional override for the dialog subtitle. */
+  subtitleOverride?: string;
 }
 
-export function B2BInquiryDialog({ open, onOpenChange }: Props): JSX.Element {
+export function B2BInquiryDialog({
+  open,
+  onOpenChange,
+  prefilledMessage,
+  titleOverride,
+  subtitleOverride,
+}: Props): JSX.Element {
   const { t, lang } = useI18n();
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [company, setCompany] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [sending, setSending] = useState<boolean>(false);
+
+  // When ``prefilledMessage`` changes (e.g. user opens the dialog from a
+  // different subscription tier button), seed the textarea so the CTA
+  // context is preserved without forcing the user to retype.
+  useEffect(() => {
+    if (prefilledMessage && open) {
+      setMessage(prefilledMessage);
+    }
+  }, [prefilledMessage, open]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -68,9 +89,9 @@ export function B2BInquiryDialog({ open, onOpenChange }: Props): JSX.Element {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" data-testid="b2b-dialog">
         <DialogHeader>
-          <DialogTitle>{t("ecosystem.b2b.dialog.title")}</DialogTitle>
+          <DialogTitle>{titleOverride ?? t("ecosystem.b2b.dialog.title")}</DialogTitle>
           <DialogDescription>
-            {t("ecosystem.b2b.dialog.subtitle")}
+            {subtitleOverride ?? t("ecosystem.b2b.dialog.subtitle")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1346,7 +1346,7 @@ export const translations = {
           title: "Le Roman DEEPOTUS",
           subtitle: "Le Monde D'en Haut… de L'Intérieur",
           pitch:
-            "Une saga dystopique sur l'économie de l'attention. 20 chapitres, une mythologie et les Fragments — des aphorismes prophétiques. Le memecoin qui a lu le livre.",
+            "Une saga dystopique sur l'économie de l'attention. 54 chapitres, une mythologie et les Fragments — des aphorismes prophétiques. Le memecoin qui a lu le livre.",
           episodes: {
             heading: "Épisodes gratuits, diffusés en série",
             body:
@@ -1389,7 +1389,20 @@ export const translations = {
           shipping: {
             heading: "Livraison",
             body:
-              "Impression à la demande. Livraison fin juin pour les commandes du premier lot, mi-juillet pour le lot suivant.",
+              "Impression à la demande. Livraison début juillet pour les commandes du premier lot, fin juillet pour le lot suivant.",
+          },
+          shows: {
+            heading: "Salons internationaux",
+            gamescom: {
+              label: "Gamescom Cologne",
+              dates: "26 – 30 août 2026",
+              note: "Venez nous rencontrer.",
+            },
+            essen: {
+              label: "SPIEL Essen",
+              dates: "Octobre 2026",
+              note: "DEEPOTUS — FRAGMENTS y sera officiellement présenté.",
+            },
           },
           giftInside: "La boîte contient une carte d'invitation (QR) vers la Genesis list.",
           extension: {
@@ -1423,6 +1436,28 @@ export const translations = {
             body:
               "Le générateur peut être déployé en marque blanche (votre nom, votre logo, votre persona) moyennant une royaltie de 25 %.",
             cta: "Nous contacter",
+          },
+          teaser: {
+            heading: "Démo vidéo",
+            playLabel: "Lire le teaser",
+            soonBadge: "Teaser à venir",
+            soonToast: "Le teaser vidéo arrive très bientôt — reviens dans quelques jours.",
+          },
+          subscription: {
+            badge: "BIENTÔT · ABONNEMENTS",
+            heading: "Abonnements avec clés incluses",
+            body:
+              "Plus besoin de chercher des clés API chez qui que ce soit : elles sont incluses dans l'abonnement. Vous lancez le studio, vous publiez — c'est tout.",
+            keysIncludedLabel: "Clés API incluses",
+            keysIncludedBody: "OpenAI, Google, ElevenLabs, etc. — tout est géré pour vous.",
+            postsLabel: "posts / mois",
+            tier1Label: "Starter",
+            tier2Label: "Creator",
+            tier3Label: "Studio",
+            soonNote: "Bientôt disponible. Inscrivez votre demande, nous revenons vers vous.",
+            cta: "Nous contacter",
+            inquiryPrefill:
+              "Je suis intéressé(e) par la formule abonnement Video Generator ({tier} posts/mois). Merci de me recontacter avec les détails.",
           },
           mockupCaption: "VISUEL PROVISOIRE · CAPTURE D'APP EN PRÉPARATION",
           cta: "Acheter — 65 €",
@@ -2935,7 +2970,7 @@ export const translations = {
           title: "The DEEPOTUS Novel",
           subtitle: "The World Above… from the Inside",
           pitch:
-            "A dystopian saga on the attention economy. 20 chapters, a mythology, and the Fragments — prophetic aphorisms. The memecoin that read the book.",
+            "A dystopian saga on the attention economy. 54 chapters, a mythology, and the Fragments — prophetic aphorisms. The memecoin that read the book.",
           episodes: {
             heading: "Free episodes, serial release",
             body:
@@ -2978,7 +3013,20 @@ export const translations = {
           shipping: {
             heading: "Shipping",
             body:
-              "Print on demand. Late June delivery for first-batch orders, mid-July for the next batch.",
+              "Print on demand. Early July delivery for first-batch orders, late July for the next batch.",
+          },
+          shows: {
+            heading: "International trade shows",
+            gamescom: {
+              label: "Gamescom Cologne",
+              dates: "August 26 – 30, 2026",
+              note: "Come meet us.",
+            },
+            essen: {
+              label: "SPIEL Essen",
+              dates: "October 2026",
+              note: "DEEPOTUS — FRAGMENTS will be officially unveiled.",
+            },
           },
           giftInside: "The box includes an invitation card (QR) to the Genesis list.",
           extension: {
@@ -3011,6 +3059,28 @@ export const translations = {
             body:
               "The generator can be deployed as white-label (your name, your logo, your persona) for a 25% royalty.",
             cta: "Contact us",
+          },
+          teaser: {
+            heading: "Video demo",
+            playLabel: "Play the teaser",
+            soonBadge: "Teaser coming",
+            soonToast: "The video teaser is dropping very soon — check back in a few days.",
+          },
+          subscription: {
+            badge: "SOON · SUBSCRIPTIONS",
+            heading: "Subscriptions with keys included",
+            body:
+              "No more hunting for API keys with anyone: they're included in the subscription. You launch the studio, you publish — that's it.",
+            keysIncludedLabel: "API keys included",
+            keysIncludedBody: "OpenAI, Google, ElevenLabs, etc. — all handled for you.",
+            postsLabel: "posts / month",
+            tier1Label: "Starter",
+            tier2Label: "Creator",
+            tier3Label: "Studio",
+            soonNote: "Coming soon. Drop your request and we'll get back to you.",
+            cta: "Contact us",
+            inquiryPrefill:
+              "I'm interested in the Video Generator subscription plan ({tier} posts/month). Please reach out with the details.",
           },
           mockupCaption: "PROVISIONAL VISUAL · APP SCREENSHOTS COMING",
           cta: "Buy — €65",

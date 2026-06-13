@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Dices, Package, Tags, Truck, Gift, Sparkles, ChevronRight } from "lucide-react";
+import { Dices, Package, Tags, Truck, Gift, Sparkles, ChevronRight, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -204,6 +204,57 @@ export function ProductBoardGameCard(): JSX.Element {
                 {t("ecosystem.cards.boardgame.shipping.body")}
               </div>
             </div>
+          </div>
+
+          {/* Trade shows (Sprint 20.1) — Gamescom Cologne + SPIEL Essen */}
+          <div
+            className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-5"
+            data-testid="boardgame-trade-shows"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarDays className="h-4 w-4 text-amber-300/95" aria-hidden />
+              <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-amber-200/95">
+                {t("ecosystem.cards.boardgame.shows.heading")}
+              </div>
+            </div>
+            <ul className="space-y-2.5 text-xs">
+              <li
+                className="flex items-start justify-between gap-3 rounded-md border border-border/60 bg-background/40 px-3 py-2.5"
+                data-testid="boardgame-show-gamescom"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-display font-semibold text-foreground">
+                      {t("ecosystem.cards.boardgame.shows.gamescom.label")}
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.20em] text-amber-300/85">
+                      {t("ecosystem.cards.boardgame.shows.gamescom.dates")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-foreground/65 leading-relaxed font-body">
+                    {t("ecosystem.cards.boardgame.shows.gamescom.note")}
+                  </p>
+                </div>
+              </li>
+              <li
+                className="flex items-start justify-between gap-3 rounded-md border border-border/60 bg-background/40 px-3 py-2.5"
+                data-testid="boardgame-show-essen"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-display font-semibold text-foreground">
+                      {t("ecosystem.cards.boardgame.shows.essen.label")}
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.20em] text-amber-300/85">
+                      {t("ecosystem.cards.boardgame.shows.essen.dates")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-foreground/65 leading-relaxed font-body">
+                    {t("ecosystem.cards.boardgame.shows.essen.note")}
+                  </p>
+                </div>
+              </li>
+            </ul>
           </div>
 
           {/* Gift inside (Genesis card) */}

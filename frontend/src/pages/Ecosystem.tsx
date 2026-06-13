@@ -39,6 +39,12 @@ export default function Ecosystem(): JSX.Element {
   const [genesisSource, setGenesisSource] =
     useState<GenesisPayload["source"]>("genesis_roman");
   const [b2bOpen, setB2bOpen] = useState<boolean>(false);
+  // Sprint 20.1 — when the visitor clicks a subscription tier button on
+  // the Video Generator card, we reuse the B2BInquiryDialog with a
+  // pre-filled message that carries the tier context downstream.
+  const [b2bPrefill, setB2bPrefill] = useState<string>("");
+  const [b2bTitleOverride, setB2bTitleOverride] = useState<string>("");
+  const [b2bSubtitleOverride, setB2bSubtitleOverride] = useState<string>("");
 
   useEffect(() => {
     document.title = t("ecosystem.seo.title");
@@ -47,6 +53,23 @@ export default function Ecosystem(): JSX.Element {
   const openGenesis = (source: GenesisPayload["source"]): void => {
     setGenesisSource(source);
     setGenesisOpen(true);
+  };
+
+  const openWhiteLabelInquiry = (): void => {
+    setB2bPrefill("");
+    setB2bTitleOverride("");
+    setB2bSubtitleOverride("");
+    setB2bOpen(true);
+  };
+
+  const openSubscriptionInquiry = (prefilledMessage: string): void => {
+    setB2bPrefill(prefilledMessage);
+    // The dialog reuses the same form/collection — we just swap the
+    // title + subtitle so the visitor immediately recognises the
+    // subscription context.
+    setB2bTitleOverride(t("ecosystem.cards.videogen.subscription.heading"));
+    setB2bSubtitleOverride(t("ecosystem.cards.videogen.subscription.body"));
+    setB2bOpen(true);
   };
 
   const handleSoonClick = (): void => {
@@ -69,7 +92,10 @@ export default function Ecosystem(): JSX.Element {
             hasRealSocials={HAS_REAL_SOCIALS}
           />
           <ProductBoardGameCard />
-          <ProductVideoGenCard onContactB2B={() => setB2bOpen(true)} />
+          <ProductVideoGenCard
+            onContactB2B={openWhiteLabelInquiry}
+            onContactSubscription={openSubscriptionInquiry}
+          />
           <ProductMobileGameCard
             onJoinWaitlist={() => openGenesis("genesis_mobile")}
           />
@@ -90,7 +116,13 @@ export default function Ecosystem(): JSX.Element {
         onOpenChange={setGenesisOpen}
         source={genesisSource}
       />
-      <B2BInquiryDialog open={b2bOpen} onOpenChange={setB2bOpen} />
+      <B2BInquiryDialog
+        open={b2bOpen}
+        onOpenChange={setB2bOpen}
+        prefilledMessage={b2bPrefill}
+        titleOverride={b2bTitleOverride || undefined}
+        subtitleOverride={b2bSubtitleOverride || undefined}
+      />
     </div>
   );
 }
