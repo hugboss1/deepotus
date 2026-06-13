@@ -45,10 +45,10 @@
   },
   {
     "content": "Final: tsc --noEmit → yarn build clean, screenshots validated, testing_agent_v3 integration test",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Update LAUNCH_PLAYBOOK.md with Sprint 20 activation steps (Stripe, Genesis admin, B2B intake)",
-    "status": "pending"
+    "status": "completed"
   }
 ]
