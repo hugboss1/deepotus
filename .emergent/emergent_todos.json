@@ -1,26 +1,54 @@
 [
   {
-    "content": "P1 — Update draw date partout (lib/missions.ts + backend defaults + i18n) → 22/05/2026 12:00 UTC",
+    "content": "Add STRIPE_API_KEY to backend .env + verify emergentintegrations import",
     "status": "completed"
   },
   {
-    "content": "P2 — Audit bug token mint admin vault → ROUTE ORDERING bug identifié (route /{slot} interceptait /mint-address)",
+    "content": "Create core/stripe_checkout.py (wrapper + payment_transactions DB helpers)",
     "status": "completed"
   },
   {
-    "content": "P3 — Fix bug — réordonné routes (mint-address AVANT {slot}) + comment de garde + test de régression",
+    "content": "Create core/orders.py (founder counter atomic + tier pricing) + core/genesis.py + core/license_generator.py",
     "status": "completed"
   },
   {
-    "content": "P4 — Test end-to-end : admin SET → public snapshot live + Giveaway pipeline pickup PRE-MINT → POST-MINT auto",
+    "content": "Create routers/payments.py with POST session, GET status, POST webhook endpoints",
     "status": "completed"
   },
   {
-    "content": "P5 — Write LAUNCH_PLAYBOOK.md (pre-mint + post-mint actions, fail-proof)",
+    "content": "Create routers/ecosystem.py (genesis email, founder counter, b2b inquiry)",
+    "status": "completed"
+  },
+  {
+    "content": "Wire new routers + indexes into server.py startup",
+    "status": "completed"
+  },
+  {
+    "content": "POC test: curl create session → verify URL + DB transaction created",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend Phase 2: Create i18n keys (ecosystem.*, payment.*, funding.*, roadmapTracks.*) FR+EN parity",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend Phase 2: Build lib/ecosystem.ts + 8 ecosystem components + Ecosystem page + Payment page",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend Phase 2: Update App.tsx routes + TopNav.tsx nav entries",
+    "status": "completed"
+  },
+  {
+    "content": "Frontend Phase 3: Update Roadmap (TwoTracks) + Transparency (FundingFlowSection #funding)",
+    "status": "completed"
+  },
+  {
+    "content": "Final: tsc --noEmit → yarn build clean, screenshots validated, testing_agent_v3 integration test",
     "status": "in_progress"
   },
   {
-    "content": "P6 — Final tests : Pytest 175/175 + tsc clean + screenshots May 22 validé",
-    "status": "completed"
+    "content": "Update LAUNCH_PLAYBOOK.md with Sprint 20 activation steps (Stripe, Genesis admin, B2B intake)",
+    "status": "pending"
   }
 ]

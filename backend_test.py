@@ -748,6 +748,360 @@ def main():
             print(f"   ℹ️  Announcement failed (benign): {announce_error}")
             print("   ✅ Burn record succeeded despite announcement failure")
 
+    # ========================================================================
+    # Sprint 20 — Ecosystem + Transparent Funding + Stripe Payment
+    # ========================================================================
+    print("\n" + "=" * 70)
+    print("Sprint 20 — Ecosystem & Payment Testing")
+    print("=" * 70)
+
+    # ---- Test 30: GET /api/ecosystem/board-game/counter (public) ----
+    saved_token = tester.token
+    tester.token = None  # Public endpoint
+    
+    success, counter = tester.run_test(
+        "GET /api/ecosystem/board-game/counter (public)",
+        "GET",
+        "/api/ecosystem/board-game/counter",
+        200
+    )
+    
+    if success:
+        print(f"   sold: {counter.get('sold')}")
+        print(f"   next_number: {counter.get('next_number')}")
+        print(f"   founder_limit: {counter.get('founder_limit')}")
+        print(f"   is_founder: {counter.get('is_founder')}")
+        print(f"   current_price_eur: {counter.get('current_price_eur')}")
+        print(f"   current_tier: {counter.get('current_tier')}")
+        
+        # Verify initial state
+        if counter.get('sold') >= 0 and counter.get('next_number') == counter.get('sold', 0) + 1:
+            print("   ✅ Counter math correct")
+        if counter.get('founder_limit') == 500:
+            print("   ✅ Founder limit = 500")
+        if counter.get('current_tier') in ['early_bird_1', 'early_bird_2', 'standard_founder', 'standard']:
+            print(f"   ✅ Valid tier: {counter.get('current_tier')}")
+    
+    tester.token = saved_token
+    
+    # ---- Test 31: POST /api/ecosystem/genesis (happy path) ----
+    tester.token = None
+    test_email = f"test-genesis-{datetime.now().strftime('%H%M%S')}@deepotus.xyz"
+    
+    success, genesis1 = tester.run_test(
+        "POST /api/ecosystem/genesis (happy path)",
+        "POST",
+        "/api/ecosystem/genesis",
+        200,
+        data={
+            "email": test_email,
+            "source": "genesis_roman",
+            "locale": "fr"
+        }
+    )
+    
+    if success:
+        print(f"   ok: {genesis1.get('ok')}")
+        print(f"   source: {genesis1.get('source')}")
+        if genesis1.get('ok') and genesis1.get('source') == 'genesis_roman':
+            print("   ✅ Genesis subscription created")
+    
+    # ---- Test 32: POST /api/ecosystem/genesis (idempotent upsert) ----
+    success, genesis2 = tester.run_test(
+        "POST /api/ecosystem/genesis (idempotent upsert)",
+        "POST",
+        "/api/ecosystem/genesis",
+        200,
+        data={
+            "email": test_email,
+            "source": "genesis_roman",
+            "locale": "en"
+        }
+    )
+    
+    if success:
+        print(f"   ok: {genesis2.get('ok')}")
+        if genesis2.get('ok'):
+            print("   ✅ Idempotent upsert succeeded (no duplicate error)")
+    
+    # ---- Test 33: POST /api/ecosystem/genesis (invalid email) ----
+    success, _ = tester.run_test(
+        "POST /api/ecosystem/genesis (invalid email)",
+        "POST",
+        "/api/ecosystem/genesis",
+        422,
+        data={
+            "email": "not-an-email",
+            "source": "genesis_roman"
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected invalid email with 422")
+    
+    tester.token = saved_token
+    
+    # ---- Test 34: POST /api/ecosystem/b2b-inquiry (happy path) ----
+    tester.token = None
+    test_b2b_email = f"test-b2b-{datetime.now().strftime('%H%M%S')}@company.com"
+    
+    success, b2b1 = tester.run_test(
+        "POST /api/ecosystem/b2b-inquiry (happy path)",
+        "POST",
+        "/api/ecosystem/b2b-inquiry",
+        200,
+        data={
+            "name": "Test Company",
+            "email": test_b2b_email,
+            "company": "ACME Corp",
+            "message": "Interested in white-label Video Generator with 25% royalty model.",
+            "locale": "en"
+        }
+    )
+    
+    if success:
+        inquiry_id = b2b1.get('inquiry_id')
+        print(f"   ok: {b2b1.get('ok')}")
+        print(f"   inquiry_id: {inquiry_id}")
+        if b2b1.get('ok') and inquiry_id:
+            print("   ✅ B2B inquiry created")
+    
+    # ---- Test 35: POST /api/ecosystem/b2b-inquiry (short message) ----
+    success, _ = tester.run_test(
+        "POST /api/ecosystem/b2b-inquiry (short message <10 chars)",
+        "POST",
+        "/api/ecosystem/b2b-inquiry",
+        422,
+        data={
+            "name": "Test",
+            "email": "test@test.com",
+            "message": "Hi"  # <10 chars
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected short message with 422")
+    
+    tester.token = saved_token
+    
+    # ---- Test 36: POST /api/payments/checkout/session (videogen) ----
+    tester.token = None
+    
+    success, session_videogen = tester.run_test(
+        "POST /api/payments/checkout/session (videogen)",
+        "POST",
+        "/api/payments/checkout/session",
+        200,
+        data={
+            "product_id": "videogen",
+            "origin_url": BASE_URL,
+            "locale": "fr"
+        },
+        timeout=15
+    )
+    
+    videogen_session_id = None
+    if success:
+        url = session_videogen.get('url', '')
+        session_id = session_videogen.get('session_id', '')
+        amount = session_videogen.get('amount_eur')
+        currency = session_videogen.get('currency')
+        
+        print(f"   url: {url[:50]}..." if url else "   url: None")
+        print(f"   session_id: {session_id[:20]}..." if session_id else "   session_id: None")
+        print(f"   amount_eur: {amount}")
+        print(f"   currency: {currency}")
+        
+        if url.startswith('https://checkout.stripe.com/c/pay/cs_test_'):
+            print("   ✅ Stripe URL well-formed (cs_test_)")
+        if amount == 65.0 and currency == 'eur':
+            print("   ✅ VideoGen price correct: 65.00 EUR")
+        
+        videogen_session_id = session_id
+    
+    # ---- Test 37: POST /api/payments/checkout/session (boardgame) ----
+    success, session_boardgame = tester.run_test(
+        "POST /api/payments/checkout/session (boardgame)",
+        "POST",
+        "/api/payments/checkout/session",
+        200,
+        data={
+            "product_id": "boardgame",
+            "origin_url": BASE_URL,
+            "locale": "en"
+        },
+        timeout=15
+    )
+    
+    boardgame_session_id = None
+    if success:
+        url = session_boardgame.get('url', '')
+        session_id = session_boardgame.get('session_id', '')
+        amount = session_boardgame.get('amount_eur')
+        metadata = session_boardgame.get('metadata', {})
+        founder_number = metadata.get('founder_number')
+        
+        print(f"   url: {url[:50]}..." if url else "   url: None")
+        print(f"   session_id: {session_id[:20]}..." if session_id else "   session_id: None")
+        print(f"   amount_eur: {amount}")
+        print(f"   founder_number: {founder_number}")
+        
+        if url.startswith('https://checkout.stripe.com/c/pay/cs_test_'):
+            print("   ✅ Stripe URL well-formed (cs_test_)")
+        if amount in [39.99, 45.0, 59.0]:
+            print(f"   ✅ Boardgame price in valid tier: {amount} EUR")
+        if founder_number:
+            print(f"   ✅ Founder number assigned: {founder_number}")
+        
+        boardgame_session_id = session_id
+    
+    # ---- Test 38: POST /api/payments/checkout/session (invalid product) ----
+    success, _ = tester.run_test(
+        "POST /api/payments/checkout/session (invalid product)",
+        "POST",
+        "/api/payments/checkout/session",
+        400,
+        data={
+            "product_id": "invalid",
+            "origin_url": BASE_URL
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected invalid product with 400")
+    
+    # ---- Test 39: Atomic counter increment (3 boardgame sessions) ----
+    print("\n🔍 Testing atomic counter increment (3 boardgame sessions)...")
+    founder_numbers = []
+    
+    for i in range(3):
+        success, session = tester.run_test(
+            f"POST /api/payments/checkout/session (boardgame #{i+1})",
+            "POST",
+            "/api/payments/checkout/session",
+            200,
+            data={
+                "product_id": "boardgame",
+                "origin_url": BASE_URL,
+                "locale": "fr"
+            },
+            timeout=15
+        )
+        
+        if success:
+            metadata = session.get('metadata', {})
+            fn = metadata.get('founder_number')
+            if fn:
+                founder_numbers.append(int(fn))
+                print(f"   Session {i+1}: founder_number={fn}")
+    
+    if len(founder_numbers) == 3:
+        # Check if numbers are sequential and unique
+        if len(set(founder_numbers)) == 3:
+            print("   ✅ All founder numbers unique")
+        if founder_numbers == sorted(founder_numbers):
+            print("   ✅ Founder numbers sequential (atomic increment working)")
+    
+    # ---- Test 40: GET /api/payments/checkout/status/{session_id} ----
+    if videogen_session_id:
+        success, status = tester.run_test(
+            f"GET /api/payments/checkout/status/{videogen_session_id[:20]}...",
+            "GET",
+            f"/api/payments/checkout/status/{videogen_session_id}",
+            200,
+            timeout=15
+        )
+        
+        if success:
+            print(f"   session_id: {status.get('session_id', '')[:20]}...")
+            print(f"   status: {status.get('status')}")
+            print(f"   payment_status: {status.get('payment_status')}")
+            print(f"   amount_eur: {status.get('amount_eur')}")
+            
+            # Expected: status='open', payment_status='unpaid' (not actually paid)
+            if status.get('payment_status') in ['unpaid', 'initiated', 'open']:
+                print("   ✅ Correct payment_status for unpaid session")
+    
+    tester.token = saved_token
+    
+    # ---- Test 41: GET /api/admin/ecosystem/orders (requires admin auth) ----
+    success, orders = tester.run_test(
+        "GET /api/admin/ecosystem/orders (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/orders?limit=10",
+        200
+    )
+    
+    if success:
+        order_list = orders.get('orders', [])
+        count = orders.get('count', 0)
+        print(f"   orders: {len(order_list)}")
+        print(f"   count: {count}")
+        print("   ✅ Admin orders endpoint accessible")
+    
+    # ---- Test 42: GET /api/admin/ecosystem/orders (without admin auth) ----
+    saved_token = tester.token
+    tester.token = None
+    
+    success, _ = tester.run_test(
+        "GET /api/admin/ecosystem/orders (without admin auth)",
+        "GET",
+        "/api/admin/ecosystem/orders",
+        401
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected without admin auth (401)")
+    
+    tester.token = saved_token
+    
+    # ---- Test 43: GET /api/admin/ecosystem/genesis ----
+    success, genesis_admin = tester.run_test(
+        "GET /api/admin/ecosystem/genesis (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/genesis?limit=10",
+        200
+    )
+    
+    if success:
+        subscribers = genesis_admin.get('subscribers', [])
+        by_source = genesis_admin.get('by_source', {})
+        count = genesis_admin.get('count', 0)
+        print(f"   subscribers: {len(subscribers)}")
+        print(f"   by_source: {by_source}")
+        print(f"   count: {count}")
+        print("   ✅ Admin genesis endpoint accessible")
+    
+    # ---- Test 44: GET /api/admin/ecosystem/b2b ----
+    success, b2b_admin = tester.run_test(
+        "GET /api/admin/ecosystem/b2b (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/b2b?limit=10",
+        200
+    )
+    
+    if success:
+        inquiries = b2b_admin.get('inquiries', [])
+        count = b2b_admin.get('count', 0)
+        print(f"   inquiries: {len(inquiries)}")
+        print(f"   count: {count}")
+        print("   ✅ Admin B2B endpoint accessible")
+    
+    # ---- Test 45: GET /api/admin/ecosystem/payments/transactions ----
+    success, transactions = tester.run_test(
+        "GET /api/admin/ecosystem/payments/transactions (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/payments/transactions?limit=10",
+        200
+    )
+    
+    if success:
+        txns = transactions.get('transactions', [])
+        count = transactions.get('count', 0)
+        print(f"   transactions: {len(txns)}")
+        print(f"   count: {count}")
+        print("   ✅ Admin payments/transactions endpoint accessible")
+
     # ---- Summary ----
     print("\n" + "=" * 70)
     print(f"📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")

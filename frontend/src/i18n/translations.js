@@ -14,6 +14,8 @@ export const translations = {
       mission: "Mission",
       vault: "Coffre",
       transparency: "Transparence",
+      ecosystem: "Écosystème",
+      funding: "Financement",
       roadmap: "Roadmap",
       faq: "FAQ",
       join: "Rejoindre le Deep State",
@@ -1262,6 +1264,358 @@ export const translations = {
         secondary: "ACHETER $DEEP",
       },
     },
+
+    // ====================================================================
+    // SPRINT 20 — ROADMAP TWO TRACKS (Products / Secret project)
+    // ====================================================================
+    roadmapTracks: {
+      kicker: "DEUX PISTES PARALLÈLES",
+      title: "Les produits avancent. Le projet secret se construit.",
+      lead:
+        "L'écosystème DEEPOTUS progresse sur deux fronts : une piste produits visible et tangible (livre, jeu, logiciel, mobile), et une piste \"projet secret\" pilotée par les 5 wallets — chacune des phases est rattachée à un wallet de financement, on-chain. Aucune date à la semaine près : on livre quand c'est prêt.",
+      trackA: {
+        label: "PISTE A · PRODUITS",
+        title: "L'univers se déploie",
+        steps: [
+          { code: "P1", label: "Roman", note: "Épisodes Instagram & YouTube → édition intégrale" },
+          { code: "P2", label: "Jeu de plateau", note: "Éditions Fondateur numérotées · livraison fin juin / mi-juillet" },
+          { code: "P3", label: "Video Generator", note: "Disponible · white-label B2B (royaltie 25 %)" },
+          { code: "P4", label: "Jeu mobile + Web", note: "Live build, version D&D en préparation" },
+        ],
+      },
+      trackB: {
+        label: "PISTE B · PROJET SECRET",
+        title: "Construit dans l'ombre, financé en clair",
+        steps: [
+          {
+            code: "Σ1",
+            label: "Fondations",
+            wallet: "Déployeur",
+            note: "Frais de migration, opérations on-chain. Étape franchie.",
+          },
+          {
+            code: "Σ2",
+            label: "Acquisition",
+            wallet: "Frais",
+            note: "Collecte creator fees + marges produits → redistribution.",
+          },
+          {
+            code: "Σ3",
+            label: "Construction silencieuse",
+            wallet: "Trésorerie",
+            note: "Phases de dev du projet secret — non nommé publiquement.",
+          },
+          {
+            code: "Σ4",
+            label: "Retours communauté",
+            wallet: "Communauté",
+            note: "Concours, récompenses non-financières, option charité pump.fun.",
+          },
+          {
+            code: "Σ5",
+            label: "Levée du rideau",
+            wallet: "Équipe",
+            note: "Annonce publique du projet secret. La date arrive quand c'est prêt.",
+          },
+        ],
+      },
+      footer:
+        "Les noms et la nature du projet secret restent confidentiels. Les wallets, eux, sont publics.",
+    },
+
+    // ====================================================================
+    // SPRINT 20 — ECOSYSTEM PAGE (/ecosysteme)
+    // ====================================================================
+    ecosystem: {
+      seo: {
+        title: "Écosystème — DEEPOTUS · Un univers, plusieurs portes d'entrée",
+        description:
+          "Roman, jeu de plateau premium, logiciel de génération vidéo, jeu mobile en live build. L'écosystème DEEPOTUS — preuve, pas promesse.",
+      },
+      hero: {
+        kicker: "L'ÉCOSYSTÈME · ACTE I",
+        title: "Un univers, plusieurs portes d'entrée.",
+        subtitle:
+          "Lis-le, joue-le, crée avec, possède-le. Quatre produits réels, un acte II en préparation — le tout financé par les marges et les creator fees, visible on-chain.",
+        scrollCue: "Découvrir les 4 produits",
+      },
+      cards: {
+        // ----------------------- Card 1: Roman -----------------------
+        roman: {
+          badge: "ACTE I · ROMAN",
+          title: "Le Roman DEEPOTUS",
+          subtitle: "Le Monde D'en Haut… de L'Intérieur",
+          pitch:
+            "Une saga dystopique sur l'économie de l'attention. 20 chapitres, une mythologie et les Fragments — des aphorismes prophétiques. Le memecoin qui a lu le livre.",
+          episodes: {
+            heading: "Épisodes gratuits, diffusés en série",
+            body:
+              "Les chapitres et épisodes gratuits sont publiés sur Instagram et YouTube de DEEPOTUS. La parution est régulière, le ton est lent et premium.",
+            instagramCta: "Voir sur Instagram",
+            youtubeCta: "Voir sur YouTube",
+            soonBadge: "Bientôt",
+          },
+          gallery: {
+            cover: "Couverture officielle",
+            pages: "Pages intérieures — Chapitre 25, La Prière transhumaine",
+          },
+          fullEdition:
+            "L'édition intégrale (téléchargement) arrivera plus tard. Ses marges iront aux wallets de financement.",
+          cta: "Rejoindre la Genesis list",
+        },
+        // ----------------- Card 2: Board game ----------------------
+        boardgame: {
+          badge: "ACTE I · JEU DE PLATEAU",
+          title: "DEEPOTUS — FRAGMENTS",
+          subtitle: "Prophète dystopique · Édition Fondateur",
+          pitch:
+            "Le jeu de plateau premium de l'univers. Bluff, alliances, et le module Insurrection : la Communauté contre le Système, sur votre table. Objet de collection numéroté.",
+          counter: {
+            sold: "Vendus",
+            of: "sur",
+            founder: "Éditions Fondateur",
+            currentPrice: "Prix du palier en cours",
+            nextNumber: "Prochain numéro",
+            soldOutFounder: "Éditions Fondateur épuisées — édition standard 59 €",
+          },
+          tiers: {
+            heading: "Paliers Fondateur",
+            earlyBird1: "Early-Bird 1 · n° 1–100",
+            earlyBird2: "Early-Bird 2 · n° 101–200",
+            standardFounder: "Standard Fondateur · n° 201–500",
+            standard: "Édition standard · n° 501+",
+            founderNote: "Les 500 premiers exemplaires sont des Éditions Fondateur numérotées.",
+          },
+          shipping: {
+            heading: "Livraison",
+            body:
+              "Impression à la demande. Livraison fin juin pour les commandes du premier lot, mi-juillet pour le lot suivant.",
+          },
+          giftInside: "La boîte contient une carte d'invitation (QR) vers la Genesis list.",
+          extension: {
+            heading: "Extension à venir",
+            body:
+              "Une version jeu de rôle, façon D&D, est en préparation en coopération avec un créateur de figurines. Statut : en préparation.",
+          },
+          status: "Pré-commande · Édition Fondateur",
+          cta: "Pré-commander",
+        },
+        // ----------------- Card 3: Video Generator ----------------------
+        videogen: {
+          badge: "DISPONIBLE · LOGICIEL",
+          title: "DEEPOTUS Video Generator",
+          subtitle: "Studio local · 9:16 · Avatars parlants · Planificateur",
+          pitch:
+            "Le studio local qui transforme une image, une news ou une phrase en vidéo 9:16 prête à publier. Avatars parlants, montage par nœuds, planificateur de posts. Tout tourne sur votre machine — vos clés, vos données.",
+          price: "65 €",
+          priceNote: "Achat unique · BYO keys · Installeur Windows",
+          proof:
+            "Le contenu de ce site et de nos réseaux sociaux est produit avec ce logiciel.",
+          features: {
+            local: "100 % local — vos clés, vos données",
+            nodes: "Éditeur par nœuds",
+            avatars: "Avatars parlants",
+            scheduler: "Planificateur de publication",
+          },
+          whitelabel: {
+            badge: "OFFRE B2B",
+            heading: "White-label disponible",
+            body:
+              "Le générateur peut être déployé en marque blanche (votre nom, votre logo, votre persona) moyennant une royaltie de 25 %.",
+            cta: "Nous contacter",
+          },
+          mockupCaption: "VISUEL PROVISOIRE · CAPTURE D'APP EN PRÉPARATION",
+          cta: "Acheter — 65 €",
+          guideCta: "Voir le guide",
+        },
+        // ----------------- Card 4: Mobile Game ----------------------
+        mobile: {
+          badge: "LIVE BUILD · EN COURS",
+          title: "Le Jeu mobile (& version web)",
+          subtitle: "Le prochain acte interactif de l'univers",
+          pitch:
+            "Un jeu mobile, doublé d'une version web. Jouez l'histoire, débloquez des Fragments.",
+          liveBuild: {
+            heading: "Construit en public, avec la communauté",
+            body:
+              "Vous suivez et influencez sa construction en direct. C'est un levier d'engagement — pas seulement un produit à venir.",
+          },
+          status: "En développement · Liste d'attente ouverte",
+          cta: "Suivre le live build",
+          notifyCta: "Être prévenu",
+          placeholder: "ILLUSTRATION PROVISOIRE",
+        },
+      },
+      banner: {
+        kicker: "LE POINT DE RALLIEMENT",
+        title:
+          "Le jeton DEEPOTUS est le point de ralliement public de cet univers, sur pump.fun (Solana).",
+        disclaimer: "Ce n'est pas un investissement — DYOR.",
+        pumpfun: "Pump.fun",
+        telegram: "Telegram",
+        x: "X",
+        instagram: "Instagram",
+        youtube: "YouTube",
+      },
+      genesis: {
+        dialog: {
+          title: "Rejoindre la Genesis list",
+          subtitle:
+            "Accès prioritaire au projet secret. Pas de spam, pas de DM. Un email quand le rideau se lève.",
+          emailLabel: "Votre email",
+          emailPlaceholder: "vous@example.com",
+          submitCta: "Rejoindre",
+          success: "Bienvenue dans la Genesis list. À très bientôt.",
+          error: "Impossible d'enregistrer pour le moment. Réessayez dans un instant.",
+          consent:
+            "En soumettant, vous acceptez de recevoir des communications liées à l'écosystème DEEPOTUS. Désabonnement en 1 clic.",
+        },
+      },
+      b2b: {
+        dialog: {
+          title: "Demande White-label — Video Generator",
+          subtitle:
+            "Décrivez votre projet. Un membre du Cabinet vous répondra avec un devis (royaltie 25%).",
+          nameLabel: "Nom",
+          namePlaceholder: "Votre nom",
+          emailLabel: "Email",
+          emailPlaceholder: "vous@société.com",
+          companyLabel: "Société (optionnel)",
+          companyPlaceholder: "Nom de votre entreprise",
+          messageLabel: "Votre demande",
+          messagePlaceholder:
+            "Volume estimé, cas d'usage, deadline, persona souhaité…",
+          submitCta: "Envoyer la demande",
+          success: "Demande reçue. Réponse sous 48h.",
+          error: "Envoi impossible pour le moment. Réessayez dans un instant.",
+        },
+      },
+      socialsSoonToast: {
+        title: "Compte en création",
+        body: "Le compte est en cours d'ouverture. Reviens d'ici quelques jours.",
+      },
+    },
+
+    // ====================================================================
+    // SPRINT 20 — FUNDING (Transparent funding)
+    // ====================================================================
+    funding: {
+      seo: {
+        title: "Financement transparent — DEEPOTUS",
+        description:
+          "Marges produits + creator fees → 5 wallets publics on-chain. Aucun rendement promis. Preuve, pas promesse.",
+      },
+      kicker: "FINANCEMENT TRANSPARENT",
+      title: "Deux sources, cinq portefeuilles, zéro promesse.",
+      lead:
+        "Le projet secret (acte II) sera financé par deux flux visibles on-chain en temps réel : les marges sur les produits et les creator fees du memecoin. Tout transite par 5 wallets publics rattachés à des phases concrètes de la roadmap.",
+      source1: {
+        heading: "Source 1 — Les marges sur les produits",
+        body:
+          "Les marges réalisées sur le jeu de plateau, sur le générateur de vidéo, et plus tard sur l'édition intégrale du roman à télécharger, sont reversées aux wallets : elles financent le projet secret et des retours communauté (récompenses, concours, cause). Acheter un produit, c'est financer la suite de l'univers — et le voir, en clair, sur cette page.",
+      },
+      source2: {
+        heading: "Source 2 — Les creator fees du memecoin",
+        body:
+          "Pump.fun ne permet pas d'alimenter directement les wallets de développement. Notre solution : les creator fees. Depuis janvier 2026, pump.fun permet au créateur de partager ses frais (≈ 1 % des échanges) vers plusieurs wallets. Nous avons créé 5 portefeuilles publics, chacun dédié à une fonction et à une phase du projet secret. Marges produits et creator fees les alimentent, et tout est visible on-chain, en temps réel, ici. Preuve, pas promesse.",
+      },
+      wallets: {
+        heading: "Les 5 wallets",
+        subheading:
+          "Adresses publiques, soldes live (lecture RPC Helius), liens Solscan. Mis à jour automatiquement.",
+        placeholderTitle: "Wallet à publier au mint",
+        placeholderBody:
+          "L'adresse sera renseignée par l'équipe lors du mint officiel.",
+        roles: {
+          deployer: {
+            label: "Déployeur",
+            role: "Déploiement & autorité technique",
+            finance: "Frais de migration, opérations on-chain",
+          },
+          treasury: {
+            label: "Trésorerie",
+            role: "Réserve stratégique",
+            finance: "Phases de dev du projet secret",
+          },
+          team: {
+            label: "Équipe",
+            role: "Rétribution & prestataires",
+            finance: "Roman, jeu, logiciel, jeu mobile, version D&D",
+          },
+          creator_fees: {
+            label: "Frais",
+            role: "Collecte (creator fees + marges)",
+            finance: "Redistribution vers les 4 autres",
+          },
+          community: {
+            label: "Communauté",
+            role: "Récompenses non-financières & cause",
+            finance: "Concours, retours communauté, option charité pump.fun",
+          },
+        },
+        viewOnSolscan: "Solscan",
+        balance: "Solde",
+        empty: "—",
+      },
+      flow: {
+        heading: "Flux de financement",
+        sources: "Marges produits + Creator fees",
+        hub: "Wallet Frais",
+        outputs: "Trésorerie · Équipe · Communauté · Déployeur",
+        charityNote:
+          "Option charité pump.fun activable à tout moment — fraction des fees reversée à une cause votée par la communauté.",
+      },
+      disclaimer:
+        "Portefeuilles et flux affichés pour la transparence (build in public). Le jeton n'est pas un investissement ; aucune promesse de rendement. DYOR.",
+    },
+
+    // ====================================================================
+    // SPRINT 20 — PAYMENT PAGE (/paiement)
+    // ====================================================================
+    payment: {
+      seo: {
+        title: "Paiement sécurisé — DEEPOTUS",
+        description:
+          "Paiement Stripe sécurisé (carte bancaire, SCA / 3-D Secure). Livraison physique pour le jeu de plateau, licence par email pour le logiciel.",
+      },
+      kicker: "PAIEMENT SÉCURISÉ",
+      title: "Finalisez votre commande",
+      lead:
+        "Paiement traité par Stripe (SCA / 3-D Secure). Le site ne stocke aucune donnée bancaire. Les produits sont des biens réels. Le memecoin reste sur pump.fun (lien sortant) — non vendu ici.",
+      product: {
+        videogenLabel: "DEEPOTUS Video Generator",
+        videogenDescription:
+          "Licence à vie, achat unique. Lien de téléchargement + clé envoyés par email après paiement.",
+        boardgameLabel: "DEEPOTUS — FRAGMENTS · Jeu de plateau",
+        boardgameDescription:
+          "Édition Fondateur numérotée si vous êtes dans les 500 premiers. Livraison à votre adresse, fin juin / mi-juillet.",
+      },
+      selectProduct: "Choisir un produit",
+      summary: "Récapitulatif",
+      total: "Total",
+      proceed: "Procéder au paiement Stripe",
+      processing: "Redirection vers Stripe…",
+      status: {
+        idle: "Sélectionnez un produit pour démarrer.",
+        creating: "Création de la session de paiement…",
+        polling: "Vérification du statut du paiement…",
+        paid: "Paiement reçu — merci !",
+        paidVideoGen:
+          "Votre clé de licence et lien de téléchargement ont été envoyés à {email}.",
+        paidBoardgame:
+          "Édition Fondateur n° {number} réservée à votre nom. Vous recevrez l'email de confirmation sous quelques minutes.",
+        expired:
+          "La session de paiement a expiré. Relancez la commande.",
+        canceled: "Paiement annulé. Vous pouvez réessayer.",
+        timeout:
+          "Délai dépassé pour la vérification. Consultez votre email — la confirmation est peut-être déjà arrivée.",
+        error: "Erreur de paiement. Réessayez ou contactez le support.",
+      },
+      backToEcosystem: "Retour à l'écosystème",
+      antiTamper:
+        "Le prix est calculé côté serveur — il ne peut pas être manipulé depuis le navigateur. Sécurité garantie.",
+      cancelLink: "Retour",
+    },
   },
   // ====================================================================
   en: {
@@ -1272,6 +1626,8 @@ export const translations = {
       mission: "Mission",
       vault: "Vault",
       transparency: "Transparency",
+      ecosystem: "Ecosystem",
+      funding: "Funding",
       roadmap: "Roadmap",
       faq: "FAQ",
       join: "Join the Deep State",
@@ -2497,6 +2853,353 @@ export const translations = {
         primary: "VIEW MISSIONS",
         secondary: "BUY $DEEP",
       },
+    },
+
+    // ====================================================================
+    // SPRINT 20 — ROADMAP TWO TRACKS (Products / Secret project)
+    // ====================================================================
+    roadmapTracks: {
+      kicker: "TWO PARALLEL TRACKS",
+      title: "Products ship. The secret project is being built.",
+      lead:
+        "The DEEPOTUS ecosystem progresses on two fronts: a visible, tangible products track (novel, game, software, mobile), and a \"secret project\" track piloted by the 5 wallets — each phase is tied to a funding wallet, on-chain. No week-precise dates: we ship when it's ready.",
+      trackA: {
+        label: "TRACK A · PRODUCTS",
+        title: "The universe deploys",
+        steps: [
+          { code: "P1", label: "Novel", note: "Instagram & YouTube episodes → full edition" },
+          { code: "P2", label: "Board game", note: "Numbered Founder editions · late June / mid-July shipping" },
+          { code: "P3", label: "Video Generator", note: "Available · B2B white-label (25% royalty)" },
+          { code: "P4", label: "Mobile game + Web", note: "Live build, D&D version in preparation" },
+        ],
+      },
+      trackB: {
+        label: "TRACK B · SECRET PROJECT",
+        title: "Built in the shadows, funded in plain sight",
+        steps: [
+          {
+            code: "Σ1",
+            label: "Foundations",
+            wallet: "Deployer",
+            note: "Migration fees, on-chain operations. Step cleared.",
+          },
+          {
+            code: "Σ2",
+            label: "Acquisition",
+            wallet: "Fees",
+            note: "Creator fees + product margins collection → redistribution.",
+          },
+          {
+            code: "Σ3",
+            label: "Silent build",
+            wallet: "Treasury",
+            note: "Secret project dev phases — not publicly named.",
+          },
+          {
+            code: "Σ4",
+            label: "Community returns",
+            wallet: "Community",
+            note: "Contests, non-financial rewards, pump.fun charity option.",
+          },
+          {
+            code: "Σ5",
+            label: "Curtain rises",
+            wallet: "Team",
+            note: "Public announcement of the secret project. The date comes when it's ready.",
+          },
+        ],
+      },
+      footer:
+        "The names and nature of the secret project remain confidential. The wallets themselves are public.",
+    },
+
+    // ====================================================================
+    // SPRINT 20 — ECOSYSTEM PAGE (/ecosystem)
+    // ====================================================================
+    ecosystem: {
+      seo: {
+        title: "Ecosystem — DEEPOTUS · One universe, multiple entry points",
+        description:
+          "Novel, premium board game, video generation software, mobile game in live build. The DEEPOTUS ecosystem — proof, not promise.",
+      },
+      hero: {
+        kicker: "THE ECOSYSTEM · ACT I",
+        title: "One universe, multiple entry points.",
+        subtitle:
+          "Read it, play it, create with it, own it. Four real products, an Act II in preparation — funded by margins and creator fees, visible on-chain.",
+        scrollCue: "Discover the 4 products",
+      },
+      cards: {
+        roman: {
+          badge: "ACT I · NOVEL",
+          title: "The DEEPOTUS Novel",
+          subtitle: "The World Above… from the Inside",
+          pitch:
+            "A dystopian saga on the attention economy. 20 chapters, a mythology, and the Fragments — prophetic aphorisms. The memecoin that read the book.",
+          episodes: {
+            heading: "Free episodes, serial release",
+            body:
+              "Free chapters and episodes are published on DEEPOTUS's Instagram and YouTube. Regular release, slow and premium tone.",
+            instagramCta: "Watch on Instagram",
+            youtubeCta: "Watch on YouTube",
+            soonBadge: "Soon",
+          },
+          gallery: {
+            cover: "Official cover",
+            pages: "Inside pages — Chapter 25, The Transhuman Prayer",
+          },
+          fullEdition:
+            "The full edition (download) will arrive later. Its margins will flow to the funding wallets.",
+          cta: "Join the Genesis list",
+        },
+        boardgame: {
+          badge: "ACT I · BOARD GAME",
+          title: "DEEPOTUS — FRAGMENTS",
+          subtitle: "Dystopian prophet · Founder edition",
+          pitch:
+            "The premium board game of the universe. Bluff, alliances, and the Insurrection module: the Community vs. the System, on your table. Numbered collector's item.",
+          counter: {
+            sold: "Sold",
+            of: "of",
+            founder: "Founder editions",
+            currentPrice: "Current tier price",
+            nextNumber: "Next number",
+            soldOutFounder:
+              "Founder editions sold out — standard edition €59",
+          },
+          tiers: {
+            heading: "Founder tiers",
+            earlyBird1: "Early-Bird 1 · n° 1–100",
+            earlyBird2: "Early-Bird 2 · n° 101–200",
+            standardFounder: "Standard Founder · n° 201–500",
+            standard: "Standard edition · n° 501+",
+            founderNote: "The first 500 copies are numbered Founder editions.",
+          },
+          shipping: {
+            heading: "Shipping",
+            body:
+              "Print on demand. Late June delivery for first-batch orders, mid-July for the next batch.",
+          },
+          giftInside: "The box includes an invitation card (QR) to the Genesis list.",
+          extension: {
+            heading: "Upcoming extension",
+            body:
+              "A tabletop RPG version, D&D-style, is in preparation in cooperation with a miniatures creator. Status: in preparation.",
+          },
+          status: "Pre-order · Founder edition",
+          cta: "Pre-order",
+        },
+        videogen: {
+          badge: "AVAILABLE · SOFTWARE",
+          title: "DEEPOTUS Video Generator",
+          subtitle: "Local studio · 9:16 · Talking avatars · Scheduler",
+          pitch:
+            "The local studio that turns an image, a piece of news, or a sentence into a 9:16 video ready to publish. Talking avatars, node-based editor, post scheduler. Everything runs on your machine — your keys, your data.",
+          price: "€65",
+          priceNote: "One-time purchase · BYO keys · Windows installer",
+          proof:
+            "The content of this site and our social networks is produced with this software.",
+          features: {
+            local: "100% local — your keys, your data",
+            nodes: "Node-based editor",
+            avatars: "Talking avatars",
+            scheduler: "Post scheduler",
+          },
+          whitelabel: {
+            badge: "B2B OFFER",
+            heading: "White-label available",
+            body:
+              "The generator can be deployed as white-label (your name, your logo, your persona) for a 25% royalty.",
+            cta: "Contact us",
+          },
+          mockupCaption: "PROVISIONAL VISUAL · APP SCREENSHOTS COMING",
+          cta: "Buy — €65",
+          guideCta: "View the guide",
+        },
+        mobile: {
+          badge: "LIVE BUILD · ONGOING",
+          title: "The mobile game (& web version)",
+          subtitle: "The universe's next interactive act",
+          pitch:
+            "A mobile game, with a web version. Play the story, unlock Fragments.",
+          liveBuild: {
+            heading: "Built in public, with the community",
+            body:
+              "You follow and influence its construction live. It's an engagement lever — not just a product to come.",
+          },
+          status: "In development · Waitlist open",
+          cta: "Follow the live build",
+          notifyCta: "Notify me",
+          placeholder: "PROVISIONAL ILLUSTRATION",
+        },
+      },
+      banner: {
+        kicker: "THE RALLYING POINT",
+        title:
+          "The DEEPOTUS token is the public rallying point of this universe, on pump.fun (Solana).",
+        disclaimer: "It is not an investment — DYOR.",
+        pumpfun: "Pump.fun",
+        telegram: "Telegram",
+        x: "X",
+        instagram: "Instagram",
+        youtube: "YouTube",
+      },
+      genesis: {
+        dialog: {
+          title: "Join the Genesis list",
+          subtitle:
+            "Priority access to the secret project. No spam, no DMs. An email when the curtain rises.",
+          emailLabel: "Your email",
+          emailPlaceholder: "you@example.com",
+          submitCta: "Join",
+          success: "Welcome to the Genesis list. See you soon.",
+          error: "Unable to register right now. Please try again shortly.",
+          consent:
+            "By submitting, you agree to receive communications related to the DEEPOTUS ecosystem. One-click unsubscribe.",
+        },
+      },
+      b2b: {
+        dialog: {
+          title: "White-label inquiry — Video Generator",
+          subtitle:
+            "Describe your project. A Cabinet member will reply with a quote (25% royalty).",
+          nameLabel: "Name",
+          namePlaceholder: "Your name",
+          emailLabel: "Email",
+          emailPlaceholder: "you@company.com",
+          companyLabel: "Company (optional)",
+          companyPlaceholder: "Your company name",
+          messageLabel: "Your request",
+          messagePlaceholder:
+            "Estimated volume, use case, deadline, desired persona…",
+          submitCta: "Send inquiry",
+          success: "Inquiry received. Reply within 48h.",
+          error: "Submission failed. Please try again shortly.",
+        },
+      },
+      socialsSoonToast: {
+        title: "Account coming soon",
+        body: "The account is being created. Check back in a few days.",
+      },
+    },
+
+    // ====================================================================
+    // SPRINT 20 — FUNDING (Transparent funding)
+    // ====================================================================
+    funding: {
+      seo: {
+        title: "Transparent funding — DEEPOTUS",
+        description:
+          "Product margins + creator fees → 5 public on-chain wallets. No yield promised. Proof, not promise.",
+      },
+      kicker: "TRANSPARENT FUNDING",
+      title: "Two sources, five wallets, zero promises.",
+      lead:
+        "The secret project (Act II) will be funded by two flows visible on-chain in real time: product margins and the memecoin's creator fees. Everything flows through 5 public wallets tied to concrete roadmap phases.",
+      source1: {
+        heading: "Source 1 — Product margins",
+        body:
+          "Margins from the board game, the video generator, and later from the novel's full download edition, flow to the wallets: they fund the secret project and community returns (rewards, contests, cause). Buying a product funds the rest of the universe — and you see it, in the clear, on this page.",
+      },
+      source2: {
+        heading: "Source 2 — Creator fees from the memecoin",
+        body:
+          "Pump.fun does not allow direct funding of development wallets. Our solution: creator fees. Since January 2026, pump.fun lets the creator share fees (~1% of trades) across multiple wallets. We created 5 public wallets, each dedicated to a function and a phase of the secret project. Product margins and creator fees feed them, and everything is visible on-chain, in real time, right here. Proof, not promise.",
+      },
+      wallets: {
+        heading: "The 5 wallets",
+        subheading:
+          "Public addresses, live balances (Helius RPC read), Solscan links. Auto-updated.",
+        placeholderTitle: "Wallet to be published at mint",
+        placeholderBody: "The address will be posted by the team at official mint.",
+        roles: {
+          deployer: {
+            label: "Deployer",
+            role: "Deployment & technical authority",
+            finance: "Migration fees, on-chain operations",
+          },
+          treasury: {
+            label: "Treasury",
+            role: "Strategic reserve",
+            finance: "Secret project dev phases",
+          },
+          team: {
+            label: "Team",
+            role: "Compensation & contractors",
+            finance: "Novel, game, software, mobile game, D&D version",
+          },
+          creator_fees: {
+            label: "Fees",
+            role: "Collection (creator fees + margins)",
+            finance: "Redistribution to the 4 others",
+          },
+          community: {
+            label: "Community",
+            role: "Non-financial rewards & cause",
+            finance: "Contests, community returns, pump.fun charity option",
+          },
+        },
+        viewOnSolscan: "Solscan",
+        balance: "Balance",
+        empty: "—",
+      },
+      flow: {
+        heading: "Funding flow",
+        sources: "Product margins + Creator fees",
+        hub: "Fees wallet",
+        outputs: "Treasury · Team · Community · Deployer",
+        charityNote:
+          "Pump.fun charity option can be activated anytime — a fraction of fees flows to a community-voted cause.",
+      },
+      disclaimer:
+        "Wallets and flows displayed for transparency (build in public). The token is not an investment; no yield promised. DYOR.",
+    },
+
+    // ====================================================================
+    // SPRINT 20 — PAYMENT PAGE (/checkout)
+    // ====================================================================
+    payment: {
+      seo: {
+        title: "Secure payment — DEEPOTUS",
+        description:
+          "Secure Stripe payment (card, SCA / 3-D Secure). Physical shipping for the board game, email-delivered license for the software.",
+      },
+      kicker: "SECURE PAYMENT",
+      title: "Complete your order",
+      lead:
+        "Payment processed by Stripe (SCA / 3-D Secure). The site stores no card data. Products are real goods. The memecoin stays on pump.fun (external link) — not sold here.",
+      product: {
+        videogenLabel: "DEEPOTUS Video Generator",
+        videogenDescription:
+          "Lifetime license, one-time purchase. Download link + key emailed after payment.",
+        boardgameLabel: "DEEPOTUS — FRAGMENTS · Board game",
+        boardgameDescription:
+          "Numbered Founder Edition if you're in the first 500. Shipped to your address, late June / mid-July.",
+      },
+      selectProduct: "Choose a product",
+      summary: "Summary",
+      total: "Total",
+      proceed: "Proceed to Stripe payment",
+      processing: "Redirecting to Stripe…",
+      status: {
+        idle: "Select a product to start.",
+        creating: "Creating payment session…",
+        polling: "Verifying payment status…",
+        paid: "Payment received — thank you!",
+        paidVideoGen:
+          "Your license key and download link have been emailed to {email}.",
+        paidBoardgame:
+          "Founder Edition #{number} reserved under your name. Confirmation email arriving shortly.",
+        expired: "Payment session expired. Please retry.",
+        canceled: "Payment canceled. You can try again.",
+        timeout:
+          "Verification timed out. Check your inbox — the confirmation may already be there.",
+        error: "Payment error. Please retry or contact support.",
+      },
+      backToEcosystem: "Back to ecosystem",
+      antiTamper:
+        "Price is computed server-side — it cannot be tampered with from the browser. Security guaranteed.",
+      cancelLink: "Back",
     },
   },
 };

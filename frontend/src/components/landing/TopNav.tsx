@@ -12,10 +12,15 @@ const NAV_ITEMS = [
   { id: "chat", key: "nav.chat" },
   { id: "mission", key: "nav.mission" },
   { id: "tokenomics", key: "nav.tokenomics" },
+  // Sprint 20 — Ecosystem hub (Roman / boardgame / video gen / mobile)
+  { id: "ecosystem", key: "nav.ecosystem", href: "/ecosysteme" },
   // The Transparency entry now points to the dedicated /transparency
   // page rather than the in-landing TransparencyTimeline anchor — the
   // page is richer (5 wallets, locks, BubbleMaps, RugCheck, ops log).
+  // Sprint 20 routes the "Funding" entry to the same page's funding
+  // section anchor.
   { id: "transparency", key: "nav.transparency", href: "/transparency" },
+  { id: "funding", key: "nav.funding", href: "/transparency#funding" },
   { id: "roadmap", key: "nav.roadmap" },
   { id: "faq", key: "nav.faq" },
 ];

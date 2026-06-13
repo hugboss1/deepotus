@@ -33,14 +33,17 @@ from core.security import ensure_jwt_secrets
 from routers import (
     access_card as access_card_router,
     admin as admin_router,
+    admin_orders as admin_orders_router,
     bots as bots_router,
     burns as burns_router,
     cabinet_vault as cabinet_vault_router,
+    ecosystem as ecosystem_router,
     founder as founder_router,
     giveaway as giveaway_router,
     infiltration as infiltration_router,
     kol_listener as kol_listener_router,
     operation as operation_router,
+    payments as payments_router,
     propaganda as propaganda_router,
     public as public_router,
     public_stats as public_stats_router,
@@ -90,6 +93,10 @@ app.include_router(burns_router.public_router)
 app.include_router(burns_router.admin_router)
 # Sprint 19+ — Giveaway Extraction admin endpoints under /api/admin/giveaway/*
 app.include_router(giveaway_router.router)
+# Sprint 20 — Ecosystem & Payment (Stripe Checkout + Genesis list + B2B)
+app.include_router(ecosystem_router.router)
+app.include_router(payments_router.router)
+app.include_router(admin_orders_router.router)
 
 # ---------------------------------------------------------------------
 # Static assets (email hero illustrations, etc.)
@@ -271,6 +278,18 @@ async def on_startup():
         logger.info("[startup] Giveaway extraction indexes ready.")
     except Exception:
         logging.exception("[startup] giveaway init failed")
+
+    # ---- Sprint 20 — Ecosystem (Stripe + Genesis + B2B) ----
+    # Three small collections plus the canonical payment_transactions
+    # ledger required by the Emergent Stripe playbook. All idempotent.
+    try:
+        from core import stripe_checkout as _stripe, genesis as _genesis, b2b_inquiries as _b2b
+        await _stripe.ensure_indexes()
+        await _genesis.ensure_indexes()
+        await _b2b.ensure_indexes()
+        logger.info("[startup] Ecosystem (Stripe + Genesis + B2B) indexes ready.")
+    except Exception:
+        logging.exception("[startup] ecosystem init failed")
 
 
 @app.on_event("shutdown")
