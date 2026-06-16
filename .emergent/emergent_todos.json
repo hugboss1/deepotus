@@ -36,7 +36,11 @@
     "status": "completed"
   },
   {
-    "content": "Final: testing_agent_v3 integration test + update LAUNCH_PLAYBOOK.md",
-    "status": "in_progress"
+    "content": "testing_agent_v3 itération 29 : 17/17 backend + 13/13 frontend + 100 % end-to-end",
+    "status": "completed"
+  },
+  {
+    "content": "LAUNCH_PLAYBOOK.md updated with Sprint 21 activation procedures",
+    "status": "completed"
   }
 ]
