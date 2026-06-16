@@ -1,27 +1,25 @@
-/* TwoTracksGraph.css — Sprint 20.2 animations for the two-tracks
-   interactive graph.
+/* TwoTracksGraph.css — Sprint 20.3 sequenced bubble-graph animations.
+ *
+ * Three small, GPU-friendly CSS keyframes complement the React-driven
+ * sequence:
+ *   - .ttg-flow        : moving dashes along an SVG path (data flow).
+ *   - .ttg-node-float  : ambient micro-float on inactive bubbles.
+ *   - .ttg-pulse       : outward pulse ring on the central hub when
+ *                        it's in the "active" (amplified) state.
+ *
+ * Only ``transform``, ``opacity`` and ``stroke-dashoffset`` are
+ * animated — keeps the canvas crisp at 60 fps even with all 8 lines
+ * + 9 bubbles rendered.
+ *
+ * ``prefers-reduced-motion`` pauses every animation while preserving
+ * the resting visual state (so the network is still readable for
+ * users who disabled motion).
+ */
 
-   - .ttg-flow      : flowing dashes along a path (animates only
-                      stroke-dashoffset, performant).
-   - .ttg-node-float: per-node float driven by CSS custom props
-                      (--ttg-float-duration, --ttg-float-delay) so each
-                      node has an organic, independent rhythm.
-   - .ttg-pulse     : subtle ring pulse on the central Acquisition hub.
-
-   All animations respect ``prefers-reduced-motion`` (paused) and
-   animate only ``transform`` / ``opacity`` / ``stroke-dashoffset``
-   for GPU friendliness.
-*/
-
+/* ── Flowing dashes on SVG paths ──────────────────────────────────── */
 @keyframes ttg-flow-anim {
   to {
     stroke-dashoffset: -180;
-  }
-}
-
-@keyframes ttg-flow-reverse-anim {
-  to {
-    stroke-dashoffset: 180;
   }
 }
 
@@ -32,15 +30,12 @@
   animation-iteration-count: infinite;
 }
 
-.ttg-flow-reverse {
-  animation-name: ttg-flow-reverse-anim;
-}
-
+/* ── Ambient float for inactive bubbles ───────────────────────────── */
 @keyframes ttg-float-anim {
   0%   { transform: translate(0, 0); }
-  25%  { transform: translate(2px, -4px); }
-  50%  { transform: translate(0, -7px); }
-  75%  { transform: translate(-2px, -3px); }
+  25%  { transform: translate(1.5px, -3px); }
+  50%  { transform: translate(0, -5px); }
+  75%  { transform: translate(-1.5px, -2px); }
   100% { transform: translate(0, 0); }
 }
 
@@ -50,45 +45,46 @@
   animation-delay: var(--ttg-float-delay, 0s);
   animation-iteration-count: infinite;
   animation-timing-function: ease-in-out;
-  will-change: transform;
 }
 
+/* ── Pulse ring on the active hub (Acquisition) ───────────────────── */
 @keyframes ttg-pulse-anim {
-  0%   { transform: scale(1);   opacity: 0.55; }
-  60%  { transform: scale(1.32); opacity: 0;   }
-  100% { transform: scale(1.32); opacity: 0;   }
+  0%   { transform: scale(1);    opacity: 0.65; }
+  70%  { transform: scale(1.45); opacity: 0;    }
+  100% { transform: scale(1.45); opacity: 0;    }
 }
 
 .ttg-pulse {
-  animation: ttg-pulse-anim 2.6s ease-out infinite;
+  animation: ttg-pulse-anim 2.2s ease-out infinite;
   pointer-events: none;
 }
 
-/* Buttons inside the graph: tight focus styles + slightly bigger touch
-   target on small screens (the icon disc stays the same size visually
-   but a 44×44 invisible hit area is preserved via padding on the wrap). */
+/* ── Interactive bubble wrapper (a11y + touch target) ─────────────── */
 .ttg-node-wrap {
   appearance: none;
   background: transparent;
   border: 0;
-  padding: 8px;
+  padding: 6px;
   cursor: pointer;
   outline: none;
   transform-origin: center;
   transition: transform 200ms ease;
+  /* Ensure tap targets stay ≥ 44px on mobile (the inner span is the
+     visual disc; the wrap's padding extends the hit area). */
+  min-width: 44px;
+  min-height: 44px;
 }
 .ttg-node-wrap:hover,
 .ttg-node-wrap:focus-visible {
-  transform: translate(-50%, -50%) scale(1.06);
+  transform: translate(-50%, -50%) scale(1.05);
 }
 .ttg-node-wrap:active {
-  transform: translate(-50%, -50%) scale(0.98);
+  transform: translate(-50%, -50%) scale(0.97);
 }
 
-/* Stop animations for users who prefer reduced motion. */
+/* ── Respect reduced-motion preferences ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .ttg-flow,
-  .ttg-flow-reverse,
   .ttg-node-float,
   .ttg-pulse {
     animation: none !important;
