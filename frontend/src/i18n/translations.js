@@ -1321,6 +1321,13 @@ export const translations = {
       },
       footer:
         "Les noms et la nature du projet secret restent confidentiels. Les wallets, eux, sont publics.",
+      modal: {
+        productTrackLabel: "PISTE A · PRODUITS",
+        secretTrackLabel: "PISTE B · PROJET SECRET",
+        walletLabel: "Wallet",
+        closeCta: "Fermer",
+        helperHint: "Touchez ou cliquez sur un nœud pour en savoir plus.",
+      },
     },
 
     // ====================================================================
@@ -2946,6 +2953,13 @@ export const translations = {
       },
       footer:
         "The names and nature of the secret project remain confidential. The wallets themselves are public.",
+      modal: {
+        productTrackLabel: "TRACK A · PRODUCTS",
+        secretTrackLabel: "TRACK B · SECRET PROJECT",
+        walletLabel: "Wallet",
+        closeCta: "Close",
+        helperHint: "Tap or click a node to learn more.",
+      },
     },
 
     // ====================================================================
