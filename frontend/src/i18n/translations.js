@@ -1143,14 +1143,14 @@ export const translations = {
           title: "OPÉRATION : INFILTRATION",
           brief:
             "Recruter 3 agents via votre lien de parrainage Telegram. Le Cabinet retient l'adresse de chaque recrue confirmée.",
-          reward: "Éligibilité tirage 22 mai · Place sur la whitelist Phase 2",
+          reward: "Éligibilité tirage {date} · Place sur la whitelist Phase 2",
           action: "DÉCRYPTER LA MISSION",
         },
         liquidity: {
           title: "PROTOCOLE : LIQUIDITY",
           brief:
-            "Conserver au moins 30 $ de $DEEP sur votre wallet jusqu'au snapshot du 22 mai. Position vérifiée on-chain.",
-          reward: "Éligibilité tirage 22 mai · Multiplicateur airdrop Phase 2",
+            "Conserver au moins 30 $ de $DEEP sur votre wallet jusqu'au snapshot du {snapshotDate}. Position vérifiée on-chain.",
+          reward: "Éligibilité tirage {date} · Multiplicateur airdrop Phase 2",
           action: "DÉCRYPTER LA MISSION",
           secondaryAction: "ACHETER $DEEP",
         },
@@ -1205,7 +1205,7 @@ export const translations = {
       },
       bingo: {
         kicker: "— MACHINE D'EXTRACTION · CABINET ΔΣ",
-        title: "La Roue tourne le 22 mai",
+        title: "La Roue tourne le {date}",
         copy:
           "Le tambour de la Cabine n'aime pas le hasard du hasard. Chaque jeton ΔΣ qui en sort est ancré sur un slot Solana publiquement vérifiable. Aucune chance, juste de la cryptographie.",
         tagline: "RNG ancré on-chain · 2 gagnants extraits · Aucune intervention humaine",
@@ -1215,7 +1215,7 @@ export const translations = {
     giveawayPage: {
       hero: {
         kicker: "— OPÉRATION CABINET · TIRAGE PUBLIC",
-        title: "Pool Liquidity · 22 Mai",
+        title: "Pool Liquidity · {date}",
         subtitle:
           "Le Cabinet récompense les agents disciplinés. Aucun formulaire, aucune adresse à donner. Le snapshot on-chain identifie automatiquement les éligibles.",
       },
@@ -1246,7 +1246,7 @@ export const translations = {
           tag: "RÈGLE 02",
           title: "Détenir 30 $ de $DEEP",
           body:
-            "Au moment du snapshot (22 mai · 12:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $DEEP. Vérification on-chain via Helius.",
+            "Au moment du snapshot ({snapshotDate} · 12:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $DEEP. Vérification on-chain via Helius.",
         },
       },
       mechanism: {
@@ -2775,14 +2775,14 @@ export const translations = {
           title: "OPERATION: INFILTRATION",
           brief:
             "Recruit 3 agents via your Telegram referral link. The Cabinet records the address of every confirmed recruit.",
-          reward: "May 22 draw eligibility · Phase 2 whitelist seat",
+          reward: "{date} draw eligibility · Phase 2 whitelist seat",
           action: "DECODE MISSION",
         },
         liquidity: {
           title: "PROTOCOL: LIQUIDITY",
           brief:
-            "Hold at least $30 worth of $DEEP on your wallet through the May 22 snapshot. Position verified on-chain.",
-          reward: "May 22 draw eligibility · Phase 2 airdrop multiplier",
+            "Hold at least $30 worth of $DEEP on your wallet through the {snapshotDate} snapshot. Position verified on-chain.",
+          reward: "{date} draw eligibility · Phase 2 airdrop multiplier",
           action: "DECODE MISSION",
           secondaryAction: "BUY $DEEP",
         },
@@ -2837,7 +2837,7 @@ export const translations = {
       },
       bingo: {
         kicker: "— EXTRACTION MACHINE · CABINET ΔΣ",
-        title: "The wheel turns on May 22",
+        title: "The wheel turns on {date}",
         copy:
           "The Cabinet drum doesn't trust randomness alone. Every ΔΣ token that drops out is anchored to a publicly verifiable Solana slot. No luck — just cryptography.",
         tagline: "On-chain anchored RNG · 2 winners extracted · No human intervention",
@@ -2847,7 +2847,7 @@ export const translations = {
     giveawayPage: {
       hero: {
         kicker: "— CABINET OPERATION · PUBLIC DRAW",
-        title: "Liquidity Pool · May 22",
+        title: "Liquidity Pool · {date}",
         subtitle:
           "The Cabinet rewards disciplined agents. No form, no address to hand over. The on-chain snapshot automatically identifies eligible parties.",
       },
@@ -2878,7 +2878,7 @@ export const translations = {
           tag: "RULE 02",
           title: "Hold $30 of $DEEP",
           body:
-            "At snapshot time (May 22 · 12:00 UTC) your wallet must hold at least $30 worth of $DEEP. On-chain verification via Helius.",
+            "At snapshot time ({snapshotDate} · 12:00 UTC) your wallet must hold at least $30 worth of $DEEP. On-chain verification via Helius.",
         },
       },
       mechanism: {

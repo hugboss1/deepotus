@@ -42,6 +42,7 @@ from routers import (
     giveaway as giveaway_router,
     infiltration as infiltration_router,
     kol_listener as kol_listener_router,
+    missions_command as missions_command_router,
     operation as operation_router,
     payments as payments_router,
     propaganda as propaganda_router,
@@ -97,6 +98,9 @@ app.include_router(giveaway_router.router)
 app.include_router(ecosystem_router.router)
 app.include_router(payments_router.router)
 app.include_router(admin_orders_router.router)
+# Sprint 21 — Missions Command Center (config + participations + emails)
+app.include_router(missions_command_router.public_router)
+app.include_router(missions_command_router.admin_router)
 
 # ---------------------------------------------------------------------
 # Static assets (email hero illustrations, etc.)
@@ -290,6 +294,20 @@ async def on_startup():
         logger.info("[startup] Ecosystem (Stripe + Genesis + B2B) indexes ready.")
     except Exception:
         logging.exception("[startup] ecosystem init failed")
+
+    # ---- Sprint 21 — Missions Command Center ----
+    # mission_config singleton (auto-seeded on first read) + the
+    # mission_participations collection with its (mission_id,
+    # email_hash) unique compound index.
+    try:
+        from core import mission_config as _mc, mission_participations as _mp
+        await _mc.ensure_indexes()
+        await _mp.ensure_indexes()
+        # Seed defaults so the public GET never returns 404.
+        await _mc.get_config()
+        logger.info("[startup] Missions Command Center indexes ready.")
+    except Exception:
+        logging.exception("[startup] missions command init failed")
 
 
 @app.on_event("shutdown")

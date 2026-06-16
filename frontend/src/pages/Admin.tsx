@@ -15,6 +15,7 @@ import {
   RefreshCcw,
   Mail,
   Bot,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import ThemeToggle from "@/components/landing/ThemeToggle";
@@ -456,6 +457,11 @@ export default function Admin() {
             <Button asChild variant="outline" size="sm" className="rounded-[var(--btn-radius)]" data-testid="admin-infiltration-link">
               <Link to="/admin/infiltration">
                 <ShieldAlert size={14} className="mr-1" /> Infiltration Brain
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-[var(--btn-radius)] border-amber-500/50 text-amber-200 hover:bg-amber-500/10" data-testid="admin-missions-command-link">
+              <Link to="/admin/missions-command">
+                <Target size={14} className="mr-1" /> Missions Command
               </Link>
             </Button>
             <Button

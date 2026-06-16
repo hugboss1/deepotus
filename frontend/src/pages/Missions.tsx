@@ -12,7 +12,7 @@
  *
  * Visual palette — red neon + amber, per Sprint 19 spec.
  */
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -20,6 +20,7 @@ import {
   ExternalLink,
   FileLock2,
   Lock,
+  Mail,
   Megaphone,
   Radar,
   Send,
@@ -29,6 +30,8 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import { useMissionConfig } from "@/hooks/useMissionConfig";
+import { MissionParticipationDialog } from "@/components/missions/MissionParticipationDialog";
 import {
   MISSIONS,
   GIVEAWAY,
@@ -56,7 +59,10 @@ function daysUntil(iso: string): number {
 }
 
 const MissionCard: React.FC<{ mission: Mission; index: number }> = ({ mission, index }) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { vars } = useMissionConfig();
+  const iv = vars(lang === "en" ? "en" : "fr");
+  const [participationOpen, setParticipationOpen] = useState<boolean>(false);
   const meta = FAMILY_META[mission.family];
   const Icon = meta.icon;
   const root = `missionsPage.cards.${mission.i18nKey}`;
@@ -158,19 +164,19 @@ const MissionCard: React.FC<{ mission: Mission; index: number }> = ({ mission, i
             className={`font-display text-lg sm:text-xl font-semibold leading-tight tracking-tight ${isRedacted ? "redacted-title" : ""}`}
             data-testid={`mission-title-${mission.id}`}
           >
-            {t(`${root}.title`) as string}
+            {t(`${root}.title`, undefined, iv) as string}
           </h3>
         </div>
 
         <p className={`text-sm leading-relaxed text-foreground/75 mb-4 ${isRedacted ? "text-foreground/45 italic" : ""}`}>
-          {t(`${root}.brief`) as string}
+          {t(`${root}.brief`, undefined, iv) as string}
         </p>
 
         <div className="flex items-start gap-2 text-[11px] font-mono uppercase tracking-wider text-foreground/55 mb-5" data-testid={`mission-reward-${mission.id}`}>
           <ShieldCheck size={12} style={{ color: meta.accent }} className="mt-0.5 shrink-0" />
           <span>
             <span className="text-foreground/40">{t("missionsPage.rewardLabel") as string} · </span>
-            {t(`${root}.reward`) as string}
+            {t(`${root}.reward`, undefined, iv) as string}
           </span>
         </div>
 
@@ -209,12 +215,31 @@ const MissionCard: React.FC<{ mission: Mission; index: number }> = ({ mission, i
               {t(`${root}.secondaryAction`) as string} <ExternalLink size={11} />
             </a>
           )}
+          {/* "Recevoir le brief" — opt-in email form (Sprint 21). Hidden
+              for redacted missions since they're not actionable yet. */}
+          {!isRedacted && (
+            <button
+              type="button"
+              onClick={() => setParticipationOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground border border-foreground/15 hover:border-foreground/35 transition-colors"
+              data-testid={`mission-cta-brief-${mission.id}`}
+            >
+              <Mail size={12} />
+              {t("missionsPage.briefCta", "Recevoir le brief") as string}
+            </button>
+          )}
           {/* Index badge — tiny visual cue echoing the dossier ref. */}
           <span className="ml-auto font-mono text-[10px] text-foreground/35 tracking-widest">
             {String(index + 1).padStart(2, "0")} / {MISSIONS.length.toString().padStart(2, "0")}
           </span>
         </div>
       </div>
+      <MissionParticipationDialog
+        open={participationOpen}
+        onOpenChange={setParticipationOpen}
+        missionId={mission.id}
+        missionTitle={t(`${root}.title`, undefined, iv) as string}
+      />
     </article>
   );
 };
@@ -230,9 +255,31 @@ const Missions: React.FC = () => {
     };
   }, []);
 
-  const activeCount = useMemo(() => MISSIONS.filter((m) => m.status === "live").length, []);
-  const redactedCount = useMemo(() => MISSIONS.filter((m) => m.status === "redacted").length, []);
-  const drawDaysLeft = useMemo(() => daysUntil(GIVEAWAY.drawDateIso), []);
+  const { config } = useMissionConfig();
+  // Resolve per-mission overrides from the Command Center. The status
+  // and CTA URL can be remotely controlled without redeploy.
+  const resolvedMissions = useMemo<Mission[]>(() => {
+    if (!config?.missions) return [...MISSIONS] as Mission[];
+    return MISSIONS.map((m) => {
+      const ov = config.missions[m.id];
+      if (!ov) return m;
+      return {
+        ...m,
+        status: (ov.status as Mission["status"]) ?? m.status,
+        ctaUrl: ov.cta_url || m.ctaUrl,
+      };
+    }) as Mission[];
+  }, [config]);
+  const activeCount = useMemo(
+    () => resolvedMissions.filter((m) => m.status === "live").length,
+    [resolvedMissions],
+  );
+  const redactedCount = useMemo(
+    () => resolvedMissions.filter((m) => m.status === "redacted").length,
+    [resolvedMissions],
+  );
+  const drawDateIso = config?.giveaway_draw_date_iso || GIVEAWAY.drawDateIso;
+  const drawDaysLeft = useMemo(() => daysUntil(drawDateIso), [drawDateIso]);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body" data-testid="missions-page">
@@ -311,7 +358,7 @@ const Missions: React.FC = () => {
             {t("missionsPage.list.sectionTitle") as string}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5" data-testid="missions-grid">
-            {MISSIONS.map((m, i) => (
+            {resolvedMissions.map((m, i) => (
               <MissionCard key={m.id} mission={m} index={i} />
             ))}
           </div>

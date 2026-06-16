@@ -33,7 +33,7 @@ interface I18nValue {
    * Treat the return as ReactNode-compatible at the call-site.
    */
   // eslint-disable-next-line
-  t: (path: string, fallback?: any) => any;
+  t: (path: string, fallback?: any, vars?: Record<string, string | number>) => any;
   // eslint-disable-next-line
   dict: Record<string, any>;
 }
@@ -111,10 +111,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [lang],
   );
 
-  // t("path.to.key", fallback) — returns the string (or object/array) from dict
+  // t("path.to.key", fallback, vars?) — returns the string (or object/array) from dict.
+  // ``vars`` enables ``{token}`` interpolation in returned strings, e.g.
+  // ``t("foo", undefined, { date: "15 juin" })``. If the resolved value is
+  // not a string (object/array), ``vars`` is ignored.
   const t = useCallback(
     // eslint-disable-next-line
-    (path: string, fallback?: any): any => {
+    (path: string, fallback?: any, vars?: Record<string, string | number>): any => {
       const parts = path.split(".");
       // eslint-disable-next-line
       let cur: any = dict;
@@ -122,7 +125,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (cur == null) return fallback ?? path;
         cur = cur[p];
       }
-      return cur ?? fallback ?? path;
+      const resolved = cur ?? fallback ?? path;
+      if (typeof resolved === "string" && vars) {
+        return resolved.replace(/\{(\w+)\}/g, (m, k: string) =>
+          vars[k] !== undefined ? String(vars[k]) : m
+        );
+      }
+      return resolved;
     },
     [dict],
   );
