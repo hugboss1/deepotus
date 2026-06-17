@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, FileLock2, Lock, Megaphone, Radar, Target, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useMissionConfig } from "@/hooks/useMissionConfig";
 import { FEATURED_MISSION_KEYS, MISSIONS, type MissionFamily } from "@/lib/missions";
 
 const FAMILY_ICON: Record<MissionFamily, LucideIcon> = {
@@ -35,7 +36,12 @@ const FAMILY_ACCENT: Record<MissionFamily, string> = {
 };
 
 export const MissionsSection: React.FC = () => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { vars } = useMissionConfig();
+  // Variables d'interpolation pour les chaînes contenant {date} —
+  // synchronise le chip "TIRAGE · {date}" avec la date pilotée depuis
+  // /admin/missions (mission_config.giveaway_draw_date_iso).
+  const iv = vars(lang === "en" ? "en" : "fr");
   const featured = MISSIONS.filter((m) => FEATURED_MISSION_KEYS.includes(m.id));
 
   return (
@@ -128,7 +134,7 @@ export const MissionsSection: React.FC = () => {
         className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-sm border border-[#F59E0B]/45 bg-[#F59E0B]/10 text-[#F59E0B] font-mono text-[11px] uppercase tracking-[0.22em] hover:bg-[#F59E0B]/20 transition-colors"
         data-testid="landing-missions-giveaway-chip"
       >
-        ★ {t("missionsPage.giveawayCta.kicker") as string}
+        ★ {t("missionsPage.giveawayCta.kicker", undefined, iv) as string}
         <ArrowRight size={11} />
       </Link>
     </section>

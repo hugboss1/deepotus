@@ -245,7 +245,7 @@ const MissionCard: React.FC<{ mission: Mission; index: number }> = ({ mission, i
 };
 
 const Missions: React.FC = () => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   useEffect(() => {
     const prev = document.title;
@@ -255,7 +255,11 @@ const Missions: React.FC = () => {
     };
   }, []);
 
-  const { config } = useMissionConfig();
+  const { config, vars } = useMissionConfig();
+  // Variables d'interpolation pour toutes les chaînes contenant {date}
+  // (Extraction Chamber title + Giveaway CTA kicker). Source de vérité:
+  // mission_config.giveaway_draw_date_iso piloté depuis /admin/missions.
+  const iv = vars(lang === "en" ? "en" : "fr");
   // Resolve per-mission overrides from the Command Center. The status
   // and CTA URL can be remotely controlled without redeploy.
   const resolvedMissions = useMemo<Mission[]>(() => {
@@ -452,7 +456,7 @@ const Missions: React.FC = () => {
                   {t("missionsPage.bingo.kicker") as string}
                 </p>
                 <h3 className="font-display text-xl lg:text-3xl font-semibold leading-tight tracking-tight text-[#FFE4D4]">
-                  {t("missionsPage.bingo.title") as string}
+                  {t("missionsPage.bingo.title", undefined, iv) as string}
                 </h3>
                 <p className="mt-3 text-xs lg:text-sm text-[#FFD7A0]/80 leading-relaxed">
                   {t("missionsPage.bingo.copy") as string}
@@ -471,7 +475,7 @@ const Missions: React.FC = () => {
                 {t("missionsPage.bingo.kicker") as string}
               </p>
               <h3 className="font-display text-lg font-semibold leading-tight tracking-tight text-[#FFE4D4]">
-                {t("missionsPage.bingo.title") as string}
+                {t("missionsPage.bingo.title", undefined, iv) as string}
               </h3>
               <p className="mt-2 text-xs text-[#FFD7A0]/80 leading-relaxed">
                 {t("missionsPage.bingo.copy") as string}
@@ -488,7 +492,7 @@ const Missions: React.FC = () => {
           <div className="rounded-md border border-[#F59E0B]/45 bg-gradient-to-br from-[#F59E0B]/10 to-[#FF3B3B]/5 px-5 sm:px-7 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#F59E0B]">
-                {t("missionsPage.giveawayCta.kicker") as string}
+                {t("missionsPage.giveawayCta.kicker", undefined, iv) as string}
               </p>
               <h3 className="mt-1 font-display text-xl sm:text-2xl font-semibold tracking-tight">
                 {t("missionsPage.giveawayCta.title") as string}

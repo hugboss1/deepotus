@@ -140,22 +140,6 @@ export async function adminUpdateConfig(
   return res.data;
 }
 
-export async function adminRegenerateIllustration(
-  token: string,
-  missionId: string
-): Promise<{ ok: boolean; size_bytes: number; public_path: string }> {
-  const res = await missionApi.post<{
-    ok: boolean;
-    size_bytes: number;
-    public_path: string;
-  }>(
-    `/admin/mission-config/illustrations/${encodeURIComponent(missionId)}/regenerate`,
-    {},
-    { ...authConfig(token), timeout: 90_000 }
-  );
-  return res.data;
-}
-
 export async function adminListParticipations(
   token: string,
   missionId?: string

@@ -207,15 +207,28 @@ async def admin_update_config(payload: UpdateConfigPayload) -> Dict[str, Any]:
 async def admin_regenerate_illustration(
     mission_id: str, force: bool = True
 ) -> Dict[str, Any]:
-    try:
-        out = await mission_illustrations.generate_mission_illustration(
-            mission_id, force=force
-        )
-        return {"ok": True, **out}
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+    """Legacy endpoint — generation has been disabled in Sprint 21.1.
+
+    The site reuses the bundled tech-noir artwork already shipping at
+    ``/missions/mission_{id}.jpg``. We keep the route alive so older
+    clients receive a clear 410 Gone, and we still return the asset
+    status so the caller can refresh its UI.
+    """
+    _ = force  # unused
+    if mission_id not in mission_illustrations.MISSION_IDS:
+        raise HTTPException(status_code=404, detail="unknown mission_id")
+    status = (await mission_illustrations.list_illustrations()).get(mission_id, {})
+    raise HTTPException(
+        status_code=410,
+        detail={
+            "message": (
+                "Illustration generation is disabled. The site uses the "
+                "bundled artwork at /missions/mission_{id}.jpg."
+            ),
+            "mission_id": mission_id,
+            "current_status": status,
+        },
+    )
 
 
 @admin_router.get("/mission-participations")

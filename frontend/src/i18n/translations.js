@@ -1197,7 +1197,7 @@ export const translations = {
           "Le Cabinet a déjà rédigé les opérations 06 à 12. Elles seront dévoilées à mesure que les seuils on-chain sont franchis. Restez en veille — les ordres tombent sans préavis.",
       },
       giveawayCta: {
-        kicker: "TIRAGE 22 MAI",
+        kicker: "TIRAGE · {date}",
         title: "Le Pool Cabinet vous attend",
         copy:
           "Compléter Operation 001 + Protocol 002 vous rend automatiquement éligible. Aucune inscription manuelle.",
@@ -2829,7 +2829,7 @@ export const translations = {
           "The Cabinet has already drafted operations 06 through 12. They will be revealed as on-chain thresholds are crossed. Stay on watch — orders drop without warning.",
       },
       giveawayCta: {
-        kicker: "MAY 22 DRAW",
+        kicker: "DRAW · {date}",
         title: "The Cabinet Pool awaits",
         copy:
           "Completing Operation 001 + Protocol 002 makes you automatically eligible. No manual sign-up.",

@@ -27,7 +27,6 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   RefreshCcw,
-  Wand2,
   Send,
   AlertTriangle,
   CheckCircle2,
@@ -55,7 +54,6 @@ import { getAdminToken } from "@/lib/adminAuth";
 import {
   adminGetSnapshot,
   adminListParticipations,
-  adminRegenerateIllustration,
   adminResendParticipationEmail,
   adminUpdateConfig,
   type AdminSnapshot,
@@ -106,7 +104,6 @@ export default function AdminMissionsCommand(): JSX.Element {
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
-  const [regenBusy, setRegenBusy] = useState<string | null>(null);
 
   // Local editable copy of the config — mutated by the form inputs.
   const [draft, setDraft] = useState<Partial<MissionConfig>>({});
@@ -231,28 +228,12 @@ export default function AdminMissionsCommand(): JSX.Element {
   };
 
   // ────────────────────────────────────────────────────────────────
-  // Illustration actions
+  // Illustration actions — Sprint 21.1
+  // Generation has been removed: we now reuse the bundled artwork at
+  // /missions/mission_{id}.jpg. The Command Center only displays which
+  // mission has its bundled asset present (always true for the 6
+  // canonical missions, modulo file system mishaps).
   // ────────────────────────────────────────────────────────────────
-  const regenerate = async (missionId: string): Promise<void> => {
-    if (!token) return;
-    setRegenBusy(missionId);
-    toast.message(`Generating illustration for "${missionId}"…`, {
-      description: "gpt-image-1 takes ~15s to render. Please wait.",
-    });
-    try {
-      const out = await adminRegenerateIllustration(token, missionId);
-      toast.success(
-        `Illustration ready — ${(out.size_bytes / 1024).toFixed(0)} KB`
-      );
-      await refresh();
-    } catch (e) {
-      const msg = (e as Error).message || "image generation failed";
-      toast.error(`Regenerate failed: ${msg}`);
-    } finally {
-      setRegenBusy(null);
-    }
-  };
-
   const resend = async (participationId: string): Promise<void> => {
     if (!token) return;
     try {
@@ -592,38 +573,40 @@ export default function AdminMissionsCommand(): JSX.Element {
                       />
                     </div>
                     <div className="lg:col-span-3 flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 text-[11px] text-foreground/65">
-                        <ImageIcon className="h-3.5 w-3.5" />
-                        <span>
-                          {illust?.present ? (
-                            <>
-                              <CheckCircle2 className="inline h-3 w-3 text-emerald-400" />{" "}
-                              {(illust.size_bytes / 1024).toFixed(0)} KB
-                            </>
-                          ) : (
-                            <>
-                              <AlertTriangle className="inline h-3 w-3 text-amber-400" /> No illustration yet
-                            </>
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => regenerate(mid)}
-                          disabled={regenBusy === mid}
-                          className="gap-1.5 flex-1"
-                          data-testid={`regenerate-${mid}-btn`}
-                        >
-                          {regenBusy === mid ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Wand2 className="h-3.5 w-3.5" />
-                          )}
-                          {regenBusy === mid ? "…" : "Generate"}
-                        </Button>
+                      <div className="flex items-center gap-2 text-[11px] text-foreground/65">
+                        {illust?.present ? (
+                          <>
+                            {/* Thumbnail of the bundled artwork so admin
+                                can confirm at a glance which image will
+                                be embedded in outgoing emails. */}
+                            <img
+                              src={illust.public_path}
+                              alt={`mission_${mid} illustration`}
+                              className="h-10 w-10 rounded-sm object-cover border border-border/60"
+                              loading="lazy"
+                              data-testid={`mission-illust-thumb-${mid}`}
+                            />
+                            <span className="flex flex-col">
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-300/95">
+                                  bundled
+                                </span>
+                              </span>
+                              <span className="font-mono text-[10px] text-foreground/55 tabular-nums">
+                                {(illust.size_bytes / 1024).toFixed(0)} KB
+                              </span>
+                            </span>
+                          </>
+                        ) : (
+                          <span className="flex items-center gap-1.5">
+                            <ImageIcon className="h-3.5 w-3.5 text-foreground/45" />
+                            <AlertTriangle className="h-3 w-3 text-amber-400" />
+                            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-300/85">
+                              missing asset
+                            </span>
+                          </span>
+                        )}
                         <Button
                           type="button"
                           size="sm"
@@ -635,7 +618,7 @@ export default function AdminMissionsCommand(): JSX.Element {
                           }
                           disabled={saving}
                           data-testid={`save-mission-${mid}-btn`}
-                          className="bg-amber-500/95 hover:bg-amber-500 text-zinc-950"
+                          className="ml-auto bg-amber-500/95 hover:bg-amber-500 text-zinc-950"
                         >
                           Save
                         </Button>
@@ -651,9 +634,9 @@ export default function AdminMissionsCommand(): JSX.Element {
         {/* SECTION 4 — Email automation + Participations */}
         <section data-testid="section-emails">
           <SectionHeader
-            kicker="04 · EMAILS & AI ILLUSTRATIONS"
+            kicker="04 · EMAILS & BUNDLED ILLUSTRATIONS"
             title="Resend automation"
-            subtitle="Master switch + recent participations + manual resend."
+            subtitle="Master switch + recent participations + manual resend. Emails embed the bundled mission artwork (/missions/mission_{id}.jpg)."
           />
           <div className="rounded-lg border border-border bg-card/40 p-5 space-y-4">
             <div className="flex items-center justify-between">
