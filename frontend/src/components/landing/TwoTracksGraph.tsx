@@ -231,8 +231,17 @@ function buildBorderPath(from: GraphNode, to: GraphNode): string {
 // ---------------------------------------------------------------------
 export function TwoTracksGraph(): JSX.Element {
   const { t } = useI18n();
-  const trackA = (t("roadmapTracks.trackA.steps") as TranslatedStep[]) || [];
-  const trackB = (t("roadmapTracks.trackB.steps") as TranslatedStep[]) || [];
+  // Wrapped in useMemo so the reference is stable across renders — the
+  // `active` useMemo below depends on these, and a fresh array each render
+  // (from the `|| []` fallback) would defeat its memoisation.
+  const trackA = useMemo<TranslatedStep[]>(
+    () => (t("roadmapTracks.trackA.steps") as TranslatedStep[]) || [],
+    [t],
+  );
+  const trackB = useMemo<TranslatedStep[]>(
+    () => (t("roadmapTracks.trackB.steps") as TranslatedStep[]) || [],
+    [t],
+  );
 
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   /** Current phase index (0..10). */
