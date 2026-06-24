@@ -1,6 +1,8 @@
 """Stripe Checkout integration (Sprint 20 — Ecosystem & Payment).
 
-Wrapper around ``emergentintegrations.payments.stripe.checkout.StripeCheckout``.
+Wrapper around the Stripe Checkout API, accessed through
+``core.stripe_checkout_compat`` (Mode A: emergentintegrations proxy when
+available; Mode B: native ``stripe`` SDK fallback for non-Emergent hosts).
 
 All business logic for creating sessions, fetching status and handling
 webhooks lives here so routers stay thin. The module ALSO owns the
@@ -34,7 +36,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from emergentintegrations.payments.stripe.checkout import (
+from core.stripe_checkout_compat import (
     CheckoutSessionRequest,
     CheckoutSessionResponse,
     CheckoutStatusResponse,

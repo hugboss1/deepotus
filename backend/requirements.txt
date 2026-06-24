@@ -26,7 +26,11 @@ distro==1.9.0
 dnspython==2.8.0
 ecdsa==0.19.2
 email-validator==2.3.0
-emergentintegrations==0.1.0
+# emergentintegrations==0.1.0  # NOT on public PyPI — pre-installed in the
+#   Emergent env (Mode A). Left out so `pip install -r requirements.txt`
+#   succeeds on public hosts (Render/Fly/VM); the core/*_compat.py shims
+#   fall back to native SDKs (Mode B: openai / google-generativeai / stripe).
+#   Re-add this line only inside the Emergent platform if you want Mode A.
 fastapi==0.110.1
 fastuuid==0.14.0
 feedparser==6.0.11

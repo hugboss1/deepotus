@@ -82,6 +82,13 @@ if RESEND_API_KEY:
 # of the full purchase flow.
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "").strip()
 
+# Optional Stripe webhook signing secret ("whsec_…") from the Stripe
+# dashboard. Only needed if you wire the /api/webhook/stripe endpoint; the
+# polling flow (checkout/status) fulfils orders without it. When set, the
+# Mode B Stripe shim verifies webhook signatures; when unset, webhooks are
+# parsed unverified and the polling path stays the trusted fulfilment source.
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+
 # B2B inquiry destination (white-label royaltie 25% requests). Defaults
 # to b2b@deepotus.xyz; the form ALSO persists into Mongo regardless of
 # email delivery success.
@@ -178,6 +185,7 @@ __all__ = [
     "SENDER_EMAIL",
     "PUBLIC_BASE_URL",
     "STRIPE_API_KEY",
+    "STRIPE_WEBHOOK_SECRET",
     "B2B_INQUIRY_EMAIL",
     "HELIUS_API_KEY",
     "HELIUS_WEBHOOK_AUTH",
