@@ -19,6 +19,8 @@ Ce document est la **checklist fail-proof** pour le lancement. Tout y est : env 
 5. [Tirage Cabinet (22 mai 12:00 UTC)](#5-tirage-cabinet--22-mai-1200-utc)
 6. [Bugs connus pré-fixés](#6-bugs-connus-pré-fixés)
 7. [Procédures de récupération](#7-procédures-de-récupération)
+8. [Sprint 20 — Activation Écosystème & Paiement Stripe](#8--sprint-20--activation-écosystème--paiement-stripe)
+9. [Sprint 21 — Mission Command Center](#9--sprint-21--mission-command-center)
 
 ---
 
@@ -401,4 +403,131 @@ Quiconque peut vérifier le tirage :
 
 ---
 
-_Dernière mise à jour : 17 mai 2026 — pre-launch audit complet._
+## 8 · Sprint 20 — Activation Écosystème & Paiement Stripe
+
+Le Sprint 20 ajoute **4 nouveaux chantiers** : page `/ecosysteme`, page `/paiement` (Stripe), section **Financement Transparent** sur `/transparency#funding`, et bandeau **Two-Tracks Roadmap** sur la landing. Ces fonctionnalités sont **indépendantes du mint** — elles peuvent être activées avant ou après.
+
+### 8.A — Configuration backend (Render)
+
+Ajoute ces ENV à Render (Settings → Environment → Add) :
+
+| Variable | Valeur prod | Valeur test | Source |
+|----------|-------------|-------------|--------|
+| `STRIPE_API_KEY` | `sk_live_xxxxxxx` | `sk_test_emergent` | dashboard.stripe.com → Developers → API keys |
+| `B2B_INQUIRY_EMAIL` | `b2b@deepotus.xyz` | idem | Pour les notifications white-label |
+
+> ⚠️ **NE JAMAIS** déployer la clé live sur preview. Render → Environment → Add Group "Production-Only" → swap au moment du go-live commerce.
+
+### 8.B — Vérification post-déploiement (10 min)
+
+```bash
+# 1. Boardgame counter (doit retourner sold=0 au début)
+curl https://api.deepotus.xyz/api/ecosystem/board-game/counter
+
+# 2. Création session Stripe (mode test)
+curl -X POST https://api.deepotus.xyz/api/payments/checkout/session \
+  -H 'Content-Type: application/json' \
+  -d '{"product_id":"videogen","origin_url":"https://deepotus.xyz","locale":"fr"}'
+# → doit retourner {url: "https://checkout.stripe.com/c/pay/cs_test_...", session_id, amount_eur: 65.0}
+
+# 3. Genesis subscribe (test)
+curl -X POST https://api.deepotus.xyz/api/ecosystem/genesis \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"test@deepotus.xyz","source":"genesis_roman","locale":"fr"}'
+```
+
+### 8.C — Admin : consultation des nouvelles collections
+
+Le Sprint 20 ajoute 4 endpoints admin read-only (auth required) :
+
+| Endpoint | Contenu |
+|----------|---------|
+| `GET /api/admin/ecosystem/orders` | Commandes payées (boardgame + videogen) |
+| `GET /api/admin/ecosystem/genesis` | Abonnés Genesis list (avec source + count par segment) |
+| `GET /api/admin/ecosystem/b2b` | Demandes white-label B2B |
+| `GET /api/admin/ecosystem/payments/transactions` | Audit trail toutes les sessions Stripe |
+
+> 💡 **UI Admin à créer (sprint suivant)** : dashboard `/admin/ecosystem` consolidant ces 4 vues. Pour l'instant, les données sont accessibles via curl avec un JWT admin.
+
+### 8.D — Passage en mode commerce live (jour J commerce)
+
+1. **Swap STRIPE_API_KEY → live** dans Render. Restart auto du backend.
+2. **Configure le webhook Stripe** sur dashboard.stripe.com :
+   - URL : `https://api.deepotus.xyz/api/webhook/stripe`
+   - Events : `checkout.session.completed`, `checkout.session.expired`
+3. **Test une commande réelle** avec 1 € symbolique pour vérifier la livraison email (videogen) ou la confirmation de commande (boardgame).
+4. **Connecter Resend** pour l'envoi des licences VideoGen et notifications B2B (RESEND_API_KEY déjà configurée).
+5. **Uploader l'installeur VideoGen** sur un host (S3 / Render disk / autre) et compléter le helper `core/license_generator.py::send_license_email` avec l'URL réelle.
+
+### 8.E — Liens Instagram & YouTube (quand les comptes seront créés)
+
+Dans `/app/frontend/src/pages/Ecosystem.tsx`, change :
+```ts
+const HAS_REAL_SOCIALS = false;  // → true
+const INSTAGRAM_URL = "https://instagram.com/ton_handle_reel";
+const YOUTUBE_URL = "https://youtube.com/@ton_handle_reel";
+```
+Les badges "Bientôt" disparaissent automatiquement et les clics ne déclenchent plus le toast informatif.
+
+### 8.F — Remplacement des visuels VideoGen
+
+Quand les screenshots réels du logiciel sont disponibles, remplace le composant `<VideoGenAppMockup />` par un `<img>` simple dans `ProductVideoGenCard.tsx` :
+```tsx
+<picture>
+  <source srcSet="/assets/products/video-generator-1.webp" type="image/webp" />
+  <img src="/assets/products/video-generator-1.jpg" alt="..." />
+</picture>
+```
+
+---
+
+## 9 · Sprint 21 — Mission Command Center
+
+Le Command Center (`/admin/missions-command`) permet de piloter dynamiquement les missions du Council **sans redéploiement**. Toutes les modifications faites en admin se propagent en live sur `/missions` et `/giveaway` dans la seconde qui suit.
+
+### 9.A — Que peut-on piloter ?
+
+| Section | Champs | Effet en live |
+|---------|--------|--------------|
+| **Giveaway** | Draw date, snapshot date, reward SOL, winners, min invites, min holding USD | Cartes `/missions` (date réécrite), `/giveaway` (hero + countdown + pool amount + règles) |
+| **Extraction Chamber** | Title/Subtitle/Body FR+EN (overrides null = i18n par défaut) | `/giveaway` extraction chamber section |
+| **Per-mission** | Status (live/redacted/completed), CTA URL (override Telegram), illustration gpt-image-1 | Status badge + bouton CTA + image dans l'email |
+| **Emails** | Master switch on/off, Helius auto-trigger toggle, sender name | Décide si participation form envoie l'email Resend immédiatement |
+
+### 9.B — Endpoints
+
+| Endpoint | Auth | Usage |
+|----------|------|-------|
+| `GET /api/mission-config` | Public | Frontend hook `useMissionConfig` |
+| `POST /api/mission-participations` | Public | Form opt-in `/missions` |
+| `GET /api/admin/mission-config/snapshot` | Admin | Vue complète admin |
+| `PUT /api/admin/mission-config` | Admin | Patch partiel |
+| `POST /api/admin/mission-config/illustrations/{mission_id}/regenerate` | Admin | Génère l'illustration gpt-image-1 (~12s) |
+| `GET /api/admin/mission-participations` | Admin | Liste 200 derniers, filtrable par `mission_id` |
+| `POST /api/admin/mission-participations/{id}/resend` | Admin | Re-envoi manuel d'email |
+
+### 9.C — Activation post-mint des emails Helius
+
+L'**auto-trigger Helius** (switch `emails_helius_auto_send` dans le Command Center) doit rester **OFF** jusqu'au mint. Le jour J :
+
+1. Vérifier que `HELIUS_API_KEY` est en place dans Render
+2. Vérifier que le webhook Helius pointe vers `https://api.deepotus.xyz/api/webhooks/helius` (déjà configuré pour les whales)
+3. Activer le switch dans `/admin/missions-command` → Section 04
+4. Tester avec un wallet de test détenant 0.001 $DEEP pour valider la chaîne webhook → match email → Resend
+
+### 9.D — Illustrations IA (gpt-image-1)
+
+Les 6 illustrations vivent dans `/app/frontend/public/assets/missions-email/{mission_id}.png` :
+- Générées **à la demande** depuis le Command Center (bouton "Generate" par mission)
+- Style **tech-noir deepotus** (deep navy + amber + cyan, Matrix scanlines, IBM Plex Mono micro-grid)
+- ~1.9 MB par image, 1024×1024, embarqué dans l'email Resend en URL absolue
+
+Si une illustration manque, l'email est tout de même envoyé (le `<img>` se contente de ne rien afficher).
+
+### 9.E — Bug catalogue (Sprint 21)
+
+Aucun bug critique. Testing-agent itération 29 : **17/17 backend + 13/13 frontend + 100 % end-to-end**.
+
+---
+
+_Dernière mise à jour : 13 juin 2026 — Sprint 21 (Mission Command Center) merged._

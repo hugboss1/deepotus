@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWalletRegistry } from "@/hooks/useWalletRegistry";
+import { FundingFlowSection } from "@/components/transparency/FundingFlowSection";
 import {
   URLS,
   getWallets,
@@ -1044,6 +1045,9 @@ const Transparency: React.FC = () => {
 
         {/* ---- Proof of Scarcity (Sprint 17.6 — Operation Incinerator) ---- */}
         <ProofOfScarcityHero />
+
+        {/* ---- Sprint 20 — Funding Flow narrative (anchor #funding) ---- */}
+        <FundingFlowSection />
 
         {/* ---- Wallets + Locks (above the carousel) ---- */}
         <WalletsSection />

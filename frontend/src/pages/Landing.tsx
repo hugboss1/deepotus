@@ -11,6 +11,7 @@ import Tokenomics from "@/components/landing/Tokenomics";
 import TransparencyTimeline from "@/components/landing/TransparencyTimeline";
 import ROISimulator from "@/components/landing/ROISimulator";
 import Roadmap from "@/components/landing/Roadmap";
+import { TwoTracksRoadmap } from "@/components/landing/TwoTracksRoadmap";
 import BrutalTruth from "@/components/landing/BrutalTruth";
 import FAQ from "@/components/landing/FAQ";
 import Whitelist from "@/components/landing/Whitelist";
@@ -39,6 +40,8 @@ export default function Landing() {
         <MissionsSection />
         <TransparencyTimeline />
         <ROISimulator />
+        {/* Sprint 20 — Two-tracks lead-in (Products / Secret project) */}
+        <TwoTracksRoadmap />
         <Roadmap />
         <BrutalTruth />
         <FAQ />

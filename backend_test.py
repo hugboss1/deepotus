@@ -1,11 +1,8 @@
-"""Sprint 17.5c — Backend API testing for critical pre-mint bug fixes:
-  * Bug 1: X dispatcher TypeError fix (authlib OAuth1Auth swap)
-  * Bug 2: DexScreener 429 rate-limit hardening (60s poll + backoff)
-  * POST /api/admin/propaganda/queue/{id}/approve (X dispatcher smoke test)
-  * POST /api/admin/bots/preview/push (Real Dispatcher enqueue)
-  * POST /api/admin/bots/release-now (dual-mode Release button)
-  * POST /api/admin/bots/generate-preview (ASGI hardening regression)
-  * Regression: Cabinet endpoints (welcome-signal, interaction-bot)
+"""Backend API testing for DEEPOTUS site:
+  * Sprint 17.5c: X dispatcher, DexScreener rate-limit, bots
+  * Sprint 17.6: Operation Incinerator (burn logs)
+  * Sprint 20: Ecosystem + Transparent Funding + Stripe Payment
+  * Sprint 21: Mission Command Center (admin dashboard + participations)
 """
 
 import requests
@@ -747,6 +744,686 @@ def main():
         elif announce_error:
             print(f"   ℹ️  Announcement failed (benign): {announce_error}")
             print("   ✅ Burn record succeeded despite announcement failure")
+
+    # ========================================================================
+    # Sprint 20 — Ecosystem + Transparent Funding + Stripe Payment
+    # ========================================================================
+    print("\n" + "=" * 70)
+    print("Sprint 20 — Ecosystem & Payment Testing")
+    print("=" * 70)
+
+    # ---- Test 30: GET /api/ecosystem/board-game/counter (public) ----
+    saved_token = tester.token
+    tester.token = None  # Public endpoint
+    
+    success, counter = tester.run_test(
+        "GET /api/ecosystem/board-game/counter (public)",
+        "GET",
+        "/api/ecosystem/board-game/counter",
+        200
+    )
+    
+    if success:
+        print(f"   sold: {counter.get('sold')}")
+        print(f"   next_number: {counter.get('next_number')}")
+        print(f"   founder_limit: {counter.get('founder_limit')}")
+        print(f"   is_founder: {counter.get('is_founder')}")
+        print(f"   current_price_eur: {counter.get('current_price_eur')}")
+        print(f"   current_tier: {counter.get('current_tier')}")
+        
+        # Verify initial state
+        if counter.get('sold') >= 0 and counter.get('next_number') == counter.get('sold', 0) + 1:
+            print("   ✅ Counter math correct")
+        if counter.get('founder_limit') == 500:
+            print("   ✅ Founder limit = 500")
+        if counter.get('current_tier') in ['early_bird_1', 'early_bird_2', 'standard_founder', 'standard']:
+            print(f"   ✅ Valid tier: {counter.get('current_tier')}")
+    
+    tester.token = saved_token
+    
+    # ---- Test 31: POST /api/ecosystem/genesis (happy path) ----
+    tester.token = None
+    test_email = f"test-genesis-{datetime.now().strftime('%H%M%S')}@deepotus.xyz"
+    
+    success, genesis1 = tester.run_test(
+        "POST /api/ecosystem/genesis (happy path)",
+        "POST",
+        "/api/ecosystem/genesis",
+        200,
+        data={
+            "email": test_email,
+            "source": "genesis_roman",
+            "locale": "fr"
+        }
+    )
+    
+    if success:
+        print(f"   ok: {genesis1.get('ok')}")
+        print(f"   source: {genesis1.get('source')}")
+        if genesis1.get('ok') and genesis1.get('source') == 'genesis_roman':
+            print("   ✅ Genesis subscription created")
+    
+    # ---- Test 32: POST /api/ecosystem/genesis (idempotent upsert) ----
+    success, genesis2 = tester.run_test(
+        "POST /api/ecosystem/genesis (idempotent upsert)",
+        "POST",
+        "/api/ecosystem/genesis",
+        200,
+        data={
+            "email": test_email,
+            "source": "genesis_roman",
+            "locale": "en"
+        }
+    )
+    
+    if success:
+        print(f"   ok: {genesis2.get('ok')}")
+        if genesis2.get('ok'):
+            print("   ✅ Idempotent upsert succeeded (no duplicate error)")
+    
+    # ---- Test 33: POST /api/ecosystem/genesis (invalid email) ----
+    success, _ = tester.run_test(
+        "POST /api/ecosystem/genesis (invalid email)",
+        "POST",
+        "/api/ecosystem/genesis",
+        422,
+        data={
+            "email": "not-an-email",
+            "source": "genesis_roman"
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected invalid email with 422")
+    
+    tester.token = saved_token
+    
+    # ---- Test 34: POST /api/ecosystem/b2b-inquiry (happy path) ----
+    tester.token = None
+    test_b2b_email = f"test-b2b-{datetime.now().strftime('%H%M%S')}@company.com"
+    
+    success, b2b1 = tester.run_test(
+        "POST /api/ecosystem/b2b-inquiry (happy path)",
+        "POST",
+        "/api/ecosystem/b2b-inquiry",
+        200,
+        data={
+            "name": "Test Company",
+            "email": test_b2b_email,
+            "company": "ACME Corp",
+            "message": "Interested in white-label Video Generator with 25% royalty model.",
+            "locale": "en"
+        }
+    )
+    
+    if success:
+        inquiry_id = b2b1.get('inquiry_id')
+        print(f"   ok: {b2b1.get('ok')}")
+        print(f"   inquiry_id: {inquiry_id}")
+        if b2b1.get('ok') and inquiry_id:
+            print("   ✅ B2B inquiry created")
+    
+    # ---- Test 35: POST /api/ecosystem/b2b-inquiry (short message) ----
+    success, _ = tester.run_test(
+        "POST /api/ecosystem/b2b-inquiry (short message <10 chars)",
+        "POST",
+        "/api/ecosystem/b2b-inquiry",
+        422,
+        data={
+            "name": "Test",
+            "email": "test@test.com",
+            "message": "Hi"  # <10 chars
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected short message with 422")
+    
+    tester.token = saved_token
+    
+    # ---- Test 36: POST /api/payments/checkout/session (videogen) ----
+    tester.token = None
+    
+    success, session_videogen = tester.run_test(
+        "POST /api/payments/checkout/session (videogen)",
+        "POST",
+        "/api/payments/checkout/session",
+        200,
+        data={
+            "product_id": "videogen",
+            "origin_url": BASE_URL,
+            "locale": "fr"
+        },
+        timeout=15
+    )
+    
+    videogen_session_id = None
+    if success:
+        url = session_videogen.get('url', '')
+        session_id = session_videogen.get('session_id', '')
+        amount = session_videogen.get('amount_eur')
+        currency = session_videogen.get('currency')
+        
+        print(f"   url: {url[:50]}..." if url else "   url: None")
+        print(f"   session_id: {session_id[:20]}..." if session_id else "   session_id: None")
+        print(f"   amount_eur: {amount}")
+        print(f"   currency: {currency}")
+        
+        if url.startswith('https://checkout.stripe.com/c/pay/cs_test_'):
+            print("   ✅ Stripe URL well-formed (cs_test_)")
+        if amount == 65.0 and currency == 'eur':
+            print("   ✅ VideoGen price correct: 65.00 EUR")
+        
+        videogen_session_id = session_id
+    
+    # ---- Test 37: POST /api/payments/checkout/session (boardgame) ----
+    success, session_boardgame = tester.run_test(
+        "POST /api/payments/checkout/session (boardgame)",
+        "POST",
+        "/api/payments/checkout/session",
+        200,
+        data={
+            "product_id": "boardgame",
+            "origin_url": BASE_URL,
+            "locale": "en"
+        },
+        timeout=15
+    )
+    
+    boardgame_session_id = None
+    if success:
+        url = session_boardgame.get('url', '')
+        session_id = session_boardgame.get('session_id', '')
+        amount = session_boardgame.get('amount_eur')
+        metadata = session_boardgame.get('metadata', {})
+        founder_number = metadata.get('founder_number')
+        
+        print(f"   url: {url[:50]}..." if url else "   url: None")
+        print(f"   session_id: {session_id[:20]}..." if session_id else "   session_id: None")
+        print(f"   amount_eur: {amount}")
+        print(f"   founder_number: {founder_number}")
+        
+        if url.startswith('https://checkout.stripe.com/c/pay/cs_test_'):
+            print("   ✅ Stripe URL well-formed (cs_test_)")
+        if amount in [39.99, 45.0, 59.0]:
+            print(f"   ✅ Boardgame price in valid tier: {amount} EUR")
+        if founder_number:
+            print(f"   ✅ Founder number assigned: {founder_number}")
+        
+        boardgame_session_id = session_id
+    
+    # ---- Test 38: POST /api/payments/checkout/session (invalid product) ----
+    success, _ = tester.run_test(
+        "POST /api/payments/checkout/session (invalid product)",
+        "POST",
+        "/api/payments/checkout/session",
+        400,
+        data={
+            "product_id": "invalid",
+            "origin_url": BASE_URL
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected invalid product with 400")
+    
+    # ---- Test 39: Atomic counter increment (3 boardgame sessions) ----
+    print("\n🔍 Testing atomic counter increment (3 boardgame sessions)...")
+    founder_numbers = []
+    
+    for i in range(3):
+        success, session = tester.run_test(
+            f"POST /api/payments/checkout/session (boardgame #{i+1})",
+            "POST",
+            "/api/payments/checkout/session",
+            200,
+            data={
+                "product_id": "boardgame",
+                "origin_url": BASE_URL,
+                "locale": "fr"
+            },
+            timeout=15
+        )
+        
+        if success:
+            metadata = session.get('metadata', {})
+            fn = metadata.get('founder_number')
+            if fn:
+                founder_numbers.append(int(fn))
+                print(f"   Session {i+1}: founder_number={fn}")
+    
+    if len(founder_numbers) == 3:
+        # Check if numbers are sequential and unique
+        if len(set(founder_numbers)) == 3:
+            print("   ✅ All founder numbers unique")
+        if founder_numbers == sorted(founder_numbers):
+            print("   ✅ Founder numbers sequential (atomic increment working)")
+    
+    # ---- Test 40: GET /api/payments/checkout/status/{session_id} ----
+    if videogen_session_id:
+        success, status = tester.run_test(
+            f"GET /api/payments/checkout/status/{videogen_session_id[:20]}...",
+            "GET",
+            f"/api/payments/checkout/status/{videogen_session_id}",
+            200,
+            timeout=15
+        )
+        
+        if success:
+            print(f"   session_id: {status.get('session_id', '')[:20]}...")
+            print(f"   status: {status.get('status')}")
+            print(f"   payment_status: {status.get('payment_status')}")
+            print(f"   amount_eur: {status.get('amount_eur')}")
+            
+            # Expected: status='open', payment_status='unpaid' (not actually paid)
+            if status.get('payment_status') in ['unpaid', 'initiated', 'open']:
+                print("   ✅ Correct payment_status for unpaid session")
+    
+    tester.token = saved_token
+    
+    # ---- Test 41: GET /api/admin/ecosystem/orders (requires admin auth) ----
+    success, orders = tester.run_test(
+        "GET /api/admin/ecosystem/orders (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/orders?limit=10",
+        200
+    )
+    
+    if success:
+        order_list = orders.get('orders', [])
+        count = orders.get('count', 0)
+        print(f"   orders: {len(order_list)}")
+        print(f"   count: {count}")
+        print("   ✅ Admin orders endpoint accessible")
+    
+    # ---- Test 42: GET /api/admin/ecosystem/orders (without admin auth) ----
+    saved_token = tester.token
+    tester.token = None
+    
+    success, _ = tester.run_test(
+        "GET /api/admin/ecosystem/orders (without admin auth)",
+        "GET",
+        "/api/admin/ecosystem/orders",
+        401
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected without admin auth (401)")
+    
+    tester.token = saved_token
+    
+    # ---- Test 43: GET /api/admin/ecosystem/genesis ----
+    success, genesis_admin = tester.run_test(
+        "GET /api/admin/ecosystem/genesis (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/genesis?limit=10",
+        200
+    )
+    
+    if success:
+        subscribers = genesis_admin.get('subscribers', [])
+        by_source = genesis_admin.get('by_source', {})
+        count = genesis_admin.get('count', 0)
+        print(f"   subscribers: {len(subscribers)}")
+        print(f"   by_source: {by_source}")
+        print(f"   count: {count}")
+        print("   ✅ Admin genesis endpoint accessible")
+    
+    # ---- Test 44: GET /api/admin/ecosystem/b2b ----
+    success, b2b_admin = tester.run_test(
+        "GET /api/admin/ecosystem/b2b (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/b2b?limit=10",
+        200
+    )
+    
+    if success:
+        inquiries = b2b_admin.get('inquiries', [])
+        count = b2b_admin.get('count', 0)
+        print(f"   inquiries: {len(inquiries)}")
+        print(f"   count: {count}")
+        print("   ✅ Admin B2B endpoint accessible")
+    
+    # ---- Test 45: GET /api/admin/ecosystem/payments/transactions ----
+    success, transactions = tester.run_test(
+        "GET /api/admin/ecosystem/payments/transactions (with admin auth)",
+        "GET",
+        "/api/admin/ecosystem/payments/transactions?limit=10",
+        200
+    )
+    
+    if success:
+        txns = transactions.get('transactions', [])
+        count = transactions.get('count', 0)
+        print(f"   transactions: {len(txns)}")
+        print(f"   count: {count}")
+        print("   ✅ Admin payments/transactions endpoint accessible")
+
+    # ========================================================================
+    # Sprint 21 — Mission Command Center
+    # ========================================================================
+    print("\n" + "=" * 70)
+    print("Sprint 21 — Mission Command Center Testing")
+    print("=" * 70)
+
+    # ---- Test 46: GET /api/mission-config (public endpoint) ----
+    saved_token = tester.token
+    tester.token = None  # Public endpoint
+    
+    success, mission_config = tester.run_test(
+        "GET /api/mission-config (public)",
+        "GET",
+        "/api/mission-config",
+        200
+    )
+    
+    if success:
+        print(f"   giveaway_draw_date_iso: {mission_config.get('giveaway_draw_date_iso')}")
+        print(f"   giveaway_reward_sol: {mission_config.get('giveaway_reward_sol')}")
+        print(f"   giveaway_winners_count: {mission_config.get('giveaway_winners_count')}")
+        print(f"   missions count: {len(mission_config.get('missions', {}))}")
+        print(f"   emails_enabled: {mission_config.get('emails_enabled')}")
+        
+        # Verify default values
+        if mission_config.get('giveaway_reward_sol') >= 0:
+            print("   ✅ Valid reward_sol")
+        if mission_config.get('giveaway_winners_count') >= 0:
+            print("   ✅ Valid winners_count")
+        if 'missions' in mission_config and isinstance(mission_config['missions'], dict):
+            print("   ✅ Missions dict present")
+    
+    tester.token = saved_token
+    
+    # ---- Test 47: POST /api/mission-participations (happy path) ----
+    tester.token = None
+    test_participation_email = f"test-mission-{datetime.now().strftime('%H%M%S')}@deepotus.xyz"
+    
+    success, participation1 = tester.run_test(
+        "POST /api/mission-participations (happy path)",
+        "POST",
+        "/api/mission-participations",
+        200,
+        data={
+            "mission_id": "liquidity",
+            "email": test_participation_email,
+            "wallet_address": "7XnP9f4P8nK2jL3mN5qR6sT8uV9wX1yZ2aB3cD4eF5gH",
+            "locale": "fr"
+        }
+    )
+    
+    participation_id = None
+    if success:
+        participation_id = participation1.get('participation_id')
+        email_queued = participation1.get('email_queued')
+        print(f"   participation_id: {participation_id}")
+        print(f"   email_queued: {email_queued}")
+        if participation1.get('ok') and participation_id:
+            print("   ✅ Participation recorded")
+    
+    # ---- Test 48: POST /api/mission-participations (idempotent) ----
+    success, participation2 = tester.run_test(
+        "POST /api/mission-participations (idempotent - same email)",
+        "POST",
+        "/api/mission-participations",
+        200,
+        data={
+            "mission_id": "liquidity",
+            "email": test_participation_email,
+            "locale": "en"
+        }
+    )
+    
+    if success:
+        print(f"   participation_id: {participation2.get('participation_id')}")
+        print("   ✅ Idempotent upsert succeeded")
+    
+    # ---- Test 49: POST /api/mission-participations (unknown mission_id) ----
+    success, _ = tester.run_test(
+        "POST /api/mission-participations (unknown mission_id)",
+        "POST",
+        "/api/mission-participations",
+        400,
+        data={
+            "mission_id": "unknown_mission",
+            "email": "test@test.com",
+            "locale": "fr"
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected unknown mission_id with 400")
+    
+    # ---- Test 50: POST /api/mission-participations (invalid email) ----
+    success, _ = tester.run_test(
+        "POST /api/mission-participations (invalid email)",
+        "POST",
+        "/api/mission-participations",
+        422,
+        data={
+            "mission_id": "liquidity",
+            "email": "not-an-email",
+            "locale": "fr"
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected invalid email with 422")
+    
+    tester.token = saved_token
+    
+    # ---- Test 51: GET /api/admin/mission-config/snapshot ----
+    success, snapshot = tester.run_test(
+        "GET /api/admin/mission-config/snapshot (with admin auth)",
+        "GET",
+        "/api/admin/mission-config/snapshot",
+        200
+    )
+    
+    if success:
+        config = snapshot.get('config', {})
+        counts = snapshot.get('participation_counts', {})
+        illustrations = snapshot.get('illustrations', {})
+        print(f"   config keys: {len(config)}")
+        print(f"   participation_counts: {counts}")
+        print(f"   illustrations count: {len(illustrations)}")
+        if config and counts is not None and illustrations is not None:
+            print("   ✅ Snapshot includes config, counts, and illustrations")
+    
+    # ---- Test 52: PUT /api/admin/mission-config (partial update - reward_sol) ----
+    success, update1 = tester.run_test(
+        "PUT /api/admin/mission-config (change reward_sol to 7.5)",
+        "PUT",
+        "/api/admin/mission-config",
+        200,
+        data={
+            "giveaway_reward_sol": 7.5
+        }
+    )
+    
+    if success:
+        updated_config = update1.get('config', {})
+        new_reward = updated_config.get('giveaway_reward_sol')
+        print(f"   new giveaway_reward_sol: {new_reward}")
+        if new_reward == 7.5:
+            print("   ✅ Partial update succeeded (reward_sol = 7.5)")
+    
+    # ---- Test 53: GET /api/mission-config (verify update propagated) ----
+    tester.token = None
+    success, config_after = tester.run_test(
+        "GET /api/mission-config (verify update propagated)",
+        "GET",
+        "/api/mission-config",
+        200
+    )
+    
+    if success:
+        reward = config_after.get('giveaway_reward_sol')
+        print(f"   giveaway_reward_sol: {reward}")
+        if reward == 7.5:
+            print("   ✅ Update propagated to public endpoint")
+    
+    tester.token = saved_token
+    
+    # ---- Test 54: PUT /api/admin/mission-config (invalid field - negative reward) ----
+    success, _ = tester.run_test(
+        "PUT /api/admin/mission-config (negative reward_sol)",
+        "PUT",
+        "/api/admin/mission-config",
+        400,
+        data={
+            "giveaway_reward_sol": -5
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected negative reward_sol with 400")
+    
+    # ---- Test 55: PUT /api/admin/mission-config (unknown field) ----
+    success, _ = tester.run_test(
+        "PUT /api/admin/mission-config (unknown field)",
+        "PUT",
+        "/api/admin/mission-config",
+        400,
+        data={
+            "unknown_field": "test"
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected unknown field with 400")
+    
+    # ---- Test 56: GET /api/admin/mission-participations ----
+    success, participations = tester.run_test(
+        "GET /api/admin/mission-participations (all)",
+        "GET",
+        "/api/admin/mission-participations?limit=200",
+        200
+    )
+    
+    if success:
+        parts = participations.get('participations', [])
+        count = participations.get('count', 0)
+        print(f"   participations: {len(parts)}")
+        print(f"   count: {count}")
+        if len(parts) > 0:
+            first = parts[0]
+            print(f"   first participation: mission_id={first.get('mission_id')}, email_sent={first.get('email_sent')}")
+            print("   ✅ Participations list includes records")
+    
+    # ---- Test 57: GET /api/admin/mission-participations (filter by mission_id) ----
+    success, participations_filtered = tester.run_test(
+        "GET /api/admin/mission-participations (filter by liquidity)",
+        "GET",
+        "/api/admin/mission-participations?mission_id=liquidity&limit=50",
+        200
+    )
+    
+    if success:
+        parts = participations_filtered.get('participations', [])
+        print(f"   liquidity participations: {len(parts)}")
+        if len(parts) > 0:
+            print("   ✅ Filter by mission_id working")
+    
+    # ---- Test 58: POST /api/admin/mission-participations/{id}/resend ----
+    if participation_id:
+        success, resend_result = tester.run_test(
+            f"POST /api/admin/mission-participations/{participation_id}/resend",
+            "POST",
+            f"/api/admin/mission-participations/{participation_id}/resend",
+            200
+        )
+        
+        if success:
+            print(f"   ok: {resend_result.get('ok')}")
+            if resend_result.get('ok'):
+                print("   ✅ Email resend succeeded")
+    
+    # ---- Test 59: POST /api/admin/mission-config/illustrations/{mission_id}/regenerate (endpoint shape) ----
+    # Skip actual generation to save time, just verify endpoint contract
+    print("\n🔍 Testing illustration regeneration endpoint (shape only)...")
+    success, regen_result = tester.run_test(
+        "POST /api/admin/mission-config/illustrations/liquidity/regenerate (endpoint shape)",
+        "POST",
+        "/api/admin/mission-config/illustrations/liquidity/regenerate?force=false",
+        200,
+        timeout=45
+    )
+    
+    if success:
+        print(f"   ok: {regen_result.get('ok')}")
+        print(f"   mission_id: {regen_result.get('mission_id')}")
+        print(f"   regenerated: {regen_result.get('regenerated')}")
+        if regen_result.get('ok'):
+            print("   ✅ Illustration endpoint working (shape verified)")
+    
+    # ---- Test 60: POST /api/admin/mission-config/illustrations/{mission_id}/regenerate (unknown mission) ----
+    success, _ = tester.run_test(
+        "POST /api/admin/mission-config/illustrations/unknown/regenerate",
+        "POST",
+        "/api/admin/mission-config/illustrations/unknown/regenerate",
+        404
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected unknown mission_id with 404")
+    
+    # ---- Test 61: PUT /api/admin/mission-config (update missions status) ----
+    success, update_missions = tester.run_test(
+        "PUT /api/admin/mission-config (update missions status)",
+        "PUT",
+        "/api/admin/mission-config",
+        200,
+        data={
+            "missions": {
+                "infiltration": {"status": "live", "cta_url": None, "label_date_iso": None},
+                "liquidity": {"status": "completed", "cta_url": "https://t.me/deepotus", "label_date_iso": None}
+            }
+        }
+    )
+    
+    if success:
+        updated_config = update_missions.get('config', {})
+        missions = updated_config.get('missions', {})
+        liquidity_status = missions.get('liquidity', {}).get('status')
+        print(f"   liquidity status: {liquidity_status}")
+        if liquidity_status == 'completed':
+            print("   ✅ Mission status update succeeded")
+    
+    # ---- Test 62: PUT /api/admin/mission-config (invalid mission status) ----
+    success, _ = tester.run_test(
+        "PUT /api/admin/mission-config (invalid mission status)",
+        "PUT",
+        "/api/admin/mission-config",
+        400,
+        data={
+            "missions": {
+                "liquidity": {"status": "invalid_status", "cta_url": None, "label_date_iso": None}
+            }
+        }
+    )
+    
+    if success:
+        print("   ✅ Correctly rejected invalid mission status with 400")
+    
+    # ---- Test 63: Restore original config values ----
+    print("\n⚙️  Restoring original config values...")
+    tester.run_test(
+        "PUT /api/admin/mission-config (restore defaults)",
+        "PUT",
+        "/api/admin/mission-config",
+        200,
+        data={
+            "giveaway_reward_sol": 5.0,
+            "missions": {
+                "infiltration": {"status": "live", "cta_url": None, "label_date_iso": None},
+                "liquidity": {"status": "live", "cta_url": None, "label_date_iso": None},
+                "amplification": {"status": "live", "cta_url": None, "label_date_iso": None},
+                "archive": {"status": "live", "cta_url": None, "label_date_iso": None},
+                "signal": {"status": "live", "cta_url": None, "label_date_iso": None},
+                "future_06": {"status": "redacted", "cta_url": None, "label_date_iso": None}
+            }
+        }
+    )
 
     # ---- Summary ----
     print("\n" + "=" * 70)

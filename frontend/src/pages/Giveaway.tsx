@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import { useMissionConfig } from "@/hooks/useMissionConfig";
 import { GIVEAWAY } from "@/lib/missions";
 import { getBuyUrl } from "@/lib/links";
 
@@ -76,7 +77,12 @@ const Separator: React.FC = () => (
 
 const Giveaway: React.FC = () => {
   const { t, lang } = useI18n();
-  const cd = useCountdown(GIVEAWAY.drawDateIso);
+  const { config, vars } = useMissionConfig();
+  const iv = vars(lang === "en" ? "en" : "fr");
+  const drawDateIso = config?.giveaway_draw_date_iso || GIVEAWAY.drawDateIso;
+  const rewardSol = config?.giveaway_reward_sol ?? GIVEAWAY.rewardSol;
+  const winnersCount = config?.giveaway_winners_count ?? GIVEAWAY.winnersCount;
+  const cd = useCountdown(drawDateIso);
 
   useEffect(() => {
     const prev = document.title;
@@ -87,18 +93,19 @@ const Giveaway: React.FC = () => {
   }, []);
 
   // Localised display of the absolute draw date below the countdown,
-  // honouring the user's preferred language.
+  // honouring the user's preferred language. Pulled from the live config
+  // so admin edits propagate without redeploy.
   const drawDatePretty = useMemo(() => {
     try {
-      return new Date(GIVEAWAY.drawDateIso).toLocaleString(lang === "fr" ? "fr-FR" : "en-US", {
+      return new Date(drawDateIso).toLocaleString(lang === "fr" ? "fr-FR" : "en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
       });
     } catch {
-      return GIVEAWAY.drawDateIso;
+      return drawDateIso;
     }
-  }, [lang]);
+  }, [lang, drawDateIso]);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body" data-testid="giveaway-page">
@@ -123,10 +130,10 @@ const Giveaway: React.FC = () => {
             className="mt-3 font-display text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight tracking-tight"
             data-testid="giveaway-hero-title"
           >
-            {t("giveawayPage.hero.title") as string}
+            {t("giveawayPage.hero.title", undefined, iv) as string}
           </h1>
           <p className="mt-4 text-sm sm:text-base text-foreground/70 leading-relaxed max-w-2xl">
-            {t("giveawayPage.hero.subtitle") as string}
+            {t("giveawayPage.hero.subtitle", undefined, iv) as string}
           </p>
         </section>
 
@@ -161,13 +168,13 @@ const Giveaway: React.FC = () => {
               <Coins size={12} /> {t("giveawayPage.pool.kicker") as string}
             </div>
             <p className="mt-3 font-display text-4xl sm:text-5xl font-semibold tracking-tight tabular-nums" data-testid="giveaway-pool-amount">
-              {GIVEAWAY.rewardSol}
+              {rewardSol}
               <span className="ml-2 text-base text-foreground/55 font-mono uppercase tracking-widest">
                 {t("giveawayPage.pool.amountSuffix") as string}
               </span>
             </p>
             <p className="mt-3 text-xs text-foreground/65 leading-relaxed">
-              {(t("giveawayPage.pool.copy") as string).replace("{winnersCount}", String(GIVEAWAY.winnersCount))}
+              {(t("giveawayPage.pool.copy") as string).replace("{winnersCount}", String(winnersCount))}
             </p>
           </div>
         </section>
@@ -189,14 +196,14 @@ const Giveaway: React.FC = () => {
                 </span>
                 <Users size={14} className="text-[#22D3EE]" />
                 <span className="font-mono text-[10px] text-foreground/55">
-                  ≥ {GIVEAWAY.rules.minInvites}
+                  ≥ {config?.giveaway_min_invites ?? GIVEAWAY.rules.minInvites}
                 </span>
               </div>
               <h3 className="font-display text-lg font-semibold tracking-tight">
                 {t("giveawayPage.rules.rule1.title") as string}
               </h3>
               <p className="mt-2 text-sm text-foreground/70 leading-relaxed">
-                {t("giveawayPage.rules.rule1.body") as string}
+                {t("giveawayPage.rules.rule1.body", undefined, iv) as string}
               </p>
             </div>
             {/* Rule 02 */}
@@ -207,14 +214,14 @@ const Giveaway: React.FC = () => {
                 </span>
                 <Sparkles size={14} className="text-[#33FF66]" />
                 <span className="font-mono text-[10px] text-foreground/55">
-                  ≥ ${GIVEAWAY.rules.minHoldingUsd}
+                  ≥ ${config?.giveaway_min_holding_usd ?? GIVEAWAY.rules.minHoldingUsd}
                 </span>
               </div>
               <h3 className="font-display text-lg font-semibold tracking-tight">
                 {t("giveawayPage.rules.rule2.title") as string}
               </h3>
               <p className="mt-2 text-sm text-foreground/70 leading-relaxed">
-                {t("giveawayPage.rules.rule2.body") as string}
+                {t("giveawayPage.rules.rule2.body", undefined, iv) as string}
               </p>
             </div>
           </div>

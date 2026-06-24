@@ -75,6 +75,19 @@ if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 
 # ---------------------------------------------------------------------
+# Stripe Checkout (Sprint 20 — Ecosystem)
+# ---------------------------------------------------------------------
+# Test key `sk_test_emergent` is the Emergent-provisioned Stripe key
+# (per integration playbook). Swap to `sk_live_*` only post-validation
+# of the full purchase flow.
+STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "").strip()
+
+# B2B inquiry destination (white-label royaltie 25% requests). Defaults
+# to b2b@deepotus.xyz; the form ALSO persists into Mongo regardless of
+# email delivery success.
+B2B_INQUIRY_EMAIL = os.environ.get("B2B_INQUIRY_EMAIL", "b2b@deepotus.xyz").strip()
+
+# ---------------------------------------------------------------------
 # Helius (Solana per-trade indexer)
 # ---------------------------------------------------------------------
 # Free API key: https://dashboard.helius.dev (100K req/month tier)
@@ -164,6 +177,8 @@ __all__ = [
     "RESEND_WEBHOOK_SECRET",
     "SENDER_EMAIL",
     "PUBLIC_BASE_URL",
+    "STRIPE_API_KEY",
+    "B2B_INQUIRY_EMAIL",
     "HELIUS_API_KEY",
     "HELIUS_WEBHOOK_AUTH",
     "LAUNCH_ISO",

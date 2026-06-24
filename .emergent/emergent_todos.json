@@ -1,26 +1,22 @@
 [
   {
-    "content": "P1 — Update draw date partout (lib/missions.ts + backend defaults + i18n) → 22/05/2026 12:00 UTC",
+    "content": "Explorer la structure des emails de participation (mission_emails.py)",
     "status": "completed"
   },
   {
-    "content": "P2 — Audit bug token mint admin vault → ROUTE ORDERING bug identifié (route /{slot} interceptait /mint-address)",
+    "content": "Identifier le CTA \"le 22 mai\" sous les fenêtres de missions statiques",
     "status": "completed"
   },
   {
-    "content": "P3 — Fix bug — réordonné routes (mint-address AVANT {slot}) + comment de garde + test de régression",
+    "content": "Identifier l'illustration \"extraction chamber\" avec \"the wheel turns on {date}\"",
     "status": "completed"
   },
   {
-    "content": "P4 — Test end-to-end : admin SET → public snapshot live + Giveaway pipeline pickup PRE-MINT → POST-MINT auto",
+    "content": "Connecter les deux éléments au hook useMissionConfig pour qu'ils reflètent les valeurs admin",
     "status": "completed"
   },
   {
-    "content": "P5 — Write LAUNCH_PLAYBOOK.md (pre-mint + post-mint actions, fail-proof)",
-    "status": "in_progress"
-  },
-  {
-    "content": "P6 — Final tests : Pytest 175/175 + tsc clean + screenshots May 22 validé",
+    "content": "Tester visuellement avec screenshot",
     "status": "completed"
   }
 ]

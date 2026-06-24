@@ -1,0 +1,59 @@
+{
+  "summary": "Sprint 21 Mission Command Center testing completed. All backend APIs working correctly. Frontend admin dashboard, public missions page, participation dialog, and end-to-end config propagation verified successfully.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "GET /api/mission-config returns merged config with all default fields",
+    "POST /api/mission-participations with valid data returns 200 + participation_id + email_queued=true",
+    "POST /api/mission-participations is idempotent on (mission_id, email_hash)",
+    "POST /api/mission-participations with unknown mission_id returns 400",
+    "POST /api/mission-participations with invalid email returns 422",
+    "GET /api/admin/mission-config/snapshot returns config + participation_counts + illustrations",
+    "PUT /api/admin/mission-config accepts partial patch (reward_sol 5 → 7.5 → 12)",
+    "PUT /api/admin/mission-config with negative reward_sol returns 400",
+    "PUT /api/admin/mission-config with unknown field returns 400",
+    "GET /api/admin/mission-participations returns list with email_sent flag",
+    "GET /api/admin/mission-participations with mission_id filter works correctly",
+    "POST /api/admin/mission-participations/{id}/resend works (email re-sent)",
+    "POST /api/admin/mission-config/illustrations/{mission_id}/regenerate endpoint shape verified",
+    "POST /api/admin/mission-config/illustrations/unknown/regenerate returns 404",
+    "PUT /api/admin/mission-config can update missions status (live → completed)",
+    "PUT /api/admin/mission-config with invalid mission status returns 400",
+    "/admin/missions-command renders all 4 sections (giveaway, extraction-chamber, missions, emails)",
+    "/admin/missions-command requires admin login (redirects to /admin)",
+    "/admin/missions-command shows all 6 mission override rows",
+    "/admin/missions-command participations table shows recent submissions",
+    "/admin/missions-command resend button triggers email re-send",
+    "/missions page loads with hero, stats, and missions grid",
+    "/missions shows all 6 mission cards with correct status badges",
+    "/missions 'Recevoir le brief' button opens participation dialog",
+    "Mission participation dialog has all required fields (email, wallet, submit)",
+    "Mission participation dialog submits successfully and closes",
+    "/giveaway page shows updated reward amount (12 SOL from admin change)",
+    "/giveaway page shows draw date (May 22, 2026)",
+    "End-to-end: Admin config changes propagate to public pages within 500ms",
+    "End-to-end: User participation appears in admin dashboard immediately"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py",
+    "/app/test_reports/iteration_29.json"
+  ],
+  "success_percentage": {
+    "backend": "100% (17/17 Sprint 21 tests passed)",
+    "frontend": "100% (13/13 tests passed)",
+    "end_to_end": "100% (config propagation verified)"
+  },
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}

@@ -45,6 +45,9 @@ import Transparency from "@/pages/Transparency";
 import Pulse from "@/pages/Pulse";
 import Missions from "@/pages/Missions";
 import Giveaway from "@/pages/Giveaway";
+import Ecosystem from "@/pages/Ecosystem";
+import Payment from "@/pages/Payment";
+import AdminMissionsCommand from "@/pages/AdminMissionsCommand";
 
 // `document.title` and SEO meta tags are synced dynamically by
 // I18nProvider based on the active language (FR / EN) — see
@@ -69,12 +72,18 @@ function App(): JSX.Element {
               {/* Sprint 19 — Missions Hub + Giveaway */}
               <Route path="/missions" element={<Missions />} />
               <Route path="/giveaway" element={<Giveaway />} />
+              {/* Sprint 20 — Ecosystem + Payment (Stripe) */}
+              <Route path="/ecosysteme" element={<Ecosystem />} />
+              <Route path="/ecosystem" element={<Ecosystem />} />
+              <Route path="/paiement" element={<Payment />} />
+              <Route path="/checkout" element={<Payment />} />
               <Route path="/operation" element={<Operation />} />
               <Route path="/classified-vault" element={<ClassifiedVault />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/emails" element={<AdminEmails />} />
               <Route path="/admin/vault" element={<AdminVault />} />
               <Route path="/admin/bots" element={<AdminBots />} />
+              <Route path="/admin/missions-command" element={<AdminMissionsCommand />} />
               <Route path="/admin/cabinet-vault" element={<CabinetVault />} />
               <Route path="/admin/propaganda" element={<Propaganda />} />
               <Route path="/admin/infiltration" element={<Infiltration />} />

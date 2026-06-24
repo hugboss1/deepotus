@@ -127,7 +127,12 @@ export const FEATURED_MISSION_KEYS: readonly string[] = [
 // ---------------------------------------------------------------------
 
 /**
- * Single source of truth for the May 20 community draw.
+/**
+ * GIVEAWAY — Static fallback constants used when the dynamic
+ * mission_config is loading or unavailable. The live source of truth
+ * is now the Mongo singleton ``mission_config`` (see
+ * ``backend/core/mission_config.py``), piloted by the Admin Command
+ * Center at ``/admin/missions``.
  *
  * Important: the date is stored as a UTC midnight ISO so the
  * countdown rendered on /giveaway shows the same "time left" to
@@ -135,7 +140,7 @@ export const FEATURED_MISSION_KEYS: readonly string[] = [
  * displayed date is done in the page component via `toLocaleString`.
  */
 export const GIVEAWAY = {
-  /** UTC ISO of the draw moment (May 22, 2026 — 12:00 UTC). */
+  /** UTC ISO fallback for the draw moment (overridden by mission_config.giveaway_draw_date_iso). */
   drawDateIso: "2026-05-22T12:00:00Z",
   /** Reward pool — single source of truth. */
   rewardSol: 5,
