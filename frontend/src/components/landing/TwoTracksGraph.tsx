@@ -1,606 +1,591 @@
 /**
- * TwoTracksGraph — Sprint 20.3 sequenced bubble-graph visualisation.
+ * TwoTracksGraph — "Track Flow v2 Meteor" interactive board.
  *
- * The previous Sprint 20.2 version showed 9 floating nodes with all
- * connections running in parallel (ambient motion). This iteration
- * turns the canvas into a **narrative bubble-graph** that loops a
- * funding flow: products feed the central hub, then the hub
- * redistributes to the secret-project wallets.
+ * Re-implementation of the design handoff (design_handoff_track_flow_meteor):
+ * two columns of trading-card nodes (Track A = products, Track B = secret
+ * project) feeding a central Σ2 · ACQUISITION hub. Animated meteor
+ * particles travel curved SVG links to represent revenue flowing through
+ * the system — amber = money IN to Acquisition, cyan = redistribution OUT.
+ * Each card tilts holographically on hover and flips to its detail (back)
+ * card in a modal on click.
  *
- * Sequence (one loop ≈ 8.5 s)
- * ===========================
+ * Design space is a fixed 1280×820 stage, scaled to fit the container
+ * width (transform set via ResizeObserver) so every coordinate below is
+ * authored in spec units. Card faces are final raster artwork shipped in
+ * /assets/track-cards (webp, front = board face, back = detail card).
  *
- *   Phase 0  · reset (nothing active)
- *   Phase 1  · Roman ─→ Acquisition       (Roman bubble pulses)
- *   Phase 2  · Board game ─→ Acquisition  (Board game bubble pulses)
- *   Phase 3  · Video Generator ─→ Acquisition
- *   Phase 4  · Mobile ─→ Acquisition       (4 A→Hub lines all visible)
- *   Phase 5  · Acquisition grows · "climax / collection complete"
- *   Phase 6  · Acquisition ─→ Σ1 Foundations  (Σ1 grows)
- *   Phase 7  · Acquisition ─→ Σ3 Silent build (Σ3 grows)
- *   Phase 8  · Acquisition ─→ Σ4 Community    (Σ4 grows)
- *   Phase 9  · Acquisition ─→ Σ5 Curtain      (Σ5 grows — END of cycle)
- *   Phase 10 · final pause (all bubbles + 8 lines persistent)
- *   ↻ reset to phase 0
- *
- * Each link, once drawn, **stays visible** until the loop resets.
- * That mirrors the user requirement: "les liens, une fois établis,
- * doivent rester persistents jusqu'à la fin de la boucle qui est la
- * bulle Levée de rideau".
- *
- * Geometry
- * ========
- * - Track A : 4 bubbles in the LEFT column (cx = 12 %)
- * - Hub Acquisition : CENTERED (cx = 50 %, cy = 50 %)
- * - Track B : 4 bubbles (Σ1, Σ3, Σ4, Σ5) in the RIGHT column (cx = 88 %)
- * - Connections start/end **on the circle borders** (vector trim) so
- *   strokes never enter the bubble disc — the bubble-graph look.
- *
- * Layout / a11y / motion notes
- * ============================
- * - Column titles moved OUT of the canvas (top header bar) so they
- *   never overlap with the bubbles.
- * - Each bubble is a real `<button>` (modal on click/tap, full a11y).
- * - Active bubbles grow via Framer Motion `scale`. Inactive bubbles
- *   keep a subtle ambient float (CSS keyframe, GPU-only transform).
- * - Connections are SVG `<motion.path>` with animated stroke-dashoffset
- *   for the "data flowing" effect; the path appears with a
- *   `pathLength` 0→1 animation at its scheduled phase.
- * - `prefers-reduced-motion` collapses every animation while keeping
- *   the final state visually correct (all bubbles + lines static).
+ * Only this canvas is owned here; the section copy (kicker / title / lead
+ * / footer) lives in the parent <TwoTracksRoadmap />.
  */
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import type { LucideIcon } from "lucide-react";
-import {
-  BookOpen,
-  Dices,
-  Wand2,
-  Smartphone,
-  Coins,
-  Banknote,
-  Construction,
-  Heart,
-  EyeOff,
-  X,
-  Sparkles,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useI18n } from "@/i18n/I18nProvider";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import "./TwoTracksGraph.css";
 
-// ---------------------------------------------------------------------
-// Types & data
-// ---------------------------------------------------------------------
-type Track = "A" | "B";
+// Design tokens (per handoff)
+const ACCENT_A = "#e6b34a"; // amber — inputs / card accent / glow
+const ACCENT_B = "#34c6dd"; // cyan  — outputs (chain + branch)
+const STAGE_W = 1280;
+const STAGE_H = 820;
+const CARD_BASE = "/assets/track-cards";
+const FLOW_RATE = 1; // cadence multiplier (0.3–2.5)
+const HOLO_STRENGTH = 0.3; // hover foil / glare opacity
+const MAX_PARTICLES = 90;
 
-interface TranslatedStep {
-  code: string;
-  label: string;
-  note: string;
-  wallet?: string;
-}
-
-interface GraphNode {
+interface NodeDef {
   id: string;
-  track: Track;
-  Icon: LucideIcon;
-  /** % of container width (svg viewBox is 1000) */
+  name: string;
   cx: number;
-  /** % of container height (svg viewBox is 600) */
   cy: number;
-  /** Per-node ambient float duration in seconds. */
-  floatDuration: number;
-  floatDelay: number;
-  /** Index into the corresponding i18n step array. */
-  i18nIndex: number;
-  /** True for the central Acquisition / Fees hub. */
-  isHub?: boolean;
-  /** Phase at which the bubble grows / activates (0 = always inactive at reset). */
-  activatePhase: number;
+  w: number;
+  h: number;
+  front: string;
+  back: string;
 }
 
-// Track A — products. 4 bubbles, evenly distributed in the left column,
-// each activated when its outgoing link to the hub is drawn.
-const TRACK_A_NODES: GraphNode[] = [
-  { id: "roman",     track: "A", Icon: BookOpen,   cx: 12, cy: 18, floatDuration: 5.0, floatDelay: 0.0, i18nIndex: 0, activatePhase: 1 },
-  { id: "boardgame", track: "A", Icon: Dices,      cx: 12, cy: 40, floatDuration: 6.4, floatDelay: 0.7, i18nIndex: 1, activatePhase: 2 },
-  { id: "videogen",  track: "A", Icon: Wand2,      cx: 12, cy: 62, floatDuration: 5.8, floatDelay: 1.3, i18nIndex: 2, activatePhase: 3 },
-  { id: "mobile",    track: "A", Icon: Smartphone, cx: 12, cy: 84, floatDuration: 7.2, floatDelay: 0.4, i18nIndex: 3, activatePhase: 4 },
-];
-
-// Central hub — Acquisition / Fees (Σ2).
-const HUB_NODE: GraphNode = {
-  id: "acquisition",
-  track: "B",
-  Icon: Banknote,
-  cx: 50,
-  cy: 50,
-  floatDuration: 4.8,
-  floatDelay: 0.0,
-  i18nIndex: 1,
-  isHub: true,
-  activatePhase: 5,
-};
-
-// Track B — secret project. 4 bubbles in the right column (Σ1, Σ3,
-// Σ4, Σ5). Σ2 has been promoted to the central hub.
-//
-// IMPORTANT: ``i18nIndex`` keeps pointing at the original step array
-// positions (0=Σ1, 2=Σ3, 3=Σ4, 4=Σ5) so the modal copy stays in sync
-// with translations.js without any data duplication.
-const TRACK_B_NODES: GraphNode[] = [
-  { id: "fondations", track: "B", Icon: Coins,        cx: 88, cy: 16, floatDuration: 6.0, floatDelay: 0.2, i18nIndex: 0, activatePhase: 6 },
-  { id: "silent",     track: "B", Icon: Construction, cx: 88, cy: 39, floatDuration: 7.0, floatDelay: 0.9, i18nIndex: 2, activatePhase: 7 },
-  { id: "community",  track: "B", Icon: Heart,        cx: 88, cy: 62, floatDuration: 5.6, floatDelay: 1.4, i18nIndex: 3, activatePhase: 8 },
-  { id: "curtain",    track: "B", Icon: EyeOff,       cx: 88, cy: 85, floatDuration: 6.6, floatDelay: 0.6, i18nIndex: 4, activatePhase: 9 },
-];
-
-const ALL_NODES: GraphNode[] = [...TRACK_A_NODES, HUB_NODE, ...TRACK_B_NODES];
-
-// Sequenced connections. Each connection appears at its ``phase`` and
-// stays visible until the loop resets.
-interface Connection {
-  from: string;
+interface LinkDef {
+  key: string;
+  kind: "in" | "chain" | "branch";
   to: string;
-  phase: number;
-  flowDuration: number;
+  seq: number;
+  color: string;
+  d: string;
 }
 
-const CONNECTIONS: Connection[] = [
-  // A → Hub (collection / income)
-  { from: "roman",     to: "acquisition", phase: 1, flowDuration: 2.6 },
-  { from: "boardgame", to: "acquisition", phase: 2, flowDuration: 2.4 },
-  { from: "videogen",  to: "acquisition", phase: 3, flowDuration: 2.8 },
-  { from: "mobile",    to: "acquisition", phase: 4, flowDuration: 2.7 },
-  // Hub → Σ (redistribution)
-  { from: "acquisition", to: "fondations", phase: 6, flowDuration: 2.5 },
-  { from: "acquisition", to: "silent",     phase: 7, flowDuration: 2.6 },
-  { from: "acquisition", to: "community",  phase: 8, flowDuration: 2.4 },
-  { from: "acquisition", to: "curtain",    phase: 9, flowDuration: 2.7 },
+// Nodes — Track A (products, left), Σ2 hub (center), Track B (right).
+const NODES: NodeDef[] = [
+  { id: "p1", name: "DEEPOTUS · NOVEL", cx: 170, cy: 160, w: 124, h: 174, front: "p1_front", back: "p1_back" },
+  { id: "p2", name: "DEEPOTUS · BOARD GAME", cx: 170, cy: 345, w: 124, h: 174, front: "p2_front", back: "p2_back" },
+  { id: "p3", name: "DEEPOTUS · VIDEOGEN", cx: 170, cy: 530, w: 124, h: 174, front: "p3_front", back: "p3_back" },
+  { id: "p4", name: "INSURRECTION · VIDEO GAME", cx: 170, cy: 715, w: 124, h: 174, front: "p4_front", back: "p4_back" },
+  { id: "acq", name: "Σ2 · ACQUISITION", cx: 640, cy: 438, w: 152, h: 214, front: "acq_front", back: "acq_back" },
+  { id: "b1", name: "Σ1 · FOUNDATION", cx: 1110, cy: 160, w: 124, h: 174, front: "b1_front", back: "b1_back" },
+  { id: "b3", name: "Σ3 · SILENT BURN", cx: 1110, cy: 345, w: 124, h: 174, front: "b3_front", back: "b3_back" },
+  { id: "b4", name: "Σ4 · COMMUNITY", cx: 1110, cy: 530, w: 124, h: 174, front: "b4_front", back: "b4_back" },
+  { id: "b5", name: "Σ5 · CURTAIN REVEAL", cx: 1110, cy: 715, w: 124, h: 174, front: "b5_front", back: "b5_back" },
 ];
 
-// Loop timing. Tweak with care — the narrative reads best at ~700ms
-// per phase + a generous final pause so the eye can rest on the full
-// network before it resets.
-const PHASE_DURATION_MS = 750;
-const FINAL_PAUSE_MS = 1800;
-const TOTAL_PHASES = 10; // Phase 10 is the final pause; loop resets to 0 afterwards.
+// Links — amber INPUTS → Acquisition; cyan BRANCH + sequential CHAIN OUT.
+const LINKS: LinkDef[] = [
+  { key: "in0", kind: "in", to: "acq", seq: 0, color: ACCENT_A, d: "M232 160 C 412 160, 392 438, 564 438" },
+  { key: "in1", kind: "in", to: "acq", seq: 1, color: ACCENT_A, d: "M232 345 C 412 345, 392 438, 564 438" },
+  { key: "in2", kind: "in", to: "acq", seq: 2, color: ACCENT_A, d: "M232 530 C 412 530, 392 438, 564 438" },
+  { key: "in3", kind: "in", to: "acq", seq: 3, color: ACCENT_A, d: "M232 715 C 412 715, 392 438, 564 438" },
+  { key: "inF", kind: "in", to: "acq", seq: 4, color: ACCENT_A, d: "M1048 160 C 860 160, 880 415, 716 415" },
+  { key: "br", kind: "branch", to: "b4", seq: 0, color: ACCENT_B, d: "M712 478 C 860 478, 900 530, 1048 530" },
+  { key: "c0", kind: "chain", to: "b3", seq: 0, color: ACCENT_B, d: "M716 460 C 850 460, 850 345, 1048 345" },
+  { key: "c1", kind: "chain", to: "b4", seq: 1, color: ACCENT_B, d: "M1172 345 C 1218 408, 1218 470, 1172 530" },
+  { key: "c2", kind: "chain", to: "b5", seq: 2, color: ACCENT_B, d: "M1172 530 C 1218 595, 1218 655, 1172 715" },
+];
 
-// Approximate radii in viewBox units (the SVG uses viewBox 1000×600
-// with preserveAspectRatio="none"). These don't have to match the
-// rendered pixel radii exactly — the goal is only that connection
-// strokes never appear to enter the visual disc of a bubble.
-const HUB_RADIUS_VB = 56;
-const NODE_RADIUS_VB = 38;
-
-// ---------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------
-/**
- * Build a smooth cubic-bezier path whose endpoints sit ON the borders
- * of the source/target circles (border trim via the direction unit
- * vector).
- *
- * The control points are biased horizontally so A→Hub and Hub→B
- * connections render as clean, readable arcs that visually leave the
- * source bubble on its right side and enter the destination bubble on
- * its left side — exactly the bubble-graph aesthetic the user asked
- * for.
- */
-function buildBorderPath(from: GraphNode, to: GraphNode): string {
-  const fromR = from.isHub ? HUB_RADIUS_VB : NODE_RADIUS_VB;
-  const toR = to.isHub ? HUB_RADIUS_VB : NODE_RADIUS_VB;
-
-  const x1 = (from.cx / 100) * 1000;
-  const y1 = (from.cy / 100) * 600;
-  const x2 = (to.cx / 100) * 1000;
-  const y2 = (to.cy / 100) * 600;
-
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-  const ux = dx / dist;
-  const uy = dy / dist;
-
-  // Border-trim start / end points
-  const sx = x1 + ux * fromR;
-  const sy = y1 + uy * fromR;
-  const ex = x2 - ux * toR;
-  const ey = y2 - uy * toR;
-
-  // Horizontal-biased control points — gives a soft S-curve.
-  const c1x = sx + (ex - sx) * 0.55;
-  const c1y = sy;
-  const c2x = ex - (ex - sx) * 0.55;
-  const c2y = ey;
-
-  return `M ${sx.toFixed(1)} ${sy.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+interface PathInfo {
+  el: SVGPathElement;
+  len: number;
+  kind: string;
+  to: string;
+  seq: number;
+  color: string;
 }
 
-// ---------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------
+interface Particle {
+  el: HTMLDivElement;
+  path: SVGPathElement;
+  len: number;
+  d: number;
+  sp: number;
+  acc: number;
+  to: string;
+  delay: number;
+  chain: number | null;
+}
+
+const MONO =
+  "'Space Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
+
 export function TwoTracksGraph(): JSX.Element {
-  const { t } = useI18n();
-  // Wrapped in useMemo so the reference is stable across renders — the
-  // `active` useMemo below depends on these, and a fresh array each render
-  // (from the `|| []` fallback) would defeat its memoisation.
-  const trackA = useMemo<TranslatedStep[]>(
-    () => (t("roadmapTracks.trackA.steps") as TranslatedStep[]) || [],
-    [t],
-  );
-  const trackB = useMemo<TranslatedStep[]>(
-    () => (t("roadmapTracks.trackB.steps") as TranslatedStep[]) || [],
-    [t],
-  );
+  const outerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const meteorRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<NodeDef | null>(null);
 
-  const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
-  /** Current phase index (0..10). */
-  const [phase, setPhase] = useState<number>(0);
+  // ---- Scale the 1280×820 stage to the container width (no flash via
+  // useLayoutEffect, kept in sync with a ResizeObserver). ----
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    const stage = stageRef.current;
+    if (!outer || !stage) return undefined;
+    const apply = (): void => {
+      const w = outer.clientWidth;
+      if (w > 0) stage.style.transform = `scale(${w / STAGE_W})`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, []);
 
-  // Loop driver — recursive setTimeout so each phase can have its own
-  // dwell time. Cleaned up on unmount.
-  const cancelledRef = useRef<boolean>(false);
+  // ---- Holographic hover: 3D tilt toward the cursor + foil + glare. ----
+  const onCardMove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const c = e.currentTarget;
+    const r = c.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    const rx = (py - 0.5) * -16;
+    const ry = (px - 0.5) * 16;
+    c.style.transform = `translateY(-10px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.07)`;
+    const wrap = c.parentElement;
+    if (wrap) wrap.style.zIndex = "60";
+    const holo = c.querySelector<HTMLElement>("[data-holo]");
+    const glare = c.querySelector<HTMLElement>("[data-glare]");
+    if (holo) {
+      holo.style.opacity = String(HOLO_STRENGTH);
+      holo.style.transform = `translate(${(px - 0.5) * 30}%, ${(py - 0.5) * 30}%) scale(1.6)`;
+    }
+    if (glare) {
+      glare.style.opacity = String(HOLO_STRENGTH);
+      glare.style.background = `radial-gradient(circle at ${px * 100}% ${py * 100}%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%)`;
+    }
+  }, []);
+
+  const onCardLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const c = e.currentTarget;
+    c.style.transform = "";
+    const wrap = c.parentElement;
+    if (wrap) wrap.style.zIndex = "5";
+    const holo = c.querySelector<HTMLElement>("[data-holo]");
+    const glare = c.querySelector<HTMLElement>("[data-glare]");
+    if (holo) holo.style.opacity = "0";
+    if (glare) glare.style.opacity = "0";
+  }, []);
+
+  // ---- Meteor particle engine (one rAF loop). ----
   useEffect(() => {
-    cancelledRef.current = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let current = 0;
+    const stage = stageRef.current;
+    const layer = meteorRef.current;
+    if (!stage || !layer) return undefined;
+    const reduce =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return undefined; // keep a static board
 
-    const advance = (): void => {
-      if (cancelledRef.current) return;
-      // Compute the NEXT phase. After TOTAL_PHASES we reset to 0.
-      current = current >= TOTAL_PHASES ? 0 : current + 1;
-      setPhase(current);
-      // Phase 10 (the final pause) gets a longer dwell.
-      const dwell = current === TOTAL_PHASES ? FINAL_PAUSE_MS : PHASE_DURATION_MS;
-      timer = setTimeout(advance, dwell);
+    const paths: PathInfo[] = Array.from(
+      stage.querySelectorAll<SVGPathElement>("path[data-link]")
+    ).map((el) => ({
+      el,
+      len: el.getTotalLength(),
+      kind: el.getAttribute("data-kind") || "",
+      to: el.getAttribute("data-to") || "",
+      seq: Number(el.getAttribute("data-seq") || 0),
+      color: el.getAttribute("stroke") || ACCENT_A,
+    }));
+    const inPaths = paths.filter((p) => p.kind === "in");
+    const chainPaths = paths
+      .filter((p) => p.kind === "chain")
+      .sort((a, b) => a.seq - b.seq);
+    const branchPaths = paths.filter((p) => p.kind === "branch");
+
+    let parts: Particle[] = [];
+    let aT = 0.4; // input salvo timer
+    let cT = 0.6; // chain relay timer
+    let brT = 0.9; // branch timer
+    let last = performance.now();
+    let raf = 0;
+
+    const spawn = (
+      p: PathInfo,
+      color: string,
+      to: string,
+      delay: number,
+      chain: number | null
+    ): void => {
+      if (parts.length > MAX_PARTICLES) return;
+      const el = document.createElement("div");
+      el.style.cssText = `position:absolute;height:3.6px;border-radius:3px;background:linear-gradient(to left, ${color} 0%, ${color} 12%, rgba(0,0,0,0) 100%);filter:drop-shadow(0 0 5px ${color});transform-origin:100% 50%;pointer-events:none;opacity:0;will-change:transform,width`;
+      layer.appendChild(el);
+      parts.push({
+        el,
+        path: p.el,
+        len: p.len,
+        d: 0,
+        sp: 120 + Math.random() * 70,
+        acc: 110 + Math.random() * 150,
+        to,
+        delay,
+        chain,
+      });
+    };
+    const spawnChain = (idx: number): void => {
+      const p = chainPaths[idx];
+      if (p) spawn(p, ACCENT_B, p.to, 0, idx);
+    };
+    const spawnBranch = (): void => {
+      const p = branchPaths[0];
+      if (p) spawn(p, ACCENT_B, p.to, 0, null);
     };
 
-    // Initial kick — a short delay so the graph mounts in its reset
-    // state, giving the viewer a beat before the sequence begins.
-    timer = setTimeout(advance, 600);
+    // Flash a destination card's glow ring when a meteor arrives.
+    const pulse = (id: string): void => {
+      const w = stage.querySelector(`[data-node="${id}"]`);
+      const g = w?.querySelector<HTMLElement>("[data-glow]");
+      if (!g) return;
+      g.style.transition = "none";
+      g.style.opacity = id === "b5" ? "1" : "0.8"; // finale flashes brighter
+      g.getBoundingClientRect(); // force reflow so the fade restarts
+      g.style.transition = "opacity .6s ease";
+      g.style.opacity = "0";
+    };
 
-    return (): void => {
-      cancelledRef.current = true;
-      if (timer) clearTimeout(timer);
+    const loop = (now: number): void => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      // Inputs (P1..P4 + Foundation) → Acquisition: bursty purchase salvos.
+      aT -= dt;
+      if (aT <= 0) {
+        aT = (0.7 + Math.random() * 1.1) / FLOW_RATE;
+        const p = inPaths[Math.floor(Math.random() * inPaths.length)];
+        if (p) {
+          const count = 2 + Math.floor(Math.random() * 3);
+          for (let i = 0; i < count; i++) spawn(p, p.color, "acq", i * 0.14, null);
+        }
+      }
+      // Acquisition → Silent Burn → Community → Curtain Reveal: steady relay.
+      cT -= dt;
+      if (cT <= 0) {
+        cT = 0.5 / FLOW_RATE;
+        spawnChain(0);
+      }
+      // Acquisition → Community: direct branch.
+      brT -= dt;
+      if (brT <= 0) {
+        brT = 0.7 / FLOW_RATE;
+        spawnBranch();
+      }
+
+      // Advance meteors (accelerating droplets with a speed-scaled trail).
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const pt = parts[i];
+        if (pt.delay > 0) {
+          pt.delay -= dt;
+          continue;
+        }
+        pt.sp += pt.acc * dt;
+        pt.d += pt.sp * dt;
+        if (pt.d >= pt.len) {
+          pulse(pt.to);
+          const ch = pt.chain;
+          pt.el.remove();
+          parts.splice(i, 1);
+          if (ch != null && ch + 1 < chainPaths.length) spawnChain(ch + 1);
+          continue;
+        }
+        const P = pt.path.getPointAtLength(pt.d);
+        const Pa = pt.path.getPointAtLength(Math.min(pt.len, pt.d + 2));
+        const ang = (Math.atan2(Pa.y - P.y, Pa.x - P.x) * 180) / Math.PI;
+        const tail = Math.max(9, Math.min(64, pt.sp * 0.16));
+        pt.el.style.width = `${tail}px`;
+        pt.el.style.left = `${P.x}px`;
+        pt.el.style.top = `${P.y}px`;
+        pt.el.style.transform = `translate(-100%,-50%) rotate(${ang}deg)`;
+        const prog = pt.d / pt.len;
+        pt.el.style.opacity = String(
+          prog < 0.12 ? prog / 0.12 : prog > 0.9 ? (1 - prog) * 10 : 1
+        );
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      parts.forEach((p) => p.el.remove());
+      parts = [];
     };
   }, []);
 
-  // Memoised maps (node-by-id + path cache).
-  const nodeMap = useMemo<Record<string, GraphNode>>(() => {
-    const m: Record<string, GraphNode> = {};
-    for (const n of ALL_NODES) m[n.id] = n;
-    return m;
-  }, []);
-
-  const connectionPaths = useMemo(() => {
-    return CONNECTIONS.map((c) => {
-      const from = nodeMap[c.from];
-      const to = nodeMap[c.to];
-      return { ...c, d: from && to ? buildBorderPath(from, to) : "" };
-    });
-  }, [nodeMap]);
-
-  // Resolve the active node for the modal (decoupled from sequence).
-  const active = useMemo(() => {
-    if (!activeNodeId) return null;
-    const node = nodeMap[activeNodeId];
-    if (!node) return null;
-    const arr = node.track === "A" ? trackA : trackB;
-    const step = arr[node.i18nIndex];
-    if (!step) return null;
-    return { node, step };
-  }, [activeNodeId, nodeMap, trackA, trackB]);
-
-  // Phase-derived helpers
-  const isConnectionVisible = (connectionPhase: number): boolean => {
-    if (phase === 0) return false; // reset
-    return phase >= connectionPhase;
-  };
-  const isNodeAmplified = (nodeActivatePhase: number): boolean => {
-    if (phase === 0) return false; // reset
-    return phase >= nodeActivatePhase;
-  };
+  // ---- Escape closes the detail modal. ----
+  useEffect(() => {
+    if (!selected) return undefined;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   return (
-    <>
+    <div
+      ref={outerRef}
+      data-testid="two-tracks-graph"
+      style={{ position: "relative", width: "100%", aspectRatio: `${STAGE_W} / ${STAGE_H}` }}
+    >
       <div
-        className="rounded-2xl border border-border/60 bg-card/30 backdrop-blur-sm two-tracks-graph overflow-hidden"
-        data-testid="two-tracks-graph"
+        ref={stageRef}
+        className="ttg-stage"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: STAGE_W,
+          height: STAGE_H,
+          transformOrigin: "top left",
+          fontFamily: MONO,
+        }}
       >
-        {/* ────────── Header (column titles, OUT of the canvas) ────────── */}
+        {/* Header bar */}
         <div
-          className="flex items-center justify-between gap-3 px-5 sm:px-7 py-3 border-b border-border/40 bg-background/40"
-          data-testid="ttg-header"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 54,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 26px",
+            borderBottom: "1px solid rgba(120,160,200,.1)",
+            zIndex: 30,
+            fontSize: 12,
+            letterSpacing: "2.5px",
+          }}
         >
-          <div
-            className="font-mono text-[9px] sm:text-[11px] uppercase tracking-[0.28em] text-amber-300/90"
-            data-testid="ttg-track-a-title"
-          >
-            <span className="hidden sm:inline">
-              {(t("roadmapTracks.trackA.label") as string) || "TRACK A"}
-            </span>
-            <span className="sm:hidden">Track A</span>
-          </div>
-          <div
-            className="hidden md:flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-foreground/45"
-            aria-hidden
-          >
-            <Sparkles className="h-3 w-3" />
-            Acquisition / Fees
-          </div>
-          <div
-            className="font-mono text-[9px] sm:text-[11px] uppercase tracking-[0.28em] text-cyan-300/90"
-            data-testid="ttg-track-b-title"
-          >
-            <span className="hidden sm:inline">
-              {(t("roadmapTracks.trackB.label") as string) || "TRACK B"}
-            </span>
-            <span className="sm:hidden">Track B</span>
-          </div>
+          <span style={{ color: ACCENT_A }}>TRACK A · PRODUCTS</span>
+          <span style={{ color: "#5d6f82" }}>◇ ACQUISITION / FEES</span>
+          <span style={{ color: ACCENT_B }}>TRACK B · SECRET PROJECT</span>
         </div>
 
-        {/* ────────── Canvas (bubbles + animated connections) ────────── */}
-        <div
-          className="relative w-full"
-          style={{ aspectRatio: "16 / 9" }}
-          data-testid="ttg-canvas"
+        {/* Links */}
+        <svg
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: STAGE_W,
+            height: STAGE_H,
+            pointerEvents: "none",
+            zIndex: 2,
+          }}
+          aria-hidden="true"
         >
-          {/* Decorative dual-tone wash (kept faint per design rule) */}
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(40% 60% at 14% 50%, rgba(245,158,11,0.10) 0%, rgba(0,0,0,0) 70%), radial-gradient(40% 60% at 86% 50%, rgba(45,212,191,0.10) 0%, rgba(0,0,0,0) 70%), radial-gradient(28% 36% at 50% 50%, rgba(45,212,191,0.10) 0%, rgba(0,0,0,0) 70%)",
-            }}
-          />
-
-          {/* SVG connections layer */}
-          <svg
-            viewBox="0 0 1000 600"
-            preserveAspectRatio="none"
-            className="absolute inset-0 w-full h-full"
-            aria-hidden
-          >
-            <defs>
-              <linearGradient id="grad-a-to-b" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(245, 158, 11, 0.95)" />
-                <stop offset="55%" stopColor="rgba(245, 158, 11, 0.65)" />
-                <stop offset="100%" stopColor="rgba(45, 212, 191, 0.80)" />
-              </linearGradient>
-              <linearGradient id="grad-hub-out" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(45, 212, 191, 0.85)" />
-                <stop offset="100%" stopColor="rgba(45, 212, 191, 0.50)" />
-              </linearGradient>
-            </defs>
-
-            {connectionPaths.map((c) => {
-              if (!c.d) return null;
-              const visible = isConnectionVisible(c.phase);
-              const stroke =
-                nodeMap[c.from].track === "A"
-                  ? "url(#grad-a-to-b)"
-                  : "url(#grad-hub-out)";
-              return (
-                <g key={`${c.from}-${c.to}`}>
-                  {/* Faint base line — only when visible */}
-                  <motion.path
-                    d={c.d}
-                    fill="none"
-                    stroke={stroke}
-                    strokeWidth={1.4}
-                    strokeLinecap="round"
-                    initial={false}
-                    animate={{
-                      pathLength: visible ? 1 : 0,
-                      opacity: visible ? 0.55 : 0,
-                    }}
-                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                  {/* Flowing dashes — animates only when visible */}
-                  <motion.path
-                    d={c.d}
-                    fill="none"
-                    stroke={stroke}
-                    strokeWidth={2.4}
-                    strokeLinecap="round"
-                    strokeDasharray="4 14"
-                    initial={false}
-                    animate={{
-                      pathLength: visible ? 1 : 0,
-                      opacity: visible ? 1 : 0,
-                    }}
-                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                    className={visible ? "ttg-flow" : undefined}
-                    style={{ animationDuration: `${c.flowDuration}s` }}
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Nodes layer — absolute-positioned buttons */}
-          {ALL_NODES.map((node) => {
-            const arr = node.track === "A" ? trackA : trackB;
-            const step = arr[node.i18nIndex] || { code: "", label: node.id, note: "" };
-            const amplified = isNodeAmplified(node.activatePhase);
-            const colorRing =
-              node.track === "A"
-                ? "border-amber-500/55 bg-amber-500/12 text-amber-200 ring-amber-500/30 focus-visible:ring-amber-400/70"
-                : "border-cyan-500/55 bg-cyan-500/12 text-cyan-200 ring-cyan-500/30 focus-visible:ring-cyan-400/70";
-            const colorRingActive =
-              node.track === "A"
-                ? "border-amber-400/90 bg-amber-500/22 text-amber-50 ring-amber-400/50 shadow-[0_0_0_6px_rgba(245,158,11,0.10),_0_18px_40px_rgba(245,158,11,0.18)]"
-                : "border-cyan-400/90 bg-cyan-500/22 text-cyan-50 ring-cyan-400/50 shadow-[0_0_0_6px_rgba(45,212,191,0.10),_0_18px_40px_rgba(45,212,191,0.18)]";
-            const labelColor =
-              node.track === "A" ? "text-amber-300/85" : "text-cyan-300/85";
-            // Hub gets bigger base size + bigger amplified size.
-            const sizeBase = node.isHub
-              ? "h-14 w-14 sm:h-20 sm:w-20"
-              : "h-11 w-11 sm:h-14 sm:w-14";
-            const iconSize = node.isHub
-              ? "h-6 w-6 sm:h-8 sm:w-8"
-              : "h-4 w-4 sm:h-6 sm:w-6";
-            return (
-              <button
-                key={node.id}
-                type="button"
-                onClick={() => setActiveNodeId(node.id)}
-                aria-label={`${step.code ? step.code + " — " : ""}${step.label}`}
-                data-testid={`ttg-node-${node.id}`}
-                className="absolute -translate-x-1/2 -translate-y-1/2 ttg-node-wrap focus:outline-none"
+          {LINKS.map((ln) => (
+            <g key={ln.key}>
+              <path
+                d={ln.d}
+                stroke={ln.color}
+                style={{ fill: "none", strokeWidth: 1.1, opacity: 0.2, strokeLinecap: "round" }}
+              />
+              <path
+                d={ln.d}
+                data-link="1"
+                data-kind={ln.kind}
+                data-to={ln.to}
+                data-seq={ln.seq}
+                stroke={ln.color}
+                className="ttg-dash"
                 style={{
-                  left: `${node.cx}%`,
-                  top: `${node.cy}%`,
-                  ["--ttg-float-duration" as string]: `${node.floatDuration}s`,
-                  ["--ttg-float-delay" as string]: `${node.floatDelay}s`,
+                  fill: "none",
+                  strokeWidth: 1.3,
+                  opacity: 0.4,
+                  strokeLinecap: "round",
+                  strokeDasharray: "1 9",
                 }}
-              >
-                {/* Ambient float wrapper (paused when amplified to avoid
-                    competing with the grow motion). */}
-                <span
-                  className={`${amplified ? "" : "ttg-node-float"} inline-block`}
-                  style={{ willChange: "transform" }}
-                >
-                  <motion.span
-                    initial={false}
-                    animate={{
-                      scale: amplified ? (node.isHub ? 1.18 : 1.22) : 1,
-                    }}
-                    transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                    className={`relative grid place-items-center rounded-full border ring-4 transition-colors duration-300 ${sizeBase} ${
-                      amplified ? colorRingActive : colorRing
-                    }`}
-                  >
-                    {/* Pulse ring (only on the hub once it's amplified) */}
-                    {node.isHub && amplified && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-full border border-cyan-400/45 ttg-pulse"
-                      />
-                    )}
-                    <node.Icon className={iconSize} aria-hidden />
-                  </motion.span>
-                </span>
-                <span
-                  className={`block mt-1.5 font-mono text-[8.5px] sm:text-[10px] uppercase tracking-[0.18em] text-center ${labelColor} max-w-[92px] sm:max-w-[120px] truncate`}
-                >
-                  {step.code ? `${step.code} · ` : ""}
-                  {step.label}
-                </span>
-              </button>
-            );
-          })}
+              />
+            </g>
+          ))}
+        </svg>
 
-          {/* Helper hint anchored at the bottom-right (compact, non-blocking) */}
+        {/* Meteor overlay (particles appended here each frame) */}
+        <div
+          ref={meteorRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: STAGE_W,
+            height: STAGE_H,
+            pointerEvents: "none",
+            zIndex: 3,
+          }}
+        />
+
+        {/* Cards */}
+        {NODES.map((n) => (
           <div
-            className="absolute bottom-2 right-3 font-mono text-[8.5px] sm:text-[10px] uppercase tracking-[0.22em] text-foreground/45 pointer-events-none select-none"
-            data-testid="ttg-helper-hint"
+            key={n.id}
+            data-node={n.id}
+            style={{
+              position: "absolute",
+              left: n.cx,
+              top: n.cy,
+              width: n.w,
+              height: n.h,
+              transform: "translate(-50%,-50%)",
+              perspective: "1100px",
+              zIndex: 5,
+            }}
           >
-            <Sparkles className="inline h-3 w-3 mr-1 -translate-y-px" aria-hidden />
-            {t("roadmapTracks.modal.helperHint")}
+            <div
+              data-glow
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: 4,
+                boxShadow: `0 0 0 1.5px ${ACCENT_A}, 0 0 24px 5px ${ACCENT_A}`,
+                opacity: 0,
+                transition: "opacity .6s ease",
+                pointerEvents: "none",
+              }}
+            />
+            <button
+              type="button"
+              className="ttg-card"
+              onMouseMove={onCardMove}
+              onMouseLeave={onCardLeave}
+              onClick={() => setSelected(n)}
+              aria-label={`${n.name} — open detail card`}
+              style={{
+                position: "relative",
+                display: "block",
+                width: "100%",
+                height: "100%",
+                padding: 0,
+                border: 0,
+                background: "transparent",
+                borderRadius: 5,
+                overflow: "hidden",
+                cursor: "pointer",
+                transformStyle: "preserve-3d",
+                boxShadow: "0 8px 22px rgba(0,0,0,.6)",
+              }}
+            >
+              <img
+                src={`${CARD_BASE}/${n.front}.webp`}
+                alt={n.name}
+                draggable={false}
+                loading="lazy"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                data-holo
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 5,
+                  opacity: 0,
+                  transition: "opacity .25s",
+                  mixBlendMode: "color-dodge",
+                  background:
+                    "conic-gradient(from 0deg, rgba(255,70,160,.5), rgba(80,200,255,.5), rgba(120,255,180,.5), rgba(255,225,90,.5), rgba(255,70,160,.5))",
+                  backgroundSize: "160% 160%",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                data-glare
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 5,
+                  opacity: 0,
+                  transition: "opacity .2s",
+                  mixBlendMode: "overlay",
+                  pointerEvents: "none",
+                }}
+              />
+            </button>
           </div>
+        ))}
+
+        {/* Footer hint */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 10,
+            color: "#4a5a6e",
+            letterSpacing: "1.5px",
+            zIndex: 30,
+            whiteSpace: "nowrap",
+          }}
+        >
+          ◇ HOVER TO TILT · CLICK TO FLIP THE CARD
         </div>
       </div>
 
-      {/* ────────── Detail modal ────────── */}
-      <Dialog
-        open={!!active}
-        onOpenChange={(open: boolean) => {
-          if (!open) setActiveNodeId(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md" data-testid="ttg-modal">
-          {active && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`grid place-items-center h-12 w-12 rounded-full border ${
-                      active.node.track === "A"
-                        ? "border-amber-500/45 bg-amber-500/12 text-amber-300"
-                        : "border-cyan-500/45 bg-cyan-500/12 text-cyan-300"
-                    }`}
-                    aria-hidden
-                  >
-                    <active.node.Icon className="h-6 w-6" />
-                  </span>
-                  <div className="min-w-0">
-                    <Badge
-                      variant="outline"
-                      className={`font-mono text-[9px] uppercase tracking-[0.22em] ${
-                        active.node.track === "A"
-                          ? "border-amber-500/45 text-amber-300/95 bg-amber-500/[0.06]"
-                          : "border-cyan-500/45 text-cyan-300/95 bg-cyan-500/[0.06]"
-                      }`}
-                      data-testid="ttg-modal-track-badge"
-                    >
-                      {active.node.track === "A"
-                        ? t("roadmapTracks.modal.productTrackLabel")
-                        : t("roadmapTracks.modal.secretTrackLabel")}
-                    </Badge>
-                    <DialogTitle
-                      className="mt-2 font-display font-semibold text-lg"
-                      data-testid="ttg-modal-title"
-                    >
-                      {active.step.code ? `${active.step.code} · ` : ""}
-                      {active.step.label}
-                    </DialogTitle>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              {active.step.wallet && (
-                <div
-                  className="mt-2 flex items-center gap-2"
-                  data-testid="ttg-modal-wallet"
-                >
-                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-foreground/55">
-                    {t("roadmapTracks.modal.walletLabel")}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="font-mono text-[10px] uppercase tracking-[0.22em] border-cyan-500/40 text-cyan-200 bg-cyan-500/[0.06]"
-                  >
-                    {active.step.wallet}
-                  </Badge>
-                </div>
-              )}
-
-              <DialogDescription
-                className="mt-3 text-sm leading-relaxed text-foreground/80 font-body"
-                data-testid="ttg-modal-note"
-              >
-                {active.step.note}
-              </DialogDescription>
-
-              <div className="mt-5 flex justify-end">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveNodeId(null)}
-                  className="gap-2"
-                  data-testid="ttg-modal-close"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                  {t("roadmapTracks.modal.closeCta")}
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+      {/* Detail modal (rendered outside the scaled stage, real size) */}
+      {selected && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${selected.name} — detail card`}
+          onClick={() => setSelected(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(3,6,12,.74)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
+            <img
+              src={`${CARD_BASE}/${selected.back}.webp`}
+              alt={`${selected.name} — detail`}
+              style={{
+                display: "block",
+                height: 680,
+                maxHeight: "84vh",
+                width: "auto",
+                borderRadius: 8,
+                boxShadow: "0 30px 90px rgba(0,0,0,.8)",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="Close"
+              style={{
+                position: "absolute",
+                top: -13,
+                right: -13,
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                background: "#0c1626",
+                border: `1px solid ${ACCENT_A}`,
+                color: ACCENT_A,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: 13,
+                lineHeight: 1,
+                fontFamily: MONO,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,96 +1,51 @@
-/* TwoTracksGraph.css — Sprint 20.3 sequenced bubble-graph animations.
+/* TwoTracksGraph.css — "Track Flow v2 Meteor" interactive board.
  *
- * Three small, GPU-friendly CSS keyframes complement the React-driven
- * sequence:
- *   - .ttg-flow        : moving dashes along an SVG path (data flow).
- *   - .ttg-node-float  : ambient micro-float on inactive bubbles.
- *   - .ttg-pulse       : outward pulse ring on the central hub when
- *                        it's in the "active" (amplified) state.
- *
- * Only ``transform``, ``opacity`` and ``stroke-dashoffset`` are
- * animated — keeps the canvas crisp at 60 fps even with all 8 lines
- * + 9 bubbles rendered.
- *
- * ``prefers-reduced-motion`` pauses every animation while preserving
- * the resting visual state (so the network is still readable for
- * users who disabled motion).
+ * Faithful re-implementation of the design handoff
+ * (design_handoff_track_flow_meteor). The 1280x820 stage is scaled to
+ * fit its container (transform set in JS via ResizeObserver). Geometry,
+ * colours and per-element styles live inline in TwoTracksGraph.tsx to
+ * match the spec values verbatim; this file holds the keyframes, the
+ * layered stage background, and the reduced-motion fallback.
  */
 
-/* ── Flowing dashes on SVG paths ──────────────────────────────────── */
-@keyframes ttg-flow-anim {
+@keyframes ttgDashflow {
   to {
-    stroke-dashoffset: -180;
+    stroke-dashoffset: -15;
   }
 }
 
-.ttg-flow {
-  stroke-dashoffset: 0;
-  animation-name: ttg-flow-anim;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+/* Layered stage backdrop: warm centre glow, edge vignette, dot grid,
+   fine scanlines, faint vertical rules. */
+.ttg-stage {
+  background-color: #06080f;
+  background-image:
+    radial-gradient(120% 82% at 50% 40%, rgba(230, 179, 74, 0.08), transparent 56%),
+    radial-gradient(150% 130% at 50% 52%, transparent 50%, rgba(0, 0, 0, 0.62)),
+    radial-gradient(rgba(150, 175, 200, 0.05) 1px, transparent 1.6px),
+    repeating-linear-gradient(0deg, rgba(120, 150, 180, 0.022) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(120, 150, 180, 0.016) 0 1px, transparent 1px 64px);
+  background-size: auto, auto, 26px 26px, auto, auto;
+  border: 1px solid #1b2c40;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
 }
 
-/* ── Ambient float for inactive bubbles ───────────────────────────── */
-@keyframes ttg-float-anim {
-  0%   { transform: translate(0, 0); }
-  25%  { transform: translate(1.5px, -3px); }
-  50%  { transform: translate(0, -5px); }
-  75%  { transform: translate(-1.5px, -2px); }
-  100% { transform: translate(0, 0); }
+/* Animated dashed overlay on each link (directional crawl). */
+.ttg-dash {
+  animation: ttgDashflow 1.4s linear infinite;
 }
 
-.ttg-node-float {
-  animation-name: ttg-float-anim;
-  animation-duration: var(--ttg-float-duration, 6s);
-  animation-delay: var(--ttg-float-delay, 0s);
-  animation-iteration-count: infinite;
-  animation-timing-function: ease-in-out;
+/* Card hover-tilt easing. The transform itself is set inline in JS. */
+.ttg-card {
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* ── Pulse ring on the active hub (Acquisition) ───────────────────── */
-@keyframes ttg-pulse-anim {
-  0%   { transform: scale(1);    opacity: 0.65; }
-  70%  { transform: scale(1.45); opacity: 0;    }
-  100% { transform: scale(1.45); opacity: 0;    }
-}
-
-.ttg-pulse {
-  animation: ttg-pulse-anim 2.2s ease-out infinite;
-  pointer-events: none;
-}
-
-/* ── Interactive bubble wrapper (a11y + touch target) ─────────────── */
-.ttg-node-wrap {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  padding: 6px;
-  cursor: pointer;
-  outline: none;
-  transform-origin: center;
-  transition: transform 200ms ease;
-  /* Ensure tap targets stay ≥ 44px on mobile (the inner span is the
-     visual disc; the wrap's padding extends the hit area). */
-  min-width: 44px;
-  min-height: 44px;
-}
-.ttg-node-wrap:hover,
-.ttg-node-wrap:focus-visible {
-  transform: translate(-50%, -50%) scale(1.05);
-}
-.ttg-node-wrap:active {
-  transform: translate(-50%, -50%) scale(0.97);
-}
-
-/* ── Respect reduced-motion preferences ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .ttg-flow,
-  .ttg-node-float,
-  .ttg-pulse {
+  .ttg-dash {
     animation: none !important;
   }
-  .ttg-node-wrap:hover,
-  .ttg-node-wrap:focus-visible {
-    transform: translate(-50%, -50%);
+  .ttg-card {
+    transition: none !important;
   }
 }
