@@ -15,7 +15,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
   ArrowRight,
   FileLock2,
   Lock,
@@ -28,7 +27,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
-import ThemeToggle from "@/components/landing/ThemeToggle";
+import TopNav from "@/components/landing/TopNav";
+import SocialBar from "@/components/landing/SocialBar";
 import { useMissionConfig } from "@/hooks/useMissionConfig";
 import { MissionParticipationDialog } from "@/components/missions/MissionParticipationDialog";
 import {
@@ -304,18 +304,9 @@ const Missions: React.FC = () => {
         }
       `}</style>
 
-      <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-4 flex items-center justify-between">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/55 hover:text-foreground transition-colors"
-          data-testid="missions-back-link"
-        >
-          <ArrowLeft size={14} /> {t("common.backHome") as string}
-        </Link>
-        <ThemeToggle />
-      </header>
+      <TopNav />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-24 pt-8">
         {/* ---- Hero ---- */}
         <section className="pt-6 pb-10 border-b border-foreground/10">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-[#FF3B3B] font-mono mb-3">
@@ -507,6 +498,14 @@ const Missions: React.FC = () => {
               {t("missionsPage.giveawayCta.button") as string} <ArrowRight size={12} />
             </Link>
           </div>
+        </section>
+
+        {/* Official channels — replicated site-wide via SocialBar. */}
+        <section className="pt-8 mt-6 border-t border-foreground/10 flex flex-col items-center gap-3" data-testid="missions-socials">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/45">
+            {t("socials.kicker") as string}
+          </p>
+          <SocialBar />
         </section>
       </main>
     </div>

@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Radio, ShieldCheck, Users, MessageSquare, Sparkles, ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import SocialBar from "@/components/landing/SocialBar";
 import ActivityHeatmap from "@/components/landing/ActivityHeatmap";
 import { LanguageToggle } from "@/components/landing/LanguageToggle";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -586,6 +587,14 @@ export default function PublicStats() {
               · {new Date(data.generated_at).toLocaleString()}
             </span>
           )}
+        </div>
+
+        {/* Official channels — replicated site-wide via SocialBar. */}
+        <div className="mt-10 pt-8 border-t border-border/60 flex flex-col items-center gap-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            {t("socials.kicker") as string}
+          </p>
+          <SocialBar />
         </div>
       </main>
     </div>

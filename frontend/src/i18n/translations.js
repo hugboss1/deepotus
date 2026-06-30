@@ -824,9 +824,17 @@ export const translations = {
     socials: {
       kicker: "— CANAUX OFFICIELS",
       title: "Rejoignez la campagne",
-      subtitle: "Le Prophète transmet sur deux fréquences chiffrées.",
-      x: { name: "X / Twitter", handle: "@deepotus_ai" },
+      subtitle: "Le Prophète transmet sur plusieurs fréquences chiffrées.",
+      soon: "Bientôt",
+      soonToast: {
+        title: "Compte en création",
+        body: "Ce canal ouvre bientôt. Reviens d'ici quelques jours.",
+      },
+      x: { name: "X", handle: "@deepotus_ai" },
       telegram: { name: "Telegram", handle: "t.me/deepotus" },
+      instagram: { name: "Instagram", handle: "@deepotus" },
+      discord: { name: "Discord", handle: "discord.gg/deepotus" },
+      youtube: { name: "YouTube", handle: "@deepotus" },
     },
 
     // ---- Footer / disclaimer ----
@@ -2460,9 +2468,17 @@ export const translations = {
     socials: {
       kicker: "— OFFICIAL CHANNELS",
       title: "Join the campaign",
-      subtitle: "The Prophet transmits on two encrypted frequencies.",
-      x: { name: "X / Twitter", handle: "@deepotus_ai" },
+      subtitle: "The Prophet transmits on several encrypted frequencies.",
+      soon: "Soon",
+      soonToast: {
+        title: "Account being created",
+        body: "This channel opens soon. Check back in a few days.",
+      },
+      x: { name: "X", handle: "@deepotus_ai" },
       telegram: { name: "Telegram", handle: "t.me/deepotus" },
+      instagram: { name: "Instagram", handle: "@deepotus" },
+      discord: { name: "Discord", handle: "discord.gg/deepotus" },
+      youtube: { name: "YouTube", handle: "@deepotus" },
     },
 
     footer: {

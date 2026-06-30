@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "./LanguageToggle";
@@ -10,7 +11,8 @@ const NAV_ITEMS = [
   { id: "manifesto", key: "nav.manifesto" },
   { id: "vault", key: "nav.vault" },
   { id: "chat", key: "nav.chat" },
-  { id: "mission", key: "nav.mission" },
+  // Mission is a dedicated page (/missions), not an in-landing anchor.
+  { id: "mission", key: "nav.mission", href: "/missions" },
   { id: "tokenomics", key: "nav.tokenomics" },
   // Sprint 20 — Ecosystem hub (Roman / boardgame / video gen / mobile)
   { id: "ecosystem", key: "nav.ecosystem", href: "/ecosysteme" },
@@ -27,6 +29,8 @@ const NAV_ITEMS = [
 
 export default function TopNav() {
   const { t } = useI18n();
+  const { pathname } = useLocation();
+  const onLanding = pathname === "/";
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -36,6 +40,15 @@ export default function TopNav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // In-landing sections are scroll anchors. From any other route the
+  // anchor must first navigate home, hence the "/#id" form. Explicit
+  // ``href`` entries (routes like /missions, /transparency) are used
+  // verbatim. The logo returns to the top of the landing (home from
+  // sub-pages).
+  const linkHref = (it: { id: string; href?: string }) =>
+    it.href ? it.href : onLanding ? `#${it.id}` : `/#${it.id}`;
+  const logoHref = onLanding ? "#top" : "/";
 
   return (
     <header
@@ -48,7 +61,7 @@ export default function TopNav() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 xl:gap-6">
         <a
-          href="#top"
+          href={logoHref}
           className="flex items-center gap-2 font-display font-semibold tracking-tight text-base md:text-lg shrink-0"
           data-testid="nav-logo"
         >
@@ -62,7 +75,7 @@ export default function TopNav() {
           {NAV_ITEMS.map((it) => (
             <a
               key={it.id}
-              href={it.href || `#${it.id}`}
+              href={linkHref(it)}
               className="relative whitespace-nowrap py-1 hover:text-foreground transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-0.5 after:h-px after:w-0 after:bg-foreground after:transition-[width] after:duration-200 hover:after:w-full"
               data-testid={`nav-link-${it.id}`}
             >
@@ -105,7 +118,7 @@ export default function TopNav() {
             {NAV_ITEMS.map((it) => (
               <a
                 key={it.id}
-                href={it.href || `#${it.id}`}
+                href={linkHref(it)}
                 onClick={() => setOpen(false)}
                 className="py-1 hover:text-foreground text-foreground/80"
                 data-testid={`nav-link-mobile-${it.id}`}
@@ -119,7 +132,10 @@ export default function TopNav() {
               className="mt-1 rounded-[var(--btn-radius)]"
               data-testid="nav-join-button-mobile"
             >
-              <a href="#whitelist" onClick={() => setOpen(false)}>
+              <a
+                href={onLanding ? "#whitelist" : "/#whitelist"}
+                onClick={() => setOpen(false)}
+              >
                 {t("nav.join")}
               </a>
             </Button>

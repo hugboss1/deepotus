@@ -7,6 +7,7 @@
  */
 import { LanguageToggle } from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
+import SocialBar from "./SocialBar";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export default function Footer() {
@@ -25,6 +26,7 @@ export default function Footer() {
             <div className="mt-1 font-mono text-xs text-zinc-500 uppercase tracking-widest">
               {t("footer.tagline")}
             </div>
+            <SocialBar className="mt-5" />
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

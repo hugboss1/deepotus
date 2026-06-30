@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import SocialBar from "@/components/landing/SocialBar";
 import { useMissionConfig } from "@/hooks/useMissionConfig";
 import { GIVEAWAY } from "@/lib/missions";
 import { getBuyUrl } from "@/lib/links";
@@ -277,6 +278,14 @@ const Giveaway: React.FC = () => {
             ⚖ {t("giveawayPage.footer") as string}
           </p>
         </section>
+
+        {/* Official channels — replicated site-wide via SocialBar. */}
+        <div className="mt-10 pt-8 border-t border-foreground/10 flex flex-col items-center gap-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/45">
+            {t("socials.kicker") as string}
+          </p>
+          <SocialBar />
+        </div>
       </main>
     </div>
   );

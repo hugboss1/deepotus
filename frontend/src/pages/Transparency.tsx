@@ -65,6 +65,7 @@ import {
   type WalletInfo,
 } from "@/lib/launchPhase";
 import ThemeToggle from "@/components/landing/ThemeToggle";
+import SocialBar from "@/components/landing/SocialBar";
 import {
   TransparencyDataCarousel,
   VIZ_SLIDE_DEFAULTS,
@@ -1060,6 +1061,14 @@ const Transparency: React.FC = () => {
         <footer className="mt-16 border-t border-foreground/10 pt-6 text-[11px] text-foreground/50 leading-relaxed">
           {t("transparencyPage.footer") as string}
         </footer>
+
+        {/* Official channels — replicated site-wide via SocialBar. */}
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-foreground/45">
+            {t("socials.kicker") as string}
+          </p>
+          <SocialBar />
+        </div>
       </main>
     </div>
   );
