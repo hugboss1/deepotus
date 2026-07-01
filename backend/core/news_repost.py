@@ -36,6 +36,10 @@ BOT_POSTS_COLLECTION = "bot_posts"
 # --- Defaults (also injected into bot_config when missing) ---
 DEFAULT_NEWS_REPOST_CONFIG: Dict[str, Any] = {
     "enabled_for": {"x": False, "telegram": False},
+    # Master live switch for THIS engine (decoupled from the fleet-wide
+    # propaganda_settings.dispatch_dry_run). False → everything dry-run;
+    # True → real posts go out on platforms that have credentials.
+    "live": False,
     "interval_minutes": 30,
     "delay_after_refresh_minutes": 5,
     "wait_after_prophet_post_minutes": 2,
@@ -297,13 +301,15 @@ async def _do_dispatch(
     *,
     text: str,
     platform: str,
+    live: bool,
 ) -> Dict[str, Optional[str]]:
     """Dispatch via the shared live dispatchers (``core.dispatchers``) —
     the exact same code path the Prophet / propaganda worker uses, so a
     reposted headline goes out through the real X / Telegram API.
 
-    Dry-run resolution (safe by default):
-      * global ``propaganda_settings.dispatch_dry_run`` True → dry-run
+    Dry-run resolution (safe by default), driven by THIS engine's own
+    ``live`` master switch (decoupled from the fleet-wide flag):
+      * ``live`` is False → dry-run
       * this platform has no credentials → dry-run (graceful degrade,
         never a hard failure while creds are being provisioned)
       * otherwise → real send
@@ -319,7 +325,7 @@ async def _do_dispatch(
         return {"id": None, "error": f"unsupported_platform:{platform}"}
 
     creds_ok = await _platform_creds_present(platform)
-    dry_run = (await _resolve_dispatch_dry_run()) or not creds_ok
+    dry_run = (not live) or (not creds_ok)
 
     try:
         result = await send({"rendered_content": text}, dry_run=dry_run)
@@ -397,7 +403,9 @@ async def _send_one(
     prefix = cfg.get(f"prefix_{lang}") or cfg.get("prefix_fr") or "⚡"
     text = format_repost(item=item, platform=platform, prefix=prefix)
 
-    dispatch = await _do_dispatch(text=text, platform=platform)
+    dispatch = await _do_dispatch(
+        text=text, platform=platform, live=bool(cfg.get("live", False)),
+    )
     status = _classify_status(
         dispatch_id=dispatch["id"], error=dispatch["error"],
     )

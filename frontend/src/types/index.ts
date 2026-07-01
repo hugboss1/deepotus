@@ -126,6 +126,9 @@ export interface NewsRepostQueueItem {
 
 export interface NewsRepostConfig {
   enabled_for: { x: boolean; telegram: boolean };
+  /** Master live switch for the news-repost engine (decoupled from the
+   *  fleet-wide dispatch_dry_run). False → dry-run; True → real posts. */
+  live?: boolean;
   interval_minutes: number;
   delay_after_refresh_minutes: number;
   wait_after_prophet_post_minutes: number;

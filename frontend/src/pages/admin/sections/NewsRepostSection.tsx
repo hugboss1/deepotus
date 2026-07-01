@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 // Sprint 22 — `AxiosRequestHeaders` was too strict for our useMemo header object.
-import { RefreshCw, Newspaper } from "lucide-react";
+import { RefreshCw, Newspaper, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ import type {
 
 interface RepostPatchBody {
   enabled_for?: { x?: boolean; telegram?: boolean };
+  live?: boolean;
   interval_minutes?: number;
   delay_after_refresh_minutes?: number;
   wait_after_prophet_post_minutes?: number;
@@ -116,21 +117,33 @@ export default function NewsRepostSection({ api, headers }: Props) {
     setRepost((prev) => (prev ? { ...prev, config: patchFn(prev.config) } : prev));
   };
 
-  // Accurate mode badge: the fleet-wide dispatch_dry_run flag decides
+  // Accurate mode badge. This engine's own `live` master switch decides
   // live vs dry; creds decide full vs partial coverage.
   const anyCreds =
     !!repost?.credentials_present?.x || !!repost?.credentials_present?.telegram;
   const bothCreds =
     !!repost?.credentials_present?.x && !!repost?.credentials_present?.telegram;
-  const globalDry = !!repost?.dispatch_dry_run;
-  const modeLabel = globalDry
-    ? "dry-run · global"
+  const live = !!repost?.config?.live;
+  const modeLabel = !live
+    ? "dry-run · off"
     : anyCreds
       ? bothCreds
         ? "live · full"
         : "live · partial"
       : "dry-run · no creds yet";
-  const liveMode = !globalDry && anyCreds;
+  const liveMode = live && anyCreds;
+
+  const toggleLive = (v: boolean) => {
+    if (
+      v &&
+      !window.confirm(
+        "Activer l'envoi RÉEL des reposts ? Les headlines partiront pour de vrai sur X / Telegram (selon les credentials, le cap quotidien et la dédup).",
+      )
+    ) {
+      return;
+    }
+    patch({ live: v });
+  };
 
   return (
     <div
@@ -177,6 +190,40 @@ export default function NewsRepostSection({ api, headers }: Props) {
         after a Prophet post to avoid collisions. Dedup is enforced per-link,
         per-platform.
       </p>
+
+      {/* Master live switch — decoupled from the fleet-wide dispatch flag.
+          OFF → everything dry-run; ON → real posts where creds exist. */}
+      <div
+        className={`rounded-lg border p-3 flex items-center justify-between gap-3 ${
+          liveMode
+            ? "border-[#18C964]/50 bg-[#18C964]/[0.06]"
+            : "border-[#F59E0B]/40 bg-[#F59E0B]/[0.06]"
+        }`}
+        data-testid="news-repost-live-switch-row"
+      >
+        <div className="flex items-start gap-2">
+          <Zap
+            size={16}
+            className={live ? "text-[#18C964] mt-0.5" : "text-[#F59E0B] mt-0.5"}
+          />
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-widest">
+              Live dispatch
+            </div>
+            <div className="text-[10px] text-muted-foreground font-mono leading-relaxed">
+              {live
+                ? "ON — reposts are sent for real on platforms that have credentials."
+                : "OFF — full pipeline runs but nothing is posted (dry-run)."}
+            </div>
+          </div>
+        </div>
+        <Switch
+          checked={live}
+          disabled={busy}
+          onCheckedChange={toggleLive}
+          data-testid="news-repost-live-toggle"
+        />
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {(["telegram", "x"] as const).map((p) => (

@@ -110,6 +110,7 @@ class NewsRepostPatch(BaseModel):
     """
 
     enabled_for: Optional[NewsRepostEnabledFor] = None
+    live: Optional[bool] = None
     interval_minutes: Optional[int] = Field(default=None, ge=5, le=720)
     delay_after_refresh_minutes: Optional[int] = Field(default=None, ge=0, le=120)
     wait_after_prophet_post_minutes: Optional[int] = Field(default=None, ge=0, le=120)
@@ -383,6 +384,7 @@ def _shape_config(doc: Dict[str, Any]) -> Dict[str, Any]:
                 "x": bool(((doc.get("news_repost") or {}).get("enabled_for") or {}).get("x", False)),
                 "telegram": bool(((doc.get("news_repost") or {}).get("enabled_for") or {}).get("telegram", False)),
             },
+            "live": bool((doc.get("news_repost") or {}).get("live", False)),
             "interval_minutes": int((doc.get("news_repost") or {}).get("interval_minutes", 30)),
             "delay_after_refresh_minutes": int((doc.get("news_repost") or {}).get("delay_after_refresh_minutes", 5)),
             "wait_after_prophet_post_minutes": int((doc.get("news_repost") or {}).get("wait_after_prophet_post_minutes", 2)),
@@ -544,6 +546,8 @@ async def put_config(
             if rp.enabled_for.telegram is not None:
                 merged_enabled["telegram"] = bool(rp.enabled_for.telegram)
             merged_repost["enabled_for"] = merged_enabled
+        if rp.live is not None:
+            merged_repost["live"] = bool(rp.live)
         if rp.interval_minutes is not None:
             merged_repost["interval_minutes"] = int(rp.interval_minutes)
         if rp.delay_after_refresh_minutes is not None:
