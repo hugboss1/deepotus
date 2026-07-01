@@ -26,6 +26,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from pymongo.errors import DuplicateKeyError
+
 from core.bot_config_repo import get_bot_config
 from core.config import db, logger
 
@@ -67,6 +69,33 @@ def _link_hash(link: str) -> str:
     h = hashlib.sha1()
     h.update((link or "").strip().lower().encode("utf-8", errors="ignore"))
     return h.hexdigest()[:16]
+
+
+_indexes_ready = False
+
+
+async def _ensure_indexes() -> None:
+    """Create the unique (link_hash, platform) dedup index once.
+
+    This is the hard, DB-level guarantee that a given headline can never
+    be posted twice on the same channel — even if two ticks (or a manual
+    Test racing the scheduler) both slip past the in-app pre-check. The
+    claim-before-send in ``_send_one`` relies on this index to atomically
+    reject the second attempt. Idempotent + best-effort: a failure (e.g.
+    legacy duplicate rows) is logged, never fatal.
+    """
+    global _indexes_ready
+    if _indexes_ready:
+        return
+    try:
+        await db[REPOSTS_COLLECTION].create_index(
+            [("link_hash", 1), ("platform", 1)],
+            unique=True,
+            name="uniq_link_platform",
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("[news_repost] could not create unique dedup index")
+    _indexes_ready = True
 
 
 def _config() -> Dict[str, Any]:
@@ -185,21 +214,32 @@ def format_repost(
 # State queries
 # ---------------------------------------------------------------------
 async def _was_already_reposted(link: str, platform: str) -> bool:
-    """Has this link already been processed (sent or dry_run) on this platform?"""
+    """Has this link already been *really posted* on this platform?
+
+    Only ``status == "sent"`` rows count — dry-run / failed attempts are
+    released (deleted) so they never permanently block a headline, and
+    legacy non-sent rows are ignored. This is the guarantee that a given
+    news is never reposted twice on the same channel.
+    """
     if not link:
         return False
     doc = await db[REPOSTS_COLLECTION].find_one(
-        {"link_hash": _link_hash(link), "platform": platform}
+        {"link_hash": _link_hash(link), "platform": platform, "status": "sent"}
     )
     return doc is not None
 
 
 async def _count_today(platform: str) -> int:
-    """Count reposts dispatched today (UTC) for this platform — counts both
-    real sends and dry_run entries so the cap behaves consistently."""
+    """Count real reposts sent today (UTC) for this platform. Only
+    ``status == "sent"`` rows count toward the daily cap — dry-run /
+    failed attempts don't consume the budget."""
     midnight = _now_utc().replace(hour=0, minute=0, second=0, microsecond=0)
     return await db[REPOSTS_COLLECTION].count_documents(
-        {"platform": platform, "posted_at": {"$gte": midnight.isoformat()}}
+        {
+            "platform": platform,
+            "status": "sent",
+            "posted_at": {"$gte": midnight.isoformat()},
+        }
     )
 
 
@@ -246,7 +286,7 @@ async def _pick_candidate(platform: str, limit: int = 5) -> Optional[Dict[str, A
     cursor = (
         db[NEWS_COLLECTION]
         .find({"url": {"$exists": True, "$ne": ""}})
-        .sort("kept_at", -1)
+        .sort("fetched_at", -1)
         .limit(limit)
     )
     candidates = [doc async for doc in cursor]
@@ -350,35 +390,6 @@ def _classify_status(*, dispatch_id: Optional[str], error: Optional[str]) -> str
     return "dry_run"
 
 
-async def _persist_repost(
-    *,
-    link: str,
-    platform: str,
-    text: str,
-    dispatch_id: Optional[str],
-    error: Optional[str],
-    item: Dict[str, Any],
-    lang: str,
-    status: str,
-) -> None:
-    """Insert the dedup + audit record into the news_reposts collection."""
-    doc = {
-        "_id": str(uuid.uuid4()),
-        "link": link,
-        "link_hash": _link_hash(link),
-        "platform": platform,
-        "posted_at": _now_utc().isoformat(),
-        "post_id": dispatch_id,
-        "raw_title": item.get("title", ""),
-        "source": item.get("source", ""),
-        "lang": lang,
-        "status": status,
-        "preview_text": text,
-        "error": error,
-    }
-    await db[REPOSTS_COLLECTION].insert_one(doc)
-
-
 async def _send_one(
     *,
     item: Dict[str, Any],
@@ -390,9 +401,17 @@ async def _send_one(
     """Format + dispatch (or dry_run) one repost.
 
     `force=True` bypasses cap + interval for admin "Test repost now".
-    Dedup is ALWAYS enforced — an item already in news_reposts is never
-    re-sent on the same platform.
+
+    Dedup is ALWAYS enforced and race-safe: we insert the dedup row
+    (a "claim") BEFORE dispatching. The unique (link_hash, platform)
+    index means a second attempt on the same headline/channel — whether
+    from an overlapping tick or a manual Test racing the scheduler — is
+    rejected here and returns WITHOUT posting. Only a confirmed real
+    send keeps the claim; a dry-run (not a real post) or a failed send
+    releases it so the headline stays eligible for a future live send.
     """
+    await _ensure_indexes()
+
     skip = await _check_pre_send_gates(
         item=item, platform=platform, cfg=cfg, force=force,
     )
@@ -403,6 +422,29 @@ async def _send_one(
     prefix = cfg.get(f"prefix_{lang}") or cfg.get("prefix_fr") or "⚡"
     text = format_repost(item=item, platform=platform, prefix=prefix)
 
+    # --- Atomic dedup claim (before any dispatch) ---
+    claim_id = str(uuid.uuid4())
+    try:
+        await db[REPOSTS_COLLECTION].insert_one(
+            {
+                "_id": claim_id,
+                "link": link,
+                "link_hash": _link_hash(link),
+                "platform": platform,
+                "posted_at": _now_utc().isoformat(),
+                "status": "sending",
+                "post_id": None,
+                "raw_title": item.get("title", ""),
+                "source": item.get("source", ""),
+                "lang": lang,
+                "preview_text": text,
+                "error": None,
+            }
+        )
+    except DuplicateKeyError:
+        # Someone already claimed this headline for this platform.
+        return {"status": "skipped_already_reposted", "platform": platform}
+
     dispatch = await _do_dispatch(
         text=text, platform=platform, live=bool(cfg.get("live", False)),
     )
@@ -410,16 +452,23 @@ async def _send_one(
         dispatch_id=dispatch["id"], error=dispatch["error"],
     )
 
-    await _persist_repost(
-        link=link,
-        platform=platform,
-        text=text,
-        dispatch_id=dispatch["id"],
-        error=dispatch["error"],
-        item=item,
-        lang=lang,
-        status=status,
-    )
+    if status == "sent":
+        # Real post confirmed → keep the dedup row permanently.
+        await db[REPOSTS_COLLECTION].update_one(
+            {"_id": claim_id},
+            {
+                "$set": {
+                    "status": status,
+                    "post_id": dispatch["id"],
+                    "error": None,
+                    "posted_at": _now_utc().isoformat(),
+                }
+            },
+        )
+    else:
+        # dry_run (no real post) or failed (retry-eligible) → release the
+        # claim so the headline is not permanently consumed.
+        await db[REPOSTS_COLLECTION].delete_one({"_id": claim_id})
 
     return {
         "status": status,
@@ -555,7 +604,7 @@ async def get_news_repost_status() -> Dict[str, Any]:
         cursor = (
             db[NEWS_COLLECTION]
             .find({"url": {"$exists": True, "$ne": ""}})
-            .sort("kept_at", -1)
+            .sort("fetched_at", -1)
             .limit(8)  # over-fetch so we can skip already-reposted items
         )
         seen = 0

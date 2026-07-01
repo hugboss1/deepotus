@@ -49,6 +49,7 @@ type Platform = "telegram" | "x";
 export default function NewsRepostSection({ api, headers }: Props) {
   const [repost, setRepost] = useState<NewsRepostStatus | null>(null);
   const [busy, setBusy] = useState(false);
+  const [feedBusy, setFeedBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
   const [testResult, setTestResult] = useState<NewsRepostTestResult | null>(
     null,
@@ -69,6 +70,31 @@ export default function NewsRepostSection({ api, headers }: Props) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Re-intercept: trigger a live RSS pull so fresh headlines enter the
+  // candidate pool, then reload the panel to show the new queue.
+  async function refreshFeed() {
+    setFeedBusy(true);
+    try {
+      const { data } = await axios.post<{ added?: number; kept?: number }>(
+        `${api}/api/admin/bots/news/refresh`,
+        {},
+        { headers },
+      );
+      await load();
+      const added = data?.added ?? 0;
+      toast.success(
+        added > 0
+          ? `${added} new headline${added > 1 ? "s" : ""} intercepted`
+          : "RSS feed refreshed — no new headlines",
+      );
+    } catch (err) {
+      logger.error(err);
+      toast.error("RSS refresh failed");
+    } finally {
+      setFeedBusy(false);
+    }
+  }
 
   async function patch(body: RepostPatchBody) {
     setBusy(true);
@@ -169,11 +195,16 @@ export default function NewsRepostSection({ api, headers }: Props) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={load}
-          disabled={busy}
+          onClick={refreshFeed}
+          disabled={feedBusy || busy}
+          title="Re-intercept: pull fresh RSS headlines and rebuild the queue"
           data-testid="news-repost-refresh-btn"
         >
-          <RefreshCw size={14} className="mr-1.5" /> Refresh
+          <RefreshCw
+            size={14}
+            className={`mr-1.5 ${feedBusy ? "animate-spin" : ""}`}
+          />
+          {feedBusy ? "Intercepting…" : "Refresh feed"}
         </Button>
       </div>
 
