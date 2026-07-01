@@ -116,8 +116,21 @@ export default function NewsRepostSection({ api, headers }: Props) {
     setRepost((prev) => (prev ? { ...prev, config: patchFn(prev.config) } : prev));
   };
 
-  const liveCreds =
+  // Accurate mode badge: the fleet-wide dispatch_dry_run flag decides
+  // live vs dry; creds decide full vs partial coverage.
+  const anyCreds =
     !!repost?.credentials_present?.x || !!repost?.credentials_present?.telegram;
+  const bothCreds =
+    !!repost?.credentials_present?.x && !!repost?.credentials_present?.telegram;
+  const globalDry = !!repost?.dispatch_dry_run;
+  const modeLabel = globalDry
+    ? "dry-run · global"
+    : anyCreds
+      ? bothCreds
+        ? "live · full"
+        : "live · partial"
+      : "dry-run · no creds yet";
+  const liveMode = !globalDry && anyCreds;
 
   return (
     <div
@@ -132,10 +145,12 @@ export default function NewsRepostSection({ api, headers }: Props) {
           </div>
           <Badge
             variant="outline"
-            className="font-mono text-[10px] uppercase tracking-widest"
+            className={`font-mono text-[10px] uppercase tracking-widest ${
+              liveMode ? "border-[#18C964]/50 text-[#18C964]" : ""
+            }`}
             data-testid="news-repost-mode-badge"
           >
-            {liveCreds ? "live · partial" : "dry-run · no creds yet"}
+            {modeLabel}
           </Badge>
         </div>
         <Button

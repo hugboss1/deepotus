@@ -1326,6 +1326,9 @@ class NewsRepostQueueItem(BaseModel):
 class NewsRepostStatusResponse(BaseModel):
     config: Dict[str, Any]
     credentials_present: Dict[str, bool]
+    # Global fleet dry-run flag (propaganda_settings.dispatch_dry_run).
+    # False → reposts go out live. Defaulted for backward-compat.
+    dispatch_dry_run: bool = False
     today_per_platform: Dict[str, int]
     last_per_platform: Dict[str, Optional[str]]
     queue_preview: Dict[str, List[NewsRepostQueueItem]]

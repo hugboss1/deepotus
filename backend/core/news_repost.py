@@ -22,7 +22,6 @@ Dispatch modes:
 from __future__ import annotations
 
 import hashlib
-import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -82,23 +81,54 @@ async def _resolve_config() -> Dict[str, Any]:
     return merged
 
 
-def _platform_creds_present(platform: str) -> bool:
-    """Whether the dispatcher *could* actually post to this platform.
+async def _platform_creds_present(platform: str) -> bool:
+    """Whether the shared dispatcher *could* actually post to this platform.
 
-    Phases 3/4/5 are not implemented yet — the env vars below are
-    placeholders. Until they exist, every dispatch falls back to dry_run.
+    Resolves credentials exactly like the live dispatchers do — Cabinet
+    Vault first, then env — so the admin badge/hint reflects the same
+    creds the real send path uses (not a separate env-only heuristic).
+
+      telegram → TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID
+      x        → the 4 OAuth 1.0a values required by POST /2/tweets
+                 (X_API_KEY / X_API_SECRET / X_ACCESS_TOKEN /
+                  X_ACCESS_TOKEN_SECRET) — see core/dispatchers/x.py
     """
+    from core.secret_provider import (
+        get_telegram_bot_token,
+        get_telegram_chat_id,
+        resolve as _vault_resolve,
+    )
+
     if platform == "telegram":
-        return bool(
-            os.environ.get("TELEGRAM_BOT_TOKEN")
-            and os.environ.get("TELEGRAM_CHAT_ID"),
-        )
+        token = await get_telegram_bot_token()
+        chat = await get_telegram_chat_id()
+        return bool(token and chat)
     if platform == "x":
-        return bool(
-            os.environ.get("TWITTER_BEARER_TOKEN")
-            or os.environ.get("X_API_KEY"),
-        )
+        for k in (
+            "X_API_KEY",
+            "X_API_SECRET",
+            "X_ACCESS_TOKEN",
+            "X_ACCESS_TOKEN_SECRET",
+        ):
+            if not await _vault_resolve("x_twitter", k, env_var=k):
+                return False
+        return True
     return False
+
+
+async def _resolve_dispatch_dry_run() -> bool:
+    """Global fleet dry-run flag (``propaganda_settings.dispatch_dry_run``).
+
+    Single source of truth shared with the Prophet / propaganda dispatch
+    worker (see core/dispatch_worker.py): when it's False the whole fleet
+    posts for real, when True everything short-circuits to dry-run.
+    Defaults to True (safe) if the settings doc is missing.
+    """
+    try:
+        doc = await db["propaganda_settings"].find_one({}) or {}
+    except Exception:  # noqa: BLE001
+        return True
+    return bool(doc.get("dispatch_dry_run", True))
 
 
 def _truncate(text: str, max_len: int) -> str:
@@ -232,31 +262,6 @@ async def _pick_candidate(platform: str, limit: int = 5) -> Optional[Dict[str, A
 
 
 # ---------------------------------------------------------------------
-# Dispatchers (real + dry_run)
-# ---------------------------------------------------------------------
-async def _dispatch_telegram(text: str) -> Dict[str, Any]:
-    """Real Telegram dispatch — currently stubbed (Phase 3 not shipped).
-
-    When TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID are present, this is the
-    place to call the Bot API. Returning a non-empty `id` triggers a
-    'sent' status; returning {} downgrades to dry_run.
-    """
-    if not _platform_creds_present("telegram"):
-        return {}
-    # Phase 3: import + call telegram bot API here.
-    # For now we never actually reach this branch.
-    return {}
-
-
-async def _dispatch_x(text: str) -> Dict[str, Any]:
-    """Real X dispatch — currently stubbed (Phase 4 not shipped)."""
-    if not _platform_creds_present("x"):
-        return {}
-    # Phase 4: tweepy OAuth2 client call.
-    return {}
-
-
-# ---------------------------------------------------------------------
 # Send-one + tick — broken into small helpers for testability
 # ---------------------------------------------------------------------
 async def _check_pre_send_gates(
@@ -293,23 +298,42 @@ async def _do_dispatch(
     text: str,
     platform: str,
 ) -> Dict[str, Optional[str]]:
-    """Call the platform-specific dispatcher (or no-op if no creds).
+    """Dispatch via the shared live dispatchers (``core.dispatchers``) —
+    the exact same code path the Prophet / propaganda worker uses, so a
+    reposted headline goes out through the real X / Telegram API.
 
-    Returns {"id": <post_id_or_None>, "error": <err_or_None>}.
+    Dry-run resolution (safe by default):
+      * global ``propaganda_settings.dispatch_dry_run`` True → dry-run
+      * this platform has no credentials → dry-run (graceful degrade,
+        never a hard failure while creds are being provisioned)
+      * otherwise → real send
+
+    Returns {"id": <post_id_or_None>, "error": <err_or_None>}. A dry-run
+    or a missing-creds run returns both None → classified as ``dry_run``;
+    a real API failure returns an ``error`` → classified as ``failed``.
     """
-    if not _platform_creds_present(platform):
-        return {"id": None, "error": None}
+    from core.dispatchers import DispatchOutcome, get_dispatcher
+
+    send = get_dispatcher(platform)
+    if send is None:
+        return {"id": None, "error": f"unsupported_platform:{platform}"}
+
+    creds_ok = await _platform_creds_present(platform)
+    dry_run = (await _resolve_dispatch_dry_run()) or not creds_ok
 
     try:
-        res = (
-            await _dispatch_telegram(text)
-            if platform == "telegram"
-            else await _dispatch_x(text)
-        )
-        return {"id": (res or {}).get("id"), "error": None}
+        result = await send({"rendered_content": text}, dry_run=dry_run)
     except Exception as exc:  # noqa: BLE001
         logger.exception("[news_repost] dispatch failed")
         return {"id": None, "error": str(exc)[:250]}
+
+    if result.outcome == DispatchOutcome.SENT:
+        # In dry-run the dispatcher returns a synthetic "dry-run" id; we
+        # normalise that back to None so _classify_status reads dry_run.
+        if result.dry_run:
+            return {"id": None, "error": None}
+        return {"id": result.platform_message_id, "error": None}
+    return {"id": None, "error": result.error or "dispatch_failed"}
 
 
 def _classify_status(*, dispatch_id: Optional[str], error: Optional[str]) -> str:
@@ -552,9 +576,11 @@ async def get_news_repost_status() -> Dict[str, Any]:
     return {
         "config": cfg,
         "credentials_present": {
-            "x": _platform_creds_present("x"),
-            "telegram": _platform_creds_present("telegram"),
+            "x": await _platform_creds_present("x"),
+            "telegram": await _platform_creds_present("telegram"),
         },
+        # Global fleet flag — when False the dispatch is real (live).
+        "dispatch_dry_run": await _resolve_dispatch_dry_run(),
         "today_per_platform": today_per_platform,
         "last_per_platform": last_per_platform,
         "queue_preview": preview,

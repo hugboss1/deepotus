@@ -137,6 +137,9 @@ export interface NewsRepostConfig {
 export interface NewsRepostStatus {
   config: NewsRepostConfig;
   credentials_present: { x: boolean; telegram: boolean };
+  /** Global fleet dry-run flag (propaganda_settings.dispatch_dry_run).
+   *  False → reposts are dispatched live. Optional for backward-compat. */
+  dispatch_dry_run?: boolean;
   today_per_platform: { x: number; telegram: number };
   last_per_platform: { x: string | null; telegram: string | null };
   queue_preview: { x: NewsRepostQueueItem[]; telegram: NewsRepostQueueItem[] };
