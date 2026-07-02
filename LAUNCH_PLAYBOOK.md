@@ -260,6 +260,56 @@ Si tu fais des buybacks puis des burns :
 
 Les nouveaux signups via le Terminal Popup atterrissent dans `db.clearance_levels`. Tu peux les voir dans `/admin/propaganda` → **Cabinet** → **Giveaway Extraction** → **Refresh eligibility roll-call**.
 
+### Déblocage de la séquence emails du Vault (Mail #2 aux abonnés Genesis)
+
+Pendant le seal (pré-mint), le Terminal Popup capture les visiteurs dans
+`db.genesis_subscribers` (PAS dans `whitelist` — ils n'apparaissent donc pas
+dans l'onglet Whitelist de l'admin) et leur envoie le **Mail #1**
+"accreditation deferred", qui promet la carte Level 02 "auto-sent at mint".
+La séquence complète de déblocage post-mint :
+
+1. **Désceller le vault côté backend** — le statut sealed est calculé depuis
+   Mongo `vault_state` (`sealed = demo_mode OU pas de mint OU dex_mode ≠ helius`),
+   il est **indépendant** des env vars Vercel du frontend. La voie nominale
+   est le `helius-register` de la section 3 (T+10) qui écrit les 3 signaux
+   d'un coup. Vérification :
+   ```bash
+   curl -s https://api.deepotus.xyz/api/vault/classified-status
+   # attendu : {"sealed": false, "mint_live": true, ...}
+   ```
+   (Dépannage rapide : Admin Vault → **Seal Status** → Force LIVE — réservé QA.)
+
+2. **Dimensionner le backlog** (lecture seule, marche même sealed) :
+   ```bash
+   curl -s https://api.deepotus.xyz/api/admin/access-card/genesis/pending \
+     -H "Authorization: Bearer <ADMIN_JWT>"
+   # → {"scanned": N, "results": [{"email": ..., "status": "pending"}, ...]}
+   ```
+
+3. **Envoyer les Mail #2 en attente** (génère la carte + envoie + marque
+   `promoted_to_accreditation: true`) :
+   ```bash
+   curl -s -X POST https://api.deepotus.xyz/api/admin/access-card/genesis/promote \
+     -H "Authorization: Bearer <ADMIN_JWT>" -H "Content-Type: application/json" \
+     -d '{"dry_run": false}'
+   ```
+   - Refuse avec `code: "VAULT_SEALED"` tant que l'étape 1 n'est pas faite
+     (`{"force": true}` pour outrepasser — QA uniquement).
+   - Options : `{"dry_run": true}` (répétition générale), `{"limit": 10}`
+     (envoi par lots).
+   - Un envoi échoué reste non-promu → relancer la commande le retente.
+     Les blacklistés sont ignorés et marqués `promotion_skipped_reason`.
+
+4. **Re-pointer le webhook Resend** (statuts sent/delivered de l'admin) :
+   dashboard Resend → Webhooks → endpoint → URL
+   `https://api.deepotus.xyz/api/webhooks/resend`, régénérer la signing
+   secret → `RESEND_WEBHOOK_SECRET` dans Render → redeploy → **Send test
+   event** (cf. `SETUP_DOMAIN_WEBHOOK.md` §6).
+
+> Les nouveaux visiteurs post-unseal passent directement par
+> `/api/access-card/request` (Mail #2 immédiat) — la promotion ne concerne
+> que le stock d'abonnés capturés pendant le seal.
+
 ---
 
 ## 5 · Tirage Cabinet — 22 mai 12:00 UTC

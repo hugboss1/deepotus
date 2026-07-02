@@ -21,16 +21,19 @@ from pathlib import Path
 from typing import Optional
 
 import resend
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
+from pymongo.errors import DuplicateKeyError
 
 import access_card as access_card_mod
+from core import genesis_promotion
 from core.config import db
 from core.secret_provider import (
     get_public_base_url,
     get_resend_api_key,
     get_sender_email,
 )
+from core.security import require_admin
 from core.vault_seal import get_sealed_status, raise_if_sealed
 from email_templates import (
     access_card_subject,
@@ -41,6 +44,83 @@ from email_templates import (
 from pydantic import BaseModel, EmailStr, Field
 
 router = APIRouter(prefix="/api/access-card", tags=["access-card"])
+admin_router = APIRouter(prefix="/api/admin/access-card", tags=["access-card-admin"])
+
+
+async def send_access_card_email(
+    email: str,
+    *,
+    lang: str,
+    card_doc: dict,
+    base_url: str,
+) -> bool:
+    """Render + send the Level 02 access card email (Mail #2).
+
+    Shared by the public /request flow and the admin genesis promotion.
+    Returns True when Resend accepted the email, False otherwise (missing
+    key, render/attach failure, API error) — callers use this to decide
+    whether the recipient can be considered served.
+    """
+    api_key = await get_resend_api_key()
+    if not api_key:
+        logging.warning("[access-card] Resend key missing; skipping email")
+        return False
+    resend.api_key = api_key
+    sender = await get_sender_email()
+    accred = card_doc["accreditation_number"]
+    dn = card_doc["display_name"]
+    try:
+        html = render_access_card_email(
+            lang=lang,
+            display_name=dn,
+            accreditation_number=accred,
+            issued_at=card_doc["issued_at"][:10],
+            expires_at=card_doc["expires_at"][:10],
+            base_url=base_url,
+            card_cid="access-card",
+        )
+        subject = access_card_subject(lang)
+        # Attach the card image as inline CID
+        with open(card_doc["card_path"], "rb") as fh:
+            card_b64 = b64mod.b64encode(fh.read()).decode("ascii")
+        params = {
+            "from": sender,
+            "to": [email],
+            "subject": subject,
+            "html": html,
+            "attachments": [
+                {
+                    "filename": f"deepstate-access-card-{accred}.png",
+                    "content": card_b64,
+                    "content_id": "access-card",
+                }
+            ],
+            "tags": [
+                {"name": "category", "value": "access_card_level2"},
+                {"name": "lang", "value": lang},
+            ],
+        }
+        res = await asyncio.to_thread(resend.Emails.send, params)
+        eid = (res or {}).get("id") if isinstance(res, dict) else None
+        await db.email_events.insert_one(
+            {
+                "_id": str(uuid.uuid4()),
+                "type": "access_card.sent",
+                "email_id": eid,
+                "recipient": email,
+                "received_at": datetime.now(timezone.utc).isoformat(),
+                "raw": {
+                    "accreditation_number": accred,
+                    "display_name": dn,
+                    "lang": lang,
+                },
+            }
+        )
+        logging.info(f"[access-card] sent to={email} accred={accred} id={eid}")
+        return True
+    except Exception:
+        logging.exception(f"[access-card] email failed for {email}")
+        return False
 
 
 @router.post(
@@ -105,68 +185,13 @@ async def access_card_request(
             logging.exception("[access-card] x_handle mirror to clearance_levels failed")
 
     # Send the email in the background
-    accred = card_doc["accreditation_number"]
     dn = card_doc["display_name"]
-    card_path = card_doc["card_path"]
     expires_at_iso = card_doc.get("expires_at")
 
     async def _send_email(lang: str = "fr"):
-        api_key = await get_resend_api_key()
-        if not api_key:
-            logging.warning("[access-card] Resend key missing; skipping email")
-            return
-        resend.api_key = api_key
-        sender = await get_sender_email()
-        try:
-            html = render_access_card_email(
-                lang=lang,
-                display_name=dn,
-                accreditation_number=accred,
-                issued_at=card_doc["issued_at"][:10],
-                expires_at=card_doc["expires_at"][:10],
-                base_url=base_url,
-                card_cid="access-card",
-            )
-            subject = access_card_subject(lang)
-            # Attach the card image as inline CID
-            with open(card_path, "rb") as fh:
-                card_b64 = b64mod.b64encode(fh.read()).decode("ascii")
-            params = {
-                "from": sender,
-                "to": [email],
-                "subject": subject,
-                "html": html,
-                "attachments": [
-                    {
-                        "filename": f"deepstate-access-card-{accred}.png",
-                        "content": card_b64,
-                        "content_id": "access-card",
-                    }
-                ],
-                "tags": [
-                    {"name": "category", "value": "access_card_level2"},
-                    {"name": "lang", "value": lang},
-                ],
-            }
-            res = await asyncio.to_thread(resend.Emails.send, params)
-            eid = (res or {}).get("id") if isinstance(res, dict) else None
-            await db.email_events.insert_one(
-                {
-                    "_id": str(uuid.uuid4()),
-                    "type": "access_card.sent",
-                    "email_id": eid,
-                    "recipient": email,
-                    "received_at": datetime.now(timezone.utc).isoformat(),
-                    "raw": {
-                        "accreditation_number": accred,
-                        "display_name": dn,
-                        "lang": lang,
-                    },
-                }
-            )
-            logging.info(f"[access-card] sent to={email} accred={accred} id={eid}")
-        except Exception:
-            logging.exception(f"[access-card] email failed for {email}")
+        await send_access_card_email(
+            email, lang=lang, card_doc=card_doc, base_url=base_url
+        )
 
     # Infer language from Accept-Language header best-effort
     lang = "fr"
@@ -334,20 +359,21 @@ async def genesis_broadcast_request(
         already = False
         count = await db.genesis_subscribers.count_documents({})
         position = count + 1
-        await db.genesis_subscribers.insert_one(
-            {
-                "_id": str(uuid.uuid4()),
-                "email": email,
-                "display_name": display_name,
-                "position": position,
-                "subscribed_at": datetime.now(timezone.utc).isoformat(),
-                "ip": request.client.host if request.client else None,
-                "ua": (request.headers.get("user-agent") or "")[:240],
-                "lang": req.lang or "fr",
-                "vault_status_at_signup": "sealed",
-                "promoted_to_accreditation": False,
-            }
+        doc = genesis_promotion.build_genesis_subscriber_doc(
+            email=email,
+            display_name=display_name,
+            position=position,
+            lang=req.lang or "fr",
+            ip=request.client.host if request.client else None,
+            ua=request.headers.get("user-agent"),
         )
+        try:
+            await db.genesis_subscribers.insert_one(doc)
+        except DuplicateKeyError:
+            # Concurrent double-submit, or legacy collision on the ecosystem
+            # (email_hash, source) unique index — treat as already subscribed.
+            logging.warning("[genesis] duplicate subscriber insert for %s", email)
+            already = True
 
     # Send Mail #1 in the background (idempotent: only resend if NOT already)
     lang = req.lang or "fr"
@@ -416,4 +442,69 @@ async def genesis_broadcast_request(
         launch_eta=status_obj.get("launch_eta"),
         already_subscribed=already,
         position=position,
+    )
+
+
+# ---------------------------------------------------------------------
+# Admin — Genesis promotion (Mail #2 backfill after the vault unseals)
+# ---------------------------------------------------------------------
+async def _promotion_create_card(*, email: str, display_name: str, whitelisted: bool):
+    base_url = await get_public_base_url()
+    return await access_card_mod.create_or_refresh_card(
+        db,
+        email=email,
+        display_name=display_name,
+        whitelisted=whitelisted,
+        base_url=base_url,
+        x_handle=None,
+    )
+
+
+async def _promotion_send_email(*, email: str, lang: str, card_doc: dict) -> bool:
+    base_url = await get_public_base_url()
+    return await send_access_card_email(
+        email, lang=lang, card_doc=card_doc, base_url=base_url
+    )
+
+
+class GenesisPromoteRequest(BaseModel):
+    dry_run: bool = False
+    limit: Optional[int] = Field(default=None, ge=1, le=5000)
+    # Staff QA escape hatch: run even while the vault is sealed.
+    force: bool = False
+
+
+@admin_router.get("/genesis/pending", response_model=dict)
+async def genesis_promotion_pending(_p: dict = Depends(require_admin)):
+    """List subscribers still awaiting their Level 02 card (read-only).
+
+    Works even while the vault is sealed so the admin can size the backlog
+    before mint-day.
+    """
+    return await genesis_promotion.promote_pending(
+        db,
+        create_card=_promotion_create_card,
+        send_email=_promotion_send_email,
+        dry_run=True,
+        force=True,
+    )
+
+
+@admin_router.post("/genesis/promote", response_model=dict)
+async def genesis_promotion_run(
+    req: GenesisPromoteRequest, _p: dict = Depends(require_admin)
+):
+    """Send Mail #2 (Level 02 access card) to every pending genesis subscriber.
+
+    Refuses with code VAULT_SEALED while the vault is sealed unless ``force``
+    — Mail #1 promised the card would arrive at mint, not before. Failed
+    sends stay un-promoted and are retried on the next run.
+    """
+    return await genesis_promotion.promote_pending(
+        db,
+        create_card=_promotion_create_card,
+        send_email=_promotion_send_email,
+        dry_run=req.dry_run,
+        limit=req.limit,
+        force=req.force,
     )
