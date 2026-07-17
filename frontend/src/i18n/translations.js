@@ -1380,6 +1380,11 @@ export const translations = {
         },
         // ----------------- Card 2: Board game ----------------------
         boardgame: {
+          film: {
+            cta: "Traverser le monde — le film",
+            hint: "Scrollez : une seule animation, sept actes",
+            close: "Fermer le film",
+          },
           badge: "ACTE I · JEU DE PLATEAU",
           title: "DEEPOTUS — FRAGMENTS",
           subtitle: "Prophète dystopique · Édition Fondateur",
@@ -3018,6 +3023,11 @@ export const translations = {
           cta: "Join the Genesis list",
         },
         boardgame: {
+          film: {
+            cta: "Fly through the world — the film",
+            hint: "Scroll: one animation, seven acts",
+            close: "Close the film",
+          },
           badge: "ACT I · BOARD GAME",
           title: "DEEPOTUS — FRAGMENTS",
           subtitle: "Dystopian prophet · Founder edition",
