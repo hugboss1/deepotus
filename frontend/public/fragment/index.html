@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>DEEPOTUS — Fragment · le tarot du monde d'après</title>
+  <meta name="description" content="93 cartes, deux camps, une anomalie. Scrollez pour traverser le monde de DEEPOTUS." />
+  <link rel="icon" href="data:," />
+  <link rel="preload" as="image" href="assets/cards/messagere_de_la_faille.jpg" />
+  <link rel="preload" as="image" href="assets/cards/_back.jpg" />
+  <style>
+    :root, .sc-root {
+      --sc-bg: #0a0806;
+      --sc-ink: #efe4c8;
+      --sc-ink-soft: #9a8d72;
+      --sc-accent: #c9a24b;
+      --violet: #7a6bb0;
+      --or: #c9a24b;
+      --orange: #d87a3b;
+      --acier: #3a6b8a;
+      --rouge: #7e2b22;
+    }
+    html { scrollbar-color: #3a3020 #0a0806; }
+
+    /* ---------- fond : lueurs par acte (opacité pilotée par la timeline) ---------- */
+    .glow { position: absolute; inset: -20%; opacity: 0; pointer-events: none; }
+    #glow-violet { background: radial-gradient(50% 42% at 50% 62%, rgba(122,107,176,.34), transparent 70%); }
+    #glow-acier  { background: radial-gradient(55% 45% at 60% 40%, rgba(58,107,138,.30), transparent 70%); }
+    #glow-or     { background: radial-gradient(58% 48% at 50% 45%, rgba(201,162,75,.26), transparent 70%); }
+    #glow-orange { background: radial-gradient(52% 44% at 42% 52%, rgba(216,122,59,.30), transparent 70%); }
+    #worldbg { position:absolute; inset:0; width:100%; height:100%; opacity:0; pointer-events:none; }
+    .vignette { position:absolute; inset:0; pointer-events:none;
+      background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.75) 100%); }
+    .grain { position:absolute; inset:0; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 160px 160px; }
+
+    /* braises dérivantes */
+    .ember { position:absolute; width:3px; height:3px; border-radius:50%;
+      background: radial-gradient(circle, #e8c979, rgba(232,201,121,0) 70%);
+      opacity:0; animation: rise linear infinite; }
+    @keyframes rise {
+      0%   { opacity:0; transform: translate3d(0, 8vh, 0) scale(.6); }
+      12%  { opacity:.7; }
+      88%  { opacity:.5; }
+      100% { opacity:0; transform: translate3d(3vw, -100vh, 0) scale(1.1); }
+    }
+    @media (prefers-reduced-motion: reduce), (hover:none) and (pointer:coarse) { .ember { display:none; } }
+
+    /* ---------- cartes : slot (position) > card (tweenée par le moteur) ---------- */
+    .slot { position:absolute; pointer-events:none; }
+    .card { width:100%; opacity:0; }
+    .card img { display:block; width:100%; height:auto; border-radius:2.5% / 1.5%;
+      box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 0 1px rgba(201,162,75,.18); }
+    .card.glow-violet img { box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 44px rgba(122,107,176,.45); }
+    .card.glow-rouge  img { box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 38px rgba(126,43,34,.55); }
+    .card.glow-or     img { box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 38px rgba(201,162,75,.40); }
+    .card.glow-creme  img { box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 38px rgba(216,203,168,.35); }
+    .card.glow-acier  img { box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 38px rgba(58,107,138,.55); }
+    .card.glow-orange img { box-shadow: 0 24px 60px rgba(0,0,0,.75), 0 0 38px rgba(216,122,59,.50); }
+
+    /* ---------- blocs de texte ---------- */
+    .copy { left: clamp(20px, 5.5vw, 90px); top: 50%; width: min(38vw, 480px);
+      transform: translateY(-50%) translateY(var(--sc-dy, 0vh)); z-index: 40; }
+    .copy .eyebrow { display:inline-block; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+      font-size:.85rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase;
+      color: color-mix(in srgb, var(--beat, var(--or)) 75%, #fff);
+      padding:5px 12px; border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--beat, var(--or)) 45%, transparent);
+      background: rgba(10,8,6,.72);
+      text-shadow: 0 1px 10px rgba(0,0,0,.95); }
+    .copy h1, .copy h2 { font-family: Georgia, 'Times New Roman', serif; font-weight:600;
+      color: var(--sc-ink); font-size: clamp(2rem, 4.6vw, 3.6rem); line-height:1.04;
+      margin:.55em 0 0; letter-spacing:.01em; text-shadow: 0 2px 24px rgba(0,0,0,.9); }
+    .copy h1 em, .copy h2 em { font-style:normal; color: var(--beat, var(--or)); }
+    /* « vu » : dégradé ocre → bleu acier, puis métamorphose en œil (piloté par le playhead) */
+    .vu-wrap { position:relative; display:inline-block; min-width:1.9em; }
+    #vu-word { background: linear-gradient(105deg, #c9a24b 15%, #7fa3b8 60%, #3a6b8a 90%);
+      -webkit-background-clip:text; background-clip:text; color:transparent; }
+    #vu-eye { position:absolute; left:50%; top:52%; transform:translate(-50%,-50%);
+      height:.92em; width:auto; opacity:0; overflow:visible; pointer-events:none;
+      filter: drop-shadow(0 0 14px rgba(201,162,75,.45)); }
+    #vu-eye .lid { transform-origin: 66px 32px; }
+    #vu-eye .lid-top { transform: scaleY(calc(1 - var(--open, 0))); }
+    #vu-eye .lid-bot { transform: scaleY(calc(1 - var(--open, 0))); }
+    .copy p { margin-top:1.1em; font-size: clamp(.98rem, 1.2vw, 1.12rem); line-height:1.6;
+      color:#c9bda2; max-width:42ch; text-shadow: 0 1px 14px rgba(0,0,0,.95); }
+    .copy .tags { list-style:none; display:flex; flex-wrap:wrap; gap:8px; margin:1.4em 0 0; padding:0; }
+    .copy .tags li { font-size:.78rem; font-weight:600; letter-spacing:.04em; color:#e6d7ac;
+      padding:6px 13px; border-radius:999px; border:1px solid rgba(201,162,75,.35);
+      background: rgba(201,162,75,.08); }
+    .copy .tags li.t-rouge  { border-color:rgba(126,43,34,.7);  color:#e8b7a8; background:rgba(126,43,34,.16); }
+    .copy .tags li.t-or     { border-color:rgba(201,162,75,.6); }
+    .copy .tags li.t-creme  { border-color:rgba(216,203,168,.55); color:#efe8d2; background:rgba(216,203,168,.10); }
+    .copy .tags li.t-acier  { border-color:rgba(58,107,138,.75); color:#b7d3e4; background:rgba(58,107,138,.16); }
+    .copy .tags li.t-orange { border-color:rgba(216,122,59,.7); color:#f0c4a2; background:rgba(216,122,59,.14); }
+    .copy .cta { display:flex; flex-wrap:wrap; gap:14px; margin-top:2em; }
+    .copy .cta a, .copy .cta button { text-decoration:none; cursor:pointer; font:600 .95rem/1 inherit;
+      font-family:inherit; padding:15px 28px; border-radius:999px; transition: transform .2s, box-shadow .2s; }
+    .btn-p { color:#14100a; background: linear-gradient(160deg, #e0c56a, #c9a24b);
+      box-shadow: 0 8px 28px rgba(201,162,75,.35); border:0; }
+    .btn-p:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(201,162,75,.5); }
+    .btn-g { color: var(--sc-ink); background:transparent; border:1.5px solid rgba(239,228,200,.3); }
+    .btn-g:hover { transform: translateY(-2px); border-color: rgba(239,228,200,.6); }
+
+    #copy-hero { text-align:center; left:50%; width:min(82vw, 760px);
+      transform:translate(-50%,-50%) translateY(var(--sc-dy, 0vh)); top:38%; }
+    /* ouverture + clôture : les <p> à max-width doivent se centrer dans le bloc */
+    #copy-hero p, #copy-fin p { margin-left:auto; margin-right:auto; }
+    #copy-hero h1 { font-size: clamp(2.6rem, 7vw, 5.4rem); letter-spacing:.06em; }
+    #copy-hero .sub { margin-top:.9em; font-family:Georgia, serif; font-size:clamp(1rem,1.8vw,1.3rem);
+      color:#c9bda2; letter-spacing:.04em; }
+    #copy-fin { text-align:center; left:50%; top:70%; width:min(86vw,640px);
+      transform:translate(-50%,-50%) translateY(var(--sc-dy, 0vh)); }
+    #copy-fin .cta { justify-content:center; }
+
+    .sigil { position:absolute; left:50%; top:44%; transform:translate(-50%,-50%);
+      font-family:Georgia, serif; font-size:clamp(14rem, 34vw, 30rem); color:transparent;
+      -webkit-text-stroke: 1.5px rgba(201,162,75,.5); opacity:0; pointer-events:none; letter-spacing:.05em; }
+
+    .thread { position:absolute; left:14%; top:24%; width:64%; height:44%; opacity:0; pointer-events:none;
+      background: linear-gradient(103deg, transparent 12%, rgba(216,122,59,.55) 13%, transparent 14%,
+        transparent 38%, rgba(216,122,59,.5) 39%, transparent 40%,
+        transparent 66%, rgba(216,122,59,.45) 67%, transparent 68%); filter: blur(.6px); }
+
+    @media (max-width: 860px) {
+      .copy { left:50%; right:auto; top:auto; bottom:calc(9dvh + env(safe-area-inset-bottom));
+        transform:translateX(-50%) translateY(var(--sc-dy, 0vh)); width:min(88vw, 520px); text-align:center; }
+      .copy p { max-width:none; margin-left:auto; margin-right:auto; }
+      .copy .tags, .copy .cta { justify-content:center; }
+      #copy-hero { top:34%; bottom:auto; transform:translate(-50%,-50%) translateY(var(--sc-dy, 0vh)); }
+      #copy-fin  { top:auto; bottom:calc(9dvh + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(var(--sc-dy, 0vh)); }
+    }
+  </style>
+</head>
+<body>
+  <div id="cinema">
+    <!-- fond -->
+    <div class="glow" id="glow-violet"></div>
+    <div class="glow" id="glow-acier"></div>
+    <div class="glow" id="glow-or"></div>
+    <div class="glow" id="glow-orange"></div>
+    <canvas id="worldbg"></canvas>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+    <div id="embers"></div>
+    <div class="sigil" id="sigil">ΔΣ</div>
+    <div class="thread" id="thread"></div>
+
+    <!-- ACTE I · HERO -->
+    <div class="slot" style="left:50%; top:50%; width:min(34vmin,300px); margin-left:calc(min(34vmin,300px)/-2); margin-top:calc(min(34vmin,300px)*1.714/-2);">
+      <div class="card glow-violet" id="c-back-hero"><img src="assets/cards/_back.jpg" alt="" loading="eager"></div>
+    </div>
+    <div class="slot" style="left:50%; top:52%; width:min(36vmin,320px); margin-left:calc(min(36vmin,320px)/-2); margin-top:calc(min(36vmin,320px)*1.714/-2);">
+      <div class="card glow-violet" id="c-excuse"><img src="assets/cards/messagere_de_la_faille.jpg" alt="L'Excuse — Messagère de la Faille" loading="eager"></div>
+    </div>
+
+    <!-- ACTE II · LE MONDE -->
+    <div class="slot" style="left:12%; top:16%; width:15vmin;"><div class="card glow-acier" id="c-westminster"><img src="assets/cards/westminster_la_ville_sous_surveillance.jpg" alt="Westminster sous surveillance" loading="lazy"></div></div>
+    <div class="slot" style="left:70%; top:10%; width:17vmin;"><div class="card glow-acier" id="c-helix"><img src="assets/cards/la_tour_helix_et_ses_profondeurs.jpg" alt="La tour Helix" loading="lazy"></div></div>
+    <div class="slot" style="left:44%; top:44%; width:14vmin;"><div class="card glow-or" id="c-ukraine"><img src="assets/cards/ukraine_terre_devastee_en_or_et_noir.jpg" alt="Terre dévastée" loading="lazy"></div></div>
+
+    <!-- ACTE III · LE SYSTÈME (4 chambres, éventail depuis le centre) -->
+    <div class="slot" style="left:50%; top:46%; width:15vmin; margin-left:-7.5vmin; margin-top:calc(15vmin*1.714/-2);">
+      <div class="card glow-rouge" id="c-war"><img src="assets/cards/salle_de_guerre_secrete.jpg" alt="War Room — la salle de guerre secrète" loading="lazy"></div>
+    </div>
+    <div class="slot" style="left:50%; top:46%; width:15vmin; margin-left:-7.5vmin; margin-top:calc(15vmin*1.714/-2);">
+      <div class="card glow-or" id="c-capital"><img src="assets/cards/l_autel_des_flux_invisibles.jpg" alt="Le Capital — l'autel des flux invisibles" loading="lazy"></div>
+    </div>
+    <div class="slot" style="left:50%; top:46%; width:15vmin; margin-left:-7.5vmin; margin-top:calc(15vmin*1.714/-2);">
+      <div class="card glow-creme" id="c-cathedrale"><img src="assets/cards/le_cartel_mediatique_pouvoir_et_controle.jpg" alt="La Cathédrale — le cartel médiatique, son pilier" loading="lazy"></div>
+    </div>
+    <div class="slot" style="left:50%; top:46%; width:15vmin; margin-left:-7.5vmin; margin-top:calc(15vmin*1.714/-2);">
+      <div class="card glow-acier" id="c-matrice"><img src="assets/cards/les_architectes_de_la_matrice.jpg" alt="La Matrice — les architectes" loading="lazy"></div>
+    </div>
+
+    <!-- ACTE IV · RIPPLED (cascade diagonale) -->
+    <div class="slot" style="left:16%; top:14%; width:13vmin;"><div class="card glow-orange" id="c-selene"><img src="assets/cards/selene_architecte_des_circuits_de_confiance.jpg" alt="Selene Ashcroft" loading="lazy"></div></div>
+    <div class="slot" style="left:36%; top:34%; width:13vmin;"><div class="card glow-orange" id="c-hackeuse"><img src="assets/cards/la_hackeuse_communautaire_et_son_reseau.jpg" alt="La hackeuse communautaire" loading="lazy"></div></div>
+    <div class="slot" style="left:56%; top:18%; width:13vmin;"><div class="card glow-orange" id="c-voisine"><img src="assets/cards/la_voisine_solidaire_et_sa_chaleur.jpg" alt="La voisine solidaire" loading="lazy"></div></div>
+    <div class="slot" style="left:74%; top:40%; width:13vmin;"><div class="card glow-orange" id="c-livreur"><img src="assets/cards/livreur_dans_la_nuit_urbaine.jpg" alt="Livreur dans la nuit" loading="lazy"></div></div>
+
+    <!-- ACTE V · LES ATOUTS (monolithes) -->
+    <div class="slot" style="left:50%; top:12%; width:18vmin; margin-left:-9vmin;"><div class="card glow-or" id="c-conseil"><img src="assets/cards/le_conseil_secret_des_heritages.jpg" alt="N°21 — Le Conseil secret, Imprenable" loading="lazy"></div></div>
+    <div class="slot" style="left:36%; top:48%; width:14.5vmin;"><div class="card glow-or" id="c-oracle"><img src="assets/cards/oracle_des_infrastructures_invisibles.jpg" alt="N°19 — ORACLE" loading="lazy"></div></div>
+    <div class="slot" style="left:72%; top:20%; width:14.5vmin;"><div class="card glow-or" id="c-hx9"><img src="assets/cards/hx_9_la_plateforme_du_monstre.jpg" alt="N°16 — HX-9" loading="lazy"></div></div>
+    <div class="slot" style="left:64%; top:58%; width:10.5vmin;"><div class="card glow-or" id="c-petit"><img src="assets/cards/carte_technologique_futuriste_du_japon.jpg" alt="N°1 — le Petit" loading="lazy"></div></div>
+
+    <!-- ACTE VI · LE JEU (une levée autour du tapis) -->
+    <div class="slot" style="left:57%; top:12%; width:13vmin; margin-left:-6.5vmin;"><div class="card" id="c-n"><img src="assets/cards/le_stratege_du_jeu_glace.jpg" alt="" loading="lazy"></div></div>
+    <div class="slot" style="left:74%; top:34%; width:13vmin;"><div class="card" id="c-e"><img src="assets/cards/prince_heritier_des_sables_dores.jpg" alt="" loading="lazy"></div></div>
+    <div class="slot" style="left:57%; top:54%; width:13vmin; margin-left:-6.5vmin;"><div class="card" id="c-s"><img src="assets/cards/la_medecin_de_quartier_mysterieuse.jpg" alt="" loading="lazy"></div></div>
+    <div class="slot" style="left:41%; top:36%; width:13vmin;"><div class="card" id="c-w"><img src="assets/cards/la_jeune_codeuse_dans_son_atelier.jpg" alt="" loading="lazy"></div></div>
+    <div class="slot" style="left:84%; top:66%; width:9vmin;"><div class="card glow-violet" id="c-proph1"><img src="assets/cards/_back.jpg" alt="La Prophétie" loading="lazy"></div></div>
+    <div class="slot" style="left:87%; top:64%; width:9vmin;"><div class="card glow-violet" id="c-proph2"><img src="assets/cards/_back.jpg" alt="" loading="lazy"></div></div>
+
+    <!-- ACTE VII · FINALE -->
+    <div class="slot" style="left:50%; top:31%; width:min(30vmin,270px); margin-left:calc(min(30vmin,270px)/-2); margin-top:calc(min(30vmin,270px)*1.714/-2);">
+      <div class="card glow-violet" id="c-fin"><img src="assets/cards/messagere_de_la_faille.jpg" alt="" loading="lazy"></div>
+    </div>
+
+    <!-- ---------- COPY ---------- -->
+    <div class="copy" id="copy-hero" style="--beat:var(--violet)">
+      <span class="eyebrow">« Who elected the markets? »</span>
+      <h1>DEEPOTUS<br><em>— Fragment —</em></h1>
+      <p class="sub">Le tarot du monde d'après. 93 cartes, deux camps, une anomalie.</p>
+    </div>
+    <div class="copy" id="copy-monde" style="--beat:var(--acier)">
+      <span class="eyebrow">Europe · 2027 — 2032</span>
+      <h2>Le pouvoir ne réprime plus.</h2>
+      <p>Il stabilise, classe, ralentit — et transforme chaque réalité vitale, climat, santé, sécurité, en péage.</p>
+      <ul class="tags"><li class="t-acier">Westminster</li><li class="t-or">La tour Helix</li><li class="t-acier">Le Ministère</li></ul>
+    </div>
+    <div class="copy" id="copy-systeme" style="--beat:var(--or)">
+      <span class="eyebrow">Le Système</span>
+      <h2>Les 4 Chambres du <em>Treizième Étage</em>.</h2>
+      <p>War Room, le Capital, la Cathédrale, la Matrice : une convergence, pas une conspiration.</p>
+      <ul class="tags"><li class="t-rouge">✶ War Room</li><li class="t-or">❖ Le Capital</li><li class="t-creme">♰ La Cathédrale</li><li class="t-acier">⬡ La Matrice</li></ul>
+    </div>
+    <div class="copy" id="copy-rippled" style="--beat:var(--orange)">
+      <span class="eyebrow">Rippled // trust cascade initiated</span>
+      <h2>La cascade de <em>confiance</em>.</h2>
+      <p>Une architecture de reconnaissance entre gens ordinaires — ceux qui maintiennent le monde apprennent à le financer sans les institutions.</p>
+      <ul class="tags"><li class="t-orange">◢◤ Genesis Node</li><li class="t-orange">Selene Ashcroft</li><li class="t-orange">Local Grid Sync</li></ul>
+    </div>
+    <div class="copy" id="copy-atouts" style="--beat:var(--or)">
+      <span class="eyebrow">Les Atouts</span>
+      <h2>21 forces <em>au-dessus</em> des nations.</h2>
+      <p>Helix, ORACLE, HX-9, le Conseil secret… L'Imprenable ne tombe jamais — mais il ne sait pas reconnaître.</p>
+      <ul class="tags"><li class="t-or">N°21 · Imprenable</li><li class="t-or">N°1 · le Petit</li><li class="t-or">3 Bouts</li></ul>
+    </div>
+    <div class="copy" id="copy-jeu" style="--beat:var(--or)">
+      <span class="eyebrow">Le jeu</span>
+      <h2>Un tarot pour <em>3 à 5</em> joueurs.</h2>
+      <p>Enchères, écart, Prophétie : capturez les Fragments à la levée, déclenchez la Cascade, comptez au Système pondéré.</p>
+      <ul class="tags"><li class="t-or">Enchères &amp; Prophétie</li><li class="t-orange">Cascade</li><li class="t-creme">Appel de Pilier à 5</li></ul>
+    </div>
+    <div class="copy" id="copy-fin" style="--beat:var(--violet)">
+      <span class="eyebrow">Protocol ΔΣ</span>
+      <h2><span id="fin-pre">L'anomalie vous a</span>
+        <span class="vu-wrap"><span id="vu-word">vu</span><svg id="vu-eye" viewBox="0 0 132 64" aria-hidden="true">
+          <defs>
+            <radialGradient id="iris" cx="50%" cy="45%" r="60%">
+              <stop offset="0%" stop-color="#9cc4d8"/>
+              <stop offset="45%" stop-color="#3a6b8a"/>
+              <stop offset="100%" stop-color="#14222e"/>
+            </radialGradient>
+          </defs>
+          <!-- rayons ornementaux façon cartes -->
+          <g stroke="#c9a24b" stroke-width="1.1" opacity=".75">
+            <line x1="66" y1="2"  x2="66" y2="10"/><line x1="30" y1="9"  x2="35" y2="15"/>
+            <line x1="102" y1="9" x2="97" y2="15"/><line x1="66" y1="62" x2="66" y2="54"/>
+            <line x1="30" y1="55" x2="35" y2="49"/><line x1="102" y1="55" x2="97" y2="49"/>
+          </g>
+          <!-- amande de l'œil -->
+          <path d="M8,32 Q66,-6 124,32 Q66,70 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="2"/>
+          <!-- iris ocre-bleu + pupille + éclat -->
+          <circle cx="66" cy="32" r="16.5" fill="url(#iris)" stroke="#e0c56a" stroke-width="1.6"/>
+          <circle cx="66" cy="32" r="6.5" fill="#070604"/>
+          <circle cx="61.5" cy="27.5" r="2.2" fill="#e8c979"/>
+          <!-- paupières : couvrent l'œil quand --open = 0, s'effacent quand il s'ouvre -->
+          <g id="vu-lids">
+            <path class="lid lid-top" d="M8,32 Q66,-6 124,32 Q66,33 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="1.4"/>
+            <path class="lid lid-bot" d="M8,32 Q66,70 124,32 Q66,33 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="1.4"/>
+          </g>
+        </svg></span><span id="fin-post">.</span></h2>
+      <p>Rejoignez la table. Le prochain Fragment porte peut-être votre nom.</p>
+      <div class="cta">
+        <a class="btn-p" href="https://deepotus.xyz" target="_blank" rel="noopener">Découvrir DEEPOTUS</a>
+        <button class="btn-g" id="replay" type="button">↺ Revoir le film</button>
+        <button class="btn-g" id="backsite" type="button" hidden>↩ Revenir au site</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="scroll-stage.js"></script>
+  <script src="world-bg.js"></script>
+  <script>
+    // braises (desktop uniquement — cf. CSS)
+    (function seedEmbers(){
+      const host = document.getElementById('embers');
+      const seeds = [7,23,41,58,71,88,12,34,52,66,83,95,18,29,47,63];
+      seeds.forEach((s,k)=>{ const e=document.createElement('span'); e.className='ember';
+        e.style.left=s+'vw'; e.style.top=(60+(s*1.7)%40)+'vh';
+        const d=16+(s%18); e.style.animationDuration=d+'s'; e.style.animationDelay=(-(k*2.3)%d)+'s';
+        host.appendChild(e); });
+    })();
+
+    // Hook dev/QA : ?p=0.53 saute instantanément à 53% du film (captures headless).
+    const qp = new URLSearchParams(location.search);
+    if (qp.has('p')) document.querySelectorAll('img[loading="lazy"]').forEach(i => i.loading = 'eager');
+
+    // ---- i18n : ?lang= (transmis par l'overlay du site) > choix du site
+    // (localStorage deepotus_lang, même origine) > langue navigateur > fr ----
+    const LANG = String(qp.get('lang') || localStorage.getItem('deepotus_lang') || navigator.language || 'fr')
+      .toLowerCase().startsWith('en') ? 'en' : 'fr';
+    const T = LANG === 'en' ? {
+      title: 'DEEPOTUS — Fragment · the tarot of the world after',
+      hint: 'scroll to enter',
+      chapters: ['Fragment', 'The World', 'The System', 'Rippled', 'The Trumps', 'The Game', 'Join'],
+      heroSub: 'The tarot of the world after. 93 cards, two sides, one anomaly.',
+      blocks: {
+        'copy-monde': {
+          eyebrow: 'Europe · 2027 — 2032',
+          h2: 'Power no longer represses.',
+          p: 'It stabilizes, ranks, slows down — and turns every vital reality, climate, health, security, into a toll.',
+          tags: ['Westminster', 'The Helix Tower', 'The Ministry'],
+        },
+        'copy-systeme': {
+          eyebrow: 'The System',
+          h2: 'The 4 Chambers of the <em>Thirteenth Floor</em>.',
+          p: 'War Room, the Capital, the Cathedral, the Matrix: a convergence, not a conspiracy.',
+          tags: ['✶ War Room', '❖ The Capital', '♰ The Cathedral', '⬡ The Matrix'],
+        },
+        'copy-rippled': {
+          eyebrow: 'Rippled // trust cascade initiated',
+          h2: 'The trust <em>cascade</em>.',
+          p: 'An architecture of recognition between ordinary people — those who maintain the world learn to fund it without the institutions.',
+          tags: ['◢◤ Genesis Node', 'Selene Ashcroft', 'Local Grid Sync'],
+        },
+        'copy-atouts': {
+          eyebrow: 'The Trumps',
+          h2: '21 forces <em>above</em> nations.',
+          p: 'Helix, ORACLE, HX-9, the Secret Council… The Untakeable never falls — but it cannot recognize.',
+          tags: ['No. 21 · Untakeable', 'No. 1 · le Petit', '3 Oudlers'],
+        },
+        'copy-jeu': {
+          eyebrow: 'The game',
+          h2: 'A tarot for <em>3 to 5</em> players.',
+          p: 'Bidding, discard, Prophecy: capture Fragments trick by trick, trigger the Cascade, score with the weighted System.',
+          tags: ['Bidding & Prophecy', 'Cascade', '5-player Pillar call'],
+        },
+      },
+      finEyebrow: 'Protocol ΔΣ',
+      finPre: 'The anomaly has', vuWord: 'seen', finPost: ' you.',
+      finP: 'Join the table. The next Fragment may bear your name.',
+      ctaPrimary: 'Discover DEEPOTUS', ctaReplay: '↺ Replay the film', ctaBack: '↩ Back to the site',
+    } : null;
+    if (T) {
+      document.title = T.title;
+      document.documentElement.lang = 'en';
+      document.querySelector('#copy-hero .sub').textContent = T.heroSub;
+      for (const [id, b] of Object.entries(T.blocks)) {
+        const el = document.getElementById(id);
+        el.querySelector('.eyebrow').textContent = b.eyebrow;
+        el.querySelector('h2').innerHTML = b.h2;
+        el.querySelector('p').textContent = b.p;
+        el.querySelectorAll('.tags li').forEach((li, i) => { if (b.tags[i]) li.textContent = b.tags[i]; });
+      }
+      document.querySelector('#copy-fin .eyebrow').textContent = T.finEyebrow;
+      document.getElementById('fin-pre').textContent = T.finPre;
+      document.getElementById('vu-word').textContent = T.vuWord;
+      document.getElementById('fin-post').textContent = T.finPost;
+      document.querySelector('#copy-fin p').textContent = T.finP;
+      document.querySelector('#copy-fin .btn-p').textContent = T.ctaPrimary;
+      document.getElementById('replay').textContent = T.ctaReplay;
+      document.getElementById('backsite').textContent = T.ctaBack;
+    }
+
+    // Fond "plan du monde 3D" : foules + bannières, piloté par le playhead.
+    const world = mountWorldBackground(document.getElementById('worldbg'));
+    world.render(0.35);   // frame statique immédiate (et fallback reduced-motion)
+    const vuEye = document.getElementById('vu-eye');
+    const vuWord = document.getElementById('vu-word');
+
+    const CHAPTER_LABELS = T ? T.chapters
+      : ['Fragment', 'Le Monde', 'Le Système', 'Rippled', 'Les Atouts', 'Le Jeu', 'Rejoindre'];
+    const cine = mountScrollCinema(document.getElementById('cinema'), {
+      height: 14, smooth: qp.has('p') ? 1 : 0.11,
+      hint: T ? T.hint : 'scrollez pour entrer', progressBar: true,
+      chapters: [0.0, 0.135, 0.28, 0.46, 0.63, 0.77, 0.93]
+        .map((at, i) => ({ label: CHAPTER_LABELS[i], at })),
+      copy: [
+        { el:'#copy-hero',    from:0.00, to:0.115, hold:'start' },
+        { el:'#copy-monde',   from:0.125, to:0.27 },
+        { el:'#copy-systeme', from:0.28, to:0.45 },
+        { el:'#copy-rippled', from:0.46, to:0.62 },
+        { el:'#copy-atouts',  from:0.63, to:0.76 },
+        { el:'#copy-jeu',     from:0.77, to:0.885 },
+        { el:'#copy-fin',     from:0.905, to:1.0, hold:'end' },
+      ],
+      onProgress(p) {
+        world.render(p);
+        // métamorphose « vu » → œil qui s'ouvre (réversible : re-scroll = il se
+        // referme et le mot revient — tout est fonction pure du playhead)
+        const o = Math.min(1, Math.max(0, (p - 0.952) / 0.036));
+        const oe = o * o * (3 - 2 * o);
+        vuEye.style.opacity = oe.toFixed(3);
+        vuEye.style.setProperty('--open', oe.toFixed(3));
+        vuWord.style.opacity = Math.max(0, 1 - oe * 1.5).toFixed(3);
+      },
+      tweens: [
+        /* ---- fond : plan du monde (canvas) — présent presque partout ---- */
+        { el:'#worldbg', from:0.00, to:0.05, props:{ opacity:[.22,.22] } },
+        { el:'#worldbg', from:0.10, to:0.16, props:{ opacity:[.22,.72] } },
+        { el:'#worldbg', from:0.85, to:0.92, props:{ opacity:[.72,.3] } },
+        /* ---- fond : lueurs par acte ---- */
+        { el:'#glow-violet', from:0.00, to:0.06, props:{ opacity:[1,1] } },
+        { el:'#glow-violet', from:0.08, to:0.14, props:{ opacity:[1,0] } },
+        { el:'#glow-violet', from:0.86, to:0.93, props:{ opacity:[0,1] } },
+        { el:'#glow-acier',  from:0.10, to:0.14, props:{ opacity:[0,1] } },
+        { el:'#glow-acier',  from:0.24, to:0.29, props:{ opacity:[1,0] } },
+        { el:'#glow-or',     from:0.27, to:0.31, props:{ opacity:[0,.9] } },
+        { el:'#glow-or',     from:0.42, to:0.47, props:{ opacity:[.9,0] } },
+        { el:'#glow-orange', from:0.45, to:0.49, props:{ opacity:[0,1] } },
+        { el:'#glow-orange', from:0.59, to:0.64, props:{ opacity:[1,0] } },
+        { el:'#glow-or',     from:0.62, to:0.66, props:{ opacity:[0,.9] } },
+        { el:'#glow-or',     from:0.86, to:0.91, props:{ opacity:[.9,0] } },
+        { el:'#sigil', from:0.88, to:0.96, ease:'out', props:{ opacity:[0,.5], scale:[.85,1] } },
+
+        /* ---- ACTE I : hero ---- */
+        { el:'#c-back-hero', from:0.00, to:0.09, props:{ opacity:[.28,.28], y:[2,-4], rot:[8,11] } },
+        { el:'#c-back-hero', from:0.09, to:0.13, props:{ opacity:[.28,0], y:[-4,-22] } },
+        { el:'#c-excuse', from:0.00, to:0.09, props:{ opacity:[1,1], y:[0,-4], rot:[-4,-1], scale:[1,1.05] } },
+        { el:'#c-excuse', from:0.09, to:0.135, ease:'in', props:{ opacity:[1,0], y:[-4,-34], rot:[-1,4], scale:[1.05,.85] } },
+
+        /* ---- ACTE II : le monde ---- */
+        { el:'#c-westminster', from:0.115, to:0.15, ease:'out', props:{ opacity:[0,1], x:[-16,0], rot:[-9,-5] } },
+        { el:'#c-westminster', from:0.15, to:0.24, props:{ x:[0,5], y:[0,-3], rot:[-5,-3] } },
+        { el:'#c-westminster', from:0.24, to:0.275, ease:'in', props:{ opacity:[1,0], x:[5,14], y:[-3,-14] } },
+        { el:'#c-helix', from:0.125, to:0.16, ease:'out', props:{ opacity:[0,1], x:[18,0], y:[6,0], rot:[10,6] } },
+        { el:'#c-helix', from:0.16, to:0.24, props:{ x:[0,-4], y:[0,4], rot:[6,4] } },
+        { el:'#c-helix', from:0.24, to:0.28, ease:'in', props:{ opacity:[1,0], x:[-4,-12], y:[4,16] } },
+        { el:'#c-ukraine', from:0.14, to:0.175, ease:'out', props:{ opacity:[0,1], y:[22,0], scale:[.85,1], rot:[3,1] } },
+        { el:'#c-ukraine', from:0.175, to:0.245, props:{ y:[0,-5], rot:[1,-2] } },
+        { el:'#c-ukraine', from:0.245, to:0.28, ease:'in', props:{ opacity:[1,0], y:[-5,-20], scale:[1,.9] } },
+
+        /* ---- ACTE III : le Système — éventail depuis le centre ---- */
+        { el:'#c-war',        from:0.27, to:0.335, ease:'out', props:{ opacity:[0,1], x:[0,-24], y:[4,-2], rot:[0,-12], scale:[.7,1] } },
+        { el:'#c-capital',    from:0.275, to:0.34, ease:'out', props:{ opacity:[0,1], x:[0,-8.5], y:[4,-6], rot:[0,-4], scale:[.7,1] } },
+        { el:'#c-cathedrale', from:0.28, to:0.345, ease:'out', props:{ opacity:[0,1], x:[0,8.5], y:[4,-6], rot:[0,4], scale:[.7,1] } },
+        { el:'#c-matrice',    from:0.285, to:0.35, ease:'out', props:{ opacity:[0,1], x:[0,24], y:[4,-2], rot:[0,12], scale:[.7,1] } },
+        { el:'#c-war',        from:0.335, to:0.41, props:{ y:[-2,-6] } },
+        { el:'#c-capital',    from:0.34, to:0.41, props:{ y:[-6,-10] } },
+        { el:'#c-cathedrale', from:0.345, to:0.41, props:{ y:[-6,-10] } },
+        { el:'#c-matrice',    from:0.35, to:0.41, props:{ y:[-2,-6] } },
+        { el:'#c-war',        from:0.41, to:0.455, ease:'in', props:{ opacity:[1,0], x:[-24,-30], y:[-6,14], scale:[1,.85] } },
+        { el:'#c-capital',    from:0.415, to:0.455, ease:'in', props:{ opacity:[1,0], x:[-8.5,-11], y:[-10,12], scale:[1,.85] } },
+        { el:'#c-cathedrale', from:0.42, to:0.46, ease:'in', props:{ opacity:[1,0], x:[8.5,11], y:[-10,12], scale:[1,.85] } },
+        { el:'#c-matrice',    from:0.425, to:0.46, ease:'in', props:{ opacity:[1,0], x:[24,30], y:[-6,14], scale:[1,.85] } },
+
+        /* ---- ACTE IV : Rippled — la cascade ---- */
+        { el:'#thread', from:0.47, to:0.53, props:{ opacity:[0,.45] } },
+        { el:'#thread', from:0.58, to:0.62, props:{ opacity:[.45,0] } },
+        { el:'#c-selene',   from:0.455, to:0.50, ease:'out', props:{ opacity:[0,1], y:[-16,0], rot:[-7,-3] } },
+        { el:'#c-hackeuse', from:0.475, to:0.52, ease:'out', props:{ opacity:[0,1], y:[-16,0], rot:[5,2] } },
+        { el:'#c-voisine',  from:0.495, to:0.54, ease:'out', props:{ opacity:[0,1], y:[-16,0], rot:[-5,-2] } },
+        { el:'#c-livreur',  from:0.515, to:0.56, ease:'out', props:{ opacity:[0,1], y:[-16,0], rot:[6,3] } },
+        { el:'#c-selene',   from:0.50, to:0.585, props:{ y:[0,3] } },
+        { el:'#c-hackeuse', from:0.52, to:0.585, props:{ y:[0,3] } },
+        { el:'#c-voisine',  from:0.54, to:0.585, props:{ y:[0,3] } },
+        { el:'#c-livreur',  from:0.56, to:0.585, props:{ y:[0,3] } },
+        { el:'#c-selene',   from:0.585, to:0.625, ease:'in', props:{ opacity:[1,0], y:[3,18] } },
+        { el:'#c-hackeuse', from:0.59, to:0.625, ease:'in', props:{ opacity:[1,0], y:[3,18] } },
+        { el:'#c-voisine',  from:0.595, to:0.63, ease:'in', props:{ opacity:[1,0], y:[3,18] } },
+        { el:'#c-livreur',  from:0.60, to:0.63, ease:'in', props:{ opacity:[1,0], y:[3,18] } },
+
+        /* ---- ACTE V : les Atouts — monolithes ---- */
+        { el:'#c-conseil', from:0.625, to:0.675, ease:'out', props:{ opacity:[0,1], y:[34,0], scale:[.82,1] } },
+        { el:'#c-oracle',  from:0.645, to:0.695, ease:'out', props:{ opacity:[0,1], y:[38,4], scale:[.82,1], rot:[-6,-4] } },
+        { el:'#c-hx9',     from:0.66, to:0.71, ease:'out', props:{ opacity:[0,1], y:[38,4], scale:[.82,1], rot:[6,4] } },
+        { el:'#c-petit',   from:0.675, to:0.72, ease:'out', props:{ opacity:[0,1], y:[26,2], rot:[14,9] } },
+        { el:'#c-conseil', from:0.675, to:0.74, props:{ y:[0,-4] } },
+        { el:'#c-conseil', from:0.74, to:0.775, ease:'in', props:{ opacity:[1,0], y:[-4,-20], scale:[1,1.06] } },
+        { el:'#c-oracle',  from:0.74, to:0.775, ease:'in', props:{ opacity:[1,0], y:[4,-14] } },
+        { el:'#c-hx9',     from:0.745, to:0.78, ease:'in', props:{ opacity:[1,0], y:[4,-14] } },
+        { el:'#c-petit',   from:0.745, to:0.78, ease:'in', props:{ opacity:[1,0], y:[2,10] } },
+
+        /* ---- ACTE VI : le jeu — une levée se joue ---- */
+        { el:'#c-n', from:0.765, to:0.805, ease:'out', props:{ opacity:[0,1], y:[-22,0], rot:[-3,2] } },
+        { el:'#c-e', from:0.78, to:0.82, ease:'out', props:{ opacity:[0,1], x:[20,0], rot:[10,5] } },
+        { el:'#c-s', from:0.795, to:0.835, ease:'out', props:{ opacity:[0,1], y:[24,0], rot:[4,-2] } },
+        { el:'#c-w', from:0.81, to:0.85, ease:'out', props:{ opacity:[0,1], x:[-20,0], rot:[-10,-5] } },
+        { el:'#c-proph1', from:0.80, to:0.84, ease:'out', props:{ opacity:[0,1], y:[14,0], rot:[8,6] } },
+        { el:'#c-proph2', from:0.81, to:0.85, ease:'out', props:{ opacity:[0,.9], y:[16,2], rot:[12,10] } },
+        { el:'#c-n', from:0.85, to:0.895, ease:'in', props:{ opacity:[1,0], y:[0,-10], scale:[1,.9] } },
+        { el:'#c-e', from:0.855, to:0.90, ease:'in', props:{ opacity:[1,0], x:[0,10], scale:[1,.9] } },
+        { el:'#c-s', from:0.86, to:0.90, ease:'in', props:{ opacity:[1,0], y:[0,12], scale:[1,.9] } },
+        { el:'#c-w', from:0.855, to:0.90, ease:'in', props:{ opacity:[1,0], x:[0,-10], scale:[1,.9] } },
+        { el:'#c-proph1', from:0.86, to:0.90, ease:'in', props:{ opacity:[1,0], y:[0,10] } },
+        { el:'#c-proph2', from:0.86, to:0.90, ease:'in', props:{ opacity:[.9,0], y:[2,12] } },
+
+        /* ---- ACTE VII : finale ---- */
+        { el:'#c-fin', from:0.895, to:0.965, ease:'out', props:{ opacity:[0,1], y:[16,0], scale:[.72,1], rot:[6,-2] } },
+      ],
+    });
+
+    document.getElementById('replay').addEventListener('click', () => cine.seek(0));
+
+    // Embarqué dans le site (iframe overlay) : proposer le retour au site à la
+    // fin du film — le parent écoute ce message et referme l'overlay.
+    const backBtn = document.getElementById('backsite');
+    if (window.self !== window.top) {
+      backBtn.hidden = false;
+      backBtn.addEventListener('click', () => window.parent.postMessage('fragment-film:close', '*'));
+    }
+
+    if (qp.has('p')) addEventListener('load', () => {
+      const track = document.querySelector('.sc-track');
+      window.scrollTo(0, parseFloat(qp.get('p')) * Math.max(1, track.offsetHeight - innerHeight));
+    });
+  </script>
+</body>
+</html>

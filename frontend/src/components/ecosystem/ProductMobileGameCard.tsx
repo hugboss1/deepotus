@@ -6,11 +6,13 @@
  * golden silhouette behind a deep-sea radial wash). Easy to replace by
  * <img/> later.
  */
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Smartphone, Globe, BellRing, Bug, ChevronRight } from "lucide-react";
+import { Smartphone, Globe, BellRing, Bug, ChevronRight, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
+import FragmentFilmOverlay from "./FragmentFilmOverlay";
 
 interface Props {
   onJoinWaitlist: () => void;
@@ -18,6 +20,7 @@ interface Props {
 
 export function ProductMobileGameCard({ onJoinWaitlist }: Props): JSX.Element {
   const { t } = useI18n();
+  const [filmOpen, setFilmOpen] = useState<boolean>(false);
 
   return (
     <motion.section
@@ -106,61 +109,43 @@ export function ProductMobileGameCard({ onJoinWaitlist }: Props): JSX.Element {
           </div>
         </div>
 
-        {/* Generated illustration column */}
-        <div
-          className="lg:col-span-5 relative min-h-[260px] lg:min-h-0 bg-[#070A0E] overflow-hidden"
-          data-testid="mobile-illustration"
+        {/* Generated illustration column — encart cliquable : lance le film
+            scroll-cinéma « Fragment » (l'univers du jeu) en overlay plein écran. */}
+        <button
+          type="button"
+          onClick={() => setFilmOpen(true)}
+          aria-label={t("ecosystem.cards.mobile.film.cta") as string}
+          className="group lg:col-span-5 relative min-h-[260px] lg:min-h-0 bg-[#070A0E] overflow-hidden cursor-pointer text-left block w-full"
+          data-testid="mobile-film-encart"
         >
-          <div
+          {/* Aperçu du film : le globe orbital DEEPOTUS (première image du voyage) */}
+          <img
+            src="/fragment/assets/globe.jpg"
+            alt=""
             aria-hidden
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(60% 60% at 30% 30%, rgba(45,212,191,0.18) 0%, rgba(245,158,11,0.10) 45%, rgba(0,0,0,0) 75%)",
-            }}
+            className="absolute inset-0 w-full h-full object-cover object-[62%_18%] transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+            loading="lazy"
           />
-          <svg
-            viewBox="0 0 320 480"
-            className="relative w-full h-full"
-            preserveAspectRatio="xMidYMid slice"
-            aria-hidden
-          >
-            <defs>
-              <radialGradient id="goldHalo" cx="50%" cy="35%" r="35%">
-                <stop offset="0" stopColor="#F59E0B66" />
-                <stop offset="1" stopColor="#F59E0B00" />
-              </radialGradient>
-              <linearGradient id="silh" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#0b1119" />
-                <stop offset="1" stopColor="#101820" />
-              </linearGradient>
-            </defs>
-            <circle cx="160" cy="170" r="110" fill="url(#goldHalo)" />
-            {/* Silhouette */}
-            <circle cx="160" cy="165" r="42" fill="url(#silh)" stroke="#F59E0B33" />
-            <path
-              d="M85 470 C85 330, 235 330, 235 470 Z"
-              fill="url(#silh)"
-              stroke="#F59E0B33"
-            />
-            {/* Scanlines */}
-            {Array.from({ length: 18 }).map((_, i) => (
-              <line
-                key={i}
-                x1="0"
-                x2="320"
-                y1={i * 28}
-                y2={i * 28}
-                stroke="#F6F2EA08"
-                strokeWidth="1"
-              />
-            ))}
-          </svg>
-          <div className="absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.22em] text-amber-400/85">
-            {t("ecosystem.cards.mobile.placeholder")}
-          </div>
-        </div>
+          <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" aria-hidden />
+          <span className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex items-center gap-4">
+            <span className="relative inline-flex h-12 w-12 shrink-0 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400/25 animate-ping" aria-hidden />
+              <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-cyan-400/60 bg-black/55 text-cyan-300 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
+              </span>
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display font-semibold text-foreground text-base sm:text-lg leading-tight">
+                {t("ecosystem.cards.mobile.film.cta")}
+              </span>
+              <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">
+                {t("ecosystem.cards.mobile.film.hint")}
+              </span>
+            </span>
+          </span>
+        </button>
       </div>
+      <FragmentFilmOverlay open={filmOpen} onClose={() => setFilmOpen(false)} />
     </motion.section>
   );
 }
