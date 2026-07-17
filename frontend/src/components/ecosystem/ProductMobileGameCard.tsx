@@ -6,11 +6,13 @@
  * golden silhouette behind a deep-sea radial wash). Easy to replace by
  * <img/> later.
  */
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Smartphone, Globe, BellRing, Bug, ChevronRight } from "lucide-react";
+import { Smartphone, Globe, BellRing, Bug, ChevronRight, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
+import FragmentFilmOverlay from "./FragmentFilmOverlay";
 
 interface Props {
   onJoinWaitlist: () => void;
@@ -18,6 +20,7 @@ interface Props {
 
 export function ProductMobileGameCard({ onJoinWaitlist }: Props): JSX.Element {
   const { t } = useI18n();
+  const [filmOpen, setFilmOpen] = useState<boolean>(false);
 
   return (
     <motion.section
@@ -106,10 +109,14 @@ export function ProductMobileGameCard({ onJoinWaitlist }: Props): JSX.Element {
           </div>
         </div>
 
-        {/* Generated illustration column */}
-        <div
-          className="lg:col-span-5 relative min-h-[260px] lg:min-h-0 bg-[#070A0E] overflow-hidden"
-          data-testid="mobile-illustration"
+        {/* Generated illustration column — encart cliquable : lance le film
+            scroll-cinéma « Fragment » (l'univers du jeu) en overlay plein écran. */}
+        <button
+          type="button"
+          onClick={() => setFilmOpen(true)}
+          aria-label={t("ecosystem.cards.mobile.film.cta") as string}
+          className="group lg:col-span-5 relative min-h-[260px] lg:min-h-0 bg-[#070A0E] overflow-hidden cursor-pointer text-left block w-full"
+          data-testid="mobile-film-encart"
         >
           <div
             aria-hidden
@@ -156,11 +163,23 @@ export function ProductMobileGameCard({ onJoinWaitlist }: Props): JSX.Element {
               />
             ))}
           </svg>
-          <div className="absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-[0.22em] text-amber-400/85">
-            {t("ecosystem.cards.mobile.placeholder")}
-          </div>
-        </div>
+          <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" aria-hidden />
+          <span className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex items-center gap-4">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-cyan-400/60 bg-black/55 text-cyan-300 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+              <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display font-semibold text-foreground text-base sm:text-lg leading-tight">
+                {t("ecosystem.cards.mobile.film.cta")}
+              </span>
+              <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">
+                {t("ecosystem.cards.mobile.film.hint")}
+              </span>
+            </span>
+          </span>
+        </button>
       </div>
+      <FragmentFilmOverlay open={filmOpen} onClose={() => setFilmOpen(false)} />
     </motion.section>
   );
 }

@@ -8,13 +8,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Dices, Package, Tags, Truck, Gift, Sparkles, ChevronRight, CalendarDays, Play } from "lucide-react";
+import { Dices, Package, Tags, Truck, Gift, Sparkles, ChevronRight, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useI18n } from "@/i18n/I18nProvider";
 import { fetchBoardgameCounter, type BoardgameCounter } from "@/lib/ecosystem";
-import FragmentFilmOverlay from "./FragmentFilmOverlay";
 
 const TIERS: Array<{
   tier: BoardgameCounter["current_tier"];
@@ -37,7 +36,6 @@ export function ProductBoardGameCard(): JSX.Element {
   const navigate = useNavigate();
   const [counter, setCounter] = useState<BoardgameCounter | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [filmOpen, setFilmOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -298,16 +296,9 @@ export function ProductBoardGameCard(): JSX.Element {
           </div>
         </div>
 
-        {/* Visual column (right on desktop) — encart cliquable : lance le film
-            scroll-cinéma « Fragment » en overlay plein écran. */}
+        {/* Visual column (right on desktop) */}
         <div className="lg:col-span-5 relative bg-[#0B0D10] order-first lg:order-last">
-          <button
-            type="button"
-            onClick={() => setFilmOpen(true)}
-            aria-label={t("ecosystem.cards.boardgame.film.cta") as string}
-            className="group relative block w-full aspect-[4/5] lg:aspect-auto lg:h-full overflow-hidden cursor-pointer text-left"
-            data-testid="boardgame-film-encart"
-          >
+          <div className="relative aspect-[4/5] lg:aspect-auto lg:h-full overflow-hidden">
             <picture>
               <source
                 srcSet="/assets/products/jeu-plateau.webp"
@@ -316,29 +307,14 @@ export function ProductBoardGameCard(): JSX.Element {
               <img
                 src="/assets/products/jeu-plateau.jpg"
                 alt={t("ecosystem.cards.boardgame.title")}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 data-testid="boardgame-hero-img"
               />
             </picture>
-            <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" aria-hidden />
-            <span className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex items-center gap-4">
-              <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-amber-400/60 bg-black/55 text-amber-300 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-                <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-display font-semibold text-foreground text-base sm:text-lg leading-tight">
-                  {t("ecosystem.cards.boardgame.film.cta")}
-                </span>
-                <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.22em] text-amber-300/80">
-                  {t("ecosystem.cards.boardgame.film.hint")}
-                </span>
-              </span>
-            </span>
-          </button>
+          </div>
         </div>
       </div>
-      <FragmentFilmOverlay open={filmOpen} onClose={() => setFilmOpen(false)} />
     </motion.section>
   );
 }

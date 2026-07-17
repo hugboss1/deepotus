@@ -40,7 +40,7 @@ export default function FragmentFilmOverlay({ open, onClose }: FragmentFilmOverl
       className="fixed inset-0 z-[120] bg-black"
       role="dialog"
       aria-modal="true"
-      aria-label={t("ecosystem.cards.boardgame.film.cta") as string}
+      aria-label={t("ecosystem.cards.mobile.film.cta") as string}
       data-testid="fragment-film-overlay"
     >
       <iframe
@@ -52,7 +52,7 @@ export default function FragmentFilmOverlay({ open, onClose }: FragmentFilmOverl
       <button
         type="button"
         onClick={onClose}
-        aria-label={t("ecosystem.cards.boardgame.film.close") as string}
+        aria-label={t("ecosystem.cards.mobile.film.close") as string}
         className="absolute top-4 right-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-500/40 bg-black/60 text-amber-200/90 backdrop-blur-sm transition-colors hover:bg-black/85 hover:text-amber-100"
         data-testid="fragment-film-close"
       >
