@@ -61,13 +61,28 @@
 
     /* ---------- blocs de texte ---------- */
     .copy { left: clamp(20px, 5.5vw, 90px); top: 50%; width: min(38vw, 480px);
-      transform: translateY(-50%) translateY(var(--sc-dy, 0vh)); }
-    .copy .eyebrow { display:block; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-      font-size:.78rem; letter-spacing:.22em; text-transform:uppercase; color: var(--beat, var(--or)); }
+      transform: translateY(-50%) translateY(var(--sc-dy, 0vh)); z-index: 40; }
+    .copy .eyebrow { display:inline-block; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+      font-size:.85rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase;
+      color: color-mix(in srgb, var(--beat, var(--or)) 75%, #fff);
+      padding:5px 12px; border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--beat, var(--or)) 45%, transparent);
+      background: rgba(10,8,6,.72);
+      text-shadow: 0 1px 10px rgba(0,0,0,.95); }
     .copy h1, .copy h2 { font-family: Georgia, 'Times New Roman', serif; font-weight:600;
       color: var(--sc-ink); font-size: clamp(2rem, 4.6vw, 3.6rem); line-height:1.04;
       margin:.55em 0 0; letter-spacing:.01em; text-shadow: 0 2px 24px rgba(0,0,0,.9); }
     .copy h1 em, .copy h2 em { font-style:normal; color: var(--beat, var(--or)); }
+    /* « vu » : dégradé ocre → bleu acier, puis métamorphose en œil (piloté par le playhead) */
+    .vu-wrap { position:relative; display:inline-block; min-width:1.9em; }
+    #vu-word { background: linear-gradient(105deg, #c9a24b 15%, #7fa3b8 60%, #3a6b8a 90%);
+      -webkit-background-clip:text; background-clip:text; color:transparent; }
+    #vu-eye { position:absolute; left:50%; top:52%; transform:translate(-50%,-50%);
+      height:.92em; width:auto; opacity:0; overflow:visible; pointer-events:none;
+      filter: drop-shadow(0 0 14px rgba(201,162,75,.45)); }
+    #vu-eye .lid { transform-origin: 66px 32px; }
+    #vu-eye .lid-top { transform: scaleY(calc(1 - var(--open, 0))); }
+    #vu-eye .lid-bot { transform: scaleY(calc(1 - var(--open, 0))); }
     .copy p { margin-top:1.1em; font-size: clamp(.98rem, 1.2vw, 1.12rem); line-height:1.6;
       color:#c9bda2; max-width:42ch; text-shadow: 0 1px 14px rgba(0,0,0,.95); }
     .copy .tags { list-style:none; display:flex; flex-wrap:wrap; gap:8px; margin:1.4em 0 0; padding:0; }
@@ -90,6 +105,8 @@
 
     #copy-hero { text-align:center; left:50%; width:min(82vw, 760px);
       transform:translate(-50%,-50%) translateY(var(--sc-dy, 0vh)); top:38%; }
+    /* ouverture + clôture : les <p> à max-width doivent se centrer dans le bloc */
+    #copy-hero p, #copy-fin p { margin-left:auto; margin-right:auto; }
     #copy-hero h1 { font-size: clamp(2.6rem, 7vw, 5.4rem); letter-spacing:.06em; }
     #copy-hero .sub { margin-top:.9em; font-family:Georgia, serif; font-size:clamp(1rem,1.8vw,1.3rem);
       color:#c9bda2; letter-spacing:.04em; }
@@ -220,7 +237,33 @@
     </div>
     <div class="copy" id="copy-fin" style="--beat:var(--violet)">
       <span class="eyebrow">Protocol ΔΣ</span>
-      <h2>L'anomalie vous a <em>vu</em>.</h2>
+      <h2>L'anomalie vous a
+        <span class="vu-wrap"><span id="vu-word">vu</span><svg id="vu-eye" viewBox="0 0 132 64" aria-hidden="true">
+          <defs>
+            <radialGradient id="iris" cx="50%" cy="45%" r="60%">
+              <stop offset="0%" stop-color="#9cc4d8"/>
+              <stop offset="45%" stop-color="#3a6b8a"/>
+              <stop offset="100%" stop-color="#14222e"/>
+            </radialGradient>
+          </defs>
+          <!-- rayons ornementaux façon cartes -->
+          <g stroke="#c9a24b" stroke-width="1.1" opacity=".75">
+            <line x1="66" y1="2"  x2="66" y2="10"/><line x1="30" y1="9"  x2="35" y2="15"/>
+            <line x1="102" y1="9" x2="97" y2="15"/><line x1="66" y1="62" x2="66" y2="54"/>
+            <line x1="30" y1="55" x2="35" y2="49"/><line x1="102" y1="55" x2="97" y2="49"/>
+          </g>
+          <!-- amande de l'œil -->
+          <path d="M8,32 Q66,-6 124,32 Q66,70 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="2"/>
+          <!-- iris ocre-bleu + pupille + éclat -->
+          <circle cx="66" cy="32" r="16.5" fill="url(#iris)" stroke="#e0c56a" stroke-width="1.6"/>
+          <circle cx="66" cy="32" r="6.5" fill="#070604"/>
+          <circle cx="61.5" cy="27.5" r="2.2" fill="#e8c979"/>
+          <!-- paupières : couvrent l'œil quand --open = 0, s'effacent quand il s'ouvre -->
+          <g id="vu-lids">
+            <path class="lid lid-top" d="M8,32 Q66,-6 124,32 Q66,33 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="1.4"/>
+            <path class="lid lid-bot" d="M8,32 Q66,70 124,32 Q66,33 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="1.4"/>
+          </g>
+        </svg></span>.</h2>
       <p>Rejoignez la table. Le prochain Fragment porte peut-être votre nom.</p>
       <div class="cta">
         <a class="btn-p" href="https://deepotus.xyz" target="_blank" rel="noopener">Découvrir DEEPOTUS</a>
@@ -250,6 +293,8 @@
     // Fond "plan du monde 3D" : foules + bannières, piloté par le playhead.
     const world = mountWorldBackground(document.getElementById('worldbg'));
     world.render(0.35);   // frame statique immédiate (et fallback reduced-motion)
+    const vuEye = document.getElementById('vu-eye');
+    const vuWord = document.getElementById('vu-word');
 
     const cine = mountScrollCinema(document.getElementById('cinema'), {
       height: 14, smooth: qp.has('p') ? 1 : 0.11, hint: 'scrollez pour entrer', progressBar: true,
@@ -267,7 +312,16 @@
         { el:'#copy-jeu',     from:0.77, to:0.885 },
         { el:'#copy-fin',     from:0.905, to:1.0, hold:'end' },
       ],
-      onProgress(p) { world.render(p); },
+      onProgress(p) {
+        world.render(p);
+        // métamorphose « vu » → œil qui s'ouvre (réversible : re-scroll = il se
+        // referme et le mot revient — tout est fonction pure du playhead)
+        const o = Math.min(1, Math.max(0, (p - 0.952) / 0.036));
+        const oe = o * o * (3 - 2 * o);
+        vuEye.style.opacity = oe.toFixed(3);
+        vuEye.style.setProperty('--open', oe.toFixed(3));
+        vuWord.style.opacity = Math.max(0, 1 - oe * 1.5).toFixed(3);
+      },
       tweens: [
         /* ---- fond : plan du monde (canvas) — présent presque partout ---- */
         { el:'#worldbg', from:0.00, to:0.05, props:{ opacity:[.22,.22] } },
