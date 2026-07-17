@@ -237,7 +237,7 @@
     </div>
     <div class="copy" id="copy-fin" style="--beat:var(--violet)">
       <span class="eyebrow">Protocol ΔΣ</span>
-      <h2>L'anomalie vous a
+      <h2><span id="fin-pre">L'anomalie vous a</span>
         <span class="vu-wrap"><span id="vu-word">vu</span><svg id="vu-eye" viewBox="0 0 132 64" aria-hidden="true">
           <defs>
             <radialGradient id="iris" cx="50%" cy="45%" r="60%">
@@ -263,7 +263,7 @@
             <path class="lid lid-top" d="M8,32 Q66,-6 124,32 Q66,33 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="1.4"/>
             <path class="lid lid-bot" d="M8,32 Q66,70 124,32 Q66,33 8,32 Z" fill="#0d0b14" stroke="#c9a24b" stroke-width="1.4"/>
           </g>
-        </svg></span>.</h2>
+        </svg></span><span id="fin-post">.</span></h2>
       <p>Rejoignez la table. Le prochain Fragment porte peut-être votre nom.</p>
       <div class="cta">
         <a class="btn-p" href="https://deepotus.xyz" target="_blank" rel="noopener">Découvrir DEEPOTUS</a>
@@ -290,19 +290,86 @@
     const qp = new URLSearchParams(location.search);
     if (qp.has('p')) document.querySelectorAll('img[loading="lazy"]').forEach(i => i.loading = 'eager');
 
+    // ---- i18n : ?lang= (transmis par l'overlay du site) > choix du site
+    // (localStorage deepotus_lang, même origine) > langue navigateur > fr ----
+    const LANG = String(qp.get('lang') || localStorage.getItem('deepotus_lang') || navigator.language || 'fr')
+      .toLowerCase().startsWith('en') ? 'en' : 'fr';
+    const T = LANG === 'en' ? {
+      title: 'DEEPOTUS — Fragment · the tarot of the world after',
+      hint: 'scroll to enter',
+      chapters: ['Fragment', 'The World', 'The System', 'Rippled', 'The Trumps', 'The Game', 'Join'],
+      heroSub: 'The tarot of the world after. 93 cards, two sides, one anomaly.',
+      blocks: {
+        'copy-monde': {
+          eyebrow: 'Europe · 2027 — 2032',
+          h2: 'Power no longer represses.',
+          p: 'It stabilizes, ranks, slows down — and turns every vital reality, climate, health, security, into a toll.',
+          tags: ['Westminster', 'The Helix Tower', 'The Ministry'],
+        },
+        'copy-systeme': {
+          eyebrow: 'The System',
+          h2: 'The 4 Chambers of the <em>Thirteenth Floor</em>.',
+          p: 'War Room, the Capital, the Cathedral, the Matrix: a convergence, not a conspiracy.',
+          tags: ['✶ War Room', '❖ The Capital', '♰ The Cathedral', '⬡ The Matrix'],
+        },
+        'copy-rippled': {
+          eyebrow: 'Rippled // trust cascade initiated',
+          h2: 'The trust <em>cascade</em>.',
+          p: 'An architecture of recognition between ordinary people — those who maintain the world learn to fund it without the institutions.',
+          tags: ['◢◤ Genesis Node', 'Selene Ashcroft', 'Local Grid Sync'],
+        },
+        'copy-atouts': {
+          eyebrow: 'The Trumps',
+          h2: '21 forces <em>above</em> nations.',
+          p: 'Helix, ORACLE, HX-9, the Secret Council… The Untakeable never falls — but it cannot recognize.',
+          tags: ['No. 21 · Untakeable', 'No. 1 · le Petit', '3 Oudlers'],
+        },
+        'copy-jeu': {
+          eyebrow: 'The game',
+          h2: 'A tarot for <em>3 to 5</em> players.',
+          p: 'Bidding, discard, Prophecy: capture Fragments trick by trick, trigger the Cascade, score with the weighted System.',
+          tags: ['Bidding & Prophecy', 'Cascade', '5-player Pillar call'],
+        },
+      },
+      finEyebrow: 'Protocol ΔΣ',
+      finPre: 'The anomaly has', vuWord: 'seen', finPost: ' you.',
+      finP: 'Join the table. The next Fragment may bear your name.',
+      ctaPrimary: 'Discover DEEPOTUS', ctaReplay: '↺ Replay the film', ctaBack: '↩ Back to the site',
+    } : null;
+    if (T) {
+      document.title = T.title;
+      document.documentElement.lang = 'en';
+      document.querySelector('#copy-hero .sub').textContent = T.heroSub;
+      for (const [id, b] of Object.entries(T.blocks)) {
+        const el = document.getElementById(id);
+        el.querySelector('.eyebrow').textContent = b.eyebrow;
+        el.querySelector('h2').innerHTML = b.h2;
+        el.querySelector('p').textContent = b.p;
+        el.querySelectorAll('.tags li').forEach((li, i) => { if (b.tags[i]) li.textContent = b.tags[i]; });
+      }
+      document.querySelector('#copy-fin .eyebrow').textContent = T.finEyebrow;
+      document.getElementById('fin-pre').textContent = T.finPre;
+      document.getElementById('vu-word').textContent = T.vuWord;
+      document.getElementById('fin-post').textContent = T.finPost;
+      document.querySelector('#copy-fin p').textContent = T.finP;
+      document.querySelector('#copy-fin .btn-p').textContent = T.ctaPrimary;
+      document.getElementById('replay').textContent = T.ctaReplay;
+      document.getElementById('backsite').textContent = T.ctaBack;
+    }
+
     // Fond "plan du monde 3D" : foules + bannières, piloté par le playhead.
     const world = mountWorldBackground(document.getElementById('worldbg'));
     world.render(0.35);   // frame statique immédiate (et fallback reduced-motion)
     const vuEye = document.getElementById('vu-eye');
     const vuWord = document.getElementById('vu-word');
 
+    const CHAPTER_LABELS = T ? T.chapters
+      : ['Fragment', 'Le Monde', 'Le Système', 'Rippled', 'Les Atouts', 'Le Jeu', 'Rejoindre'];
     const cine = mountScrollCinema(document.getElementById('cinema'), {
-      height: 14, smooth: qp.has('p') ? 1 : 0.11, hint: 'scrollez pour entrer', progressBar: true,
-      chapters: [
-        { label:'Fragment', at:0.0 }, { label:'Le Monde', at:0.135 }, { label:'Le Système', at:0.28 },
-        { label:'Rippled', at:0.46 }, { label:'Les Atouts', at:0.63 }, { label:'Le Jeu', at:0.77 },
-        { label:'Rejoindre', at:0.93 },
-      ],
+      height: 14, smooth: qp.has('p') ? 1 : 0.11,
+      hint: T ? T.hint : 'scrollez pour entrer', progressBar: true,
+      chapters: [0.0, 0.135, 0.28, 0.46, 0.63, 0.77, 0.93]
+        .map((at, i) => ({ label: CHAPTER_LABELS[i], at })),
       copy: [
         { el:'#copy-hero',    from:0.00, to:0.115, hold:'start' },
         { el:'#copy-monde',   from:0.125, to:0.27 },

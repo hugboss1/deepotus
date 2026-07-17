@@ -17,7 +17,7 @@ interface FragmentFilmOverlayProps {
 }
 
 export default function FragmentFilmOverlay({ open, onClose }: FragmentFilmOverlayProps): JSX.Element | null {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -51,7 +51,7 @@ export default function FragmentFilmOverlay({ open, onClose }: FragmentFilmOverl
       data-testid="fragment-film-overlay"
     >
       <iframe
-        src="/fragment/index.html"
+        src={`/fragment/index.html?lang=${lang}`}
         title="DEEPOTUS — Fragment"
         className="absolute inset-0 h-full w-full border-0"
         data-testid="fragment-film-iframe"
