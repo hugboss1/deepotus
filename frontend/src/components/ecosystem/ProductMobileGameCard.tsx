@@ -118,55 +118,21 @@ export function ProductMobileGameCard({ onJoinWaitlist }: Props): JSX.Element {
           className="group lg:col-span-5 relative min-h-[260px] lg:min-h-0 bg-[#070A0E] overflow-hidden cursor-pointer text-left block w-full"
           data-testid="mobile-film-encart"
         >
-          <div
+          {/* Aperçu du film : le globe orbital DEEPOTUS (première image du voyage) */}
+          <img
+            src="/fragment/assets/globe.jpg"
+            alt=""
             aria-hidden
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(60% 60% at 30% 30%, rgba(45,212,191,0.18) 0%, rgba(245,158,11,0.10) 45%, rgba(0,0,0,0) 75%)",
-            }}
+            className="absolute inset-0 w-full h-full object-cover object-[62%_18%] transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+            loading="lazy"
           />
-          <svg
-            viewBox="0 0 320 480"
-            className="relative w-full h-full"
-            preserveAspectRatio="xMidYMid slice"
-            aria-hidden
-          >
-            <defs>
-              <radialGradient id="goldHalo" cx="50%" cy="35%" r="35%">
-                <stop offset="0" stopColor="#F59E0B66" />
-                <stop offset="1" stopColor="#F59E0B00" />
-              </radialGradient>
-              <linearGradient id="silh" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#0b1119" />
-                <stop offset="1" stopColor="#101820" />
-              </linearGradient>
-            </defs>
-            <circle cx="160" cy="170" r="110" fill="url(#goldHalo)" />
-            {/* Silhouette */}
-            <circle cx="160" cy="165" r="42" fill="url(#silh)" stroke="#F59E0B33" />
-            <path
-              d="M85 470 C85 330, 235 330, 235 470 Z"
-              fill="url(#silh)"
-              stroke="#F59E0B33"
-            />
-            {/* Scanlines */}
-            {Array.from({ length: 18 }).map((_, i) => (
-              <line
-                key={i}
-                x1="0"
-                x2="320"
-                y1={i * 28}
-                y2={i * 28}
-                stroke="#F6F2EA08"
-                strokeWidth="1"
-              />
-            ))}
-          </svg>
           <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" aria-hidden />
           <span className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex items-center gap-4">
-            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-cyan-400/60 bg-black/55 text-cyan-300 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
-              <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
+            <span className="relative inline-flex h-12 w-12 shrink-0 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400/25 animate-ping" aria-hidden />
+              <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-cyan-400/60 bg-black/55 text-cyan-300 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                <Play className="h-5 w-5 translate-x-[1px]" aria-hidden />
+              </span>
             </span>
             <span className="min-w-0">
               <span className="block font-display font-semibold text-foreground text-base sm:text-lg leading-tight">

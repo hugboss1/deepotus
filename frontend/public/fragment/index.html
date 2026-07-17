@@ -225,6 +225,7 @@
       <div class="cta">
         <a class="btn-p" href="https://deepotus.xyz" target="_blank" rel="noopener">Découvrir DEEPOTUS</a>
         <button class="btn-g" id="replay" type="button">↺ Revoir le film</button>
+        <button class="btn-g" id="backsite" type="button" hidden>↩ Revenir au site</button>
       </div>
     </div>
   </div>
@@ -364,6 +365,14 @@
     });
 
     document.getElementById('replay').addEventListener('click', () => cine.seek(0));
+
+    // Embarqué dans le site (iframe overlay) : proposer le retour au site à la
+    // fin du film — le parent écoute ce message et referme l'overlay.
+    const backBtn = document.getElementById('backsite');
+    if (window.self !== window.top) {
+      backBtn.hidden = false;
+      backBtn.addEventListener('click', () => window.parent.postMessage('fragment-film:close', '*'));
+    }
 
     if (qp.has('p')) addEventListener('load', () => {
       const track = document.querySelector('.sc-track');

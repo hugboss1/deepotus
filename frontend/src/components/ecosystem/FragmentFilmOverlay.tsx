@@ -24,11 +24,18 @@ export default function FragmentFilmOverlay({ open, onClose }: FragmentFilmOverl
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "Escape") onClose();
     };
+    // Le film (iframe) envoie ce message quand le visiteur clique
+    // « Revenir au site » à la fin de l'animation.
+    const onMsg = (e: MessageEvent): void => {
+      if (e.data === "fragment-film:close") onClose();
+    };
     window.addEventListener("keydown", onKey);
+    window.addEventListener("message", onMsg);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("message", onMsg);
       document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
