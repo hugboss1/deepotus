@@ -380,7 +380,7 @@ export default function AdminMissionsCommand(): JSX.Element {
                 data-testid="input-min-invites"
               />
             </Field>
-            <Field label="Min holding ($DEEP, USD)">
+            <Field label="Min holding ($D2EP, USD)">
               <Input
                 type="number"
                 step="1"
@@ -662,7 +662,7 @@ export default function AdminMissionsCommand(): JSX.Element {
                   Helius auto-trigger (post-mint)
                 </div>
                 <div className="text-xs text-foreground/70 mt-0.5">
-                  Sends a mission email when Helius detects a new $DEEP holder
+                  Sends a mission email when Helius detects a new $D2EP holder
                   whose wallet matches an existing email.
                 </div>
               </div>

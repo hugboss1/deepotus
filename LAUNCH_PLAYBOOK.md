@@ -563,7 +563,7 @@ L'**auto-trigger Helius** (switch `emails_helius_auto_send` dans le Command Cent
 1. Vérifier que `HELIUS_API_KEY` est en place dans Render
 2. Vérifier que le webhook Helius pointe vers `https://api.deepotus.xyz/api/webhooks/helius` (déjà configuré pour les whales)
 3. Activer le switch dans `/admin/missions-command` → Section 04
-4. Tester avec un wallet de test détenant 0.001 $DEEP pour valider la chaîne webhook → match email → Resend
+4. Tester avec un wallet de test détenant 0.001 $D2EP pour valider la chaîne webhook → match email → Resend
 
 ### 9.D — Illustrations IA (gpt-image-1)
 

@@ -5,7 +5,7 @@ optional wallet address to be notified about a specific mission. Every
 submission is persisted, de-duplicated by (mission_id, email), and the
 admin Command Center can list / re-trigger emails.
 
-The Helius-driven auto-trigger (post-mint detection of $DEEP holders)
+The Helius-driven auto-trigger (post-mint detection of $D2EP holders)
 shares the same ``record_participation`` helper but with
 ``source='helius_webhook'`` so admin can filter the two streams.
 """

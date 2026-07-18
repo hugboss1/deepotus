@@ -55,7 +55,7 @@ export function hasAnyLock(): boolean {
 /**
  * Internal route of the immersive Liquidity Pulse mini-app.
  *
- * Every "Buy $DEEP" / BonkBot buy-flow CTA across the marketing site
+ * Every "Buy $D2EP" / BonkBot buy-flow CTA across the marketing site
  * now funnels here instead of bouncing the visitor straight out to
  * Pump.fun / Telegram — the Pulse page is the on-site buy experience
  * and its own CTA forwards to the BonkBot Telegram app. This keeps the

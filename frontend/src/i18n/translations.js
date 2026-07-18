@@ -1157,10 +1157,10 @@ export const translations = {
         liquidity: {
           title: "PROTOCOLE : LIQUIDITY",
           brief:
-            "Conserver au moins 30 $ de $DEEP sur votre wallet jusqu'au snapshot du {snapshotDate}. Position vérifiée on-chain.",
+            "Conserver au moins 30 $ de $D2EP sur votre wallet jusqu'au snapshot du {snapshotDate}. Position vérifiée on-chain.",
           reward: "Éligibilité tirage {date} · Multiplicateur airdrop Phase 2",
           action: "DÉCRYPTER LA MISSION",
-          secondaryAction: "ACHETER $DEEP",
+          secondaryAction: "ACHETER $D2EP",
         },
         amplification: {
           title: "DIRECTIVE : AMPLIFICATION",
@@ -1252,9 +1252,9 @@ export const translations = {
         },
         rule2: {
           tag: "RÈGLE 02",
-          title: "Détenir 30 $ de $DEEP",
+          title: "Détenir 30 $ de $D2EP",
           body:
-            "Au moment du snapshot ({snapshotDate} · 12:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $DEEP. Vérification on-chain via Helius.",
+            "Au moment du snapshot ({snapshotDate} · 12:00 UTC) votre wallet doit détenir au minimum l'équivalent de 30 $ de $D2EP. Vérification on-chain via Helius.",
         },
       },
       mechanism: {
@@ -1269,7 +1269,7 @@ export const translations = {
         "Aucun achat n'est requis pour participer — la règle 02 peut être satisfaite via airdrop, faucet partenaire ou échange P2P. Le Cabinet décline toute responsabilité fiscale.",
       cta: {
         primary: "VOIR LES MISSIONS",
-        secondary: "ACHETER $DEEP",
+        secondary: "ACHETER $D2EP",
       },
     },
 
@@ -2802,10 +2802,10 @@ export const translations = {
         liquidity: {
           title: "PROTOCOL: LIQUIDITY",
           brief:
-            "Hold at least $30 worth of $DEEP on your wallet through the {snapshotDate} snapshot. Position verified on-chain.",
+            "Hold at least $30 worth of $D2EP on your wallet through the {snapshotDate} snapshot. Position verified on-chain.",
           reward: "{date} draw eligibility · Phase 2 airdrop multiplier",
           action: "DECODE MISSION",
-          secondaryAction: "BUY $DEEP",
+          secondaryAction: "BUY $D2EP",
         },
         amplification: {
           title: "DIRECTIVE: AMPLIFICATION",
@@ -2897,9 +2897,9 @@ export const translations = {
         },
         rule2: {
           tag: "RULE 02",
-          title: "Hold $30 of $DEEP",
+          title: "Hold $30 of $D2EP",
           body:
-            "At snapshot time ({snapshotDate} · 12:00 UTC) your wallet must hold at least $30 worth of $DEEP. On-chain verification via Helius.",
+            "At snapshot time ({snapshotDate} · 12:00 UTC) your wallet must hold at least $30 worth of $D2EP. On-chain verification via Helius.",
         },
       },
       mechanism: {
@@ -2914,7 +2914,7 @@ export const translations = {
         "No purchase is required to participate — rule 02 can be satisfied via airdrop, partner faucet, or P2P swap. The Cabinet declines all tax liability.",
       cta: {
         primary: "VIEW MISSIONS",
-        secondary: "BUY $DEEP",
+        secondary: "BUY $D2EP",
       },
     },
 

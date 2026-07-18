@@ -16,7 +16,7 @@
  * Pre-mint awareness: the card highlights when the system is running
  * in PRE-MINT mode (no on-chain check, every candidate verified by
  * fallback) so the operator never confuses "5/5 verified" with "5
- * wallets actually hold $30 of $DEEP".
+ * wallets actually hold $30 of $D2EP".
  */
 
 import React, { useCallback, useEffect, useState } from "react";

@@ -12,7 +12,7 @@ four cleanly-separable concerns so each is testable in isolation:
 2. **On-chain holding check** — for every candidate we resolve a wallet
    address (priority: row.wallet_address → operator's manual override
    map → none). We then RPC into Helius to count the SPL token balance
-   for the configured ``$DEEP`` mint, and price it via DexScreener.
+   for the configured ``$D2EP`` mint, and price it via DexScreener.
    Returns USD value. If the mint isn't deployed yet (pre-launch
    audit mode), the check short-circuits with ``status = "pre_mint"``
    and the candidate is treated as eligible (operator decision).
@@ -69,7 +69,7 @@ COLLECTION: str = "giveaway_snapshots"
 #: BOTH files in the same commit.
 DEFAULT_WINNERS_COUNT: int = 2
 
-#: Minimum USD value of $DEEP a wallet must hold to qualify. Per spec.
+#: Minimum USD value of $D2EP a wallet must hold to qualify. Per spec.
 DEFAULT_MIN_HOLDING_USD: float = 30.0
 
 #: How recent the Solana blockhash captured at extraction time can be
@@ -90,7 +90,7 @@ DEXSCREENER_TOKEN_URL_TEMPLATE: str = "https://api.dexscreener.com/latest/dex/to
 #: an admin request for minutes.
 HTTP_TIMEOUT_SEC: float = 8.0
 
-#: Conventional decimals for $DEEP. We always call ``getTokenSupply``
+#: Conventional decimals for $D2EP. We always call ``getTokenSupply``
 #: to get the real decimals if the mint exists, but we fall back to
 #: this constant if the RPC fails (so a transient network glitch
 #: doesn't produce wildly wrong USD math).
@@ -298,7 +298,7 @@ async def _solana_rpc(method: str, params: List[Any]) -> Tuple[Optional[Dict[str
 
 
 async def get_holding_tokens(wallet: str, mint: str) -> Tuple[float, Optional[str]]:
-    """Return the **whole-token** $DEEP balance for ``wallet`` (i.e.
+    """Return the **whole-token** $D2EP balance for ``wallet`` (i.e.
     already divided by 10**decimals). Returns ``(0.0, error)`` on
     failure — the error code is suitable for surfacing in admin UI.
     """
@@ -437,7 +437,7 @@ async def run_extraction(
     Args:
         draw_date_iso: ISO timestamp the draw is anchored to. Used in
             the RNG payload and as the idempotency key.
-        token_mint: Solana mint address of $DEEP. If falsy/invalid the
+        token_mint: Solana mint address of $D2EP. If falsy/invalid the
             pipeline runs in PRE-MINT mode: holding checks are skipped
             and every candidate with a non-null wallet OR x_handle is
             considered verified.

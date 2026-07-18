@@ -100,7 +100,7 @@ export default function VaultActivityFeed({ events = [] }: { events?: VaultEvent
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-mono text-[10px] text-foreground/70">
-                    +{ev.tokens_added.toLocaleString()} $DEEP
+                    +{ev.tokens_added.toLocaleString()} $D2EP
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground">
                     {rel(ev.created_at)}

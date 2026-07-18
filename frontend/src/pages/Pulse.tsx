@@ -8,7 +8,7 @@
  *     TMA chrome integration.
  *
  * Mechanics:
- *  - Background: animated portrait artwork ($DEEP BUY BOT, octopus
+ *  - Background: animated portrait artwork ($D2EP BUY BOT, octopus
  *    + electric aura) with subtle pulse scale + periodic glitch
  *    (RGB-split clip-band) layered through CSS keyframes.
  *  - Tap interaction: the entire viewport is a tap target. Each tap
@@ -392,7 +392,7 @@ const Pulse: React.FC = () => {
           >
             <Zap size={18} className="pulse-cta-icon" />
             <span className="pulse-cta-label">
-              EXECUTE ORDER <span className="pulse-cta-divider">//</span> BUY $DEEP
+              EXECUTE ORDER <span className="pulse-cta-divider">//</span> BUY $D2EP
             </span>
             <ExternalLink size={14} className="pulse-cta-external" />
           </a>
@@ -597,7 +597,7 @@ const PulseMissionsDrawer: React.FC<PulseMissionsDrawerProps> = ({ onClose }) =>
 function missionShortLabel(id: string): string {
   switch (id) {
     case "infiltration": return "OPERATION: INFILTRATION — 3 invites";
-    case "liquidity":    return "PROTOCOL: LIQUIDITY — Hold $30 of $DEEP";
+    case "liquidity":    return "PROTOCOL: LIQUIDITY — Hold $30 of $D2EP";
     case "amplification": return "DIRECTIVE: AMPLIFICATION — 3 retweets";
     case "archive":      return "ARCHIVE: WHITELIST — Submit handle";
     case "signal":       return "SIGNAL: AUTHORITY — Join + verify";
