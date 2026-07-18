@@ -38,6 +38,7 @@ from routers import (
     burns as burns_router,
     cabinet_vault as cabinet_vault_router,
     ecosystem as ecosystem_router,
+    engagement as engagement_router,
     founder as founder_router,
     giveaway as giveaway_router,
     infiltration as infiltration_router,
@@ -80,6 +81,9 @@ app.include_router(whale_watcher_router.admin_router)
 app.include_router(founder_router.public_router)
 app.include_router(founder_router.admin_router)
 app.include_router(kol_listener_router.admin_router)
+# Engagement organique X — Mention Responder (auto, conforme) +
+# Keyword Digest (semi-auto, humain dans la boucle). Admin-only.
+app.include_router(engagement_router.admin_router)
 # Sprint 15 — public Treasury Transparency feed + admin op-logging.
 app.include_router(treasury_router.router)
 app.include_router(treasury_router.admin_router)
@@ -232,6 +236,19 @@ async def on_startup():
         logger.info("[startup] Prophet Interaction Bot indexes ready.")
     except Exception:
         logging.exception("[startup] prophet interaction bot init failed")
+
+    # ---- Engagement organique — Mention Responder + Keyword Digest ----
+    try:
+        from core import keyword_digest as _kd, mention_responder as _mr
+        await _mr.ensure_indexes()
+        await _kd.ensure_indexes()
+        await _kd.get_config()  # seed defaults so the admin GET never 404s
+        logger.info(
+            "[startup] Engagement modules ready (mention responder + "
+            "keyword digest, both DISABLED by default)."
+        )
+    except Exception:
+        logging.exception("[startup] engagement modules init failed")
 
     # ---- Sprint 14.1 — Pre-Launch Infiltration Brain ----
     try:

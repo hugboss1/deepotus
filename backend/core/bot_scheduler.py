@@ -398,6 +398,35 @@ async def _prophet_interaction_job() -> None:
         logging.exception("[bot_scheduler] prophet interaction tick failed")
 
 
+async def _mention_responder_job() -> None:
+    """Auto-replies to mentions of @Deepotus_AI (compliant surface —
+    the author engaged us first). Runs every 30 min; the tick
+    self-gates on ``poll_interval_hours`` (default 6 h) so real X
+    calls happen ~4×/day. OFF by default via
+    ``propaganda_settings.mention_responder.enabled``.
+    """
+    from core import mention_responder  # noqa: WPS433
+
+    try:
+        await mention_responder.tick()
+    except Exception:
+        logging.exception("[bot_scheduler] mention responder tick failed")
+
+
+async def _keyword_digest_job() -> None:
+    """Semi-auto keyword scanner → private Telegram digest with
+    ready-to-paste replies. NEVER posts to X. Runs every 30 min; the
+    tick self-gates on ``hours_utc`` (default 07 + 16 UTC → 2×/day).
+    OFF by default via ``keyword_digest_config.enabled``.
+    """
+    from core import keyword_digest  # noqa: WPS433
+
+    try:
+        await keyword_digest.tick()
+    except Exception:
+        logging.exception("[bot_scheduler] keyword digest tick failed")
+
+
 # ---------------------------------------------------------------------
 # Scheduler lifecycle
 # ---------------------------------------------------------------------
@@ -605,6 +634,40 @@ async def sync_jobs_from_config() -> None:
             _welcome_signal_job,
             trigger=IntervalTrigger(minutes=30),
             id="welcome_signal",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=600,
+        )
+
+    # ---- Mention Responder — every 30 min (self-gated ~4×/day) ----
+    if _scheduler.get_job("mention_responder"):
+        _scheduler.reschedule_job(
+            "mention_responder",
+            trigger=IntervalTrigger(minutes=30),
+        )
+    else:
+        _scheduler.add_job(
+            _mention_responder_job,
+            trigger=IntervalTrigger(minutes=30),
+            id="mention_responder",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=600,
+        )
+
+    # ---- Keyword Digest — every 30 min (self-gated 2×/day) ----
+    if _scheduler.get_job("keyword_digest"):
+        _scheduler.reschedule_job(
+            "keyword_digest",
+            trigger=IntervalTrigger(minutes=30),
+        )
+    else:
+        _scheduler.add_job(
+            _keyword_digest_job,
+            trigger=IntervalTrigger(minutes=30),
+            id="keyword_digest",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

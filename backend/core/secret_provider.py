@@ -192,6 +192,15 @@ async def get_telegram_chat_id() -> Optional[str]:
     return await resolve("telegram", "TELEGRAM_CHAT_ID")
 
 
+async def get_telegram_admin_chat_id() -> Optional[str]:
+    """Private chat of the founder/operator — used by the Keyword
+    Digest. Deliberately NO fallback to ``TELEGRAM_CHAT_ID``: that one
+    is the public channel, and an operator digest leaking there would
+    expose targeting internals. Missing value → callers must skip."""
+    val = await resolve("telegram", "TELEGRAM_ADMIN_CHAT_ID")
+    return (val or "").strip() or None
+
+
 async def get_twitter_bearer_token() -> Optional[str]:
     """Legacy flat env var name kept for compat — vault stores it under
     ``x_twitter/X_BEARER_TOKEN``.
