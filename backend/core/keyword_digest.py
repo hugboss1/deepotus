@@ -424,6 +424,17 @@ async def run_digest(*, manual: bool = False) -> Dict[str, Any]:
             )
             if await _send_telegram_admin(msg):
                 sent += 1
+            else:
+                # Send failed (bot blocked, 403 before first /start,
+                # Telegram outage…) — release the dedup claim so this
+                # tweet is re-proposed on the next run instead of being
+                # silently lost.
+                try:
+                    await db[SEEN_COLLECTION].delete_one(
+                        {"tweet_id": entry["hit"]["id"]},
+                    )
+                except Exception:  # noqa: BLE001
+                    logger.exception("[keyword-digest] seen rollback failed")
 
     summary = {
         "run_at": _now_iso(),

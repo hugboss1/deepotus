@@ -164,6 +164,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("deepotus")
 
+# httpx logs every request URL at INFO — for the Telegram Bot API the
+# URL embeds the bot token (api.telegram.org/bot<TOKEN>/…), which was
+# leaking verbatim into the Render logs. WARNING keeps errors visible
+# without echoing request URLs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 __all__ = [
     "ROOT_DIR",
