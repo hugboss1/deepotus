@@ -7,9 +7,9 @@
  *       Show the board game summary with the current price tier (live
  *       counter from backend) and a 'Proceed to Stripe' button. The
  *       Video Generator is no longer sold here (it has its own site);
- *       ``?product=videogen`` shows the board game until vercel.json
- *       redirects it to deepotus.tech (separate commit, deployed only
- *       once that site is live). Server computes the amount; we send only ``{product_id, origin_url, locale, customer?}``.
+ *       ``?product=videogen`` shows the board game until a redirect to
+ *       that site is added. Server computes the amount; we send only
+ *       ``{product_id, origin_url, locale, customer?}``.
  *
  *   * With ``?session_id``:
  *       The user just came back from Stripe. We poll
@@ -146,15 +146,15 @@ export default function Payment(): JSX.Element {
 
   const productLabel = useMemo(() => {
     return t("payment.product.boardgameLabel");
-  }, [product, t]);
+  }, [t]);
 
   const productDescription = useMemo(() => {
     return t("payment.product.boardgameDescription");
-  }, [product, t]);
+  }, [t]);
 
   const displayedPriceEur = useMemo(() => {
     return counter?.current_price_eur ?? 39.99;
-  }, [product, counter]);
+  }, [counter]);
 
   const startCheckout = async (): Promise<void> => {
     setFlow("creating");
