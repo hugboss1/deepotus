@@ -1430,13 +1430,13 @@ export const translations = {
         },
         // ----------------- Card 3: Video Generator ----------------------
         videogen: {
-          badge: "DISPONIBLE · LOGICIEL",
+          badge: "LOGICIEL · VENTE EN PAUSE",
           title: "DEEPOTUS Video Generator",
           subtitle: "Studio local · 9:16 · Avatars parlants · Planificateur",
           pitch:
             "Le studio local qui transforme une image, une news ou une phrase en vidéo 9:16 prête à publier. Avatars parlants, montage par nœuds, planificateur de posts. Tout tourne sur votre machine — vos clés, vos données.",
-          price: "65 €",
-          priceNote: "Achat unique · BYO keys · Installeur Windows",
+          price: "Vente en pause",
+          priceNote: "Bientôt disponible sur le site dédié à VideoGen",
           proof:
             "Le contenu de ce site et de nos réseaux sociaux est produit avec ce logiciel.",
           features: {
@@ -1631,7 +1631,7 @@ export const translations = {
       seo: {
         title: "Paiement sécurisé — DEEPOTUS",
         description:
-          "Paiement Stripe sécurisé (carte bancaire, SCA / 3-D Secure). Livraison physique pour le jeu de plateau, licence par email pour le logiciel.",
+          "Paiement Stripe sécurisé (carte bancaire, SCA / 3-D Secure). Livraison physique pour le jeu de plateau.",
       },
       kicker: "PAIEMENT SÉCURISÉ",
       title: "Finalisez votre commande",
@@ -3073,13 +3073,13 @@ export const translations = {
           cta: "Pre-order",
         },
         videogen: {
-          badge: "AVAILABLE · SOFTWARE",
+          badge: "SOFTWARE · SALES PAUSED",
           title: "DEEPOTUS Video Generator",
           subtitle: "Local studio · 9:16 · Talking avatars · Scheduler",
           pitch:
             "The local studio that turns an image, a piece of news, or a sentence into a 9:16 video ready to publish. Talking avatars, node-based editor, post scheduler. Everything runs on your machine — your keys, your data.",
-          price: "€65",
-          priceNote: "One-time purchase · BYO keys · Windows installer",
+          price: "Sales paused",
+          priceNote: "Coming soon on VideoGen's own site",
           proof:
             "The content of this site and our social networks is produced with this software.",
           features: {
@@ -3272,7 +3272,7 @@ export const translations = {
       seo: {
         title: "Secure payment — DEEPOTUS",
         description:
-          "Secure Stripe payment (card, SCA / 3-D Secure). Physical shipping for the board game, email-delivered license for the software.",
+          "Secure Stripe payment (card, SCA / 3-D Secure). Physical shipping for the board game.",
       },
       kicker: "SECURE PAYMENT",
       title: "Complete your order",

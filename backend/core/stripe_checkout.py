@@ -34,7 +34,8 @@ import logging
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+from urllib.parse import urlsplit
 
 from core.stripe_checkout_compat import (
     CheckoutSessionRequest,
@@ -43,7 +44,7 @@ from core.stripe_checkout_compat import (
     StripeCheckout,
 )
 
-from core.config import STRIPE_API_KEY, db, logger
+from core.config import CHECKOUT_ALLOWED_ORIGINS, STRIPE_API_KEY, db, logger
 
 _log = logger if logger else logging.getLogger("deepotus.stripe")
 
@@ -52,6 +53,9 @@ _log = logger if logger else logging.getLogger("deepotus.stripe")
 # ---------------------------------------------------------------------
 # Amounts are EUR floats (Stripe wants float, NOT int per playbook).
 # `boardgame` price is dynamic—resolved via tier function below.
+# `videogen` is no longer sold here (it has its own site): the router
+# only accepts `boardgame`. The entry stays so existing orders still
+# resolve (status polling, webhook, fulfilment).
 PRODUCT_CATALOG: Dict[str, Dict[str, Any]] = {
     "videogen": {
         "label": "DEEPOTUS Video Generator (one-time license)",
@@ -236,6 +240,40 @@ async def get_transaction(session_id: str) -> Optional[Dict[str, Any]]:
 # ---------------------------------------------------------------------
 # High-level operations used by routers
 # ---------------------------------------------------------------------
+def checked_origin(
+    origin_url: str, allowed: Optional[Iterable[str]] = None
+) -> str:
+    """Return the normalised ``scheme://host[:port]`` of ``origin_url``
+    if it is in the allow-list, else raise ``ValueError``.
+
+    ``origin_url`` must be a bare origin (window.location.origin): no
+    credentials, path, query or fragment. Comparison is case-insensitive.
+    """
+    allowed_set = {
+        a.strip().rstrip("/").lower()
+        for a in (CHECKOUT_ALLOWED_ORIGINS if allowed is None else allowed)
+        if a and a.strip()
+    }
+    raw = (origin_url or "").strip().rstrip("/")
+    try:
+        parts = urlsplit(raw)
+    except ValueError:
+        raise ValueError("origin_url not allowed")
+    if (
+        parts.scheme not in ("http", "https")
+        or not parts.netloc
+        or "@" in parts.netloc
+        or parts.path
+        or parts.query
+        or parts.fragment
+    ):
+        raise ValueError("origin_url not allowed")
+    origin = f"{parts.scheme}://{parts.netloc}".lower()
+    if origin not in allowed_set:
+        raise ValueError("origin_url not allowed")
+    return origin
+
+
 async def create_session_for_product(
     *,
     product_id: str,
@@ -255,6 +293,8 @@ async def create_session_for_product(
     """
     if product_id not in PRODUCT_CATALOG:
         raise ValueError(f"Unknown product_id={product_id!r}")
+    # Open-redirect guard — checked BEFORE any founder number is reserved.
+    origin_url = checked_origin(origin_url)
     spec = PRODUCT_CATALOG[product_id]
     metadata: Dict[str, str] = {
         "order_type": product_id,
@@ -276,8 +316,7 @@ async def create_session_for_product(
 
     currency = spec["currency"]
 
-    # Build success / cancel URLs from caller-provided origin
-    origin_url = origin_url.rstrip("/")
+    # Build success / cancel URLs from the allow-listed origin
     success_url = f"{origin_url}/paiement?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin_url}/paiement?canceled=1"
 
