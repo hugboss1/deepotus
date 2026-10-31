@@ -1,24 +1,27 @@
 /**
  * Payment page (/paiement + /checkout alias).
  *
- * Two flows depending on the ``?product=`` query string:
+ * Two flows depending on the ``?session_id=`` query string:
  *
  *   * No ``?session_id``:
- *       Show a product summary (boardgame / videogen) with the current
- *       price tier (for boardgame: live counter from backend) and a
- *       'Proceed to Stripe' button. Server computes the amount; we
- *       send only ``{product_id, origin_url, locale, customer?}``.
+ *       Show the board game summary with the current price tier (live
+ *       counter from backend) and a 'Proceed to Stripe' button. The
+ *       Video Generator is no longer sold here (it has its own site);
+ *       ``?product=videogen`` shows the board game until vercel.json
+ *       redirects it to deepotus.tech (separate commit, deployed only
+ *       once that site is live). Server computes the amount; we send only ``{product_id, origin_url, locale, customer?}``.
  *
  *   * With ``?session_id``:
  *       The user just came back from Stripe. We poll
  *       ``/api/payments/checkout/status/:id`` until paid / expired /
  *       canceled / timeout, then render the appropriate confirmation
  *       state. Confirmation copy varies per product (boardgame shows
- *       founder number, videogen shows email-delivery hint).
+ *       founder number, videogen — older orders only — shows the
+ *       email-delivery hint).
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, AlertTriangle, ArrowLeft, Loader2, ShoppingBag, CreditCard, Sparkles, Package, ShoppingCart } from "lucide-react";
+import { CheckCircle2, AlertTriangle, ArrowLeft, Loader2, ShoppingBag, CreditCard, Package } from "lucide-react";
 import TopNav from "@/components/landing/TopNav";
 import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
@@ -36,7 +39,9 @@ import {
 } from "@/lib/ecosystem";
 import { toast } from "sonner";
 
-type Product = "boardgame" | "videogen";
+// Only the board game is sold here. Older "videogen" orders still resolve
+// through the status block (``order.type``), not through this selector.
+type Product = "boardgame";
 type FlowState =
   | "idle"
   | "creating"
@@ -59,13 +64,10 @@ export default function Payment(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const productParam = (searchParams.get("product") as Product | null) ?? "videogen";
   const sessionId = searchParams.get("session_id");
   const canceled = searchParams.get("canceled") === "1";
 
-  const [product, setProduct] = useState<Product>(
-    productParam === "boardgame" ? "boardgame" : "videogen"
-  );
+  const [product, setProduct] = useState<Product>("boardgame");
   const [flow, setFlow] = useState<FlowState>("idle");
   const [counter, setCounter] = useState<BoardgameCounter | null>(null);
   const [status, setStatus] = useState<CheckoutStatusOut | null>(null);
@@ -143,17 +145,14 @@ export default function Payment(): JSX.Element {
   }, [sessionId]);
 
   const productLabel = useMemo(() => {
-    if (product === "videogen") return t("payment.product.videogenLabel");
     return t("payment.product.boardgameLabel");
   }, [product, t]);
 
   const productDescription = useMemo(() => {
-    if (product === "videogen") return t("payment.product.videogenDescription");
     return t("payment.product.boardgameDescription");
   }, [product, t]);
 
   const displayedPriceEur = useMemo(() => {
-    if (product === "videogen") return 65.0;
     return counter?.current_price_eur ?? 39.99;
   }, [product, counter]);
 
@@ -301,25 +300,7 @@ export default function Payment(): JSX.Element {
                     Stripe · 3DS
                   </Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => setProduct("videogen")}
-                    className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors ${
-                      product === "videogen"
-                        ? "border-emerald-500/50 bg-emerald-500/[0.06]"
-                        : "border-border bg-background/30 hover:bg-background/60"
-                    }`}
-                    data-testid="payment-select-videogen"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-emerald-300" aria-hidden />
-                      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-foreground/70">
-                        Video Generator
-                      </span>
-                    </div>
-                    <div className="font-display font-semibold text-lg tabular-nums">65,00 €</div>
-                  </button>
+                <div className="grid grid-cols-1 gap-2 mb-6">
                   <button
                     type="button"
                     onClick={() => setProduct("boardgame")}
@@ -344,11 +325,7 @@ export default function Payment(): JSX.Element {
 
                 <div className="rounded-lg border border-border bg-background/40 p-4">
                   <div className="flex items-start gap-3">
-                    {product === "boardgame" ? (
-                      <ShoppingBag className="h-5 w-5 mt-0.5 text-amber-300" aria-hidden />
-                    ) : (
-                      <ShoppingCart className="h-5 w-5 mt-0.5 text-emerald-300" aria-hidden />
-                    )}
+                    <ShoppingBag className="h-5 w-5 mt-0.5 text-amber-300" aria-hidden />
                     <div className="flex-1">
                       <div
                         className="font-display font-semibold text-foreground"

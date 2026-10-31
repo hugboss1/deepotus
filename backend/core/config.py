@@ -89,6 +89,25 @@ STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "").strip()
 # parsed unverified and the polling path stays the trusted fulfilment source.
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
 
+# Origins accepted as ``origin_url`` by POST /api/payments/checkout/session.
+# Stripe's success / cancel URLs are built from it, so an unchecked value
+# would let anyone create a real checkout that sends the buyer back to a
+# third-party site after paying (open redirect). Defaults: the two
+# production hosts, plus the public site URL when one is configured
+# (REACT_APP_SITE_URL / PUBLIC_BASE_URL). Extra origins (Vercel previews,
+# local dev) go in CHECKOUT_ALLOWED_ORIGINS, comma-separated.
+CHECKOUT_ALLOWED_ORIGINS = [
+    o.strip().rstrip("/").lower()
+    for o in [
+        "https://www.deepotus.xyz",
+        "https://deepotus.xyz",
+        os.environ.get("REACT_APP_SITE_URL", ""),
+        os.environ.get("PUBLIC_BASE_URL", ""),
+        *os.environ.get("CHECKOUT_ALLOWED_ORIGINS", "").split(","),
+    ]
+    if o and o.strip()
+]
+
 # B2B inquiry destination (white-label royaltie 25% requests). Defaults
 # to b2b@deepotus.xyz; the form ALSO persists into Mongo regardless of
 # email delivery success.
@@ -192,6 +211,7 @@ __all__ = [
     "PUBLIC_BASE_URL",
     "STRIPE_API_KEY",
     "STRIPE_WEBHOOK_SECRET",
+    "CHECKOUT_ALLOWED_ORIGINS",
     "B2B_INQUIRY_EMAIL",
     "HELIUS_API_KEY",
     "HELIUS_WEBHOOK_AUTH",
