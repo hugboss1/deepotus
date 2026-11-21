@@ -13,7 +13,6 @@
  *     callback so the subscription button can pass a custom prefilled
  *     message; the white-label button keeps its generic intent.
  */
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Wand2,
@@ -21,8 +20,6 @@ import {
   Mic,
   CalendarClock,
   Building2,
-  ChevronRight,
-  ShoppingCart,
   FileText,
   KeyRound,
   Layers,
@@ -49,7 +46,6 @@ export function ProductVideoGenCard({
   onContactSubscription,
 }: Props): JSX.Element {
   const { t } = useI18n();
-  const navigate = useNavigate();
 
   const handleSubscribeClick = (postsPerMonth: number): void => {
     // Build the prefilled message by interpolating {tier} with the
@@ -106,7 +102,7 @@ export function ProductVideoGenCard({
           {/* Price block */}
           <div className="flex items-baseline gap-3">
             <div
-              className="font-display font-bold text-4xl text-foreground tabular-nums"
+              className="font-display font-bold text-2xl md:text-3xl text-foreground"
               data-testid="videogen-price"
             >
               {t("ecosystem.cards.videogen.price")}
@@ -143,17 +139,7 @@ export function ProductVideoGenCard({
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              type="button"
-              size="lg"
-              className="gap-2 bg-emerald-500/95 hover:bg-emerald-500 text-zinc-950 font-medium"
-              onClick={() => navigate("/paiement?product=videogen")}
-              data-testid="videogen-buy-cta"
-            >
-              <ShoppingCart className="h-4 w-4" aria-hidden />
-              {t("ecosystem.cards.videogen.cta")}
-              <ChevronRight className="h-4 w-4" aria-hidden />
-            </Button>
+            {/* Achat retiré : VideoGen n'est plus vendu sur ce site (le téléchargement renvoyait 410). */}
             <Button
               type="button"
               size="lg"

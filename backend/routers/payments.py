@@ -53,7 +53,9 @@ class CustomerInput(BaseModel):
 class CreateSessionPayload(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    product_id: str = Field(..., pattern=r"^(boardgame|videogen)$")
+    # VideoGen is no longer sold on this site (it has its own); the
+    # catalogue keeps its entry so existing orders still resolve.
+    product_id: str = Field(..., pattern=r"^boardgame$")
     origin_url: str = Field(..., max_length=300)
     locale: str = Field(default="fr", pattern=r"^(fr|en)$")
     customer: Optional[CustomerInput] = None
